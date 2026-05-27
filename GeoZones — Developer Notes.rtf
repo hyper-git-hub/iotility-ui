@@ -1,0 +1,59 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 DB Schema:\
+Table: geozones\
+  id, name, type: 'allowed'|'restricted'|'speed'|'curfew'|'poi'|'corridor'|'custom'\
+  shapeType: 'polygon'|'circle'|'corridor'\
+  coordinates: JSON (GeoJSON polygon or \{lat,lng,radius\} for circle)\
+  \
+  // Rules\
+  alertOnEntry: boolean\
+  alertOnExit: boolean\
+  speedLimitKph: number (nullable)\
+  maxDwellMinutes: number (nullable)\
+  curfewStart: string HH:MM (nullable)\
+  curfewEnd: string HH:MM (nullable)\
+  \
+  // Assignments\
+  assignedTo: 'all'|'fleet'|'vehicle'|'driver'\
+  assignedIds: string[]\
+  \
+  // Links\
+  poiId: FK \uc0\u8594  poi.id (nullable)\
+  routeId: FK \uc0\u8594  routes.id (nullable \'97 corridor zones)\
+  \
+  active: boolean\
+  color: string (hex)\
+  createdBy: userId FK\
+  createdAt, updatedAt\
+\
+API:\
+GET    /api/fleetpoint/geozones              \'97 list all\
+GET    /api/fleetpoint/geozones/:id          \'97 single\
+GET    /api/fleetpoint/geozones/:id/analytics \'97 visits, dwell, violations\
+GET    /api/fleetpoint/geozones/active       \'97 zones with vehicles inside RIGHT NOW\
+POST   /api/fleetpoint/geozones              \'97 create (GeoJSON body)\
+PATCH  /api/fleetpoint/geozones/:id          \'97 update\
+DELETE /api/fleetpoint/geozones/:id          \'97 delete\
+\
+Geofence checking (backend):\
+On every GPS ping \uc0\u8594  check if vehicle is inside/outside any active geozone\
+Use PostGIS ST_Within() for efficient polygon containment check\
+On state change (inside\uc0\u8594 outside or outside\u8594 inside):\
+  \uc0\u8594  Create geozone_event record\
+  \uc0\u8594  If zone.alertOnEntry and entering \u8594  fire alert\
+  \uc0\u8594  If zone.alertOnExit and exiting \u8594  fire alert\
+  \uc0\u8594  If restricted and entering \u8594  create violation\
+  \uc0\u8594  Emit WebSocket event to frontend\
+TODO: PostGIS extension required on PostgreSQL\
+TODO: Index geozones with ST_MakeEnvelope for performance\
+\
+Draw on map:\
+Use Leaflet.draw plugin for polygon/circle/corridor drawing\
+On shape complete \uc0\u8594  extract GeoJSON coordinates\
+Store as JSONB in coordinates column}
