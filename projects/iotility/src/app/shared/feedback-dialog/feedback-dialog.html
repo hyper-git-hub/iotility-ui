@@ -1,5 +1,5 @@
 @if (dialog.config(); as config) {
-  <div class="dialog-backdrop" role="presentation" (click)="dialog.cancel()">
+  <div class="dialog-backdrop" [class.dialog-closing]="dialog.closing()" role="presentation" (click)="dialog.cancel()">
     <section
       class="dialog-panel"
       role="alertdialog"

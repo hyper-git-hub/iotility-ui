@@ -21,7 +21,9 @@
         @if (showExport()) {
           <button>Export</button>
         }
-        <button class="primary" (click)="primaryAction.emit()">+ {{ primaryActionLabel() }}</button>
+        @if (showPrimaryAction()) {
+          <button class="primary" (click)="primaryAction.emit()">+ {{ primaryActionLabel() }}</button>
+        }
       </div>
     }
   </header>

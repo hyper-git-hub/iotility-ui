@@ -1,12 +1,16 @@
 @if (visible()) {
-  <div class="loader-backdrop" role="status" aria-live="polite" aria-busy="true">
-    <section class="loader-panel">
+  <div class="loader-backdrop" [class.compact-loader]="compact()" role="status" aria-live="polite" aria-busy="true">
+    <section class="loader-panel" [class.animation-only]="animationOnly()" [class.compact]="compact()">
       <div class="loader-mark" aria-hidden="true">
         <span></span><span></span><span></span>
       </div>
-      <strong>{{ label() }}</strong>
-      <p>{{ message() }}</p>
-      <div class="loader-track" aria-hidden="true"><i></i></div>
+      @if (!animationOnly()) {
+        <strong>{{ label() }}</strong>
+        @if (!compact()) {
+          <p>{{ message() }}</p>
+          <div class="loader-track" aria-hidden="true"><i></i></div>
+        }
+      }
     </section>
   </div>
 }

@@ -3,7 +3,7 @@
     <ng-content select="[dropdown-trigger]" />
   </div>
   @if (isOpen()) {
-    <section class="dropdown-panel" [class.left]="align() === 'left'">
+    <section class="dropdown-panel" [class.left]="align() === 'left'" [class.match-trigger]="matchTriggerWidth()" [class.above]="placement() === 'top'">
       @if (searchable()) {
         <label class="dropdown-search"
           ><span>⌕</span
@@ -24,6 +24,7 @@
             [disabled]="option.disabled"
             (click)="choose(option)"
           >
+            @if (showOptionIcons()) {
             <span class="option-icon">
               @if (option.icon === 'location') {
                 ⌖
@@ -42,8 +43,9 @@
                 ↪
               } @else {
                 ●
-              }</span
-            ><span class="option-copy"
+              }</span>
+            }
+            <span class="option-copy"
               ><strong>{{ option.label }}</strong>
               @if (option.description) {
                 <small>{{ option.description }}</small>

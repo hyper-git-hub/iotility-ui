@@ -1,6 +1,6 @@
 @if (rendered()) {
   <div class="modal-backdrop" [class.modal-closing]="closing()" (mousedown)="closeFromBackdrop($event)">
-    <section class="modal-panel" [class.modal-large]="size() === 'lg'" [class.modal-extra-large]="size() === 'xl'" [class.modal-small]="size() === 'sm'" role="dialog" aria-modal="true" [attr.aria-labelledby]="labelledBy()">
+    <section class="modal-panel" [class.modal-large]="size() === 'lg'" [class.modal-extra-large]="size() === 'xl'" [class.modal-small]="size() === 'sm'" [class.modal-busy]="busy()" role="dialog" aria-modal="true" [attr.aria-labelledby]="labelledBy()">
       <header class="modal-header">
         <ng-content select="[modal-header]" />
         <button type="button" aria-label="Close dialog" (click)="closed.emit()">×</button>

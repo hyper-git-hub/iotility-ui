@@ -13,6 +13,10 @@
 .fleet-filters input, .fleet-filters select { @apply h-10 w-full rounded-xl border border-line bg-white px-3 text-xs text-ink outline-none focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
 .fleet-filter-actions { @apply flex gap-2; }
 .fleet-filter-actions button { @apply h-10 cursor-pointer rounded-xl px-3 text-xs font-semibold; }
+.fleet-filter-dropdown { @apply block; }
+.fleet-filter-dropdown [dropdown-trigger] { @apply flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-line bg-white px-3 text-left text-xs text-ink outline-none transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
+.fleet-filter-dropdown [dropdown-trigger] span { @apply min-w-0 truncate; }
+.fleet-filter-dropdown [dropdown-trigger] svg { @apply size-4 shrink-0 text-muted; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
 .fleet-reset { @apply border border-line text-muted dark:border-dark-line dark:text-brand-300; }
 .fleet-apply { @apply bg-brand-600 text-white; }
 .fleet-filter-reveal { --reveal-delay: 200ms; }

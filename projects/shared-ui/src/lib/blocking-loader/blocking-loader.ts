@@ -9,4 +9,6 @@ export class BlockingLoader {
   readonly visible = input(false);
   readonly label = input('Loading');
   readonly message = input('Please wait while we process your request.');
+  readonly animationOnly = input(false);
+  readonly compact = input(false);
 }

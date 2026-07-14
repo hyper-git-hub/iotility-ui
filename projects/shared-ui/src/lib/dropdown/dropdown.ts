@@ -29,6 +29,9 @@ export class Dropdown {
   readonly searchPlaceholder = input('Search options');
   readonly align = input<'left' | 'right'>('right');
   readonly density = input<'default' | 'compact'>('default');
+  readonly showOptionIcons = input(true);
+  readonly matchTriggerWidth = input(false);
+  readonly placement = input<'bottom' | 'top'>('bottom');
   readonly selected = input<string[]>([]);
   readonly optionSelected = output<DropdownOption>();
   readonly selectionChange = output<string[]>();

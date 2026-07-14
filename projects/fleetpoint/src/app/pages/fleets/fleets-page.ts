@@ -36,6 +36,10 @@ export class FleetsPage implements OnInit {
   protected readonly formOpen = signal(false);
   protected readonly fleets = signal<FleetSummary[]>([]);
   protected readonly fleetOptions = signal<InventoryOption[]>([]);
+  protected readonly fleetFilterOptions = computed<DropdownOption[]>(() => [
+    { id: '', label: 'All fleets' },
+    ...this.fleetOptions().map((fleet) => ({ id: String(fleet.id), label: fleet.name || `Fleet ${fleet.id}` })),
+  ]);
   protected readonly total = signal(0);
   protected readonly search = signal('');
   protected readonly selectedFleetId = signal('');
@@ -69,7 +73,8 @@ export class FleetsPage implements OnInit {
   }
 
   protected updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); }
-  protected updateFleet(event: Event): void { this.selectedFleetId.set((event.target as HTMLSelectElement).value); }
+  protected selectFleetFilter(option: DropdownOption): void { this.selectedFleetId.set(option.id); }
+  protected selectedFleetLabel(): string { return this.fleetFilterOptions().find((option) => option.id === this.selectedFleetId())?.label || 'All fleets'; }
   protected applyFilters(): void { this.offset.set(0); this.loadFleets(); }
   protected resetFilters(): void { this.search.set(''); this.selectedFleetId.set(''); this.offset.set(0); this.loadFleets(); }
   protected previousPage(): void { this.offset.update((value) => Math.max(0, value - this.limit)); this.loadFleets(); }

@@ -9,6 +9,7 @@ export class Modal implements OnDestroy {
   readonly open = input(false);
   readonly labelledBy = input('modal-title');
   readonly size = input<'sm' | 'md' | 'lg' | 'xl'>('md');
+  readonly busy = input(false);
   readonly closed = output<void>();
   protected readonly rendered = signal(false);
   protected readonly closing = signal(false);

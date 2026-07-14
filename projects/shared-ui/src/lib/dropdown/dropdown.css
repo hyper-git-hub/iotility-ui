@@ -13,6 +13,12 @@
 .dropdown-panel.left {
   @apply left-0 right-auto;
 }
+.dropdown-panel.match-trigger {
+  @apply left-0 right-auto w-full min-w-full;
+}
+.dropdown-panel.above {
+  @apply bottom-[calc(100%+0.65rem)] top-auto;
+}
 .dropdown-search {
   @apply mb-2 flex items-center gap-2 rounded-lg border border-line px-2.5 py-2 dark:border-dark-line;
 }

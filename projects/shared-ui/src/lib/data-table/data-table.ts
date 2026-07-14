@@ -25,12 +25,15 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly headerActionLabel = input('');
   readonly showToolbar = input(true);
   readonly showExport = input(true);
+  readonly showPrimaryAction = input(true);
+  readonly clientSideSearch = input(true);
   readonly actions = input<TableAction[]>([]);
   readonly rowsClickable = input(false);
   readonly viewportHeight = input<number | null>(null);
   readonly minTableWidth = input(760);
   readonly bodyBottomPadding = input(0);
   readonly primaryAction = output<void>();
+  readonly searchChange = output<string>();
   readonly rowAction = output<{ action: TableAction; row: TableRow }>();
   readonly rowSelected = output<TableRow>();
   private readonly tableBody = viewChild.required<ElementRef<HTMLElement>>('tableBody');
@@ -39,6 +42,7 @@ export class DataTable implements AfterViewInit, OnDestroy {
   protected readonly heightReady = signal(false);
   private resizeObserver?: ResizeObserver;
   protected readonly filteredRows = computed(() => {
+    if (!this.clientSideSearch()) return this.rows();
     const q = this.searchTerm().trim().toLowerCase();
     return q
       ? this.rows().filter((r) => Object.values(r).some((v) => String(v).toLowerCase().includes(q)))
@@ -46,7 +50,9 @@ export class DataTable implements AfterViewInit, OnDestroy {
   });
   protected readonly resolvedBodyHeight = computed(() => this.viewportHeight() ?? this.bodyHeight());
   protected updateSearch(e: Event): void {
-    this.searchTerm.set((e.target as HTMLInputElement).value);
+    const value = (e.target as HTMLInputElement).value;
+    this.searchTerm.set(value);
+    this.searchChange.emit(value);
   }
   protected statusClass(v: unknown): string {
     return `status-${String(v).toLowerCase().replaceAll(' ', '-')}`;

@@ -23,13 +23,14 @@ export interface VehicleInventoryRecord {
 }
 
 export interface InventoryOption { id: number; name?: string; registration?: string; status?: number; }
+export interface DeviceOption { id: number; device_id: string; }
 export interface VehicleInventoryFilters {
   limit: number;
   offset: number;
   search: string;
   fleetId: string;
-  vehicleId: string;
-  status: string;
+  categoryId: string;
+  vehicleTypeId: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -43,8 +44,8 @@ export class VehicleInventoryApiService {
       .set('offset', filters.offset);
     if (filters.search) params = params.set('search', filters.search);
     if (filters.fleetId) params = params.set('fleet_id', filters.fleetId);
-    if (filters.vehicleId) params = params.set('id', filters.vehicleId);
-    if (filters.status) params = params.set('status', filters.status);
+    if (filters.categoryId) params = params.set('category_id', filters.categoryId);
+    if (filters.vehicleTypeId) params = params.set('vehicle_type_id', filters.vehicleTypeId);
     return this.http.get<ApiResponse<{ count: number; data: VehicleInventoryRecord[] }>>(`${FLEET_API}/vehicle`, { params });
   }
 
@@ -54,5 +55,26 @@ export class VehicleInventoryApiService {
 
   getFleetOptions(): Observable<ApiResponse<{ count: number; data: InventoryOption[] }>> {
     return this.http.get<ApiResponse<{ count: number; data: InventoryOption[] }>>(`${FLEET_API}/fleet-listing`);
+  }
+
+  getCategoryOptions(fleetId = ''): Observable<ApiResponse<{ count: number; data: InventoryOption[] }>> {
+    const params = fleetId ? new HttpParams().set('fleet_id', fleetId) : undefined;
+    return this.http.get<ApiResponse<{ count: number; data: InventoryOption[] }>>(`${FLEET_API}/category`, { params });
+  }
+
+  getVehicleTypeOptions(): Observable<ApiResponse<{ count: number; data: InventoryOption[] }>> {
+    return this.http.get<ApiResponse<{ count: number; data: InventoryOption[] }>>(`${FLEET_API}/vehicle-type`);
+  }
+
+  getAvailableDevices(): Observable<ApiResponse<{ count: number; data: DeviceOption[] }>> {
+    return this.http.get<ApiResponse<{ count: number; data: DeviceOption[] }>>(`${FLEET_API}/available-devices`);
+  }
+
+  createVehicle(payload: FormData): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(`${FLEET_API}/vehicle`, payload);
+  }
+
+  deleteVehicle(id: string | number): Observable<ApiResponse<unknown>> {
+    return this.http.delete<ApiResponse<unknown>>(`${FLEET_API}/vehicle`, { params: { id: String(id) } });
   }
 }

@@ -21,12 +21,17 @@
 .attention-card span { @apply rounded-lg border border-line px-3 py-2 text-[11px] text-muted dark:border-dark-line dark:text-brand-300; }
 .attention-card span.danger { @apply border-danger/30 bg-danger/5 text-danger; }
 .attention-card span.warning { @apply border-warning/30 bg-warning/5 text-warning; }
-.vehicle-filters { @apply grid items-end gap-3 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface md:grid-cols-2 xl:grid-cols-[minmax(14rem,1.5fr)_repeat(3,minmax(10rem,1fr))_auto]; }
+.vehicle-filters { @apply grid gap-4 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
 .vehicle-filters label { @apply min-w-0; }
 .vehicle-filters label > span { @apply mb-1.5 block text-[10px] font-medium text-muted dark:text-brand-300; }
 .vehicle-filters input,
 .vehicle-filters select { @apply h-10 w-full rounded-xl border border-line bg-white px-3 text-xs text-ink outline-none transition focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
 .filter-actions { @apply flex gap-2; }
+.filter-controls { @apply grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(10rem,1fr))_auto]; }
+.filter-dropdown { @apply block; }
+.filter-dropdown [dropdown-trigger] { @apply flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-line bg-white px-3 text-left text-xs text-ink outline-none transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
+.filter-dropdown [dropdown-trigger] span { @apply min-w-0 truncate; }
+.filter-dropdown [dropdown-trigger] svg { @apply size-4 shrink-0 text-muted; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
 .filter-actions button { @apply h-10 cursor-pointer whitespace-nowrap rounded-xl px-3 text-xs font-semibold; }
 .reset-filter { @apply border border-line text-muted dark:border-dark-line dark:text-brand-300; }
 .apply-filter { @apply bg-brand-600 text-white; }

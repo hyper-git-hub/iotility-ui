@@ -1,5 +1,6 @@
 <section class="vehicles-page">
   <ui-blocking-loader [visible]="loading()" label="Loading vehicles" message="Getting the latest vehicle inventory..." />
+  <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting vehicle..." />
 
   <header class="vehicles-heading smooth-reveal">
     <div><h1>Vehicles</h1><p>{{ total() }} vehicles in inventory</p></div>
@@ -17,11 +18,12 @@
   </section>
 
   <section class="vehicle-filters smooth-reveal reveal-attention" aria-label="Vehicle filters">
-    <label class="filter-search"><span>Search</span><input type="search" placeholder="Registration, make or model" [value]="search()" (input)="updateSearch($event)" (keyup.enter)="applyFilters()" /></label>
-    <label><span>Vehicle</span><select [value]="vehicleId()" (change)="updateVehicle($event)"><option value="">All vehicles</option>@for (vehicle of vehicleOptions(); track vehicle.id) { <option [value]="vehicle.id">{{ vehicle.registration || vehicle.name }}</option> }</select></label>
-    <label><span>Fleet</span><select [value]="fleetId()" (change)="updateFleet($event)"><option value="">All fleets</option>@for (fleet of fleetOptions(); track fleet.id) { <option [value]="fleet.id">{{ fleet.name }}</option> }</select></label>
-    <label><span>Status</span><select [value]="status()" (change)="updateStatus($event)"><option value="">All statuses</option><option value="1">Active</option><option value="0">Inactive</option></select></label>
-    <div class="filter-actions"><button type="button" class="reset-filter" (click)="resetFilters()">Reset</button><button type="button" class="apply-filter" (click)="applyFilters()">Apply filters</button></div>
+    <div class="filter-controls">
+      <label><span>Fleet</span><shared-dropdown class="filter-dropdown" [options]="fleetDropdownOptions()" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search fleets" [selected]="[fleetId()]" (optionSelected)="selectFleet($event)"><button dropdown-trigger type="button"><span>{{ selectedLabel(fleetDropdownOptions(), fleetId(), 'All fleets') }}</span><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></shared-dropdown></label>
+      <label><span>Category</span><shared-dropdown class="filter-dropdown" [options]="categoryDropdownOptions()" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search categories" [selected]="[categoryId()]" (optionSelected)="selectCategory($event)"><button dropdown-trigger type="button"><span>{{ selectedLabel(categoryDropdownOptions(), categoryId(), 'All categories') }}</span><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></shared-dropdown></label>
+      <label><span>Vehicle Type</span><shared-dropdown class="filter-dropdown" [options]="vehicleTypeDropdownOptions()" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search vehicle types" [selected]="[vehicleTypeId()]" (optionSelected)="selectVehicleType($event)"><button dropdown-trigger type="button"><span>{{ selectedLabel(vehicleTypeDropdownOptions(), vehicleTypeId(), 'All vehicle types') }}</span><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></shared-dropdown></label>
+      <div class="filter-actions"><button type="button" class="reset-filter" (click)="resetFilters()">Reset</button><button type="button" class="apply-filter" (click)="applyFilters()">Apply filters</button></div>
+    </div>
   </section>
 
   @if (error()) {
@@ -36,7 +38,12 @@
     [rows]="vehicles()"
     [actions]="tableActions"
     [rowsClickable]="true"
-    [showToolbar]="false"
+    [showToolbar]="true"
+    [showExport]="false"
+    [showPrimaryAction]="false"
+    [clientSideSearch]="false"
+    searchPlaceholder="Search vehicles"
+    (searchChange)="tableSearchChanged($event)"
     (rowAction)="handleRowAction($event)"
     (rowSelected)="openVehicle($event)"
   ></shared-data-table>

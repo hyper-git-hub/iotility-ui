@@ -11,6 +11,11 @@
 .modal-panel.modal-large { @apply max-w-3xl; }
 .modal-panel.modal-extra-large { @apply max-w-6xl; }
 .modal-panel.modal-small { @apply max-w-sm; }
+.modal-panel.modal-busy {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
 .modal-header {
   @apply flex items-center justify-between gap-4 px-6 pb-2 pt-6;
 }

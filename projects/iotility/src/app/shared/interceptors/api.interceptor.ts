@@ -10,7 +10,8 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
   const authSession = inject(AuthSessionService);
   const isPlatformApi =
     request.url.startsWith(environment.userMsBaseUrl) ||
-    request.url.startsWith(environment.fleetBaseUrl);
+    request.url.startsWith(environment.fleetBaseUrl) ||
+    request.url.startsWith(environment.apiBaseUrl);
 
   if (!isPlatformApi) return next(request);
 
