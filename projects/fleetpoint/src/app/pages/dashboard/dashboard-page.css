@@ -1,0 +1,283 @@
+@reference "../../../styles.css";
+
+.dashboard-page {
+  @apply min-h-full p-5 text-ink dark:text-white sm:p-6;
+}
+.widget-title > span {
+  @apply inline-flex items-center gap-1.5;
+}
+.dashboard-heading {
+  @apply mb-5 flex items-center justify-between gap-4;
+}
+.dashboard-heading h1 {
+  @apply text-xl font-bold;
+}
+.dashboard-heading p {
+  @apply mt-1 text-xs text-muted dark:text-brand-300;
+}
+.customise-button {
+  @apply rounded-xl border border-line px-3 py-2 text-xs text-muted transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:text-brand-300;
+}
+.dashboard-tabs {
+  @apply mb-5 flex gap-1 overflow-x-auto border-b border-line dark:border-dark-line;
+}
+.dashboard-tabs button {
+  @apply -mb-px whitespace-nowrap border-b-2 border-transparent px-4 py-2.5 text-xs text-muted transition hover:text-brand-600 dark:text-brand-300;
+}
+.dashboard-tabs .active {
+  @apply border-brand-600 text-brand-600 dark:text-brand-400;
+}
+.dashboard-tabs {
+  scrollbar-width: none;
+}
+.dashboard-tabs::-webkit-scrollbar {
+  display: none;
+}
+.fleet-status-card,
+.actions-card,
+.driver-card,
+.empty-tab {
+  @apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+}
+.fleet-status-card {
+  @apply mb-4;
+}
+.widget-title {
+  @apply flex items-center justify-between gap-3;
+}
+.widget-title h2 {
+  @apply text-sm font-semibold;
+}
+.widget-title > span {
+  @apply rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-medium text-success;
+}
+.status-track {
+  @apply my-3 flex h-2 overflow-hidden rounded-full;
+}
+.status-track i {
+  @apply block;
+}
+.status-grid {
+  @apply grid grid-cols-2 gap-2 sm:grid-cols-5;
+}
+.status-grid article {
+  @apply relative isolate flex min-h-24 flex-col items-center justify-center overflow-hidden rounded-xl bg-transparent py-4;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
+}
+.status-grid article::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  inset: -120%;
+  background: conic-gradient(
+    transparent 0 22%,
+    currentColor 32% 46%,
+    transparent 56% 72%,
+    currentColor 82% 94%,
+    transparent 100%
+  );
+  opacity: 0.78;
+  animation: status-border-spin 9s linear infinite;
+}
+.status-grid article::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 2px;
+  border-radius: calc(0.75rem - 2px);
+  background: var(--status-surface);
+}
+.status-grid strong {
+  @apply text-2xl;
+}
+.status-grid span {
+  @apply mt-1 text-xs text-muted;
+}
+.status-success {
+  --status-surface: color-mix(in srgb, var(--color-success) 10%, white);
+  @apply text-success;
+}
+.status-warning {
+  --status-surface: color-mix(in srgb, var(--color-warning) 10%, white);
+  @apply text-warning;
+}
+.status-info {
+  --status-surface: color-mix(in srgb, var(--color-info) 10%, white);
+  @apply text-info;
+}
+.status-danger {
+  --status-surface: color-mix(in srgb, var(--color-danger) 10%, white);
+  @apply text-danger;
+}
+.status-muted {
+  --status-surface: color-mix(in srgb, var(--color-line) 50%, white);
+  @apply text-muted;
+}
+.dark .status-success {
+  --status-surface: color-mix(in srgb, var(--color-success) 10%, var(--color-dark-surface));
+}
+.dark .status-warning {
+  --status-surface: color-mix(in srgb, var(--color-warning) 10%, var(--color-dark-surface));
+}
+.dark .status-info {
+  --status-surface: color-mix(in srgb, var(--color-info) 10%, var(--color-dark-surface));
+}
+.dark .status-danger {
+  --status-surface: color-mix(in srgb, var(--color-danger) 10%, var(--color-dark-surface));
+}
+.dark .status-muted {
+  --status-surface: var(--color-dark-canvas);
+}
+:host-context(.dark) .fleet-status-card,
+:host-context(.dark) .actions-card,
+:host-context(.dark) .driver-card,
+:host-context(.dark) .empty-tab {
+  border-color: var(--color-dark-line);
+  background-color: var(--color-dark-surface);
+}
+:host-context(.dark) .status-success {
+  --status-surface: color-mix(in srgb, var(--color-success) 10%, var(--color-dark-surface));
+}
+:host-context(.dark) .status-warning {
+  --status-surface: color-mix(in srgb, var(--color-warning) 10%, var(--color-dark-surface));
+}
+:host-context(.dark) .status-info {
+  --status-surface: color-mix(in srgb, var(--color-info) 10%, var(--color-dark-surface));
+}
+:host-context(.dark) .status-danger {
+  --status-surface: color-mix(in srgb, var(--color-danger) 10%, var(--color-dark-surface));
+}
+:host-context(.dark) .status-muted {
+  --status-surface: var(--color-dark-canvas);
+}
+@keyframes status-border-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-grid article::before {
+    animation: none;
+  }
+}
+.status-icon {
+  @apply mb-1 grid size-6 place-items-center;
+  color: inherit !important;
+  margin-top: 0 !important;
+}
+.status-icon svg {
+  @apply size-5;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.primary-grid {
+  @apply mb-4 grid gap-4 lg:grid-cols-2;
+}
+.actions-card,
+.driver-card {
+  @apply min-h-80;
+}
+.widget-title > span.urgent {
+  background-color: var(--color-danger);
+  color: white;
+}
+.action-list {
+  @apply mt-3 divide-y divide-line dark:divide-dark-line;
+}
+.action-list > div {
+  @apply flex items-center gap-3 py-3;
+}
+.action-symbol {
+  @apply grid size-8 shrink-0 place-items-center rounded-lg bg-danger/10 font-bold text-danger;
+}
+.action-list p {
+  @apply min-w-0 flex-1;
+}
+.action-list strong {
+  @apply block text-xs;
+}
+.action-list small {
+  @apply mt-1 block truncate text-[10px] text-muted dark:text-brand-300;
+}
+.action-list em {
+  @apply rounded-full bg-warning/10 px-2 py-1 text-[9px] not-italic text-warning;
+}
+.action-list .high {
+  @apply bg-danger/10 text-danger;
+}
+.driver-card {
+  @apply text-center;
+}
+.driver-card .widget-title {
+  @apply text-left;
+}
+.driver-avatar {
+  @apply mx-auto mt-4 grid size-16 place-items-center rounded-full bg-gradient-to-br from-warning to-danger text-xl font-black text-white;
+}
+.driver-card h3 {
+  @apply mt-3 text-sm font-bold;
+}
+.driver-card > p {
+  @apply mt-1 text-xs text-muted dark:text-brand-300;
+}
+.score-track {
+  @apply mt-4 h-2 overflow-hidden rounded-full bg-line dark:bg-dark-canvas;
+}
+.score-track i {
+  @apply block h-full w-[98%] rounded-full bg-gradient-to-r from-warning to-success;
+}
+.driver-score {
+  @apply mt-2 block text-2xl;
+}
+.driver-score small {
+  @apply text-xs font-normal text-muted;
+}
+.driver-stats {
+  @apply mt-3 grid grid-cols-3 gap-2;
+}
+.driver-stats span {
+  @apply rounded-lg bg-canvas p-2 text-[10px] text-muted dark:bg-dark-canvas dark:text-brand-300;
+}
+.driver-stats b {
+  @apply block text-xs text-ink dark:text-white;
+}
+.chart-grid {
+  @apply grid gap-4 lg:grid-cols-2 2xl:grid-cols-3;
+}
+.empty-tab {
+  @apply grid min-h-80 place-items-center text-center;
+}
+.empty-tab h2 {
+  @apply text-lg font-semibold;
+}
+.empty-tab p {
+  @apply mt-2 text-sm text-muted;
+}
+
+.dashboard-reveal-heading {
+  --reveal-delay: 40ms;
+}
+.dashboard-reveal-tabs {
+  --reveal-delay: 120ms;
+}
+.dashboard-reveal-status {
+  --reveal-delay: 200ms;
+}
+.dashboard-reveal-actions {
+  --reveal-delay: 300ms;
+}
+.chart-reveal-one {
+  --reveal-delay: 380ms;
+}
+.dashboard-reveal-driver {
+  --reveal-delay: 460ms;
+}
+.chart-reveal-two {
+  --reveal-delay: 540ms;
+}
+.chart-reveal-three {
+  --reveal-delay: 620ms;
+}

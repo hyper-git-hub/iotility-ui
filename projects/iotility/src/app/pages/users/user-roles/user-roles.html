@@ -1,0 +1,49 @@
+<section>
+  <header class="roles-header">
+    <h2>User Roles</h2>
+    <div>
+      <button type="button" class="browse-button" (click)="showAll.set(!showAll())">
+        {{ showAll() ? 'Show Less' : 'Browse All' }}
+        <svg viewBox="0 0 24 24" aria-hidden="true" [class.rotate-90]="showAll()">
+          <path d="m9 18 6-6-6-6" />
+        </svg></button
+      ><button type="button" class="new-role-button"><span>+</span> New Role</button>
+    </div>
+  </header>
+  <div class="roles-grid">
+    @for (role of roles.slice(0, 5); track role.name) {
+      <article class="role-card">
+        <div>
+          <h3>{{ role.name }}</h3>
+          <p>{{ role.category }}</p>
+        </div>
+        <div class="role-members">
+          <div class="avatar-stack">
+            <span>A</span><span>H</span><span>S</span><span>M</span><span>K</span>
+          </div>
+          <small>{{ role.users }} Users</small>
+        </div>
+      </article>
+    }
+  </div>
+  <div class="smooth-height" [class.smooth-height-expanded]="showAll()">
+    <div class="smooth-height-content">
+      <div class="roles-grid roles-grid-extra">
+        @for (role of roles.slice(5); track role.name) {
+          <article class="role-card">
+            <div>
+              <h3>{{ role.name }}</h3>
+              <p>{{ role.category }}</p>
+            </div>
+            <div class="role-members">
+              <div class="avatar-stack">
+                <span>A</span><span>H</span><span>S</span><span>M</span><span>K</span>
+              </div>
+              <small>{{ role.users }} Users</small>
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+  </div>
+</section>

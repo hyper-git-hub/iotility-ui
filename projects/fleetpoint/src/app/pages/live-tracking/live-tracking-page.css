@@ -1,0 +1,192 @@
+@reference "../../../styles.css";
+@import "../../shared/styles/fields.css";
+
+:host {
+  @apply block h-full;
+}
+.tracking-page {
+  @apply flex h-full min-h-0 overflow-hidden bg-canvas dark:bg-dark-canvas;
+}
+.vehicle-panel {
+  @apply flex w-72 shrink-0 flex-col border-r border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.panel-heading {
+  @apply border-b border-line p-4 dark:border-dark-line;
+}
+.panel-heading > div {
+  @apply flex items-center justify-between;
+}
+.panel-heading h1 {
+  @apply text-sm font-bold text-ink dark:text-white;
+}
+.panel-heading span {
+  @apply flex items-center gap-1.5 text-[10px] text-success;
+}
+.panel-heading p {
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+.location-filter {
+  @apply mx-3 mt-3;
+}
+.location-filter [dropdown-trigger] {
+  @apply flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-xs text-ink dark:border-dark-line dark:text-white;
+}
+.location-filter [dropdown-trigger] svg {
+  @apply size-4 shrink-0 text-brand-600;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.location-filter [dropdown-trigger] span {
+  @apply min-w-0 flex-1 truncate;
+}
+.location-filter [dropdown-trigger] .chevron {
+  @apply text-muted;
+}
+.status-filters {
+  @apply flex gap-1 overflow-x-auto p-3;
+  scrollbar-width: none;
+}
+.status-filters::-webkit-scrollbar {
+  display: none;
+}
+.status-filters button {
+  @apply whitespace-nowrap rounded-full bg-canvas px-2.5 py-1.5 text-[10px] text-muted dark:bg-dark-canvas dark:text-brand-300;
+}
+.status-filters .active {
+  @apply bg-brand-600 text-white;
+}
+.vehicle-list {
+  @apply min-h-0 flex-1 overflow-y-auto;
+}
+.vehicle-row {
+  @apply flex w-full items-start gap-2 border-t border-line px-3 py-3 text-left transition hover:bg-brand-50 dark:border-dark-line dark:hover:bg-dark-canvas;
+}
+.vehicle-row.selected {
+  @apply bg-brand-50 ring-inset ring-brand-500 dark:bg-brand-600/10;
+}
+.vehicle-symbol {
+  @apply mt-1 grid size-6 shrink-0 place-items-center;
+}
+.vehicle-symbol img {
+  @apply size-6 object-contain;
+}
+.vehicle-copy {
+  @apply min-w-0 flex-1;
+}
+.vehicle-copy strong {
+  @apply block text-xs text-ink dark:text-white;
+}
+.vehicle-copy small {
+  @apply mt-0.5 block truncate text-[10px] text-muted dark:text-brand-300;
+}
+.vehicle-state {
+  @apply text-[10px] font-medium;
+}
+.state-moving {
+  @apply text-success;
+}
+.state-idling {
+  @apply text-warning;
+}
+.state-alert {
+  @apply text-danger;
+}
+.state-offline {
+  @apply text-muted;
+}
+.empty-list {
+  @apply p-6 text-center text-xs text-muted;
+}
+.map-area {
+  @apply relative min-w-0 flex-1;
+}
+.map-status,
+.map-legend {
+  @apply absolute z-[500] flex items-center gap-2 rounded-xl border border-line bg-white/95 px-3 py-2 text-[10px] text-muted shadow-lg backdrop-blur dark:border-dark-line dark:bg-dark-surface/95 dark:text-brand-300;
+}
+.map-status {
+  @apply right-4 top-4;
+}
+.map-legend {
+  @apply bottom-4 left-1/2 -translate-x-1/2;
+}
+.map-legend span {
+  @apply flex items-center gap-1;
+}
+.map-legend i {
+  @apply size-2 rounded-full;
+}
+.details-panel {
+  @apply w-80 shrink-0 overflow-y-auto border-l border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.details-panel > header {
+  @apply flex items-start justify-between border-b border-line p-4 dark:border-dark-line;
+}
+.details-panel header div {
+  @apply min-w-0;
+}
+.details-panel header strong {
+  @apply mr-2 text-sm text-ink dark:text-white;
+}
+.details-panel header > div > span {
+  @apply rounded-full bg-success/10 px-2 py-1 text-[9px];
+}
+.details-panel header small {
+  @apply mt-1 block text-xs text-muted dark:text-brand-300;
+}
+.details-panel header button {
+  @apply text-xl text-muted hover:text-danger;
+}
+.details-panel section {
+  @apply border-b border-line p-4 dark:border-dark-line;
+}
+.details-panel h2 {
+  @apply mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted dark:text-brand-300;
+}
+.detail-grid {
+  @apply grid grid-cols-2 gap-2;
+}
+.detail-grid article {
+  @apply rounded-xl bg-canvas p-3 dark:bg-dark-canvas;
+}
+.detail-grid span {
+  @apply block text-[10px] text-muted dark:text-brand-300;
+}
+.detail-grid strong {
+  @apply mt-1 block text-xs text-ink dark:text-white;
+}
+.location-card {
+  @apply rounded-xl bg-canvas p-3 text-xs text-ink dark:bg-dark-canvas dark:text-white;
+}
+.driver-card {
+  @apply flex items-center gap-3;
+}
+.driver-card > span {
+  @apply grid size-10 place-items-center rounded-full bg-brand-100 font-bold text-brand-700 dark:bg-brand-600/20 dark:text-brand-300;
+}
+.driver-card strong {
+  @apply block text-xs text-ink dark:text-white;
+}
+.driver-card small {
+  @apply mt-1 block text-[10px] text-brand-600;
+}
+.quick-actions {
+  @apply flex flex-col gap-2;
+}
+.quick-actions button {
+  @apply flex justify-between rounded-xl bg-canvas px-3 py-2.5 text-left text-xs text-ink hover:text-brand-600 dark:bg-dark-canvas dark:text-white;
+}
+@media (max-width: 900px) {
+  .vehicle-panel {
+    @apply w-60;
+  }
+  .details-panel {
+    @apply absolute bottom-0 right-0 top-0 z-[600] w-72 shadow-2xl;
+  }
+}
+@media (max-width: 640px) {
+  .vehicle-panel {
+    @apply hidden;
+  }
+}

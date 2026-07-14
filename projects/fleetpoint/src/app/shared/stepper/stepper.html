@@ -1,0 +1,14 @@
+<nav class="stepper" aria-label="Form progress">
+  @for (step of steps(); track step.id; let index = $index) {
+    <button
+      type="button"
+      [class.active]="index === activeIndex()"
+      [class.complete]="index < activeIndex()"
+      [disabled]="index > activeIndex()"
+      (click)="select(index)"
+    >
+      <span>{{ index < activeIndex() ? '✓' : index + 1 }}</span>
+      <span class="step-copy"><strong>{{ step.label }}</strong>@if (step.description) { <small>{{ step.description }}</small> }</span>
+    </button>
+  }
+</nav>

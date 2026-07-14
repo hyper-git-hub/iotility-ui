@@ -1,0 +1,132 @@
+@reference "../../styles/theme.css";
+@reference "tailwindcss";
+.table-card {
+  @apply overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.table-card > header {
+  @apply flex items-center justify-between gap-4 p-4;
+}
+.table-card h2 {
+  @apply m-0 text-sm font-semibold text-ink dark:text-white;
+}
+.table-card p,
+.table-card small {
+  @apply mt-1 block text-[10px] text-muted dark:text-brand-300;
+}
+.header-action {
+  @apply cursor-pointer border-0 bg-transparent text-xs text-brand-600;
+}
+.toolbar {
+  @apply ml-auto flex items-center justify-end gap-2;
+}
+.toolbar label {
+  @apply flex h-9 w-64 items-center gap-2 rounded-lg border border-line px-3 text-xs text-muted dark:border-dark-line;
+}
+.toolbar .search-icon {
+  @apply size-4 shrink-0 text-muted;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.toolbar input {
+  @apply min-w-0 flex-1 border-0 bg-transparent text-xs text-ink outline-none dark:text-white;
+}
+.toolbar button {
+  @apply inline-flex h-9 cursor-pointer items-center whitespace-nowrap rounded-lg border border-line bg-transparent px-3 text-xs font-medium text-muted dark:border-dark-line dark:text-brand-300;
+}
+.toolbar .primary {
+  @apply border-ink bg-ink text-white dark:border-brand-600 dark:bg-brand-600;
+}
+.scroll {
+  @apply overflow-auto;
+}
+.table-height {
+  @apply overflow-hidden;
+}
+.table-height.ready {
+  transition: height 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+table {
+  @apply w-full min-w-[760px] border-collapse text-left;
+}
+th,
+td {
+  @apply border-b border-line px-4 py-3 text-xs text-muted dark:border-dark-line dark:text-brand-300;
+}
+th {
+  @apply text-[11px] font-medium;
+}
+tbody tr:last-child td {
+  @apply border-b-0;
+}
+tbody tr {
+  @apply transition-colors duration-150;
+}
+tbody tr:hover {
+  @apply bg-brand-50/60 dark:bg-dark-canvas/70;
+}
+.clickable-row { @apply cursor-pointer; }
+.strong,
+strong {
+  @apply text-ink dark:text-white;
+}
+:host-context(.dark) .strong,
+:host-context(.dark) strong {
+  @apply text-white;
+}
+.status {
+  @apply inline-flex rounded-full px-2.5 py-1 text-[10px];
+}
+.status-active,
+.status-upcoming {
+  @apply bg-success/10 text-success;
+}
+.status-inactive,
+.status-overdue {
+  @apply bg-danger/10 text-danger;
+}
+.status-due-soon {
+  @apply bg-warning/10 text-warning;
+}
+.actions {
+  @apply flex gap-1.5;
+}
+.actions button {
+  @apply cursor-pointer rounded border border-line bg-transparent px-2 py-1 text-[10px] text-muted dark:border-dark-line dark:text-brand-300;
+}
+.actions button:first-child {
+  @apply border-brand-600 bg-brand-600 text-white;
+}
+.vehicle-cell { @apply flex items-center gap-2; }
+.vehicle-glyph { @apply text-lg text-brand-600; }
+.fleet-cell { @apply inline-flex items-center gap-2; }
+.fleet-cell i { @apply size-2 rounded-full; }
+.fuel-cell { @apply flex items-center gap-2; }
+.fuel-cell > i { @apply h-1.5 w-12 overflow-hidden rounded-full bg-canvas dark:bg-dark-canvas; }
+.fuel-cell b { @apply block h-full rounded-full bg-success; }
+.mot { @apply font-semibold; }
+.mot-success { @apply text-success dark:text-success; }
+.mot-warning { @apply text-warning dark:text-warning; }
+.mot-danger { @apply text-danger dark:text-danger; }
+.alert-cell { @apply grid size-5 place-items-center rounded-full bg-danger/10 font-bold text-danger; }
+.alert-cell.clear { @apply bg-success/10 text-success; }
+.icon-actions button,
+.icon-actions button:first-child { @apply grid size-7 place-items-center rounded-lg border-0 bg-transparent p-0 text-muted transition hover:bg-brand-50 hover:text-brand-600 dark:text-brand-300 dark:hover:bg-dark-canvas; }
+.icon-actions svg { @apply size-4; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.icon-actions button.delete-action { @apply hover:bg-danger/10 hover:text-danger; }
+.empty {
+  @apply text-center;
+}
+@media (max-width: 700px) {
+  .table-card > header {
+    @apply flex-col items-start;
+  }
+  .toolbar {
+    @apply ml-0 w-full flex-wrap;
+  }
+  .toolbar label {
+    @apply w-auto flex-1;
+  }
+}

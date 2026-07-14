@@ -1,0 +1,12 @@
+@reference "../../../styles.css";
+
+.stepper { @apply flex shrink-0 flex-row overflow-hidden rounded-xl border border-line dark:border-dark-line lg:w-52 lg:flex-col; }
+.stepper button { @apply flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-0 border-r border-line bg-white px-3 py-3 text-left text-muted transition hover:bg-brand-50 disabled:cursor-default dark:border-dark-line dark:bg-dark-surface dark:text-brand-300 dark:hover:bg-dark-canvas lg:w-full lg:border-b lg:border-r-0; }
+.stepper button:last-child { @apply border-0; }
+.stepper button > span:first-child { @apply grid size-6 shrink-0 place-items-center rounded-full border border-line bg-canvas text-xs font-semibold dark:border-dark-line dark:bg-dark-canvas; }
+.stepper button.active { @apply text-ink dark:text-white; }
+.stepper button.active > span:first-child,
+.stepper button.complete > span:first-child { @apply border-brand-600 bg-brand-600 text-white; }
+.step-copy { @apply min-w-0; }
+.step-copy strong { @apply block truncate text-xs font-semibold; }
+.step-copy small { @apply mt-0.5 block truncate text-[10px] text-muted; }

@@ -1,0 +1,15 @@
+<router-outlet />
+<app-feedback-dialog />
+
+@if (loading.isVisible()) {
+  <div class="fixed inset-0 z-[3000]">
+    <app-loading
+      [label]="loading.config().label"
+      [title]="loading.config().title"
+      [message]="loading.config().message"
+      [initials]="loading.config().initials"
+      [logoSrc]="loading.config().logoSrc ?? null"
+      [labelLogoSrc]="loading.config().labelLogoSrc ?? null"
+    />
+  </div>
+}

@@ -1,0 +1,64 @@
+<div class="dropdown-root" [class.compact]="density() === 'compact'">
+  <div class="dropdown-trigger" (click)="toggle()" [attr.aria-expanded]="isOpen()">
+    <ng-content select="[dropdown-trigger]" />
+  </div>
+  @if (isOpen()) {
+    <section class="dropdown-panel" [class.left]="align() === 'left'">
+      @if (searchable()) {
+        <label class="dropdown-search"
+          ><span>⌕</span
+          ><input
+            type="search"
+            [placeholder]="searchPlaceholder()"
+            [value]="query()"
+            (input)="updateQuery($event)"
+            (click)="$event.stopPropagation()"
+        /></label>
+      }
+      <div class="dropdown-options">
+        @for (option of filteredOptions(); track option.id) {
+          <button
+            type="button"
+            class="dropdown-option"
+            [class.danger]="option.icon === 'logout' || option.icon === 'delete'"
+            [disabled]="option.disabled"
+            (click)="choose(option)"
+          >
+            <span class="option-icon">
+              @if (option.icon === 'location') {
+                ⌖
+              } @else if (option.icon === 'view') {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+              } @else if (option.icon === 'edit') {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>
+              } @else if (option.icon === 'delete') {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7h16" />
+                  <path d="M9 7V4.75A.75.75 0 0 1 9.75 4h4.5a.75.75 0 0 1 .75.75V7" />
+                  <path d="m6.5 7 .8 12a1.1 1.1 0 0 0 1.1 1h7.2a1.1 1.1 0 0 0 1.1-1l.8-12" />
+                  <path d="M10 10.5v6M14 10.5v6" />
+                </svg>
+              } @else if (option.icon === 'logout') {
+                ↪
+              } @else {
+                ●
+              }</span
+            ><span class="option-copy"
+              ><strong>{{ option.label }}</strong>
+              @if (option.description) {
+                <small>{{ option.description }}</small>
+              }
+            </span>
+            @if (mode() === 'single' || mode() === 'multi') {
+              <span class="selection-mark" [class.selected]="isSelected(option.id)">{{
+                isSelected(option.id) ? '✓' : ''
+              }}</span>
+            }
+          </button>
+        } @empty {
+          <p class="empty">No options found</p>
+        }
+      </div>
+    </section>
+  }
+</div>

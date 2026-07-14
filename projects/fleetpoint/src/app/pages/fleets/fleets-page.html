@@ -1,0 +1,75 @@
+<section class="fleets-page">
+  <header class="fleets-heading smooth-reveal">
+    <div>
+      <h1>Fleet Management</h1>
+      <p>{{ fleets().length }} fleets · {{ totalVehicles() }} vehicles · {{ totalDrivers() }} drivers</p>
+    </div>
+    <button type="button" class="create-fleet-button" (click)="formOpen.set(true)"><span>+</span>Create Fleet</button>
+  </header>
+
+  <div class="fleet-kpis smooth-reveal">
+    <app-stat-card label="Total Fleets" [value]="fleets().length" tone="brand" [animatedBorder]="false">
+      <svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z" /><path d="M9 12h6M12 9v6" /></svg>
+    </app-stat-card>
+    <app-stat-card label="Total Vehicles" [value]="totalVehicles()" tone="info" [animatedBorder]="false">
+      <svg stat-card-icon viewBox="0 0 24 24"><path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /></svg>
+    </app-stat-card>
+    <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="success" [animatedBorder]="false">
+      <svg stat-card-icon viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" /><path d="M3.5 20c.4-4 2.1-6 5.5-6s5.1 2 5.5 6M16 6.5a3 3 0 0 1 0 5.8M16 15c2.8.2 4.2 1.9 4.5 5" /></svg>
+    </app-stat-card>
+    <app-stat-card label="Active Alerts" [value]="totalAlerts()" tone="danger" [animatedBorder]="false">
+      <svg stat-card-icon viewBox="0 0 24 24"><path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 8v5M12 17h.01" /></svg>
+    </app-stat-card>
+  </div>
+
+  <div class="fleet-grid">
+    @for (fleet of fleets(); track fleet.id) {
+      <article class="fleet-card smooth-reveal">
+        <header>
+          <span class="fleet-avatar" [style.background]="fleet.color">{{ fleet.name.slice(0, 1) }}</span>
+          <div><h2>{{ fleet.name }}</h2><p>{{ fleet.description }}</p></div>
+          @if (fleet.alerts) { <span class="alert-pill">{{ fleet.alerts }} alerts</span> }
+          <shared-dropdown [options]="fleetActions" mode="action" density="compact" align="right" (optionSelected)="handleFleetAction($event, fleet)">
+            <button dropdown-trigger type="button" class="more-button" aria-label="Fleet actions">•••</button>
+          </shared-dropdown>
+        </header>
+        <section class="fleet-card-content">
+          <div class="fleet-stats">
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /></svg>
+              <strong>{{ fleet.vehicles }}</strong><small>Vehicles</small>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 20c.4-4 2.1-6 5.5-6s5.1 2 5.5 6M16 6.5a3 3 0 0 1 0 5.8M16 15c2.8.2 4.2 1.9 4.5 5" /></svg>
+              <strong>{{ fleet.drivers }}</strong><small>Drivers</small>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2.2-5 4.1 10 2.2-5H21" /><circle cx="12" cy="12" r="9" /></svg>
+              <strong>{{ fleet.active }}</strong><small>Active</small>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9v18H6zM8.5 7h4M15 8h2l2 3v6a2 2 0 0 1-4 0v-4" /><path d="m17 8 2-2" /></svg>
+              <strong>{{ fleet.averageFuel }}%</strong><small>Avg Fuel</small>
+            </div>
+          </div>
+          <div class="score-list">
+            <div><span>Safety Score</span><i><b [style.width.%]="fleet.safetyScore" [class]="scoreClass(fleet.safetyScore)"></b></i><strong>{{ fleet.safetyScore }}%</strong></div>
+            <div><span>Fuel Efficiency</span><i><b [style.width.%]="fleet.fuelEfficiency" [class]="scoreClass(fleet.fuelEfficiency)"></b></i><strong>{{ fleet.fuelEfficiency }}%</strong></div>
+            <div><span>Utilisation</span><i><b [style.width.%]="fleet.utilisation" [class]="scoreClass(fleet.utilisation)"></b></i><strong>{{ fleet.utilisation }}%</strong></div>
+          </div>
+          <div class="fleet-location">
+            <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.7" /></svg>{{ fleet.depotLocation }}</span>
+            <button type="button" (click)="trackFleet()">Track fleet ›</button>
+          </div>
+        </section>
+        <footer>
+          @for (vehicle of fleet.vehicleIds.slice(0, 5); track vehicle) { <span>{{ vehicle }}</span> }
+          @if (fleet.vehicleIds.length > 5) { <small>+{{ fleet.vehicleIds.length - 5 }} more</small> }
+          @if (!fleet.vehicleIds.length) { <small>No vehicles assigned yet</small> }
+        </footer>
+      </article>
+    }
+  </div>
+</section>
+
+<app-fleet-form [open]="formOpen()" (cancelled)="formOpen.set(false)" (created)="createFleet($event)" />

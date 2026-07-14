@@ -1,0 +1,67 @@
+<aside class="fleet-sidebar">
+  <div class="brand">
+    <span>FP</span>
+    <div><strong>Fleetpoint</strong><small>LogisticsPro</small></div>
+  </div>
+  <nav>
+    @for (group of groups; track group.label) {
+      <section>
+        <p>{{ group.label }}</p>
+        @for (item of group.items; track item) {
+          @if (item === 'Dashboard') {
+            <a routerLink="dashboard" routerLinkActive="active">
+              <span class="nav-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+                  <rect x="13.5" y="3.5" width="7" height="4.5" rx="1.5" />
+                  <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+                  <rect x="13.5" y="10.5" width="7" height="10" rx="1.5" />
+                </svg>
+              </span>
+              {{ item }}
+            </a>
+          } @else if (item === 'Live Tracking') {
+            <a routerLink="live-tracking" routerLinkActive="active">
+              <span class="nav-icon tracking-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z" />
+                  <circle cx="12" cy="10" r="2.7" />
+                </svg>
+                <i></i>
+              </span>
+              {{ item }}
+            </a>
+          } @else if (item === 'Trip Replay') {
+            <a routerLink="trip-replay" routerLinkActive="active"
+              ><span class="nav-icon trip-replay-icon">▶</span>{{ item }}</a
+            >
+          } @else if (item === 'Fleets') {
+            <a routerLink="fleets" routerLinkActive="active">
+              <span class="nav-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9l4-4h8l4 4v11M8 5V3h8v2M8 12h8M8 16h2M14 16h2" /></svg>
+              </span>
+              {{ item }}
+            </a>
+          } @else if (item === 'Vehicles') {
+            <a routerLink="vehicles" routerLinkActive="active">
+              <span class="nav-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /></svg>
+              </span>
+              {{ item }}
+            </a>
+          } @else {
+            <button type="button">
+              <span class="nav-icon">◇</span>{{ item }}
+              @if (item === 'Jobs' || item === 'Maintenance') {
+                <em>{{ item === 'Jobs' ? 3 : 2 }}</em>
+              }
+            </button>
+          }
+        }
+      </section>
+    }
+  </nav>
+  <div class="sidebar-footer">
+    <button type="button" (click)="confirmReturnToIotility()">‹ Back to IoTility</button>
+  </div>
+</aside>

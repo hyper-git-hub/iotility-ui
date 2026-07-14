@@ -1,0 +1,51 @@
+<app-modal [open]="open()" size="xl" labelledBy="add-vehicle-title" (closed)="cancel()">
+  <h2 modal-header id="add-vehicle-title">Add Vehicle</h2>
+
+  <div class="step-form-shell">
+    <app-stepper [steps]="steps" [activeIndex]="activeStep()" (stepSelected)="goToStep($event)" />
+    <app-smooth-height class="step-content"><form id="vehicle-form" [formGroup]="form" (ngSubmit)="submit()">
+      @if (activeStep() === 0) {
+        <section class="details-step step-enter">
+          <label class="shared-form-field wide"><span>Fleet *</span><select class="shared-form-control" formControlName="fleet"><option>London HGV</option><option>Cold Chain</option><option>Manchester Vans</option><option>Birmingham Ops</option><option>Leeds Depot</option></select></label>
+          <label class="shared-form-field"><span>VIN *</span><input class="shared-form-control" formControlName="vin" placeholder="e.g. 23774398489" [attr.aria-invalid]="submitted() && form.controls.vin.invalid" /></label>
+          <label class="shared-form-field"><span>Registration Number *</span><input class="shared-form-control" formControlName="registration" placeholder="e.g. LP-8402" [attr.aria-invalid]="submitted() && form.controls.registration.invalid" /></label>
+          <label class="shared-form-field"><span>Vehicle Type *</span><select class="shared-form-control" formControlName="vehicleType"><option>Volvo FH</option><option>DAF XF</option><option>Mercedes Sprinter</option><option>Ford Transit</option></select></label>
+          <label class="shared-form-field"><span>Fuel Capacity (litres) *</span><input type="number" class="shared-form-control" formControlName="fuelCapacity" /></label>
+          <label class="shared-form-field"><span>Engine Type *</span><select class="shared-form-control" formControlName="engineType"><option>Diesel</option><option>Petrol</option><option>Electric</option><option>Hybrid</option></select></label>
+          <label class="shared-form-field"><span>Weight Capacity *</span><select class="shared-form-control" formControlName="weightCapacity"><option>3,500 kg</option><option>7,500 kg</option><option>12,000 kg</option><option>18,000 kg</option></select></label>
+          <label class="shared-form-field"><span>Engine Size (CC) *</span><input type="number" class="shared-form-control" formControlName="engineSize" /></label>
+          <label class="shared-form-field"><span>Current Location *</span><input class="shared-form-control" formControlName="location" placeholder="e.g. Birmingham Central Depot" /></label>
+          <label class="shared-form-field"><span>Fuel Level (%)</span><input type="number" class="shared-form-control" formControlName="fuel" /></label>
+          <label class="shared-form-field"><span>Mileage</span><input type="number" class="shared-form-control" formControlName="mileage" /></label>
+          <fieldset class="purchase-field wide"><legend>Type of Purchase *</legend><div><label [class.selected]="form.controls.purchaseType.value === 'Leased'"><input type="radio" formControlName="purchaseType" value="Leased" />Leased</label><label [class.selected]="form.controls.purchaseType.value === 'Owned'"><input type="radio" formControlName="purchaseType" value="Owned" />Owned</label></div></fieldset>
+          <fieldset class="violations wide">
+            <legend>Enabled Monitoring *</legend>
+            <label><input type="checkbox" checked /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24"><path d="M5 17a7 7 0 1 1 14 0"/><path d="M7.5 14.5 6 13M16.5 14.5 18 13M12 10V7M12 17l3.5-5"/><circle cx="12" cy="17" r="1.5"/></svg><strong>Speed Sensor</strong></label>
+            <label><input type="checkbox" checked /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 13.7-5.6"/><path d="M14 7h5v5M7 17h10M9 14l3-3 2 2 4-5"/></svg><strong>Harsh Acceleration</strong></label>
+            <label><input type="checkbox" checked /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3 7.5 7.5 9.5 4.5-2 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="M12 8v5M12 16h.01"/></svg><strong>Harsh Braking</strong></label>
+            <label><input type="checkbox" checked /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><strong>Geo Zone</strong></label>
+            <label><input type="checkbox" /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24"><path d="M5 20V9h8V5l6 5-6 5v-4H8v9Z"/><path d="M5 15H3"/></svg><strong>Sharp Turning</strong></label>
+            <label><input type="checkbox" /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24"><path d="M5 3h10v18H5zM8 7h4M15 8h2l2 3v6a2 2 0 0 1-4 0v-4"/><path d="m17 8 2-2M8 17h4"/></svg><strong>Fuel Sensor</strong></label>
+          </fieldset>
+        </section>
+      } @else if (activeStep() === 1) {
+        <section class="device-step step-enter">
+          <div class="device-fields"><label class="shared-form-field"><span>IMEI *</span><input class="shared-form-control" formControlName="imei" placeholder="e.g. 1785965625" [attr.aria-invalid]="submitted() && form.controls.imei.invalid" /></label><label class="shared-form-field"><span>Device Type *</span><select class="shared-form-control" formControlName="deviceType"><option>Dashcam</option><option>GPS Tracker</option><option>Temperature Sensor</option><option>OBD Device</option></select></label></div>
+          <div class="documents-heading"><h3>Documents</h3><p>Supported formats: PDF, PNG and DOCX</p></div>
+          <div class="document-grid"><label class="document-card add-document"><input type="file" multiple accept=".pdf,.png,.doc,.docx" (change)="addDocuments($event)" /><span>+</span><strong>Add Document</strong></label>@for (document of documents(); track document) { <article class="document-card" [title]="document"><span class="file-icon">PDF</span><strong>{{ document }}</strong></article> }</div>
+        </section>
+      } @else {
+        <section class="driver-step step-enter">
+          <header><div><h3>Assign Driver</h3><p>Select an available driver or leave the vehicle unassigned.</p></div><label class="driver-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" placeholder="Search drivers" [value]="driverSearch()" (input)="updateDriverSearch($event)" /></label></header>
+          <div class="driver-grid">@for (driver of filteredDrivers(); track driver.id) { <button type="button" class="driver-card" [class.selected]="selectedDriver() === driver.id" (click)="selectDriver(driver)"><span class="driver-avatar">{{ driver.initials }}</span><span><strong>{{ driver.name }}</strong><small>{{ driver.location }} · Available</small></span><em>{{ selectedDriver() === driver.id ? 'Selected' : 'Select' }}</em></button> }</div>
+        </section>
+      }
+    </form></app-smooth-height>
+  </div>
+
+  <div modal-footer class="step-footer">
+    <button type="button" class="shared-button-secondary" [disabled]="activeStep() === 0" (click)="back()">Back</button>
+    <div class="step-progress"><span [style.--step-progress]="progress() + '%'">{{ progress() }}%</span><p>Step {{ activeStep() + 1 }}/{{ steps.length }}: {{ steps[activeStep()].label }}</p></div>
+    @if (activeStep() < steps.length - 1) { <button type="button" class="shared-button-primary" (click)="next()">Next</button> } @else { <button type="submit" form="vehicle-form" class="shared-button-primary">Save Vehicle</button> }
+  </div>
+</app-modal>

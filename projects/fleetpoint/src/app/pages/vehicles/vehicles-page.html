@@ -1,0 +1,37 @@
+<section class="vehicles-page">
+  <header class="vehicles-heading smooth-reveal">
+    <div><h1>Vehicles</h1><p>{{ vehicles().length }} connected vehicles across all fleets</p></div>
+  </header>
+
+  <section class="fleet-status-card smooth-reveal reveal-status">
+    <div class="status-title"><span class="live-dot"></span><strong>Live Fleet Status</strong><small>{{ vehicles().length }} vehicles</small></div>
+    <div class="status-bar"><i class="moving" [style.flex]="moving() || 1"></i><i class="alert" [style.flex]="alerts() || 1"></i><i class="offline" [style.flex]="offline() || 1"></i></div>
+    <div class="status-pills">
+      <span class="moving"><i></i>Moving {{ moving() }}</span>
+      <span class="alert"><i></i>Alert {{ alerts() }}</span>
+      <span class="offline"><i></i>Offline {{ offline() }}</span>
+      <span><i class="brand"></i>London HGV 2</span><span><i class="info"></i>Cold Chain 1</span><span><i class="warning"></i>Manchester Vans 2</span>
+    </div>
+  </section>
+
+  <section class="attention-card smooth-reveal reveal-attention">
+    <p>Compliance & attention required</p>
+    <div><span class="danger">△ 3 MOT checks require attention</span><span class="warning">⌕ 2 vehicles due for service</span><span>◉ {{ offline() }} vehicle offline</span></div>
+  </section>
+
+  <shared-data-table
+    class="smooth-reveal vehicles-table"
+    title="Vehicle List"
+    [columns]="columns"
+    [rows]="vehicles()"
+    [actions]="tableActions"
+    [rowsClickable]="true"
+    searchPlaceholder="Search plate, make, driver or location"
+    primaryActionLabel="Add Vehicle"
+    (primaryAction)="formOpen.set(true)"
+    (rowAction)="handleRowAction($event)"
+    (rowSelected)="openVehicle($event)"
+  />
+
+  <app-vehicle-form [open]="formOpen()" (cancelled)="formOpen.set(false)" (created)="addVehicle($event)" />
+</section>

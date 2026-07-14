@@ -1,0 +1,64 @@
+{
+  "name": "iotility",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "npm run start:all",
+    "start:host": "ng serve iotility",
+    "start:remote": "ng serve fleetpoint",
+    "start:all": "concurrently --kill-others-on-fail --names fleetpoint,iotility --prefix-colors magenta,cyan \"npm:start:remote\" \"npm:start:host\"",
+    "build": "npm run build:remote && npm run build:host",
+    "build:host": "ng build iotility",
+    "build:remote": "ng build fleetpoint",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/forms": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "@angular/router": "^20.3.0",
+    "chart.js": "^4.5.1",
+    "es-module-shims": "^2.8.0",
+    "leaflet": "^1.9.4",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular-architects/native-federation-v4": "^20.4.3",
+    "@angular-devkit/build-angular": "^20.3.32",
+    "@angular/build": "^20.3.32",
+    "@angular/cli": "^20.3.16",
+    "@angular/compiler-cli": "^20.3.0",
+    "@softarc/native-federation-orchestrator": "^4.2.2",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/jasmine": "~5.1.0",
+    "@types/leaflet": "^1.9.21",
+    "concurrently": "^9.2.1",
+    "jasmine-core": "~5.9.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "postcss": "^8.5.16",
+    "tailwindcss": "^4.3.2",
+    "typescript": "~5.9.2"
+  }
+}

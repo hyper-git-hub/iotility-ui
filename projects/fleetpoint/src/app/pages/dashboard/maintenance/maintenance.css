@@ -1,0 +1,16 @@
+@reference "../../../../styles.css";
+.maintenance-page {
+  @apply grid gap-4;
+}
+.maintenance-charts {
+  @apply grid gap-4 lg:grid-cols-2;
+}
+.maintenance-table {
+  --reveal-delay: 140ms;
+}
+.maintenance-chart-one {
+  --reveal-delay: 240ms;
+}
+.maintenance-chart-two {
+  --reveal-delay: 340ms;
+}

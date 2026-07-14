@@ -1,0 +1,46 @@
+@reference "../../../styles.css";
+
+.stat-card {
+  @apply relative isolate flex min-h-32 flex-col overflow-hidden rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+}
+.stat-card-icon {
+  @apply mb-3 grid size-9 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-600/15 dark:text-brand-300;
+}
+.stat-card-icon ::ng-deep svg {
+  @apply size-[18px];
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.stat-card strong {
+  @apply text-2xl text-ink dark:text-white;
+}
+.stat-card > span:last-child {
+  @apply mt-0.5 text-xs text-muted dark:text-brand-300;
+}
+.stat-card[data-tone='info'] .stat-card-icon { @apply bg-info/10 text-info; }
+.stat-card[data-tone='success'] .stat-card-icon { @apply bg-success/10 text-success; }
+.stat-card[data-tone='warning'] .stat-card-icon { @apply bg-warning/10 text-warning; }
+.stat-card[data-tone='danger'] .stat-card-icon { @apply bg-danger/10 text-danger; }
+.stat-card.animated-border { @apply border-transparent; }
+.stat-card.animated-border::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  inset: -120%;
+  background: conic-gradient(transparent 0 25%, var(--color-brand-500) 38% 48%, transparent 60% 78%, var(--color-info) 90%);
+  animation: stat-card-border-spin 10s linear infinite;
+}
+.stat-card.animated-border::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 2px;
+  border-radius: calc(1rem - 2px);
+  background: white;
+}
+:host-context(.dark) .stat-card.animated-border::after { background: var(--color-dark-surface); }
+@keyframes stat-card-border-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .stat-card.animated-border::before { animation: none; } }

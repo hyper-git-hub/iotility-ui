@@ -1,0 +1,270 @@
+<main class="flex min-h-full flex-col xl:flex-row">
+  <section class="min-w-0 flex-1 p-5 dark:text-white sm:p-8">
+    <h1 class="text-2xl font-bold text-ink dark:text-white">Welcome to IoTility</h1>
+    <p class="mb-6 mt-2 max-w-3xl text-sm leading-6 text-muted dark:text-brand-300">
+      A connected SaaS platform designed to transform your operations. Manage fleets, assets,
+      sustainability and smart buildings from one intelligent workspace.
+    </p>
+
+    <div
+      class="rounded-2xl border border-line bg-white p-5 dark:border-dark-line dark:bg-dark-surface sm:p-6"
+    >
+      <div class="mb-5 flex items-center justify-between">
+        <div>
+          <h2 class="font-semibold text-ink dark:text-white">Explore IoTility</h2>
+          <p class="mt-1 text-xs text-muted dark:text-brand-300">
+            Choose a solution built for your operation.
+          </p>
+        </div>
+        <button type="button" class="text-sm font-medium text-brand-600 hover:text-brand-700">
+          Browse all
+        </button>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+        @for (module of modules; track module.id) {
+          <article class="module-card">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-semibold text-ink dark:text-white">{{ module.name }}</h3>
+                <p class="mt-1 text-xs text-muted dark:text-brand-300">{{ module.tagline }}</p>
+              </div>
+              <span
+                class="grid size-10 shrink-0 place-items-center rounded-xl text-xs font-bold text-white"
+                [class]="module.accentClass"
+                >{{ module.initials }}</span
+              >
+            </div>
+            <div class="mt-5 flex items-end justify-between">
+              <span class="flex items-center gap-1 text-xs text-muted dark:text-brand-300">
+                <svg
+                  class="size-3.5 fill-warning text-warning"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m12 2.5 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9Z"
+                  />
+                </svg>
+                {{ module.rating }}
+              </span>
+              @if (module.available) {
+                <button type="button" (click)="openFleetPoint()" class="module-action">
+                  Try for free
+                  <svg
+                    class="size-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+              } @else {
+                <button type="button" class="module-action">
+                  <svg
+                    class="size-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 5h2l2 10h9l2-7H7M10 20h.01M17 20h.01" />
+                  </svg>
+                  Buy
+                </button>
+              }
+            </div>
+          </article>
+        }
+        <button
+          type="button"
+          class="flex min-h-40 items-center justify-center gap-1 rounded-xl border border-dashed border-line p-4 text-sm font-medium text-muted transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:text-brand-300 dark:hover:border-brand-400 dark:hover:text-brand-300"
+        >
+          Browse all
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  @if (guideCollapsed) {
+    <aside
+      class="flex w-full shrink-0 justify-center border-t border-line bg-white p-2 dark:border-dark-line dark:bg-dark-surface xl:w-14 xl:border-l xl:border-t-0 xl:pt-5"
+    >
+      <button
+        type="button"
+        (click)="toggleGuide()"
+        class="grid size-9 place-items-center rounded-full text-muted transition hover:bg-brand-50 hover:text-brand-700 dark:text-brand-300 dark:hover:bg-dark-canvas dark:hover:text-white"
+        aria-label="Expand step-by-step guide"
+        title="Expand guide"
+      >
+        <svg
+          class="size-5 rotate-90 xl:rotate-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+    </aside>
+  } @else {
+    <aside
+      class="w-full shrink-0 border-t border-line bg-white p-5 dark:border-dark-line dark:bg-dark-surface sm:p-6 xl:w-96 xl:border-l xl:border-t-0"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-ink dark:text-white">Step-by-step guide</h2>
+          <p class="mb-5 mt-1 text-sm leading-5 text-muted dark:text-brand-300">
+            Your guide to getting started with the IoTility system.
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="toggleGuide()"
+          class="grid size-9 shrink-0 place-items-center rounded-full text-muted transition hover:bg-brand-50 hover:text-brand-700 dark:text-brand-300 dark:hover:bg-dark-canvas dark:hover:text-white"
+          aria-label="Collapse step-by-step guide"
+          title="Collapse guide"
+        >
+          <svg
+            class="size-5 rotate-90 xl:rotate-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="mb-5 flex gap-1.5 overflow-x-auto pb-1">
+        @for (module of modules; track module.id) {
+          <button
+            type="button"
+            (click)="selectModule(module.id)"
+            class="whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition"
+            [class]="
+              activeModuleId === module.id
+                ? 'bg-brand-600 text-white'
+                : 'bg-canvas text-muted dark:bg-dark-canvas dark:text-brand-300'
+            "
+          >
+            {{ module.name }}
+          </button>
+        }
+      </div>
+
+      @if (!activeModule.available) {
+        <div
+          class="rounded-2xl border-2 border-dashed border-line p-6 text-center dark:border-dark-line"
+        >
+          <span
+            class="mx-auto grid size-12 place-items-center rounded-xl text-sm font-bold text-white"
+            [class]="activeModule.accentClass"
+            >{{ activeModule.initials }}</span
+          >
+          <h3 class="mt-3 font-semibold text-ink dark:text-white">
+            You don't have access to {{ activeModule.name }}
+          </h3>
+          <p class="mt-2 text-sm leading-5 text-muted dark:text-brand-300">
+            Subscribe to unlock onboarding and all product features.
+          </p>
+          <button
+            type="button"
+            class="mt-4 rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
+          >
+            Buy now
+          </button>
+        </div>
+      } @else {
+        <div class="flex flex-col gap-2">
+          @for (step of onboardingSteps; track step.id) {
+            <article
+              class="overflow-hidden rounded-xl border border-line dark:border-dark-line dark:bg-dark-canvas/40"
+            >
+              <button
+                type="button"
+                (click)="toggleStep(step.id)"
+                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-canvas dark:hover:bg-dark-canvas"
+                [attr.aria-expanded]="expandedStep === step.id"
+              >
+                <span class="text-sm font-medium leading-5 text-ink dark:text-white">{{
+                  step.title
+                }}</span>
+                <span
+                  class="grid size-5 shrink-0 place-items-center text-muted dark:text-brand-300"
+                  aria-hidden="true"
+                >
+                  @if (expandedStep === step.id) {
+                    <svg
+                      class="size-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M5 12h14" />
+                    </svg>
+                  } @else {
+                    <svg
+                      class="size-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  }
+                </span>
+              </button>
+              @if (expandedStep === step.id) {
+                <div
+                  class="border-t border-line px-4 pb-4 pt-3 text-sm leading-6 text-muted dark:border-dark-line dark:text-brand-300"
+                >
+                  <p>{{ step.content }}</p>
+                  @if (step.hasAction) {
+                    <button
+                      type="button"
+                      class="mt-3 inline-flex items-center gap-1 rounded-full bg-brand-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-700"
+                    >
+                      Start device setup
+                      <svg
+                        class="size-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path d="m9 18 6-6-6-6" />
+                      </svg>
+                    </button>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+      }
+    </aside>
+  }
+</main>

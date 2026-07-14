@@ -1,0 +1,28 @@
+<section class="maintenance-page">
+  <shared-data-table
+    class="smooth-reveal maintenance-table"
+    title="Vehicles Due for Service"
+    subtitle="1 overdue · 2 due soon"
+    [showToolbar]="false"
+    [columns]="columns"
+    [rows]="rows"
+    headerActionLabel="View all"
+  />
+  <div class="maintenance-charts">
+    <app-fleet-bar-chart
+      class="smooth-reveal maintenance-chart-one"
+      title="Maintenance Status"
+      subtitle="By service type"
+      filterLabel="Service Type"
+      [data]="statusData"
+      [options]="statusOptions"
+    /><app-fleet-bar-chart
+      class="smooth-reveal maintenance-chart-two"
+      title="Maintenance Probability"
+      subtitle="Predictive · ML model · top 6 vehicles"
+      badge="AI Powered"
+      [data]="probabilityData"
+      [options]="probabilityOptions"
+    />
+  </div>
+</section>

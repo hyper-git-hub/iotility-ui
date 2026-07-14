@@ -1,0 +1,48 @@
+<section class="replay-page">
+  <header class="replay-header">
+    <div><h1>Trip Replay</h1><p>Animated trip playback with events, violations and journey insights</p></div>
+    <button type="button">⇩ Export Report</button>
+  </header>
+  <div class="replay-workspace">
+    <aside class="trip-list-panel">
+      <label class="fleet-search-field">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
+        <input type="search" placeholder="Search vehicle or driver..." [value]="search()" (input)="updateSearch($event)" />
+      </label>
+      <div class="trip-list">
+        @for (trip of filteredTrips(); track trip.id) {
+          <button type="button" class="trip-row" [class.selected]="selectedTrip().id === trip.id" (click)="selectTrip(trip.id)">
+            <span class="driver-avatar">{{ trip.driver.slice(0, 1) }}</span>
+            <span class="trip-copy"><strong>{{ trip.vehicle }}</strong><small>{{ trip.driver }}</small><small>{{ trip.date }} · {{ trip.events.length }} events</small></span>
+            <b>{{ trip.score }}</b>
+          </button>
+        }
+      </div>
+    </aside>
+    <div class="replay-center">
+      <div class="map-shell">
+        <app-trip-replay-map [positions]="selectedTrip().positions" [events]="selectedTrip().events" [positionIndex]="positionIndex()" [playbackActive]="playing()" [playbackSpeed]="speed()" [playbackStepDuration]="playbackStepDuration" (eventSelected)="jumpToEvent($event)" />
+        <div class="map-trip-status"><i></i> Replay · {{ selectedTrip().vehicle }}</div>
+      </div>
+      <section class="playback-panel">
+        <div class="playback-buttons"><button type="button" aria-label="Restart trip" (click)="stop()">↶</button><button type="button" class="play-button" (click)="togglePlayback()">{{ playing() ? 'Ⅱ' : '▶' }}</button><span>{{ currentPosition().time }}</span></div>
+        <input class="timeline" type="range" min="0" [max]="selectedTrip().positions.length - 1" [value]="positionIndex()" [style.--trip-progress.%]="progress()" (input)="scrub($event)" />
+        <div class="speed-controls">@for (value of [1, 2, 3, 4, 5]; track value) {<button type="button" [class.active]="speed() === value" (click)="setSpeed(value)">{{ value }}×</button>}</div>
+      </section>
+    </div>
+    <aside class="trip-detail-panel">
+      <header><span class="vehicle-avatar"><img src="assets/fleetpoint/vehicle.svg" alt="Vehicle" /></span><div><strong>{{ selectedTrip().vehicle }}</strong><small>{{ selectedTrip().driver }}</small></div><b>{{ selectedTrip().score }}/100</b></header>
+      <section class="journey-card"><span><i class="start-dot"></i>{{ selectedTrip().start }}</span><span><i class="end-dot"></i>{{ selectedTrip().end }}</span></section>
+      <nav class="detail-tabs"><button type="button" [class.active]="activeTab() === 'events'" (click)="activeTab.set('events')">Events</button><button type="button" [class.active]="activeTab() === 'stops'" (click)="activeTab.set('stops')">Stops</button><button type="button" [class.active]="activeTab() === 'statistics'" (click)="activeTab.set('statistics')">Stats</button></nav>
+      <div class="detail-content">
+        @if (activeTab() === 'events') {
+          @for (event of selectedTrip().events; track event.id) {<button type="button" class="event-row" (click)="jumpToEvent(event)"><span [class]="'event-icon ' + event.type">{{ event.type === 'dashcam' ? '▣' : event.type === 'stop' ? '●' : '!' }}</span><span><strong>{{ event.label }}</strong><small>{{ selectedTrip().positions[event.positionIndex].time }} · {{ event.detail }}</small></span><b>›</b></button>}
+        } @else if (activeTab() === 'stops') {
+          <article class="stop-card"><strong>Delivery stop</strong><small>Distribution centre · 12 minutes</small></article>
+        } @else {
+          <dl class="statistics-list"><div><dt>Distance</dt><dd>{{ selectedTrip().distance }} miles</dd></div><div><dt>Duration</dt><dd>{{ selectedTrip().duration }}</dd></div><div><dt>Fuel used</dt><dd>{{ selectedTrip().fuel }} L</dd></div><div><dt>Current speed</dt><dd>{{ currentPosition().speed }} km/h</dd></div><div><dt>Trip score</dt><dd>{{ selectedTrip().score }}/100</dd></div></dl>
+        }
+      </div>
+    </aside>
+  </div>
+</section>

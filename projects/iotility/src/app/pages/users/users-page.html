@@ -1,0 +1,11 @@
+<main class="flex flex-col gap-6 p-5 sm:p-8">
+  <app-user-roles />
+  <shared-data-table
+    title="User List"
+    searchPlaceholder="Search for users"
+    primaryActionLabel="New User"
+    [columns]="columns"
+    [rows]="users"
+    [actions]="tableActions"
+  />
+</main>

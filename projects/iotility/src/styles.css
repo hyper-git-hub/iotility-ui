@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+@import '../../shared-ui/src/styles/theme.css';
+@import '../../shared-ui/src/styles/animations.css';
+@source "../../fleetpoint/src";
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-700) transparent;
+}
+
+.dark * {
+  scrollbar-color: var(--color-brand-700) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background-color: var(--color-brand-700);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-brand-800);
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background-color: var(--color-brand-700);
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-brand-600);
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}

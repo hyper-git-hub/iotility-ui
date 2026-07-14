@@ -1,0 +1,21 @@
+@reference "../../../../styles.css";
+
+.jobs-grid {
+  @apply grid gap-4 lg:grid-cols-2;
+}
+
+.jobs-reveal-one {
+  --reveal-delay: 140ms;
+}
+
+.jobs-reveal-two {
+  --reveal-delay: 220ms;
+}
+
+.jobs-reveal-three {
+  --reveal-delay: 300ms;
+}
+
+.jobs-reveal-four {
+  --reveal-delay: 380ms;
+}

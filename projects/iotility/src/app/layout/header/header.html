@@ -1,0 +1,24 @@
+<shared-platform-header
+  ><div header-brand>
+    <img src="assets/iotility-dark.svg" alt="IoTility" class="h-7 w-auto dark:hidden" /><img
+      src="assets/iotility-light.svg"
+      alt="IoTility"
+      class="hidden h-7 w-auto dark:block"
+    />
+  </div>
+  <shared-dropdown
+    header-profile
+    [options]="profileOptions"
+    mode="action"
+    (optionSelected)="handleProfileAction($event)"
+    ><button dropdown-trigger type="button" class="flex items-center gap-2 rounded-full">
+      <span class="hidden text-right sm:block"
+        ><span class="block text-sm font-semibold text-ink dark:text-white">Haris Khan</span
+        ><span class="block text-xs text-muted dark:text-brand-300">Super Admin</span></span
+      ><span
+        class="relative grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white"
+        >HK<span
+          class="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white bg-online dark:border-dark-surface"
+        ></span
+      ></span></button></shared-dropdown
+></shared-platform-header>

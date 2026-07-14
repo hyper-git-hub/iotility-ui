@@ -1,0 +1,10 @@
+@reference "../../../styles.css";
+.dashboard-section {
+  @apply grid min-h-80 place-items-center rounded-2xl border border-line bg-white text-center dark:border-dark-line dark:bg-dark-surface;
+}
+.dashboard-section h2 {
+  @apply text-lg font-semibold text-ink dark:text-white;
+}
+.dashboard-section p {
+  @apply mt-2 text-sm text-muted dark:text-brand-300;
+}

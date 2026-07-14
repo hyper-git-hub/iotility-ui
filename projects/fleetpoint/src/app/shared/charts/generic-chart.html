@@ -1,0 +1,19 @@
+<article class="chart-card">
+  <header>
+    <div>
+      <h2>{{ title() }}</h2>
+      @if (subtitle()) {
+        <p>{{ subtitle() }}</p>
+      }
+    </div>
+    @if (badge()) {
+      <span class="badge">{{ badge() }}</span>
+    }
+    @if (filterLabel()) {
+      <select class="filter" [attr.aria-label]="title() + ' filter'">
+        <option>{{ filterLabel() }}</option>
+      </select>
+    }
+  </header>
+  <div class="chart-wrap"><canvas #canvas></canvas></div>
+</article>

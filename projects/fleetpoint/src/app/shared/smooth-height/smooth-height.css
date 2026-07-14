@@ -1,0 +1,5 @@
+:host { display: block; min-width: 0; }
+.height-frame { overflow: hidden; }
+.height-frame.ready { transition: height 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+.height-content { min-width: 0; }
+@media (prefers-reduced-motion: reduce) { .height-frame.ready { transition: none; } }

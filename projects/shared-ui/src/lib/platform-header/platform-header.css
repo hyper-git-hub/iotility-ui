@@ -1,0 +1,39 @@
+@reference "../../styles/theme.css";
+@reference "tailwindcss";
+header {
+  @apply flex h-16 items-center justify-between border-b border-line bg-white px-6 dark:border-dark-line dark:bg-dark-surface;
+}
+.brand,
+.actions {
+  @apply flex min-w-0 items-center gap-3;
+}
+.theme,
+.live {
+  @apply flex items-center gap-2 rounded-full border border-line bg-transparent px-3 py-1.5 text-muted dark:border-dark-line;
+}
+.theme {
+  @apply cursor-pointer text-sm dark:text-brand-300;
+}
+.live {
+  @apply text-xs font-medium text-success;
+}
+.live i {
+  @apply size-1.5 rounded-full bg-online;
+  animation: shared-live-pulse 1.8s ease-out infinite;
+}
+@keyframes shared-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-online) 45%, transparent);
+  }
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 0.3rem transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live i {
+    animation: none;
+  }
+}

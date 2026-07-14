@@ -1,0 +1,35 @@
+@reference "../../../styles.css";
+
+.vehicles-page { @apply grid gap-4 p-5; }
+.vehicles-heading { @apply flex items-center justify-between; }
+.vehicles-heading h1 { @apply m-0 text-xl font-bold text-ink dark:text-white; }
+.vehicles-heading p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
+.fleet-status-card,
+.attention-card { @apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
+.status-title { @apply flex items-center gap-2 text-xs text-ink dark:text-white; }
+.status-title small { @apply text-muted dark:text-brand-300; }
+.live-dot { @apply size-2 rounded-full bg-success; animation: live-pulse 1.8s ease-in-out infinite; }
+.status-bar { @apply mt-3 flex h-2 overflow-hidden rounded-full bg-canvas dark:bg-dark-canvas; }
+.status-bar i.moving { @apply bg-success; }.status-bar i.alert { @apply bg-danger; }.status-bar i.offline { @apply bg-muted; }
+.status-pills { @apply mt-3 flex flex-wrap gap-2; }
+.status-pills span { @apply inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[11px] text-muted dark:border-dark-line dark:text-brand-300; }
+.status-pills i { @apply size-2 rounded-full; }.status-pills .moving i { @apply bg-success; }.status-pills .alert i { @apply bg-danger; }.status-pills .offline i { @apply bg-muted; }
+.status-pills i.brand { @apply bg-brand-600; }.status-pills i.info { @apply bg-info; }.status-pills i.warning { @apply bg-warning; }
+.attention-card > p { @apply mb-3 text-[11px] font-medium uppercase tracking-wide text-muted dark:text-brand-300; }
+.attention-card > div { @apply flex flex-wrap gap-2; }
+.attention-card span { @apply rounded-lg border border-line px-3 py-2 text-[11px] text-muted dark:border-dark-line dark:text-brand-300; }
+.attention-card span.danger { @apply border-danger/30 bg-danger/5 text-danger; }
+.attention-card span.warning { @apply border-warning/30 bg-warning/5 text-warning; }
+:host-context(.dark) .fleet-status-card,
+:host-context(.dark) .attention-card { @apply border-dark-line bg-dark-surface; }
+:host-context(.dark) .status-title { @apply text-white; }
+:host-context(.dark) .status-title small,
+:host-context(.dark) .attention-card > p,
+:host-context(.dark) .status-pills span,
+:host-context(.dark) .attention-card span:not(.danger):not(.warning) { @apply text-brand-300; }
+:host-context(.dark) .status-pills span,
+:host-context(.dark) .attention-card span { @apply border-dark-line; }
+.reveal-status { --reveal-delay: 100ms; }
+.reveal-attention { --reveal-delay: 220ms; }
+.vehicles-table { --reveal-delay: 340ms; contain: layout paint style; }
+@keyframes live-pulse { 50% { opacity: .35; transform: scale(.75); } }

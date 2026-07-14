@@ -1,0 +1,9 @@
+<article
+  class="stat-card"
+  [class.animated-border]="animatedBorder()"
+  [attr.data-tone]="tone()"
+>
+  <span class="stat-card-icon"><ng-content select="[stat-card-icon]" /></span>
+  <strong>{{ value() }}</strong>
+  <span>{{ label() }}</span>
+</article>

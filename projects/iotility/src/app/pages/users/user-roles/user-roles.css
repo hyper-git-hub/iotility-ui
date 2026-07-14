@@ -1,0 +1,55 @@
+@reference "../../../../styles.css";
+
+.roles-header {
+  @apply mb-3 flex items-center justify-between;
+}
+.roles-header h2 {
+  @apply text-sm font-semibold text-ink dark:text-white;
+}
+.roles-header > div {
+  @apply flex items-center gap-3;
+}
+.browse-button {
+  @apply inline-flex items-center gap-1 text-xs text-muted transition hover:text-brand-600 dark:text-brand-300;
+}
+.browse-button svg {
+  @apply size-3.5 transition-transform duration-300;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+.new-role-button {
+  @apply rounded-lg bg-ink px-3 py-2 text-xs font-medium text-white transition hover:bg-brand-700 dark:bg-brand-600;
+}
+.roles-grid {
+  @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-5;
+}
+.roles-grid-extra {
+  @apply pt-4;
+}
+.role-card {
+  @apply flex min-h-28 flex-col justify-between rounded-xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+}
+.role-card h3 {
+  @apply text-sm font-medium text-ink dark:text-white;
+}
+.role-card p {
+  @apply mt-1 text-xs text-muted dark:text-brand-300;
+}
+.role-members {
+  @apply mt-5 flex items-center gap-3;
+}
+.avatar-stack {
+  @apply flex -space-x-2;
+}
+.avatar-stack span {
+  @apply grid size-7 place-items-center rounded-full border-2 border-white bg-brand-100 text-[9px] font-bold text-brand-700 dark:border-dark-surface dark:bg-brand-600/30 dark:text-brand-300;
+}
+.avatar-stack span:nth-child(even) {
+  @apply bg-success/20 text-success;
+}
+.role-members small {
+  @apply text-[10px] text-muted dark:text-brand-300;
+}

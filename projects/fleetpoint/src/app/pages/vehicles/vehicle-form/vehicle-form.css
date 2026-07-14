@@ -1,0 +1,39 @@
+@reference "../../../../styles.css";
+@import "../../../shared/styles/fields.css";
+
+.step-form-shell { @apply flex flex-col items-start gap-5 lg:flex-row; }
+.step-content { @apply min-w-0 flex-1; }
+.details-step { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3; }
+.wide { @apply md:col-span-2 xl:col-span-3; }
+.purchase-field,.violations { @apply border-0 p-0; }
+.purchase-field legend,.violations legend { @apply mb-2 text-xs font-medium text-ink dark:text-brand-300; }
+.purchase-field > div { @apply grid grid-cols-2 overflow-hidden rounded-xl border border-line dark:border-dark-line; }
+.purchase-field label { @apply cursor-pointer px-4 py-2.5 text-center text-xs font-semibold text-muted dark:text-brand-300; }
+.purchase-field label.selected { @apply bg-brand-600 text-white; }
+.purchase-field input { @apply sr-only; }
+.violations { @apply grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3; }
+.violations legend { @apply col-span-full; }
+.violations label { @apply relative flex min-h-24 cursor-pointer items-center justify-center gap-3 overflow-hidden rounded-2xl border border-line bg-canvas px-4 py-4 text-muted transition hover:border-brand-400 dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300; }
+.violations input { @apply sr-only; }
+.violations svg { @apply size-9 shrink-0; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.65; }
+.violations strong { @apply text-sm font-semibold; }
+.monitor-check { @apply absolute left-3 top-3 hidden size-5 place-items-center rounded-full border border-white text-[10px] text-white; }
+.violations label:has(input:checked) { @apply border-brand-600 bg-brand-600 text-white shadow-md; }
+.violations label:has(input:checked) .monitor-check { @apply grid; }
+.device-fields { @apply grid gap-4 md:grid-cols-2; }
+.documents-heading { @apply mb-4 mt-7; }.documents-heading h3,.driver-step h3 { @apply text-base font-bold text-ink dark:text-white; }.documents-heading p,.driver-step header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
+.document-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5; }
+.document-card { @apply flex min-h-32 min-w-0 max-w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-line bg-canvas p-3 text-center text-xs text-ink dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
+.document-card strong { @apply block w-full min-w-0 truncate; }
+.document-card input { @apply sr-only; }.add-document { @apply cursor-pointer hover:border-brand-500; }.add-document > span { @apply grid size-10 place-items-center rounded-full bg-white text-xl dark:bg-dark-surface; }.file-icon { @apply grid size-11 place-items-center rounded-lg bg-danger/10 text-[10px] font-bold text-danger; }
+.driver-step > header { @apply mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center; }
+.driver-search { @apply flex h-10 w-full items-center gap-2 rounded-xl border border-line px-3 sm:w-64 dark:border-dark-line; }.driver-search svg { @apply size-4 text-muted; fill:none;stroke:currentColor;stroke-width:1.8; }.driver-search input { @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none dark:text-white; }
+.driver-grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-3; }
+.driver-card { @apply grid cursor-pointer grid-cols-[auto_1fr] items-center gap-x-3 rounded-2xl border border-line bg-white p-3 text-left transition hover:border-brand-400 dark:border-dark-line dark:bg-dark-canvas; }.driver-card.selected { @apply border-brand-600 ring-2 ring-brand-500/15; }.driver-avatar { @apply row-span-2 grid size-11 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700; }.driver-card strong { @apply block text-xs text-ink dark:text-white; }.driver-card small { @apply mt-1 block text-[10px] text-muted; }.driver-card em { @apply col-span-2 mt-3 rounded-lg border border-line py-1.5 text-center text-[10px] not-italic text-muted dark:border-dark-line; }.driver-card.selected em { @apply border-brand-600 bg-brand-600 text-white; }
+.step-footer { @apply flex w-full items-center justify-between gap-3; }
+.step-footer > button { @apply min-w-24; }
+.step-progress { @apply flex items-center gap-2; }
+.step-progress > span { @apply grid size-11 place-items-center rounded-full text-[10px] font-bold text-ink dark:text-white; background: radial-gradient(circle, white 57%, transparent 59%), conic-gradient(var(--color-brand-500) var(--step-progress), var(--color-line) 0); }
+.step-progress p { @apply hidden text-xs text-muted sm:block dark:text-brand-300; }
+:host-context(.dark) .step-progress > span { background: radial-gradient(circle, var(--color-dark-surface) 57%, transparent 59%), conic-gradient(var(--color-brand-500) var(--step-progress), var(--color-dark-line) 0); }
+.step-enter { animation: step-enter 260ms ease-out both; } @keyframes step-enter { from { opacity:0;transform:translateX(10px); } to { opacity:1;transform:none; } }

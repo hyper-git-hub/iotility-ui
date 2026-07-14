@@ -1,0 +1,10 @@
+<header>
+  <div class="brand"><ng-content select="[header-brand]" /></div>
+  <div class="actions">
+    @if (showLive()) {
+      <span class="live"><i></i>Live</span>
+    }
+    <button class="theme" (click)="toggleTheme()">{{ isDark ? '☀️ Light' : '🌙 Dark' }}</button
+    ><ng-content select="[header-profile]" />
+  </div>
+</header>

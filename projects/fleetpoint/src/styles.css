@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+
+@import 'leaflet/dist/leaflet.css';
+@import '../../shared-ui/src/styles/theme.css';
+@import '../../shared-ui/src/styles/animations.css';

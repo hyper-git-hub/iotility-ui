@@ -1,0 +1,123 @@
+<main class="flex min-h-screen bg-canvas">
+  <section
+    class="relative hidden w-[63%] overflow-hidden bg-brand-950 p-10 lg:flex lg:flex-col lg:justify-between"
+  >
+    <div class="login-glow" aria-hidden="true"></div>
+
+    <div class="relative z-10 flex items-center gap-4">
+      <img src="assets/hypernym-full.svg" alt="Hypernym" class="h-7 w-auto max-w-36" />
+      <span class="h-7 w-px bg-brand-400/60" aria-hidden="true"></span>
+      <img src="assets/iotility-light.svg" alt="IoTility" class="h-7 w-auto max-w-32" />
+    </div>
+
+    <div class="relative z-10 mx-auto grid w-full place-items-center py-12" aria-hidden="true">
+      <img src="assets/login.svg" alt="" class="w-full max-w-4xl" />
+    </div>
+
+    <div class="relative z-10 mx-auto text-center">
+      <h1 class="text-3xl font-bold leading-snug text-white">
+        Your ultimate toolkit for<br />everything you need!
+      </h1>
+      <p class="mt-2 text-sm text-brand-300">Tailored just for your wild IoT adventures!</p>
+    </div>
+  </section>
+
+  <section class="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
+    <div class="w-full">
+      <header class="mb-8 text-center">
+        <div class="mb-5 text-xl font-bold tracking-tight text-ink lg:hidden">
+          <span class="text-brand-600">io</span>Tility
+        </div>
+        <h2 class="text-2xl font-bold text-ink">Welcome to IoTility</h2>
+        <p class="mt-1 text-sm text-muted">
+          Streamline and automate your operations with IoTility.
+        </p>
+      </header>
+
+      <form
+        (ngSubmit)="login()"
+        class="rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8"
+      >
+        <h3 class="text-xl font-semibold text-ink">Login to your account</h3>
+        <p class="mb-6 mt-1 text-sm text-muted">
+          Are you new here?
+          <a href="#" class="font-medium text-brand-600 hover:underline">Get Started!</a>
+        </p>
+
+        <label class="form-label" for="email"
+          >Email Address <span class="text-danger">*</span></label
+        >
+        <div class="form-control mb-4">
+          <svg
+            class="form-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              d="m4 6 8 6 8-6M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z"
+            />
+          </svg>
+          <input
+            id="email"
+            name="email"
+            [(ngModel)]="email"
+            type="email"
+            autocomplete="email"
+            placeholder="Your email"
+            required
+          />
+        </div>
+
+        <label class="form-label" for="password">Password <span class="text-danger">*</span></label>
+        <div class="form-control">
+          <svg
+            class="form-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <rect x="4" y="10" width="16" height="11" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          </svg>
+          <input
+            id="password"
+            name="password"
+            [(ngModel)]="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••"
+            required
+          />
+        </div>
+
+        <div class="mb-6 mt-2 text-right">
+          <a href="#" class="text-sm text-brand-600 hover:underline">Forgotten Password?</a>
+        </div>
+
+        @if (error) {
+          <p class="mb-4 text-center text-sm text-danger" role="alert">{{ error }}</p>
+        }
+
+        <button
+          type="submit"
+          class="flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2"
+        >
+          CONTINUE
+          <svg
+            class="size-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </form>
+    </div>
+  </section>
+</main>

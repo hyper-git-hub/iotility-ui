@@ -1,0 +1,16 @@
+@reference "../../../../styles.css";
+.safety-grid {
+  @apply grid gap-4 lg:grid-cols-2;
+}
+.safety-reveal-one {
+  --reveal-delay: 160ms;
+}
+.safety-reveal-two {
+  --reveal-delay: 240ms;
+}
+.safety-reveal-three {
+  --reveal-delay: 320ms;
+}
+.safety-reveal-four {
+  --reveal-delay: 400ms;
+}

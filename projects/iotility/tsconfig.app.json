@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../../projects",
+    "outDir": "../../out-tsc/iotility",
+    "types": []
+  },
+  "include": ["src/**/*.ts", "../shared-ui/src/**/*.ts", "..\\shared-ui\\src\\public-api.ts"],
+  "exclude": ["src/**/*.spec.ts"]
+}

@@ -1,0 +1,48 @@
+@if (dialog.config(); as config) {
+  <div class="dialog-backdrop" role="presentation" (click)="dialog.cancel()">
+    <section
+      class="dialog-panel"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="feedback-dialog-title"
+      aria-describedby="feedback-dialog-message"
+      (click)="$event.stopPropagation()"
+    >
+      <div
+        class="dialog-icon"
+        [class.dialog-icon-success]="config.type === 'success'"
+        [class.dialog-icon-warning]="config.type === 'warning'"
+        [class.dialog-icon-question]="config.type === 'question'"
+        [class.dialog-icon-error]="config.type === 'error'"
+        aria-hidden="true"
+      >
+        @switch (config.type) {
+          @case ('success') {
+            <span>✓</span>
+          }
+          @case ('warning') {
+            <span>!</span>
+          }
+          @case ('error') {
+            <span>×</span>
+          }
+          @default {
+            <span>?</span>
+          }
+        }
+      </div>
+      <h2 id="feedback-dialog-title" class="dialog-title">{{ config.title }}</h2>
+      <p id="feedback-dialog-message" class="dialog-message">{{ config.message }}</p>
+      <div class="dialog-actions">
+        @if (config.showCancel !== false) {
+          <button type="button" class="dialog-button-secondary" (click)="dialog.cancel()">
+            {{ config.cancelText ?? 'Cancel' }}
+          </button>
+        }
+        <button type="button" class="dialog-button-primary" (click)="dialog.confirm()">
+          {{ config.confirmText ?? 'Continue' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

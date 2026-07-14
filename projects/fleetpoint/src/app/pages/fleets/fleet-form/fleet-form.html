@@ -1,0 +1,34 @@
+<app-modal [open]="open()" labelledBy="create-fleet-title" (closed)="cancel()">
+  <h2 modal-header id="create-fleet-title">Create New Fleet</h2>
+
+  <form id="create-fleet-form" class="fleet-form" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="shared-form-field">
+      <span>Fleet Name</span>
+      <input class="shared-form-control" formControlName="name" placeholder="e.g. Executive Fleet" [attr.aria-invalid]="submitted() && form.controls.name.invalid" />
+      @if (submitted() && form.controls.name.invalid) { <small class="shared-form-error">Enter a fleet name.</small> }
+    </label>
+    <label class="shared-form-field">
+      <span>Description</span>
+      <input class="shared-form-control" formControlName="description" placeholder="e.g. VIP and executive vehicles" [attr.aria-invalid]="submitted() && form.controls.description.invalid" />
+      @if (submitted() && form.controls.description.invalid) { <small class="shared-form-error">Enter a description.</small> }
+    </label>
+    <label class="shared-form-field">
+      <span>Depot Location</span>
+      <input class="shared-form-control" formControlName="depotLocation" placeholder="e.g. London HQ, EC1A 1BB" [attr.aria-invalid]="submitted() && form.controls.depotLocation.invalid" />
+      @if (submitted() && form.controls.depotLocation.invalid) { <small class="shared-form-error">Enter a depot location.</small> }
+    </label>
+    <fieldset>
+      <legend>Fleet Colour</legend>
+      <div class="color-options">
+        @for (color of colors; track color) {
+          <button type="button" [class.selected]="selectedColor() === color" [style.background]="color" [attr.aria-label]="'Select fleet colour ' + $index" (click)="selectedColor.set(color)"></button>
+        }
+      </div>
+    </fieldset>
+  </form>
+
+  <div modal-footer class="fleet-form-actions">
+    <button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button>
+    <button type="submit" form="create-fleet-form" class="shared-button-primary">Create Fleet</button>
+  </div>
+</app-modal>
