@@ -8,6 +8,14 @@
 .create-fleet-button span { @apply text-lg leading-none; }
 .fleet-kpis { @apply mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4; }
 .fleet-grid { @apply grid grid-cols-1 gap-4 xl:grid-cols-2; }
+.fleet-filters { @apply mb-5 grid items-end gap-3 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface md:grid-cols-[minmax(14rem,1fr)_minmax(12rem,0.7fr)_auto]; }
+.fleet-filters label > span { @apply mb-1.5 block text-[10px] font-medium text-muted dark:text-brand-300; }
+.fleet-filters input, .fleet-filters select { @apply h-10 w-full rounded-xl border border-line bg-white px-3 text-xs text-ink outline-none focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
+.fleet-filter-actions { @apply flex gap-2; }
+.fleet-filter-actions button { @apply h-10 cursor-pointer rounded-xl px-3 text-xs font-semibold; }
+.fleet-reset { @apply border border-line text-muted dark:border-dark-line dark:text-brand-300; }
+.fleet-apply { @apply bg-brand-600 text-white; }
+.fleet-filter-reveal { --reveal-delay: 200ms; }
 .fleet-kpis { --reveal-delay: 120ms; }
 .fleet-card:nth-child(1) { --reveal-delay: 240ms; }
 .fleet-card:nth-child(2) { --reveal-delay: 360ms; }
@@ -20,6 +28,8 @@
 .fleet-card h2 { @apply truncate text-sm font-bold; }
 .fleet-card header p { @apply mt-0.5 truncate text-xs text-muted dark:text-brand-300; }
 .alert-pill { @apply rounded-full bg-danger/10 px-2 py-1 text-[10px] font-medium text-danger; }
+.fleet-active, .fleet-inactive { @apply rounded-full px-2 py-1 text-[10px] font-medium; }
+.fleet-active { @apply bg-success/10 text-success; }.fleet-inactive { @apply bg-danger/10 text-danger; }
 .more-button { @apply rounded-lg px-2 py-1 text-sm text-muted hover:bg-canvas dark:hover:bg-dark-canvas; }
 .fleet-card-content { @apply p-5; }
 .fleet-stats { @apply mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4; }
@@ -36,6 +46,10 @@
 .score-list .score-medium { @apply bg-warning; }
 .score-list .score-low { @apply bg-danger; }
 .score-list strong { @apply w-9 text-right text-[10px]; }
+.fleet-meta { @apply mb-4 grid gap-2 sm:grid-cols-2; }
+.fleet-meta div { @apply rounded-xl border border-line p-3 dark:border-dark-line; }
+.fleet-meta span { @apply block text-[10px] text-muted dark:text-brand-300; }
+.fleet-meta strong { @apply mt-1 block truncate text-xs; }
 .fleet-location { @apply flex items-center justify-between gap-3; }
 .fleet-location span { @apply flex min-w-0 items-center gap-1.5 truncate text-xs text-muted dark:text-brand-300; }
 .fleet-location svg { @apply size-3.5 shrink-0; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
@@ -43,3 +57,8 @@
 .fleet-card > footer { @apply flex min-h-11 flex-wrap items-center gap-2 border-t border-line px-5 py-3 dark:border-dark-line; }
 .fleet-card > footer span { @apply rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success; }
 .fleet-card > footer small { @apply text-[10px] text-muted dark:text-brand-300; }
+.fleet-error { @apply mb-4 flex items-center justify-between rounded-xl border border-danger/20 bg-danger/5 p-3 text-xs text-danger; }
+.fleet-error button { @apply cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-white; }
+.empty-fleets { @apply col-span-full rounded-2xl border border-line bg-white p-10 text-center text-xs text-muted dark:border-dark-line dark:bg-dark-surface; }
+.fleet-pagination { @apply mt-4 flex items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }
+.fleet-pagination div { @apply flex gap-2; }.fleet-pagination button { @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line; }
