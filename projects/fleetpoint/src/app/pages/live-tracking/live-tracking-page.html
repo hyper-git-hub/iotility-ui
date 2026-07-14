@@ -1,11 +1,12 @@
 <div class="tracking-page">
+  <ui-blocking-loader [visible]="loading()" label="Loading live tracking" message="Connecting to your fleet and realtime telemetry..." />
   <aside class="vehicle-panel">
     <div class="panel-heading">
       <div>
         <h1>Live Tracking</h1>
         <span><i class="live-dot"></i> Live</span>
       </div>
-      <p>{{ vehicles.length }} connected vehicles</p>
+      <p>{{ vehicles().length }} tracked vehicles</p>
     </div>
     <div class="location-filter">
       <shared-dropdown
@@ -49,6 +50,9 @@
       }
     </div>
     <div class="vehicle-list">
+      @if (error()) {
+        <div class="tracking-error" role="alert"><p>{{ error() }}</p><button type="button" (click)="loadVehicles()">Try again</button></div>
+      }
       @for (vehicle of filteredVehicles(); track vehicle.id) {
         <button
           type="button"
@@ -57,13 +61,13 @@
           (click)="selectVehicle(vehicle)"
         >
           <span class="vehicle-symbol" aria-hidden="true"
-            ><img src="assets/fleetpoint/vehicle.svg" alt="" /></span
+            ><img [src]="vehicleImage(vehicle.image)" (error)="useDefaultVehicleImage($event)" alt="" /></span
           ><span class="vehicle-copy"
             ><strong>{{ vehicle.id }}</strong
             ><small>{{ vehicle.model }}</small
             ><small>{{ vehicle.location }}</small></span
           ><span class="vehicle-state" [class]="'state-' + vehicle.status.toLowerCase()">{{
-            vehicle.status === 'Moving' ? vehicle.speed + ' mph' : vehicle.status
+            vehicle.status === 'Moving' ? vehicle.speed + ' km/h' : vehicle.status
           }}</span>
         </button>
       } @empty {
@@ -74,12 +78,12 @@
 
   <section class="map-area">
     <app-fleet-map
-      [vehicles]="filteredVehicles()"
+      [vehicles]="mapVehicles()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
       (vehicleSelected)="selectVehicle($event)"
     />
     <div class="map-status">
-      <i class="live-dot"></i>Live · {{ filteredVehicles().length }} vehicles
+      <i class="live-dot"></i>Live · {{ mapVehicles().length }} vehicles on map
     </div>
     <div class="map-legend">
       <span><i class="bg-success"></i>Moving</span><span><i class="bg-warning"></i>Idling</span
@@ -107,16 +111,19 @@
         <h2>Live data</h2>
         <div class="detail-grid">
           <article>
-            <span>Speed</span><strong>{{ vehicle.speed }} mph</strong>
+            <span>Speed</span><strong>{{ vehicle.speed }} km/h</strong>
           </article>
           <article>
-            <span>Fuel</span><strong>{{ vehicle.fuel }}%</strong>
+            <span>KM / day</span><strong>{{ vehicle.kmPerDay }} km</strong>
           </article>
           <article>
             <span>Status</span><strong>{{ vehicle.status }}</strong>
           </article>
           <article>
             <span>Updated</span><strong>{{ vehicle.updated }}</strong>
+          </article>
+          <article>
+            <span>Seat belt</span><strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
           </article>
         </div>
       </section>

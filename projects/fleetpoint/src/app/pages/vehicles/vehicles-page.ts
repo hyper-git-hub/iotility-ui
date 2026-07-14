@@ -1,66 +1,120 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { DataTable, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
+import { BlockingLoader, DataTable, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
+import { finalize, forkJoin } from 'rxjs';
+import {
+  InventoryOption,
+  VehicleInventoryApiService,
+  VehicleInventoryFilters,
+  VehicleInventoryRecord,
+} from '../../shared/services/vehicle-inventory-api.service';
 import { VehicleForm, VehicleFormValue } from './vehicle-form/vehicle-form';
 
 @Component({
   selector: 'app-vehicles-page',
-  imports: [DataTable, VehicleForm],
+  imports: [BlockingLoader, DataTable, VehicleForm],
   templateUrl: './vehicles-page.html',
   styleUrl: './vehicles-page.css',
 })
-export class VehiclesPage {
+export class VehiclesPage implements OnInit {
+  protected readonly loading = signal(true);
+  protected readonly error = signal('');
   protected readonly formOpen = signal(false);
-  protected readonly tableActions: TableAction[] = ['map', 'history', 'edit', 'delete'];
+  protected readonly total = signal(0);
+  protected readonly records = signal<VehicleInventoryRecord[]>([]);
+  protected readonly fleetOptions = signal<InventoryOption[]>([]);
+  protected readonly vehicleOptions = signal<InventoryOption[]>([]);
+  protected readonly search = signal('');
+  protected readonly fleetId = signal('');
+  protected readonly vehicleId = signal('');
+  protected readonly status = signal('');
+  protected readonly offset = signal(0);
+  protected readonly limit = 10;
+  protected readonly tableActions: TableAction[] = ['map', 'history', 'edit'];
   protected readonly columns: TableColumn[] = [
-    { key: 'registration', label: 'Vehicle', type: 'vehicle', secondaryKey: 'makeModel' },
+    { key: 'registration', label: 'Vehicle', type: 'vehicle', secondaryKey: 'makeModel', imageKey: 'image' },
     { key: 'fleet', label: 'Fleet', type: 'fleet' },
     { key: 'status', label: 'Status', type: 'status' },
-    { key: 'driver', label: 'Driver' },
-    { key: 'location', label: 'Location' },
-    { key: 'speed', label: 'Speed' },
-    { key: 'fuel', label: 'Fuel', type: 'fuel' },
-    { key: 'mileage', label: 'Mileage' },
-    { key: 'mot', label: 'MOT', type: 'mot' },
-    { key: 'alert', label: 'Alerts', type: 'alert' },
+    { key: 'device', label: 'Device ID' },
+    { key: 'odometer', label: 'Odometer' },
+    { key: 'owner', label: 'Owner' },
+    { key: 'commissioned', label: 'Commissioned' },
+    { key: 'expiry', label: 'Registration Expiry' },
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];
-  protected readonly vehicles = signal<TableRow[]>([
-    this.vehicle('LP-0392', '2022 Volvo FH Reefer', 'Cold Chain', 'var(--color-info)', 'Alert', 'Unassigned', 'A12 Eastbound, London', 32, 58, '41,200 mi', '185d', true),
-    this.vehicle('LP-1193', '2020 Volvo FH', 'Manchester Vans', 'var(--color-warning)', 'Moving', 'Unassigned', 'M60 Orbital, Manchester', 61, 54, '156,700 mi', '16d', false),
-    this.vehicle('LP-2201', '2022 Ford Transit', 'Birmingham Ops', 'var(--color-success)', 'Alert', 'Aisha Okonkwo', 'Digbeth, Birmingham', 28, 71, '28,900 mi', '249d', true),
-    this.vehicle('LP-2244', '2021 Mercedes Sprinter', 'Manchester Vans', 'var(--color-warning)', 'Moving', 'Sarah Whitfield', 'Piccadilly, Manchester', 38, 88, '67,200 mi', '58d', false),
-    this.vehicle('LP-3312', '2020 DAF XF', 'London HGV', 'var(--color-brand-600)', 'Moving', 'Oliver Pemberton', 'M25 Westbound, London', 56, 78, '98,400 mi', '129d', false),
-    this.vehicle('LP-3388', '2020 DAF XF', 'Leeds Depot', 'var(--color-danger)', 'Moving', 'Unassigned', 'M1 Northbound, Leeds', 52, 67, '134,500 mi', 'Expired', false),
-    this.vehicle('LP-4477', '2021 Ford Transit', 'Birmingham Ops', 'var(--color-success)', 'Moving', 'Unassigned', 'A38 Southbound, Birmingham', 42, 48, '51,200 mi', '83d', false),
-    this.vehicle('LP-9901', '2021 Volvo FH', 'London HGV', 'var(--color-brand-600)', 'Offline', 'Unassigned', 'Stratford, London', 0, 36, '142,300 mi', '12d', true),
-  ]);
-  protected readonly moving = computed(() => this.vehicles().filter((v) => v['status'] === 'Moving').length);
-  protected readonly alerts = computed(() => this.vehicles().filter((v) => v['status'] === 'Alert').length);
-  protected readonly offline = computed(() => this.vehicles().filter((v) => v['status'] === 'Offline').length);
+  protected readonly vehicles = computed<TableRow[]>(() => this.records().map((vehicle) => ({
+    id: vehicle.id,
+    image: this.vehicleImage(vehicle.image),
+    registration: vehicle.registration || vehicle.name,
+    makeModel: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Details unavailable',
+    fleet: vehicle.fleet_name || 'Unassigned',
+    fleetColor: vehicle.fleet_name ? 'var(--color-brand-600)' : 'var(--color-muted)',
+    status: vehicle.status === 1 ? 'Active' : 'Inactive',
+    device: vehicle.device_id || 'Not assigned',
+    odometer: `${Number(vehicle.odo_reading || 0).toLocaleString()} km`,
+    owner: vehicle.owner || 'Not available',
+    commissioned: vehicle.date_commissioned || 'Not available',
+    expiry: vehicle.expiry_date || 'Not available',
+    actions: '',
+  })));
+  protected readonly active = computed(() => this.records().filter((vehicle) => vehicle.status === 1).length);
+  protected readonly inactive = computed(() => this.records().filter((vehicle) => vehicle.status !== 1).length);
+  protected readonly unassigned = computed(() => this.records().filter((vehicle) => !vehicle.fleet_name).length);
+  protected readonly pageStart = computed(() => this.total() ? this.offset() + 1 : 0);
+  protected readonly pageEnd = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
-  constructor(private readonly router: Router) {}
+  constructor(private readonly api: VehicleInventoryApiService, private readonly router: Router) {}
 
-  protected addVehicle(value: VehicleFormValue): void {
-    this.vehicles.update((rows) => [
-      ...rows,
-      this.vehicle(value.registration, value.makeModel, value.fleet, 'var(--color-brand-600)', 'Moving', value.driver, value.location, 0, value.fuel, `${value.mileage.toLocaleString()} mi`, '365d', false),
-    ]);
-    this.formOpen.set(false);
+  ngOnInit(): void {
+    forkJoin({ fleets: this.api.getFleetOptions(), vehicles: this.api.getVehicleOptions() }).subscribe({
+      next: ({ fleets, vehicles }) => {
+        this.fleetOptions.set((fleets.data?.data ?? []).filter((item) => item.status === undefined || item.status === 1));
+        this.vehicleOptions.set((vehicles.data?.data ?? []).filter((item) => item.status === undefined || item.status === 1));
+      },
+    });
+    this.loadVehicles();
   }
 
+  protected loadVehicles(): void {
+    this.loading.set(true);
+    this.error.set('');
+    this.api.getVehicles(this.filters()).pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: (response) => {
+        this.records.set(response.data?.data ?? []);
+        this.total.set(response.data?.count ?? 0);
+      },
+      error: (response) => this.error.set(response.error?.message || 'Vehicle inventory could not be loaded.'),
+    });
+  }
+
+  protected applyFilters(): void { this.offset.set(0); this.loadVehicles(); }
+  protected resetFilters(): void {
+    this.search.set(''); this.fleetId.set(''); this.vehicleId.set(''); this.status.set(''); this.offset.set(0);
+    this.loadVehicles();
+  }
+  protected updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); }
+  protected updateFleet(event: Event): void { this.fleetId.set((event.target as HTMLSelectElement).value); }
+  protected updateVehicle(event: Event): void { this.vehicleId.set((event.target as HTMLSelectElement).value); }
+  protected updateStatus(event: Event): void { this.status.set((event.target as HTMLSelectElement).value); }
+  protected previousPage(): void { this.offset.update((value) => Math.max(0, value - this.limit)); this.loadVehicles(); }
+  protected nextPage(): void { if (this.offset() + this.limit < this.total()) { this.offset.update((value) => value + this.limit); this.loadVehicles(); } }
+
+  protected addVehicle(_: VehicleFormValue): void { this.formOpen.set(false); this.loadVehicles(); }
   protected handleRowAction(event: { action: TableAction; row: TableRow }): void {
     if (event.action === 'map') void this.router.navigateByUrl('/fleetpoint/live-tracking');
     else if (event.action === 'history') void this.router.navigateByUrl('/fleetpoint/trip-replay');
-    else if (event.action === 'delete') this.vehicles.update((rows) => rows.filter((row) => row['registration'] !== event.row['registration']));
     else this.formOpen.set(true);
   }
+  protected openVehicle(row: TableRow): void { void this.router.navigate(['/fleetpoint/vehicles', row['id']]); }
 
-  protected openVehicle(row: TableRow): void {
-    void this.router.navigate(['/fleetpoint/vehicles', row['registration']]);
+  private filters(): VehicleInventoryFilters {
+    return { limit: this.limit, offset: this.offset(), search: this.search().trim(), fleetId: this.fleetId(), vehicleId: this.vehicleId(), status: this.status() };
   }
 
-  private vehicle(registration: string, makeModel: string, fleet: string, fleetColor: string, status: string, driver: string, location: string, speed: number, fuel: number, mileage: string, mot: string, alert: boolean): TableRow {
-    return { registration, makeModel, fleet, fleetColor, status, driver, location, speed: `${speed} mph`, fuel, mileage, mot, alert, actions: '' };
+  private vehicleImage(image: string | null): string {
+    const value = image?.trim();
+    return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase())
+      ? value
+      : 'assets/fleetpoint/vehicle.svg';
   }
 }

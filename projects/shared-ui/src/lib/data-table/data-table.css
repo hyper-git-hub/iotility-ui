@@ -40,8 +40,9 @@
   @apply border-ink bg-ink text-white dark:border-brand-600 dark:bg-brand-600;
 }
 .scroll {
-  @apply h-full overflow-auto;
+  @apply overflow-auto;
 }
+.scroll.fixed-height { @apply h-full; }
 .table-height {
   @apply overflow-hidden;
 }
@@ -100,6 +101,7 @@ strong {
   @apply border-brand-600 bg-brand-600 text-white;
 }
 .vehicle-cell { @apply flex items-center gap-2; }
+.vehicle-image { @apply size-8 shrink-0 rounded-lg bg-canvas object-contain p-1 dark:bg-dark-canvas; }
 .vehicle-glyph { @apply text-lg text-brand-600; }
 .fleet-cell { @apply inline-flex items-center gap-2; }
 .fleet-cell i { @apply size-2 rounded-full; }

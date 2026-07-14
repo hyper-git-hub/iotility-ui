@@ -5,6 +5,7 @@ export interface TableColumn {
   label: string;
   type?: TableColumnType;
   secondaryKey?: string;
+  imageKey?: string;
   widthClass?: string;
 }
 export type TableRow = Record<string, string | number | boolean>;
@@ -53,6 +54,11 @@ export class DataTable implements AfterViewInit, OnDestroy {
   protected motClass(v: unknown): string {
     const value = String(v).toLowerCase();
     return value === 'expired' || Number.parseInt(value, 10) <= 30 ? 'mot-danger' : Number.parseInt(value, 10) <= 90 ? 'mot-warning' : 'mot-success';
+  }
+  protected useFallbackImage(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    image.onerror = null;
+    image.src = 'assets/fleetpoint/vehicle.svg';
   }
   ngAfterViewInit(): void {
     const element = this.tableBody().nativeElement;

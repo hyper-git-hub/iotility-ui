@@ -26,7 +26,7 @@
     }
   </header>
   <div class="table-height" [class.ready]="heightReady()" [style.height.px]="resolvedBodyHeight()">
-    <div class="scroll" #tableBody [style.padding-bottom.px]="bodyBottomPadding()">
+    <div class="scroll" #tableBody [class.fixed-height]="viewportHeight() !== null" [style.padding-bottom.px]="bodyBottomPadding()">
       <table [style.min-width.px]="minTableWidth()">
       <thead>
         <tr>
@@ -46,7 +46,14 @@
                   <strong>{{ r[c.key] }}</strong
                   ><small>{{ r[c.secondaryKey ?? ''] }}</small>
                 } @else if (c.type === 'vehicle') {
-                  <span class="vehicle-cell"><span class="vehicle-glyph">▰</span><span><strong>{{ r[c.key] }}</strong><small>{{ r[c.secondaryKey ?? ''] }}</small></span></span>
+                  <span class="vehicle-cell">
+                    @if (c.imageKey) {
+                      <img class="vehicle-image" [src]="r[c.imageKey]" (error)="useFallbackImage($event)" alt="" />
+                    } @else {
+                      <span class="vehicle-glyph">▰</span>
+                    }
+                    <span><strong>{{ r[c.key] }}</strong><small>{{ r[c.secondaryKey ?? ''] }}</small></span>
+                  </span>
                 } @else if (c.type === 'fleet') {
                   <span class="fleet-cell"><i [style.background]="r['fleetColor']"></i>{{ r[c.key] }}</span>
                 } @else if (c.type === 'fuel') {

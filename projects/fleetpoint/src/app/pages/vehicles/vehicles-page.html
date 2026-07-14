@@ -1,37 +1,50 @@
 <section class="vehicles-page">
+  <ui-blocking-loader [visible]="loading()" label="Loading vehicles" message="Getting the latest vehicle inventory..." />
+
   <header class="vehicles-heading smooth-reveal">
-    <div><h1>Vehicles</h1><p>{{ vehicles().length }} connected vehicles across all fleets</p></div>
+    <div><h1>Vehicles</h1><p>{{ total() }} vehicles in inventory</p></div>
+    <button type="button" class="add-vehicle" (click)="formOpen.set(true)">+ Add Vehicle</button>
   </header>
 
   <section class="fleet-status-card smooth-reveal reveal-status">
-    <div class="status-title"><span class="live-dot"></span><strong>Live Fleet Status</strong><small>{{ vehicles().length }} vehicles</small></div>
-    <div class="status-bar"><i class="moving" [style.flex]="moving() || 1"></i><i class="alert" [style.flex]="alerts() || 1"></i><i class="offline" [style.flex]="offline() || 1"></i></div>
+    <div class="status-title"><span class="live-dot"></span><strong>Vehicle Inventory</strong><small>{{ total() }} total vehicles</small></div>
+    <div class="status-bar"><i class="moving" [style.flex]="active() || 1"></i><i class="alert" [style.flex]="inactive() || 1"></i><i class="offline" [style.flex]="unassigned() || 1"></i></div>
     <div class="status-pills">
-      <span class="moving"><i></i>Moving {{ moving() }}</span>
-      <span class="alert"><i></i>Alert {{ alerts() }}</span>
-      <span class="offline"><i></i>Offline {{ offline() }}</span>
-      <span><i class="brand"></i>London HGV 2</span><span><i class="info"></i>Cold Chain 1</span><span><i class="warning"></i>Manchester Vans 2</span>
+      <span class="moving"><i></i>Active {{ active() }}</span>
+      <span class="alert"><i></i>Inactive {{ inactive() }}</span>
+      <span class="offline"><i></i>Fleet unassigned {{ unassigned() }}</span>
     </div>
   </section>
 
-  <section class="attention-card smooth-reveal reveal-attention">
-    <p>Compliance & attention required</p>
-    <div><span class="danger">△ 3 MOT checks require attention</span><span class="warning">⌕ 2 vehicles due for service</span><span>◉ {{ offline() }} vehicle offline</span></div>
+  <section class="vehicle-filters smooth-reveal reveal-attention" aria-label="Vehicle filters">
+    <label class="filter-search"><span>Search</span><input type="search" placeholder="Registration, make or model" [value]="search()" (input)="updateSearch($event)" (keyup.enter)="applyFilters()" /></label>
+    <label><span>Vehicle</span><select [value]="vehicleId()" (change)="updateVehicle($event)"><option value="">All vehicles</option>@for (vehicle of vehicleOptions(); track vehicle.id) { <option [value]="vehicle.id">{{ vehicle.registration || vehicle.name }}</option> }</select></label>
+    <label><span>Fleet</span><select [value]="fleetId()" (change)="updateFleet($event)"><option value="">All fleets</option>@for (fleet of fleetOptions(); track fleet.id) { <option [value]="fleet.id">{{ fleet.name }}</option> }</select></label>
+    <label><span>Status</span><select [value]="status()" (change)="updateStatus($event)"><option value="">All statuses</option><option value="1">Active</option><option value="0">Inactive</option></select></label>
+    <div class="filter-actions"><button type="button" class="reset-filter" (click)="resetFilters()">Reset</button><button type="button" class="apply-filter" (click)="applyFilters()">Apply filters</button></div>
   </section>
+
+  @if (error()) {
+    <section class="vehicles-error" role="alert"><p>{{ error() }}</p><button type="button" (click)="loadVehicles()">Try again</button></section>
+  }
 
   <shared-data-table
     class="smooth-reveal vehicles-table"
     title="Vehicle List"
+    [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + total()"
     [columns]="columns"
     [rows]="vehicles()"
     [actions]="tableActions"
     [rowsClickable]="true"
-    searchPlaceholder="Search plate, make, driver or location"
-    primaryActionLabel="Add Vehicle"
-    (primaryAction)="formOpen.set(true)"
+    [showToolbar]="false"
     (rowAction)="handleRowAction($event)"
     (rowSelected)="openVehicle($event)"
-  />
+  ></shared-data-table>
+
+  <nav class="vehicle-pagination" aria-label="Vehicle pages">
+    <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ total() }}</span>
+    <div><button type="button" [disabled]="offset() === 0" (click)="previousPage()">Previous</button><button type="button" [disabled]="offset() + limit >= total()" (click)="nextPage()">Next</button></div>
+  </nav>
 
   <app-vehicle-form [open]="formOpen()" (cancelled)="formOpen.set(false)" (created)="addVehicle($event)" />
 </section>

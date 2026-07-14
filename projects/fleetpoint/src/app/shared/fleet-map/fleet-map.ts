@@ -49,7 +49,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   constructor() {
     effect(() => {
       const vehicles = this.vehicles();
-      if (this.map) this.renderMarkers(vehicles, true);
+      if (this.map) this.renderMarkers(vehicles, false);
     });
     effect(() => {
       const id = this.selectedVehicleId();
@@ -60,8 +60,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.map = createMap(this.mapElement().nativeElement, { zoomControl: true }).setView(
-      [53.4, -1.9],
-      6,
+      [25.2854, 51.531],
+      11,
     );
     tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
