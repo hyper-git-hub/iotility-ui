@@ -25,9 +25,9 @@
       </div>
     }
   </header>
-  <div class="table-height" [class.ready]="heightReady()" [style.height.px]="bodyHeight()">
-    <div class="scroll" #tableBody>
-      <table>
+  <div class="table-height" [class.ready]="heightReady()" [style.height.px]="resolvedBodyHeight()">
+    <div class="scroll" #tableBody [style.padding-bottom.px]="bodyBottomPadding()">
+      <table [style.min-width.px]="minTableWidth()">
       <thead>
         <tr>
           @for (c of columns(); track c.key) {

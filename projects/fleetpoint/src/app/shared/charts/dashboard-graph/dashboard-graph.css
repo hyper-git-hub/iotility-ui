@@ -5,10 +5,10 @@ header { @apply mb-3 flex items-start justify-between gap-3; }
 h2 { @apply text-sm font-semibold text-ink dark:text-white; }
 header p { @apply mt-1 text-[11px] text-muted dark:text-brand-300; }
 header span { @apply rounded-full bg-brand-50 px-2 py-1 text-[9px] capitalize text-brand-600 dark:bg-dark-canvas dark:text-brand-300; }
-.chart-wrap { @apply relative min-h-56 flex-1; }
-canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
-.empty { @apply grid flex-1 place-content-center text-center text-xs text-muted; }
-.empty span { @apply text-3xl text-line dark:text-dark-line; }
+.empty { @apply grid flex-1 place-content-center justify-items-center text-center text-xs text-muted; }
+.empty-icon { @apply mb-3 grid size-14 place-items-center rounded-2xl bg-brand-50 text-brand-400 dark:bg-brand-600/10 dark:text-brand-300; }
+.empty-icon svg { @apply size-9 fill-none stroke-current; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
+.empty p { @apply text-xs text-muted dark:text-brand-300; }
 .allocation-list { @apply grid flex-1 gap-3 overflow-auto sm:grid-cols-2; }
 .allocation-list section { @apply rounded-xl bg-canvas p-3 dark:bg-dark-canvas; }
 .allocation-list h3 { @apply mb-2 text-[11px] font-semibold text-brand-600 dark:text-brand-300; }

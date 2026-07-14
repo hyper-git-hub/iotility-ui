@@ -1,6 +1,6 @@
 @reference "../../../styles.css";
 
-.metric-grid { @apply mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5; }
+.metric-grid { @apply mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4; }
 .analytics-section { @apply mb-4; }
 .section-heading { @apply mb-3 flex items-end justify-between gap-3; }
 .section-heading h2 { @apply text-sm font-semibold; }
@@ -8,13 +8,18 @@
 .section-heading > span { @apply rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-medium text-brand-600 dark:bg-dark-canvas dark:text-brand-300; }
 .analytics-grid { @apply grid gap-4 lg:grid-cols-2 2xl:grid-cols-3; }
 .overview-grid { @apply mb-4 grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,1fr)]; }
-.fleet-list-card, .dashcam-card { @apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
+.fleet-list-card, .dashcam-card { @apply flex h-[28rem] min-h-0 flex-col rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
 .widget-title { @apply flex items-center justify-between gap-3; }
 .widget-title h2 { @apply text-sm font-semibold; }
 .widget-title > div > p { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }
 .widget-title > span { @apply inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-medium text-success; }
 .live-dot { @apply size-1.5 rounded-full bg-success; animation: live-pulse 1.8s ease-out infinite; }
 .vehicle-list, .dashcam-list { @apply mt-3 divide-y divide-line dark:divide-dark-line; }
+.vehicle-list { @apply min-h-0 flex-1 overflow-y-auto pr-1; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--color-brand-500) 35%, transparent) transparent; }
+.vehicle-list::-webkit-scrollbar { @apply w-1.5; }
+.vehicle-list::-webkit-scrollbar-track { @apply bg-transparent; }
+.vehicle-list::-webkit-scrollbar-thumb { @apply rounded-full; background-color: color-mix(in srgb, var(--color-brand-500) 35%, transparent); }
+.dashcam-list { @apply min-h-0 flex-1 overflow-y-auto; }
 .vehicle-row { @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-3 md:grid-cols-[auto_minmax(8rem,0.8fr)_minmax(10rem,1.2fr)_auto]; }
 .vehicle-avatar { @apply grid size-9 place-items-center overflow-hidden rounded-lg bg-brand-50 text-xs font-bold text-brand-600 dark:bg-dark-canvas dark:text-brand-300; }
 .vehicle-avatar img { @apply size-7 object-contain; }
@@ -36,12 +41,9 @@
 .dashboard-error strong { @apply text-sm; }
 .dashboard-error p { @apply mt-1 text-xs text-muted; }
 .dashboard-error button { @apply cursor-pointer rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-700; }
-.dashboard-reveal-status { --reveal-delay: 200ms; }
-.dashboard-reveal-actions { --reveal-delay: 300ms; }
-.chart-reveal-one { --reveal-delay: 380ms; }
-.dashboard-reveal-driver { --reveal-delay: 460ms; }
-.chart-reveal-two { --reveal-delay: 540ms; }
-.chart-reveal-three { --reveal-delay: 620ms; }
+.analytics-heading-reveal { --reveal-delay: 680ms; }
+.fleet-panel-reveal { --reveal-delay: 1540ms; }
+.dashcam-panel-reveal { --reveal-delay: 1620ms; }
 @keyframes live-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 45%, transparent); }
   70%, 100% { box-shadow: 0 0 0 5px transparent; }

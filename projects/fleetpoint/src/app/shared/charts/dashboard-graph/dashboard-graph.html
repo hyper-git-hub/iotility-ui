@@ -1,14 +1,32 @@
-<article class="graph-card">
-  <header><div><h2>{{ graph().name }}</h2><p>Live dashboard analytics</p></div>@if (graph().chart_type) { <span>{{ graph().chart_type?.replaceAll('_', ' ') }}</span> }</header>
-  @if (graph().code === 'DA') {
+@if (graph().code === 'DA') {
+  <article class="graph-card">
+    <header><div><h2>{{ graph().name }}</h2><p>Live dashboard analytics</p></div></header>
     <div class="allocation-list">
       @for (fleet of allocations(); track fleet.name) {
-        <section><h3>{{ fleet.name }}</h3>@for (allocation of fleet.data; track allocation.vehicle + allocation.driver) { <div><strong>{{ allocation.vehicle }}</strong><span>{{ allocation.driver }}</span></div> }</section>
+        <section>
+          <h3>{{ fleet.name }}</h3>
+          @for (allocation of fleet.data; track allocation.vehicle + allocation.driver) {
+            <div><strong>{{ allocation.vehicle }}</strong><span>{{ allocation.driver }}</span></div>
+          }
+        </section>
       } @empty { <p class="empty">No driver allocations available</p> }
     </div>
-  } @else if (hasChartData()) {
-    <div class="chart-wrap"><canvas #canvas></canvas></div>
-  } @else {
-    <div class="empty"><span>—</span><p>No data available</p></div>
-  }
-</article>
+  </article>
+} @else if (hasChartData() && isDoughnut()) {
+  <app-fleet-doughnut-chart [title]="graph().name" subtitle="Live dashboard analytics" [data]="doughnutData()" [options]="doughnutOptions" />
+} @else if (hasChartData()) {
+  <app-fleet-bar-chart [title]="graph().name" subtitle="Live dashboard analytics" [data]="barData()" [options]="barOptions()" />
+} @else {
+  <article class="graph-card">
+    <header><div><h2>{{ graph().name }}</h2><p>Live dashboard analytics</p></div></header>
+    <div class="empty">
+      <span class="empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <rect x="6" y="7" width="36" height="30" rx="6" />
+          <path d="M13 30v-6M20 30V18M27 30v-9M34 30V14" />
+        </svg>
+      </span>
+      <p>No data available</p>
+    </div>
+  </article>
+}

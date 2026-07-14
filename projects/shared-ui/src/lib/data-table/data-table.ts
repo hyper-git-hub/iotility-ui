@@ -26,6 +26,9 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly showExport = input(true);
   readonly actions = input<TableAction[]>([]);
   readonly rowsClickable = input(false);
+  readonly viewportHeight = input<number | null>(null);
+  readonly minTableWidth = input(760);
+  readonly bodyBottomPadding = input(0);
   readonly primaryAction = output<void>();
   readonly rowAction = output<{ action: TableAction; row: TableRow }>();
   readonly rowSelected = output<TableRow>();
@@ -40,6 +43,7 @@ export class DataTable implements AfterViewInit, OnDestroy {
       ? this.rows().filter((r) => Object.values(r).some((v) => String(v).toLowerCase().includes(q)))
       : this.rows();
   });
+  protected readonly resolvedBodyHeight = computed(() => this.viewportHeight() ?? this.bodyHeight());
   protected updateSearch(e: Event): void {
     this.searchTerm.set((e.target as HTMLInputElement).value);
   }

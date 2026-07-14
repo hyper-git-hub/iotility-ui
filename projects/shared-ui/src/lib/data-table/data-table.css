@@ -40,7 +40,7 @@
   @apply border-ink bg-ink text-white dark:border-brand-600 dark:bg-brand-600;
 }
 .scroll {
-  @apply overflow-auto;
+  @apply h-full overflow-auto;
 }
 .table-height {
   @apply overflow-hidden;

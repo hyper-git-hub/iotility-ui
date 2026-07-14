@@ -6,9 +6,9 @@
     <button type="button" (click)="loadDashboard()">Try again</button>
   </section>
 } @else if (!loading()) {
-  <section class="metric-grid smooth-reveal dashboard-reveal-status" aria-label="Fleet summary">
-    @for (card of cards(); track card.code) {
-      <app-stat-card [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [animatedBorder]="true">
+  <section class="metric-grid" aria-label="Fleet summary">
+    @for (card of displayedCards(); track card.code) {
+      <app-stat-card class="smooth-reveal" [style.--reveal-delay]="(200 + $index * 60) + 'ms'" [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [accent]="cardAccent(card.code)" [animatedBorder]="true" [compact]="true">
         <svg stat-card-icon viewBox="0 0 24 24" aria-hidden="true">
           @switch (card.code) {
             @case ('DVC') { <path d="M12 3 3.5 6v5.5c0 4.8 3.6 8 8.5 9.5 4.9-1.5 8.5-4.7 8.5-9.5V6L12 3Z"/><path d="M12 7v5M12 16h.01"/> }
@@ -26,15 +26,37 @@
     }
   </section>
 
-  <section class="analytics-section smooth-reveal dashboard-reveal-actions">
-    <div class="section-heading"><div><h2>Dashboard analytics</h2><p>Performance, safety, jobs and maintenance insights</p></div><span>{{ graphs().length }} reports</span></div>
+  <section class="analytics-section">
+    <div class="section-heading smooth-reveal analytics-heading-reveal"><div><h2>Dashboard analytics</h2><p>Performance, safety, jobs and maintenance insights</p></div><span>{{ graphs().length }} reports</span></div>
     <div class="analytics-grid">
-      @for (graph of graphs(); track graph.code) { <app-dashboard-graph [graph]="graph" /> }
+      @for (graph of graphs(); track graph.code) { <app-dashboard-graph class="smooth-reveal" [style.--reveal-delay]="(760 + $index * 60) + 'ms'" [graph]="graph" /> }
     </div>
   </section>
 
   <section class="overview-grid">
-    <article class="fleet-list-card smooth-reveal dashboard-reveal-actions">
+    <!-- <shared-data-table
+      class="smooth-reveal fleet-panel-reveal"
+      title="Fleet overview"
+      [subtitle]="fleets().length + ' fleets · ' + vehicles().length + ' vehicles · ' + onlineVehicles() + ' online'"
+      [columns]="fleetColumns"
+      [rows]="fleetRows()"
+      [viewportHeight]="300"
+      [minTableWidth]="0"
+      [bodyBottomPadding]="12"
+      [showToolbar]="false"
+    />
+    <shared-data-table
+      class="smooth-reveal dashcam-panel-reveal"
+      title="Available dashcams"
+      [subtitle]="dashcams().length + ' connected devices'"
+      [columns]="dashcamColumns"
+      [rows]="dashcamRows()"
+      [viewportHeight]="300"
+      [minTableWidth]="0"
+      [showToolbar]="false"
+    /> -->
+    <!-- Previous custom dashboard lists retained temporarily for reference.
+    <article class="fleet-list-card smooth-reveal fleet-panel-reveal">
       <div class="widget-title">
         <div><h2>Fleet overview</h2><p>{{ fleets().length }} fleets · {{ vehicles().length }} vehicles</p></div>
         <span><i class="live-dot"></i>{{ onlineVehicles() }} online</span>
@@ -53,7 +75,7 @@
       </div>
     </article>
 
-    <article class="dashcam-card smooth-reveal dashboard-reveal-driver">
+    <article class="dashcam-card smooth-reveal dashcam-panel-reveal">
       <div class="widget-title"><div><h2>Available dashcams</h2><p>{{ dashcams().length }} connected devices</p></div><span>{{ dashcams().length }} devices</span></div>
       <div class="dashcam-list">
         @for (camera of dashcams(); track camera.device_id) {
@@ -61,6 +83,7 @@
         } @empty { <p class="empty-copy">No dashcam devices are available.</p> }
       </div>
     </article>
+    -->
   </section>
 
 }

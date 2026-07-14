@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { BlockingLoader } from '@iotility/shared-ui';
+import { BlockingLoader, DataTable, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCard, StatCardTone } from '../../../shared/stat-card/stat-card';
@@ -23,12 +23,37 @@ export class Overview implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly cards = signal<DashboardCard[]>([]);
+  protected readonly displayedCards = computed(() => this.cards().filter((card) => card.code !== 'VIO'));
   protected readonly graphs = signal<DashboardGraph[]>([]);
   protected readonly fleets = signal<Fleet[]>([]);
   protected readonly dashcams = signal<DashcamDevice[]>([]);
   protected readonly vehicles = computed(() => this.fleets().flatMap((fleet) => fleet.assigned_vehicles ?? []));
-  protected readonly visibleVehicles = computed(() => this.vehicles().slice(0, 6));
+  protected readonly visibleVehicles = computed(() => this.vehicles());
   protected readonly onlineVehicles = computed(() => this.vehicles().filter((vehicle) => vehicle.online_status).length);
+  protected readonly fleetColumns: TableColumn[] = [
+    { key: 'vehicle', label: 'Vehicle', type: 'vehicle', secondaryKey: 'details' },
+    { key: 'location', label: 'Location' },
+    { key: 'speed', label: 'Speed' },
+    { key: 'connection', label: 'Status', type: 'status' },
+  ];
+  protected readonly dashcamColumns: TableColumn[] = [
+    { key: 'camera', label: 'Dashcam', type: 'user', secondaryKey: 'deviceType' },
+    { key: 'deviceId', label: 'Device ID' },
+    { key: 'alerts', label: 'Alerts', type: 'status' },
+  ];
+  protected readonly fleetRows = computed<TableRow[]>(() => this.vehicles().map((vehicle) => ({
+    vehicle: vehicle.name,
+    details: `${vehicle.make} ${vehicle.model} · ${vehicle.vehicle_driver_name || 'No driver assigned'}`,
+    location: vehicle.location || 'Location unavailable',
+    speed: `${vehicle.speed || 0} km/h`,
+    connection: vehicle.online_status ? 'Active' : 'Inactive',
+  })));
+  protected readonly dashcamRows = computed<TableRow[]>(() => this.dashcams().map((camera) => ({
+    camera: camera.name,
+    deviceType: camera.device_type,
+    deviceId: camera.device_id,
+    alerts: camera.notifications ? `${camera.notifications} alerts` : 'Active',
+  })));
 
   constructor(private readonly api: FleetDashboardApiService) {}
 
@@ -63,6 +88,21 @@ export class Overview implements OnInit {
   }
 
   protected cardValue(card: DashboardCard): number { return card.data ?? 0; }
+
+  protected cardAccent(code: string): string {
+    const accents: Record<string, string> = {
+      DVC: 'var(--color-danger)',
+      J: 'var(--color-info)',
+      MD: 'var(--color-warning)',
+      MOD: 'color-mix(in srgb, var(--color-danger) 72%, var(--color-warning))',
+      TD: 'var(--color-success)',
+      TDC: 'var(--color-brand-500)',
+      TF: 'color-mix(in srgb, var(--color-brand-500) 68%, var(--color-info))',
+      VIM: 'color-mix(in srgb, var(--color-warning) 72%, var(--color-danger))',
+      VIO: 'color-mix(in srgb, var(--color-success) 72%, var(--color-info))',
+    };
+    return accents[code] ?? 'var(--color-brand-500)';
+  }
 
   protected vehicleInitial(vehicle: Vehicle): string { return (vehicle.name || '?').charAt(0).toUpperCase(); }
 }
