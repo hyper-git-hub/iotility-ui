@@ -12,6 +12,7 @@ export class FleetDoughnutChart implements AfterViewInit, OnDestroy {
   readonly subtitle = input('');
   readonly badge = input('');
   readonly filterLabel = input('');
+  readonly height = input(320);
   readonly data = input.required<ChartData<'doughnut', number[], string>>();
   readonly options = input<ChartOptions<'doughnut'>>({});
   @ViewChild('canvas') private canvas!: ElementRef<HTMLCanvasElement>;

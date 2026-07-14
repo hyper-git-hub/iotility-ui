@@ -1,13 +1,14 @@
 import { Component, input } from '@angular/core';
 import { ChartData, ChartOptions } from 'chart.js';
-import { DashboardGraph } from '../../services/fleet-dashboard-api.service';
+import { DashboardGraph, GraphSeries } from '../../services/fleet-dashboard-api.service';
 import { FleetBarChart } from '../bar-chart/bar-chart';
 import { getFleetChartColors } from '../chart-colors';
 import { FleetDoughnutChart } from '../doughnut-chart/doughnut-chart';
+import { FleetLineChart } from '../line-chart/line-chart';
 
 @Component({
   selector: 'app-dashboard-graph',
-  imports: [FleetBarChart, FleetDoughnutChart],
+  imports: [FleetBarChart, FleetDoughnutChart, FleetLineChart],
   templateUrl: './dashboard-graph.html',
   styleUrl: './dashboard-graph.css',
 })
@@ -34,13 +35,20 @@ export class DashboardGraphComponent {
     if (Array.isArray(graph.data)) return graph.data.length > 0;
     return Boolean(
       graph.data.categories?.length &&
-      (graph.data.values?.length || graph.data.series?.some((series) => series.data.length)),
+      (graph.data.values?.length || graph.data.series?.length),
     );
   }
 
   protected isDoughnut(): boolean {
     const graph = this.graph();
-    return graph.code === 'DTS' || Array.isArray(graph.data) || (!Array.isArray(graph.data) && Boolean(graph.data.values));
+    return graph.code === 'DTS' ||
+      (graph.code !== 'JJ' && graph.chart_type === 'piechart') ||
+      Array.isArray(graph.data) ||
+      (!Array.isArray(graph.data) && Boolean(graph.data.values));
+  }
+
+  protected isLine(): boolean {
+    return this.graph().chart_type === 'line_area_chart';
   }
 
   protected barData(): ChartData<'bar', number[], string> {
@@ -48,11 +56,27 @@ export class DashboardGraphComponent {
     if (Array.isArray(data)) return { labels: [], datasets: [] };
     return {
       labels: data.categories ?? [],
-      datasets: (data.series ?? []).map((series, index) => ({
+      datasets: this.namedSeries(data.series).map((series, index) => ({
         label: this.readableLabel(series.name),
         data: series.data,
         backgroundColor: this.palette[index % this.palette.length],
         borderRadius: 5,
+      })),
+    };
+  }
+
+  protected lineData(): ChartData<'line', number[], string> {
+    const data = this.graph().data;
+    if (Array.isArray(data)) return { labels: [], datasets: [] };
+    return {
+      labels: data.categories ?? [],
+      datasets: this.namedSeries(data.series).map((series, index) => ({
+        label: this.readableLabel(series.name),
+        data: series.data,
+        borderColor: this.palette[index % this.palette.length],
+        backgroundColor: `${this.palette[index % this.palette.length]}22`,
+        fill: true,
+        tension: 0.35,
       })),
     };
   }
@@ -71,9 +95,15 @@ export class DashboardGraphComponent {
         datasets: [{ data: graph.data.values, backgroundColor: this.palette, borderWidth: 0 }],
       };
     }
+    if (this.numericSeries(graph.data.series).length) {
+      return {
+        labels: graph.data.categories ?? [],
+        datasets: [{ data: this.numericSeries(graph.data.series), backgroundColor: this.palette, borderWidth: 0 }],
+      };
+    }
     if (graph.code === 'DTS') {
       const categories = graph.data.categories ?? [];
-      const series = graph.data.series ?? [];
+      const series = this.namedSeries(graph.data.series);
       return {
         labels: categories,
         datasets: [{
@@ -85,7 +115,7 @@ export class DashboardGraphComponent {
         }],
       };
     }
-    const series = graph.data.series ?? [];
+    const series = this.namedSeries(graph.data.series);
     return {
       labels: series.map((item) => this.readableLabel(item.name)),
       datasets: [{
@@ -97,17 +127,25 @@ export class DashboardGraphComponent {
   }
 
   protected barOptions(): ChartOptions<'bar'> {
-    const horizontal = this.graph().chart_type === 'horizontal_stackbar_chart';
+    const chartType = this.graph().chart_type;
+    const horizontal = chartType === 'horizontal_stackbar_chart' || chartType === 'horizontal_bar_chart';
+    const stacked = chartType === 'horizontal_stackbar_chart' || chartType === 'stackbar_chart';
     return {
       indexAxis: horizontal ? 'y' : 'x',
       interaction: { mode: 'index', intersect: false },
       plugins: { legend: { position: 'bottom' } },
       scales: {
-        x: { stacked: horizontal, grid: { display: false } },
-        y: { stacked: horizontal, beginAtZero: true },
+        x: { stacked, grid: { display: false } },
+        y: { stacked, beginAtZero: true },
       },
     };
   }
+
+  protected readonly lineOptions: ChartOptions<'line'> = {
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { position: 'bottom' } },
+    scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
+  };
 
   protected readonly doughnutOptions: ChartOptions<'doughnut'> = {
     cutout: '60%',
@@ -119,5 +157,17 @@ export class DashboardGraphComponent {
       .replaceAll('_', ' ')
       .replace(/\b\w/g, (letter) => letter.toUpperCase())
       .replace(' Probability Count', '');
+  }
+
+  private namedSeries(series: GraphSeries[] | number[] | undefined): GraphSeries[] {
+    return Array.isArray(series) && series.every((item) => typeof item === 'object')
+      ? series as GraphSeries[]
+      : [];
+  }
+
+  private numericSeries(series: GraphSeries[] | number[] | undefined): number[] {
+    return Array.isArray(series) && series.every((item) => typeof item === 'number')
+      ? series as number[]
+      : [];
   }
 }

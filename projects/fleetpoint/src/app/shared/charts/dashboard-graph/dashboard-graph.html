@@ -13,9 +13,11 @@
     </div>
   </article>
 } @else if (hasChartData() && isDoughnut()) {
-  <app-fleet-doughnut-chart [title]="graph().name" subtitle="Live dashboard analytics" [data]="doughnutData()" [options]="doughnutOptions" />
+  <app-fleet-doughnut-chart [title]="graph().name" subtitle="Live dashboard analytics" [height]="380" [data]="doughnutData()" [options]="doughnutOptions" />
+} @else if (hasChartData() && isLine()) {
+  <app-fleet-line-chart [title]="graph().name" subtitle="Live dashboard analytics" [height]="380" [data]="lineData()" [options]="lineOptions" />
 } @else if (hasChartData()) {
-  <app-fleet-bar-chart [title]="graph().name" subtitle="Live dashboard analytics" [data]="barData()" [options]="barOptions()" />
+  <app-fleet-bar-chart [title]="graph().name" subtitle="Live dashboard analytics" [height]="380" [data]="barData()" [options]="barOptions()" />
 } @else {
   <article class="graph-card">
     <header><div><h2>{{ graph().name }}</h2><p>Live dashboard analytics</p></div></header>

@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { BlockingLoader, DataTable, TableColumn, TableRow } from '@iotility/shared-ui';
+import { BlockingLoader, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCard, StatCardTone } from '../../../shared/stat-card/stat-card';
@@ -23,7 +23,16 @@ export class Overview implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly cards = signal<DashboardCard[]>([]);
-  protected readonly displayedCards = computed(() => this.cards().filter((card) => card.code !== 'VIO'));
+  protected readonly displayedCards = computed(() => {
+    const order = ['QFU', 'QHB', 'QLC', 'QIT', 'QPT'];
+    return this.cards()
+      .filter((card) => card.code !== 'VIO')
+      .sort((first, second) => {
+        const firstIndex = order.indexOf(first.code);
+        const secondIndex = order.indexOf(second.code);
+        return (firstIndex < 0 ? order.length : firstIndex) - (secondIndex < 0 ? order.length : secondIndex);
+      });
+  });
   protected readonly graphs = signal<DashboardGraph[]>([]);
   protected readonly fleets = signal<Fleet[]>([]);
   protected readonly dashcams = signal<DashcamDevice[]>([]);
@@ -62,17 +71,17 @@ export class Overview implements OnInit {
   protected loadDashboard(): void {
     this.loading.set(true);
     this.error.set('');
+    this.loadFleetData();
     forkJoin({
       cards: this.api.getCards(),
       graphs: this.api.getGraphs(),
-      fleets: this.api.getFleets(),
-      dashcams: this.api.getDashcams(),
+      // fleets are loaded independently so they cannot block the dashboard loader
+      // dashcams: this.api.getDashcams(),
     }).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: ({ cards, graphs, fleets, dashcams }) => {
+      next: ({ cards, graphs }) => {
         this.cards.set(cards.data ?? []);
         this.graphs.set(graphs.data ?? []);
-        this.fleets.set(fleets.data?.data ?? []);
-        this.dashcams.set(dashcams.data?.data ?? []);
+        this.dashcams.set([]);
       },
       error: (response: HttpErrorResponse) => {
         this.error.set(response.error?.message || 'Dashboard data could not be loaded. Please try again.');
@@ -80,14 +89,22 @@ export class Overview implements OnInit {
     });
   }
 
+  private loadFleetData(): void {
+    this.api.getFleets().subscribe({
+      next: (fleets) => this.fleets.set(fleets.data?.data ?? []),
+      error: () => this.fleets.set([]),
+    });
+  }
+
   protected cardTone(code: string): StatCardTone {
-    if (['DVC', 'MOD'].includes(code)) return 'danger';
-    if (['MD', 'VIM'].includes(code)) return 'warning';
-    if (['VIO', 'TD'].includes(code)) return 'success';
+    if (['DVC', 'MOD', 'QHB'].includes(code)) return 'danger';
+    if (['MD', 'VIM', 'QIT'].includes(code)) return 'warning';
+    if (['VIO', 'TD', 'QFU'].includes(code)) return 'success';
+    if (code === 'QPT') return 'brand';
     return 'info';
   }
 
-  protected cardValue(card: DashboardCard): number { return card.data ?? 0; }
+  protected cardValue(card: DashboardCard): number | string { return card.data ?? 0; }
 
   protected cardAccent(code: string): string {
     const accents: Record<string, string> = {
@@ -100,6 +117,11 @@ export class Overview implements OnInit {
       TF: 'color-mix(in srgb, var(--color-brand-500) 68%, var(--color-info))',
       VIM: 'color-mix(in srgb, var(--color-warning) 72%, var(--color-danger))',
       VIO: 'color-mix(in srgb, var(--color-success) 72%, var(--color-info))',
+      QFU: 'var(--color-success)',
+      QHB: 'var(--color-danger)',
+      QIT: 'var(--color-warning)',
+      QLC: 'var(--color-info)',
+      QPT: 'var(--color-brand-500)',
     };
     return accents[code] ?? 'var(--color-brand-500)';
   }

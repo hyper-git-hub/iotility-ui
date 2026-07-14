@@ -12,6 +12,7 @@ export class FleetLineChart implements AfterViewInit, OnDestroy {
   readonly subtitle = input('');
   readonly badge = input('');
   readonly filterLabel = input('');
+  readonly height = input(320);
   readonly data = input.required<ChartData<'line', number[], string>>();
   readonly options = input<ChartOptions<'line'>>({});
   @ViewChild('canvas') private canvas!: ElementRef<HTMLCanvasElement>;

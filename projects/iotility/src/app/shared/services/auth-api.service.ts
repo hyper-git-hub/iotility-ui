@@ -46,6 +46,12 @@ export class AuthApiService {
     return this.http.get<AuthApiResponse<UserProfile>>(`${environment.userMsBaseUrl}/users/user-profile`);
   }
 
+  getRoleAccess(): Observable<AuthApiResponse> {
+    return this.http.get<AuthApiResponse>(`${environment.fleetBaseUrl}/api/role-access/feature`, {
+      params: { usecase_id: environment.useCaseId },
+    });
+  }
+
   logout(email: string): Observable<AuthApiResponse> {
     return this.http.post<AuthApiResponse>(`${this.authenticationUrl}/logout`, { email });
   }

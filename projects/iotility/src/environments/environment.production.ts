@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://prodgateway.hypernymbiz.com',
-  userMsBaseUrl: 'https://prodgateway.hypernymbiz.com/user-ms',
-  fleetBaseUrl: 'https://prodgateway.hypernymbiz.com/fms-fleet',
+  apiBaseUrl: 'https://staging.gateway.iot.vodafone.com.qa',
+  userMsBaseUrl: 'https://at.admin.staging.iot.vodafone.com.qa',
+  fleetBaseUrl: 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet',
   useCaseId: 6,
 } as const;

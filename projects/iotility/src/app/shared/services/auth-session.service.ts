@@ -12,6 +12,7 @@ export class AuthSessionService {
     'notificationCount',
     'usergroups',
     'menuaccess',
+    'roleAccess',
     'vehiclesListing',
     'brandingData',
   ];

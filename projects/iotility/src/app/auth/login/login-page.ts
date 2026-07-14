@@ -3,7 +3,7 @@ import { Component, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BlockingLoader, SmoothHeight } from '@iotility/shared-ui';
-import { finalize, switchMap, tap } from 'rxjs';
+import { finalize, forkJoin, switchMap, tap } from 'rxjs';
 import { AuthApiResponse, AuthApiService } from '../../shared/services/auth-api.service';
 import { AuthSessionService } from '../../shared/services/auth-session.service';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
@@ -53,17 +53,26 @@ export class LoginPage {
           ? localStorage.setItem('rememberedEmail', email.trim().toLowerCase())
           : localStorage.removeItem('rememberedEmail');
       }),
-      switchMap(() => this.authApi.getUserProfile()),
+      switchMap(() => forkJoin({
+        profile: this.authApi.getUserProfile(),
+        roleAccess: this.authApi.getRoleAccess(),
+      })),
       finalize(() => this.submitting.set(false)),
     ).subscribe({
-      next: (response) => {
-        if (response.error) {
+      next: ({ profile, roleAccess }) => {
+        if (profile.error) {
           this.clearSession();
-          this.error.set(response.message || 'Unable to load your profile.');
+          this.error.set(profile.message || 'Unable to load your profile.');
           return;
         }
-        localStorage.setItem('user', JSON.stringify(response.data ?? {}));
-        localStorage.setItem('language', response.data?.language || 'en');
+        if (roleAccess.error) {
+          this.clearSession();
+          this.error.set(roleAccess.message || 'Unable to load your access permissions.');
+          return;
+        }
+        localStorage.setItem('user', JSON.stringify(profile.data ?? {}));
+        localStorage.setItem('language', profile.data?.language || 'en');
+        localStorage.setItem('roleAccess', JSON.stringify(roleAccess.data ?? {}));
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
         void this.router.navigateByUrl(this.safeReturnUrl(returnUrl));
       },

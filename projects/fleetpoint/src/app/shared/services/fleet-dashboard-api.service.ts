@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-const FLEET_API = 'https://prodgateway.hypernymbiz.com/fms-fleet/api';
+const FLEET_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet/api';
 
 export interface ApiResponse<T> {
   status: number;
@@ -14,7 +14,7 @@ export interface DashboardCard {
   code: string;
   analytics_type: string;
   name: string;
-  data: number | null;
+  data: number | string | null;
   chart_type: string | null;
   filter_by?: string;
 }
@@ -27,7 +27,7 @@ export interface DriverAllocationFleet {
 export interface DashboardGraph {
   code: string;
   name: string;
-  data: { categories?: string[]; values?: number[]; series?: GraphSeries[]; fleets?: DriverAllocationFleet[] } | Array<{ fleet_name: string; vehicle_count: number }>;
+  data: { categories?: string[]; values?: number[]; series?: GraphSeries[] | number[]; fleets?: DriverAllocationFleet[] } | Array<{ fleet_name: string; vehicle_count: number }>;
   chart_type: string | null;
 }
 
@@ -66,13 +66,13 @@ export class FleetDashboardApiService {
 
   getCards(): Observable<ApiResponse<DashboardCard[]>> {
     return this.http.get<ApiResponse<DashboardCard[]>>(`${FLEET_API}/dashboard/cards`, {
-      params: new HttpParams().set('dashboard_id', 'MD').set('date', 'all'),
+      params: new HttpParams().set('dashboard_id', 'HEM').set('date', 'all'),
     });
   }
 
   getGraphs(): Observable<ApiResponse<DashboardGraph[]>> {
     return this.http.get<ApiResponse<DashboardGraph[]>>(`${FLEET_API}/dashboard/graphs`, {
-      params: new HttpParams().set('dashboard_id', 'MD'),
+      params: new HttpParams().set('dashboard_id', 'HEM'),
     });
   }
 
