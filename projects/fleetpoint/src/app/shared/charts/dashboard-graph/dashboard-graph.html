@@ -1,0 +1,14 @@
+<article class="graph-card">
+  <header><div><h2>{{ graph().name }}</h2><p>Live dashboard analytics</p></div>@if (graph().chart_type) { <span>{{ graph().chart_type?.replaceAll('_', ' ') }}</span> }</header>
+  @if (graph().code === 'DA') {
+    <div class="allocation-list">
+      @for (fleet of allocations(); track fleet.name) {
+        <section><h3>{{ fleet.name }}</h3>@for (allocation of fleet.data; track allocation.vehicle + allocation.driver) { <div><strong>{{ allocation.vehicle }}</strong><span>{{ allocation.driver }}</span></div> }</section>
+      } @empty { <p class="empty">No driver allocations available</p> }
+    </div>
+  } @else if (hasChartData()) {
+    <div class="chart-wrap"><canvas #canvas></canvas></div>
+  } @else {
+    <div class="empty"><span>—</span><p>No data available</p></div>
+  }
+</article>

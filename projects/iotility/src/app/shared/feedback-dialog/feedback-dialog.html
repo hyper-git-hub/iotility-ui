@@ -18,16 +18,16 @@
       >
         @switch (config.type) {
           @case ('success') {
-            <span>✓</span>
+            <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>
           }
           @case ('warning') {
-            <span>!</span>
+            <svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01" /><path d="M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z" /></svg>
           }
           @case ('error') {
-            <span>×</span>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6M15 9l-6 6" /></svg>
           }
           @default {
-            <span>?</span>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.8 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1.3.9-1.3 1.7M12 17h.01" /></svg>
           }
         }
       </div>

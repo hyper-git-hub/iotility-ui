@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild } from '@angular/core';
 
 @Component({
-  selector: 'app-smooth-height',
+  selector: 'shared-smooth-height',
   templateUrl: './smooth-height.html',
   styleUrl: './smooth-height.css',
 })
@@ -21,5 +21,7 @@ export class SmoothHeight implements AfterViewInit, OnDestroy {
     requestAnimationFrame(() => this.ready.set(true));
   }
 
-  ngOnDestroy(): void { this.observer?.disconnect(); }
+  ngOnDestroy(): void {
+    this.observer?.disconnect();
+  }
 }

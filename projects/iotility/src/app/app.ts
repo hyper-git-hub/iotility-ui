@@ -3,6 +3,8 @@ import { RouterOutlet } from '@angular/router';
 import { Loading } from './shared/loading/loading';
 import { LoadingService } from './shared/services/loading.service';
 import { FeedbackDialog } from './shared/feedback-dialog/feedback-dialog';
+import { BlockingLoader } from '@iotility/shared-ui';
+import { AuthLogoutService } from './shared/services/auth-logout.service';
 import {
   FeedbackDialogConfig,
   FeedbackDialogService,
@@ -16,13 +18,14 @@ interface FeedbackDialogRequest {
 
 @Component({
   selector: 'app-root',
-  imports: [FeedbackDialog, Loading, RouterOutlet],
+  imports: [BlockingLoader, FeedbackDialog, Loading, RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App implements OnInit {
   constructor(
     protected readonly loading: LoadingService,
+    protected readonly authLogout: AuthLogoutService,
     private readonly feedbackDialog: FeedbackDialogService,
   ) {}
 
@@ -38,6 +41,11 @@ export class App implements OnInit {
       },
       2500,
     );
+  }
+
+  @HostListener('window:iotility:logout')
+  protected logoutFromRemote(): void {
+    void this.authLogout.request();
   }
 
   @HostListener('window:iotility:feedback-dialog', ['$event'])

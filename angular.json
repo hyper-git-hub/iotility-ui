@@ -108,6 +108,12 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/iotility/src/environments/environment.ts",
+                  "with": "projects/iotility/src/environments/environment.production.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",

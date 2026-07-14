@@ -1,30 +1,105 @@
-import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { BlockingLoader, SmoothHeight } from '@iotility/shared-ui';
+import { finalize, switchMap, tap } from 'rxjs';
+import { AuthApiResponse, AuthApiService } from '../../shared/services/auth-api.service';
+import { AuthSessionService } from '../../shared/services/auth-session.service';
+import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
 
 @Component({
   selector: 'app-login-page',
-  imports: [FormsModule],
+  imports: [BlockingLoader, ReactiveFormsModule, RouterLink, SmoothHeight],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
 export class LoginPage {
-  protected email = '';
-  protected password = '';
-  protected error = '';
+  protected readonly submitting = signal(false);
+  protected readonly error = signal('');
+  protected readonly showPassword = signal(false);
+  protected readonly form;
 
-  constructor(private readonly router: Router) {}
+  constructor(
+    formBuilder: FormBuilder,
+    private readonly authApi: AuthApiService,
+    private readonly authSession: AuthSessionService,
+    private readonly feedbackDialog: FeedbackDialogService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+  ) {
+    this.form = formBuilder.nonNullable.group({
+      email: [localStorage.getItem('rememberedEmail') ?? '', [Validators.required, Validators.email]],
+      password: ['', Validators.required],
+      remember: [Boolean(localStorage.getItem('rememberedEmail'))],
+    });
+  }
 
   protected login(): void {
-    const demoEmail = 'admin@hypernym.io';
-    const demoPassword = 'test1234';
+    this.form.markAllAsTouched();
+    if (this.form.invalid || this.submitting()) return;
 
-    if (this.email === demoEmail && this.password === demoPassword) {
-      this.error = '';
-      void this.router.navigate(['/home']);
-      return;
+    const { email, password, remember } = this.form.getRawValue();
+    this.submitting.set(true);
+    this.error.set('');
+
+    this.authApi.login(email, password, remember).pipe(
+      tap((response) => {
+        const token = response.data?.Token;
+        if (response.error || !token) throw new Error(response.message || 'Login failed.');
+        localStorage.setItem('token', token);
+        localStorage.setItem('userMS-token', token);
+        remember
+          ? localStorage.setItem('rememberedEmail', email.trim().toLowerCase())
+          : localStorage.removeItem('rememberedEmail');
+      }),
+      switchMap(() => this.authApi.getUserProfile()),
+      finalize(() => this.submitting.set(false)),
+    ).subscribe({
+      next: (response) => {
+        if (response.error) {
+          this.clearSession();
+          this.error.set(response.message || 'Unable to load your profile.');
+          return;
+        }
+        localStorage.setItem('user', JSON.stringify(response.data ?? {}));
+        localStorage.setItem('language', response.data?.language || 'en');
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        void this.router.navigateByUrl(this.safeReturnUrl(returnUrl));
+      },
+      error: (response: HttpErrorResponse | Error) => {
+        this.clearSession();
+        const message = this.errorMessage(response);
+        this.error.set('');
+        void this.feedbackDialog.open({
+          type: 'error',
+          title: 'Unable to sign in',
+          message,
+          confirmText: 'Try again',
+          showCancel: false,
+        });
+      },
+    });
+  }
+
+  protected togglePasswordVisibility(): void {
+    this.showPassword.update((visible) => !visible);
+  }
+
+  private clearSession(): void {
+    this.authSession.clear();
+  }
+
+  private errorMessage(response: HttpErrorResponse | Error): string {
+    if (response instanceof HttpErrorResponse) {
+      const body = response.error as AuthApiResponse | string | null;
+      if (typeof body === 'string') return body;
+      return body?.message || 'The authentication service is temporarily unavailable.';
     }
+    return response.message || 'Login failed.';
+  }
 
-    this.error = 'Invalid email or password. Try admin@hypernym.io / test1234';
+  private safeReturnUrl(returnUrl: string | null): string {
+    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/home';
   }
 }

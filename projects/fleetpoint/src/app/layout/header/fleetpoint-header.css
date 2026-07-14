@@ -1,8 +1,5 @@
 @reference "../../../styles.css";
 
-.fleetpoint-header {
-  @apply flex h-16 shrink-0 items-center justify-between border-b border-line bg-white px-4 dark:border-dark-line dark:bg-dark-surface sm:px-6;
-}
 .fleetpoint-brand {
   @apply flex min-w-0 items-center gap-2;
 }
@@ -17,34 +14,4 @@
 }
 .brand-context {
   @apply hidden truncate text-sm text-muted dark:text-brand-300 sm:inline;
-}
-.header-actions {
-  @apply flex items-center gap-3;
-}
-.live-status {
-  @apply hidden items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-3 py-1.5 text-xs font-medium text-success md:flex;
-}
-.live-status span {
-  @apply size-1.5 rounded-full bg-online;
-}
-.theme-toggle {
-  @apply flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-sm text-muted transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:text-brand-300 dark:hover:border-brand-400 dark:hover:text-white;
-}
-.profile-button {
-  @apply flex items-center gap-2 rounded-full;
-}
-.profile-copy {
-  @apply hidden text-right sm:block;
-}
-.profile-copy strong {
-  @apply block text-sm font-semibold text-ink dark:text-white;
-}
-.profile-copy small {
-  @apply block text-xs text-muted dark:text-brand-300;
-}
-.profile-avatar {
-  @apply relative grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white;
-}
-.profile-avatar > span {
-  @apply absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white bg-online dark:border-dark-surface;
 }

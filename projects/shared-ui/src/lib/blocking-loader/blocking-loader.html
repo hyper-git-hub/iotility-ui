@@ -1,0 +1,12 @@
+@if (visible()) {
+  <div class="loader-backdrop" role="status" aria-live="polite" aria-busy="true">
+    <section class="loader-panel">
+      <div class="loader-mark" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+      <strong>{{ label() }}</strong>
+      <p>{{ message() }}</p>
+      <div class="loader-track" aria-hidden="true"><i></i></div>
+    </section>
+  </div>
+}

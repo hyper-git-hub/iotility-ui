@@ -2,7 +2,7 @@ import { Component, computed, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Modal } from '../../../shared/modal/modal';
 import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
-import { SmoothHeight } from '../../../shared/smooth-height/smooth-height';
+import { SmoothHeight } from '@iotility/shared-ui';
 
 export interface VehicleFormValue {
   registration: string;

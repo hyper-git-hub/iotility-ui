@@ -1,0 +1,18 @@
+@reference "../../styles/theme.css";
+@reference "tailwindcss";
+
+.loader-backdrop { @apply fixed inset-0 z-[2500] grid place-items-center bg-dark-canvas/65 p-5 backdrop-blur-sm; }
+.loader-panel { @apply w-full max-w-xs rounded-2xl border border-white/15 bg-white p-6 text-center shadow-2xl dark:border-dark-line dark:bg-dark-surface; }
+.loader-mark { @apply mx-auto mb-4 flex h-10 items-end justify-center gap-1.5; }
+.loader-mark span { @apply w-2 rounded-full bg-brand-600; animation: loader-wave 1.15s ease-in-out infinite; }
+.loader-mark span:nth-child(1) { @apply h-5; }
+.loader-mark span:nth-child(2) { @apply h-9; animation-delay: 120ms; }
+.loader-mark span:nth-child(3) { @apply h-6; animation-delay: 240ms; }
+.loader-panel strong { @apply block text-base font-semibold text-ink dark:text-white; }
+.loader-panel p { @apply mt-1 text-xs leading-5 text-muted dark:text-dialog-muted; }
+.loader-track { @apply mt-5 h-1 overflow-hidden rounded-full bg-line dark:bg-dark-line; }
+.loader-track i { @apply block h-full w-2/5 rounded-full bg-brand-600; animation: loader-progress 1.4s ease-in-out infinite; }
+
+@keyframes loader-wave { 0%,100% { transform: scaleY(.55); opacity:.55; } 50% { transform: scaleY(1); opacity:1; } }
+@keyframes loader-progress { 0% { transform: translateX(-110%); } 100% { transform: translateX(360%); } }
+@media (prefers-reduced-motion: reduce) { .loader-mark span,.loader-track i { animation-duration: 2.5s; } }

@@ -1,7 +1,12 @@
 @reference "../../../styles.css";
 
 .stat-card {
+  --stat-card-accent: var(--color-brand-500);
+  --stat-card-accent-secondary: var(--color-info);
+  --stat-card-border: color-mix(in srgb, var(--stat-card-accent) 82%, black);
+  --stat-card-border-secondary: color-mix(in srgb, var(--stat-card-accent-secondary) 72%, black);
   @apply relative isolate flex min-h-32 flex-col overflow-hidden rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+  background: color-mix(in srgb, var(--stat-card-accent) 13%, white);
 }
 .stat-card-icon {
   @apply mb-3 grid size-9 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-600/15 dark:text-brand-300;
@@ -20,6 +25,10 @@
 .stat-card > span:last-child {
   @apply mt-0.5 text-xs text-muted dark:text-brand-300;
 }
+.stat-card[data-tone='info'] { --stat-card-accent: var(--color-info); --stat-card-accent-secondary: var(--color-brand-400); }
+.stat-card[data-tone='success'] { --stat-card-accent: var(--color-success); --stat-card-accent-secondary: var(--color-info); }
+.stat-card[data-tone='warning'] { --stat-card-accent: var(--color-warning); --stat-card-accent-secondary: var(--color-danger); }
+.stat-card[data-tone='danger'] { --stat-card-accent: var(--color-danger); --stat-card-accent-secondary: var(--color-warning); }
 .stat-card[data-tone='info'] .stat-card-icon { @apply bg-info/10 text-info; }
 .stat-card[data-tone='success'] .stat-card-icon { @apply bg-success/10 text-success; }
 .stat-card[data-tone='warning'] .stat-card-icon { @apply bg-warning/10 text-warning; }
@@ -30,7 +39,7 @@
   position: absolute;
   z-index: -2;
   inset: -120%;
-  background: conic-gradient(transparent 0 25%, var(--color-brand-500) 38% 48%, transparent 60% 78%, var(--color-info) 90%);
+  background: conic-gradient(transparent 0 25%, var(--stat-card-border) 38% 48%, transparent 60% 78%, var(--stat-card-border-secondary) 90%);
   animation: stat-card-border-spin 10s linear infinite;
 }
 .stat-card.animated-border::after {
@@ -39,8 +48,11 @@
   z-index: -1;
   inset: 2px;
   border-radius: calc(1rem - 2px);
-  background: white;
+  background: color-mix(in srgb, var(--stat-card-accent) 13%, white);
 }
-:host-context(.dark) .stat-card.animated-border::after { background: var(--color-dark-surface); }
+:host-context(.dark) .stat-card,
+:host-context(.dark) .stat-card.animated-border::after {
+  background: color-mix(in srgb, var(--stat-card-accent) 16%, var(--color-dark-surface));
+}
 @keyframes stat-card-border-spin { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) { .stat-card.animated-border::before { animation: none; } }

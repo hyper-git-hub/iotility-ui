@@ -3,7 +3,7 @@
 
   <div class="step-form-shell">
     <app-stepper [steps]="steps" [activeIndex]="activeStep()" (stepSelected)="goToStep($event)" />
-    <app-smooth-height class="step-content"><form id="vehicle-form" [formGroup]="form" (ngSubmit)="submit()">
+    <shared-smooth-height class="step-content"><form id="vehicle-form" [formGroup]="form" (ngSubmit)="submit()">
       @if (activeStep() === 0) {
         <section class="details-step step-enter">
           <label class="shared-form-field wide"><span>Fleet *</span><select class="shared-form-control" formControlName="fleet"><option>London HGV</option><option>Cold Chain</option><option>Manchester Vans</option><option>Birmingham Ops</option><option>Leeds Depot</option></select></label>
@@ -40,7 +40,7 @@
           <div class="driver-grid">@for (driver of filteredDrivers(); track driver.id) { <button type="button" class="driver-card" [class.selected]="selectedDriver() === driver.id" (click)="selectDriver(driver)"><span class="driver-avatar">{{ driver.initials }}</span><span><strong>{{ driver.name }}</strong><small>{{ driver.location }} · Available</small></span><em>{{ selectedDriver() === driver.id ? 'Selected' : 'Select' }}</em></button> }</div>
         </section>
       }
-    </form></app-smooth-height>
+    </form></shared-smooth-height>
   </div>
 
   <div modal-footer class="step-footer">

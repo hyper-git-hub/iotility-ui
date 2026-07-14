@@ -1,13 +1,16 @@
 import { Routes } from '@angular/router';
 import { loadRemoteModule } from '@angular-architects/native-federation-v4';
+import { authGuard, guestGuard } from './shared/guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: 'auth',
+    canMatch: [guestGuard],
     loadChildren: () => import('./auth/auth.routes').then((module) => module.AUTH_ROUTES),
   },
   {
     path: 'home',
+    canMatch: [authGuard],
     loadComponent: () => import('./layout/host-layout').then((module) => module.HostLayout),
     children: [
       {
@@ -18,6 +21,7 @@ export const routes: Routes = [
   },
   {
     path: '',
+    canMatch: [authGuard],
     loadComponent: () => import('./layout/host-layout').then((module) => module.HostLayout),
     children: [
       {
@@ -51,6 +55,7 @@ export const routes: Routes = [
   },
   {
     path: 'fleetpoint',
+    canMatch: [authGuard],
     loadChildren: () => loadRemoteModule('fleetpoint', './Routes').then((module) => module.routes),
   },
   { path: 'fleet', redirectTo: 'fleetpoint/dashboard' },

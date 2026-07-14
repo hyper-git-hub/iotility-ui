@@ -1,109 +1,66 @@
-<section class="fleet-status-card smooth-reveal dashboard-reveal-status">
-  <div class="widget-title">
-    <h2>Live Fleet Status</h2>
-    <span><i class="live-dot"></i>Live · 248 vehicles</span>
-  </div>
-  <div class="status-track">
-    <i class="bg-success basis-[75%]"></i><i class="bg-warning basis-[8%]"></i
-    ><i class="bg-info basis-[10%]"></i><i class="bg-danger basis-[4%]"></i
-    ><i class="bg-muted basis-[3%]"></i>
-  </div>
-  <div class="status-grid">
-    @for (status of fleetStatuses; track status.label) {
-      <article [class]="'status-' + status.tone">
-        <span class="status-icon" aria-hidden="true">
-          @switch (status.label) {
-            @case ('Moving') {
-              <svg viewBox="0 0 24 24">
-                <path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6" />
-                <circle cx="7" cy="17" r="2" />
-                <circle cx="17" cy="17" r="2" />
-              </svg>
-            }
-            @case ('Idling') {
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 7v5l3 2" />
-              </svg>
-            }
-            @case ('Stopped') {
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" />
-                <path d="m8 12 2.5 2.5L16 9" />
-              </svg>
-            }
-            @case ('Alert') {
-              <svg viewBox="0 0 24 24">
-                <path
-                  d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z"
-                />
-                <path d="M12 8v5M12 17h.01" />
-              </svg>
-            }
-            @default {
-              <svg viewBox="0 0 24 24">
-                <path d="M12 2v9" />
-                <path d="M6.3 5.3a8 8 0 1 0 11.4 0" />
-              </svg>
-            }
+<ui-blocking-loader [visible]="loading()" label="Loading dashboard" message="Getting the latest fleet activity..." />
+
+@if (error()) {
+  <section class="dashboard-error" role="alert">
+    <div><strong>Unable to load dashboard</strong><p>{{ error() }}</p></div>
+    <button type="button" (click)="loadDashboard()">Try again</button>
+  </section>
+} @else if (!loading()) {
+  <section class="metric-grid smooth-reveal dashboard-reveal-status" aria-label="Fleet summary">
+    @for (card of cards(); track card.code) {
+      <app-stat-card [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [animatedBorder]="true">
+        <svg stat-card-icon viewBox="0 0 24 24" aria-hidden="true">
+          @switch (card.code) {
+            @case ('DVC') { <path d="M12 3 3.5 6v5.5c0 4.8 3.6 8 8.5 9.5 4.9-1.5 8.5-4.7 8.5-9.5V6L12 3Z"/><path d="M12 7v5M12 16h.01"/> }
+            @case ('J') { <rect x="4" y="6" width="16" height="14" rx="2"/><path d="M9 6V4h6v2M4 11h16M10 11v2h4v-2"/> }
+            @case ('MD') { <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/> }
+            @case ('MOD') { <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M5.6 5.6 3.5 3.5"/><path d="M3 7V3h4"/> }
+            @case ('TD') { <circle cx="12" cy="8" r="3"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/> }
+            @case ('TDC') { <rect x="3" y="6" width="14" height="12" rx="2"/><path d="m17 10 4-2v8l-4-2"/> }
+            @case ('TF') { <path d="M3 17V9h10v8M13 12h4l3 3v2M3 13h10"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/> }
+            @case ('VIM') { <path d="M3 16V9h12v7M3 16h2M9 16h5"/><circle cx="7" cy="17" r="2"/><path d="m16 7 4 4M18 5l-2 2 4 4 2-2"/> }
+            @case ('VIO') { <path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="m8 5 2-2 2 2"/> }
           }
-        </span>
-        <strong>{{ status.count }}</strong
-        ><span>{{ status.label }}</span>
-      </article>
+        </svg>
+      </app-stat-card>
     }
-  </div>
-</section>
-<section class="primary-grid">
-  <article class="actions-card smooth-reveal dashboard-reveal-actions">
-    <div class="widget-title">
-      <h2>Actions Needed Today</h2>
-      <span class="urgent">2 urgent</span>
+  </section>
+
+  <section class="analytics-section smooth-reveal dashboard-reveal-actions">
+    <div class="section-heading"><div><h2>Dashboard analytics</h2><p>Performance, safety, jobs and maintenance insights</p></div><span>{{ graphs().length }} reports</span></div>
+    <div class="analytics-grid">
+      @for (graph of graphs(); track graph.code) { <app-dashboard-graph [graph]="graph" /> }
     </div>
-    <div class="action-list">
-      @for (action of actions; track action.title) {
-        <div>
-          <span class="action-symbol">!</span>
-          <p>
-            <strong>{{ action.title }}</strong
-            ><small>{{ action.detail }}</small>
-          </p>
-          <em [class.high]="action.level === 'High'">{{ action.level }}</em>
-        </div>
-      }
-    </div>
-  </article>
-  <article class="driver-card smooth-reveal dashboard-reveal-driver">
-    <div class="widget-title"><h2>Driver of the Week</h2></div>
-    <span class="driver-avatar">AK</span>
-    <h3>Aisha Okonkwo</h3>
-    <p>Transit Driver · Birmingham</p>
-    <div class="score-track"><i></i></div>
-    <strong class="driver-score">98 <small>/ 100</small></strong>
-    <div class="driver-stats">
-      <span><b>14</b>Trips</span><span><b>143 km</b>Distance</span><span><b>+61</b>Score</span>
-    </div>
-  </article>
-</section>
-<section class="chart-grid">
-  <app-fleet-line-chart
-    class="smooth-reveal chart-reveal-one"
-    title="CO₂ & Fuel Efficiency"
-    subtitle="Last 7 days · LogisticsPro fleet"
-    badge="↓ 4% vs last week"
-    [data]="efficiencyData"
-    [options]="efficiencyOptions"
-  /><app-fleet-bar-chart
-    class="smooth-reveal chart-reveal-two"
-    title="Fleet Utilisation"
-    subtitle="Today · by vehicle type"
-    [data]="utilisationData"
-    [options]="utilisationOptions"
-  /><app-fleet-doughnut-chart
-    class="smooth-reveal chart-reveal-three"
-    title="Fleet Energy Mix"
-    subtitle="Active vehicles by fuel type"
-    [data]="fuelMixData"
-    [options]="fuelMixOptions"
-  />
-</section>
+  </section>
+
+  <section class="overview-grid">
+    <article class="fleet-list-card smooth-reveal dashboard-reveal-actions">
+      <div class="widget-title">
+        <div><h2>Fleet overview</h2><p>{{ fleets().length }} fleets · {{ vehicles().length }} vehicles</p></div>
+        <span><i class="live-dot"></i>{{ onlineVehicles() }} online</span>
+      </div>
+      <div class="vehicle-list">
+        @for (vehicle of visibleVehicles(); track vehicle.id) {
+          <div class="vehicle-row">
+            <span class="vehicle-avatar">
+              @if (vehicle.vehicle_type_image) { <img [src]="vehicle.vehicle_type_image" alt="" /> } @else { {{ vehicleInitial(vehicle) }} }
+            </span>
+            <div class="vehicle-name"><strong>{{ vehicle.name }}</strong><small>{{ vehicle.make }} {{ vehicle.model }} · {{ vehicle.vehicle_driver_name || 'No driver assigned' }}</small></div>
+            <div class="vehicle-location"><span>{{ vehicle.location || 'Location unavailable' }}</span><small>{{ vehicle.speed || 0 }} km/h</small></div>
+            <span [class]="vehicle.online_status ? 'state-online' : 'state-offline'">{{ vehicle.online_status ? 'Online' : 'Offline' }}</span>
+          </div>
+        } @empty { <p class="empty-copy">No vehicles are assigned to a fleet.</p> }
+      </div>
+    </article>
+
+    <article class="dashcam-card smooth-reveal dashboard-reveal-driver">
+      <div class="widget-title"><div><h2>Available dashcams</h2><p>{{ dashcams().length }} connected devices</p></div><span>{{ dashcams().length }} devices</span></div>
+      <div class="dashcam-list">
+        @for (camera of dashcams(); track camera.device_id) {
+          <div><span class="camera-icon"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="12" rx="2"/><path d="m17 10 4-2v8l-4-2"/><circle cx="10" cy="12" r="2.5"/></svg></span><p><strong>{{ camera.name }}</strong><small>{{ camera.device_type }} · {{ camera.device_id }}</small></p><em>{{ camera.notifications }} alerts</em></div>
+        } @empty { <p class="empty-copy">No dashcam devices are available.</p> }
+      </div>
+    </article>
+  </section>
+
+}

@@ -1,0 +1,14 @@
+@reference "../../../styles.css";
+
+.auth-shell { @apply flex min-h-screen bg-canvas; }
+.auth-brand-panel { @apply relative hidden w-[63%] overflow-hidden bg-brand-950 p-10 text-white lg:flex lg:flex-col lg:justify-between; }
+.auth-glow { @apply absolute inset-0; background: radial-gradient(ellipse at center bottom,var(--color-brand-800) 0%,var(--color-brand-950) 48%,var(--color-ink) 100%); }
+.auth-brand-row { @apply relative z-10 flex items-center gap-4; }
+.auth-brand-row img { @apply h-7 w-auto max-w-36; }
+.auth-brand-row span { @apply h-7 w-px bg-brand-400/60; }
+.auth-illustration { @apply relative z-10 mx-auto grid w-full place-items-center py-12; }
+.auth-illustration img { @apply w-full max-w-4xl; }
+.auth-tagline { @apply relative z-10 mx-auto text-center; }
+.auth-tagline h1 { @apply text-3xl font-bold leading-snug; }
+.auth-tagline p { @apply mt-2 text-sm text-brand-300; }
+.auth-content-panel { @apply flex min-w-0 flex-1 flex-col items-stretch justify-center px-5 py-10 sm:px-8; }

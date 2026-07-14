@@ -1,29 +1,28 @@
 @reference "../../../styles.css";
 
-.form-label {
-  @apply mb-1 block text-sm font-medium text-ink;
-}
-
-.form-control {
-  @apply flex items-center rounded-lg border border-line bg-white px-3 py-2.5 transition focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500;
-}
-
-.form-control input {
-  @apply min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted/60;
-}
-
-.form-icon {
-  @apply mr-2 size-4 shrink-0 text-muted;
-  stroke-width: 1.8;
-}
-
-.login-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at center bottom,
-    var(--color-brand-800) 0%,
-    var(--color-brand-950) 48%,
-    var(--color-ink) 100%
-  );
-}
+:host { @apply block w-full; }
+.login-content { @apply w-full; }
+.login-heading { @apply mb-8 text-center; }
+.mobile-logo { @apply mx-auto mb-5 h-7 w-auto lg:hidden; }
+.login-heading h2 { @apply text-2xl font-bold text-ink; }
+.login-heading p { @apply mt-1 text-sm text-muted; }
+.login-card { @apply rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8; }
+.login-card h3 { @apply text-xl font-semibold text-ink; }
+.account-copy { @apply mb-6 mt-1 text-sm text-muted; }
+.account-copy a { @apply font-medium text-brand-600 hover:underline; }
+.form-label { @apply mb-1 block text-sm font-medium text-ink; }
+.form-label span { @apply text-danger; }
+.password-label { @apply mt-4; }
+.form-control { @apply flex items-center rounded-lg border border-line bg-white px-3 py-2.5 transition focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500; }
+.form-control input { @apply min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted/60; }
+.form-icon { @apply mr-2 size-4 shrink-0 text-muted; stroke-width: 1.8; }
+.password-toggle { @apply grid size-7 shrink-0 cursor-pointer place-items-center rounded-md text-muted transition hover:bg-brand-50 hover:text-brand-600; }
+.password-toggle svg { @apply size-4; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.field-error { @apply mt-1 block text-xs text-danger; }
+.login-options { @apply mb-6 mt-3 flex items-center justify-between gap-3 text-xs; }
+.login-options label { @apply flex cursor-pointer items-center gap-2 text-muted; }
+.login-options input { @apply accent-brand-600; }
+.login-options a { @apply font-medium text-brand-600 hover:underline; }
+.login-error { @apply mb-4 rounded-lg bg-danger/10 px-3 py-2 text-center text-sm text-danger; }
+.submit-button { @apply flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60; }
+.submit-button svg { @apply size-5; }

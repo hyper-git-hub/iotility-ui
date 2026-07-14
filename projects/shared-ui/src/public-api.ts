@@ -1,3 +1,5 @@
 export * from './lib/dropdown/dropdown';
 export * from './lib/data-table/data-table';
 export * from './lib/platform-header/platform-header';
+export * from './lib/blocking-loader/blocking-loader';
+export * from './lib/smooth-height/smooth-height';
