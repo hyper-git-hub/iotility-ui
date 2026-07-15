@@ -23,6 +23,7 @@ export class VehiclesPage implements OnInit {
   protected readonly actionLoading = signal(false);
   protected readonly error = signal('');
   protected readonly formOpen = signal(false);
+  protected readonly selectedVehicle = signal<VehicleInventoryRecord | null>(null);
   protected readonly total = signal(0);
   protected readonly records = signal<VehicleInventoryRecord[]>([]);
   protected readonly fleetOptions = signal<InventoryOption[]>([]);
@@ -117,10 +118,16 @@ export class VehiclesPage implements OnInit {
   protected previousPage(): void { this.offset.update((value) => Math.max(0, value - this.limit)); this.loadVehicles(); }
   protected nextPage(): void { if (this.offset() + this.limit < this.total()) { this.offset.update((value) => value + this.limit); this.loadVehicles(); } }
 
-  protected addVehicle(_: VehicleFormValue): void { this.formOpen.set(false); this.loadVehicles(false); }
+  protected openCreateForm(): void { this.selectedVehicle.set(null); this.formOpen.set(true); }
+  protected closeForm(): void { this.formOpen.set(false); this.selectedVehicle.set(null); }
+  protected saveVehicle(_: VehicleFormValue): void { this.closeForm(); this.loadVehicles(); }
   protected handleRowAction(event: { action: TableAction; row: TableRow }): void {
     if (event.action === 'map') void this.router.navigateByUrl('/fleetpoint/live-tracking');
     else if (event.action === 'history') void this.router.navigateByUrl('/fleetpoint/trip-replay');
+    else if (event.action === 'edit') {
+      const vehicle = this.records().find((record) => record.id === Number(event.row['id'])) ?? null;
+      if (vehicle) { this.selectedVehicle.set(vehicle); this.formOpen.set(true); }
+    }
     else if (event.action === 'delete') this.deleteVehicle(event.row);
     else this.formOpen.set(true);
   }
@@ -136,7 +143,12 @@ export class VehiclesPage implements OnInit {
     if (!confirmed) return;
     this.actionLoading.set(true); this.error.set('');
     this.api.deleteVehicle(String(row['id'])).subscribe({
-      next: () => { this.actionLoading.set(false); if (this.records().length === 1 && this.offset() > 0) this.offset.update((value) => Math.max(0, value - this.limit)); this.loadVehicles(false); void this.feedback.open({ type: 'success', title: 'Vehicle deleted', message: `${registration} was deleted successfully.`, confirmText: 'Done', showCancel: false }); },
+      next: async () => {
+        this.actionLoading.set(false);
+        await this.feedback.open({ type: 'success', title: 'Vehicle deleted', message: `${registration} was deleted successfully.`, confirmText: 'Done', showCancel: false });
+        if (this.records().length === 1 && this.offset() > 0) this.offset.update((value) => Math.max(0, value - this.limit));
+        this.loadVehicles();
+      },
       error: (response) => { this.actionLoading.set(false); const message = response.error?.message || 'Vehicle could not be deleted.'; this.error.set(message); void this.feedback.open({ type: 'error', title: 'Unable to delete vehicle', message, confirmText: 'Close', showCancel: false }); },
     });
   }

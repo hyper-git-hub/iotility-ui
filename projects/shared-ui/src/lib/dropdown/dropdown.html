@@ -1,6 +1,11 @@
 <div class="dropdown-root" [class.compact]="density() === 'compact'">
   <div class="dropdown-trigger" (click)="toggle()" [attr.aria-expanded]="isOpen()">
     <ng-content select="[dropdown-trigger]" />
+    @if (mode() === 'single' || mode() === 'multi') {
+      <svg class="dropdown-chevron" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m7 9.5 5 5 5-5" />
+      </svg>
+    }
   </div>
   @if (isOpen()) {
     <section class="dropdown-panel" [class.left]="align() === 'left'" [class.match-trigger]="matchTriggerWidth()" [class.above]="placement() === 'top'">

@@ -49,6 +49,13 @@
               </span>
               {{ item }}
             </a>
+          } @else if (item === 'Drivers') {
+            <a routerLink="drivers" routerLinkActive="active">
+              <span class="nav-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.5-4.2 2.8-6.3 7-6.3s6.5 2.1 7 6.3" /></svg>
+              </span>
+              {{ item }}
+            </a>
           } @else {
             <button type="button">
               <span class="nav-icon">◇</span>{{ item }}

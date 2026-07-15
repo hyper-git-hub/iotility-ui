@@ -77,6 +77,18 @@ export const routes: Routes = [
             (module) => module.VehicleDetail,
           ),
       },
+      {
+        path: 'drivers',
+        title: 'Drivers | FleetPoint',
+        loadComponent: () =>
+          import('./pages/drivers/drivers-page').then((module) => module.DriversPage),
+        children: [
+          { path: '', loadComponent: () => import('./pages/drivers/driver-list/driver-list').then((module) => module.DriverList) },
+          { path: 'drivers', pathMatch: 'full', redirectTo: '' },
+          { path: 'groups', loadComponent: () => import('./pages/drivers/group-list/group-list').then((module) => module.GroupList) },
+          { path: 'managers', loadComponent: () => import('./pages/drivers/manager-list/manager-list').then((module) => module.ManagerList) },
+        ],
+      },
       { path: '**', redirectTo: 'dashboard' },
     ],
   },

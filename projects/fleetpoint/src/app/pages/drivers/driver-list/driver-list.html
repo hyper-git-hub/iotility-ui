@@ -1,0 +1,32 @@
+<section class="driver-tab-content tab-enter">
+  <ui-blocking-loader [visible]="listView() === 'drivers' && loading()" label="Loading drivers" message="Getting the latest driver records..." /><ui-blocking-loader [visible]="listView() === 'drivers' && actionLoading()" [compact]="true" label="Deleting driver..." />
+  <div class="tab-action smooth-reveal tab-reveal-action">
+    @if (listView() === 'drivers') {
+      <button type="button" class="allocation-nav-button" (click)="showAllocations()">View Driver Allocations</button>
+      <button type="button" class="add-driver" (click)="openCreateForm()">+ Add Driver</button>
+    } @else {
+      <button type="button" class="allocation-nav-button" (click)="showDrivers()">← Back to Drivers</button>
+      <button type="button" class="add-driver" (click)="selectedAllocation.set(null);allocationFormOpen.set(true)">+ Add Allocation</button>
+    }
+  </div>
+  <section class="driver-stats smooth-reveal tab-reveal-stats">
+    <app-stat-card label="Total Drivers" [value]="displayedTotal()" tone="brand"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.4-3.8 2.2-5.7 5.5-5.7s5.1 1.9 5.5 5.7M16 6.5a3 3 0 0 1 0 5.8M17 14c2.2.6 3.4 2.3 3.5 5"/></svg></app-stat-card>
+    <app-stat-card label="Active" [value]="active()" tone="success"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg></app-stat-card>
+    <app-stat-card label="On Shift" [value]="onShift()" tone="info"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></app-stat-card>
+    <app-stat-card label="Unallocated" [value]="unallocated()" tone="warning"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="10" cy="8" r="3"/><path d="M4 19c.4-3.8 2.4-5.7 6-5.7 1.5 0 2.7.3 3.7 1M17 8l4 4M21 8l-4 4"/></svg></app-stat-card>
+  </section>
+  @if (listView() === 'drivers') {
+  <section class="driver-filters smooth-reveal tab-reveal-filters"><div class="filter-controls">
+    <label><span>Group</span><shared-dropdown class="filter-dropdown" [options]="groupOptions()" mode="single" align="left" [searchable]="true" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[groupId()]" (optionSelected)="selectGroup($event)"><button dropdown-trigger type="button"><span>{{optionLabel(groupOptions(),groupId(),'All groups')}}</span></button></shared-dropdown></label>
+    <label><span>Driver</span><shared-dropdown class="filter-dropdown" [options]="driverOptions()" mode="single" align="left" [searchable]="true" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[driverId()]" (optionSelected)="selectDriver($event)"><button dropdown-trigger type="button"><span>{{optionLabel(driverOptions(),driverId(),'All drivers')}}</span></button></shared-dropdown></label>
+    <label><span>Type</span><shared-dropdown class="filter-dropdown" [options]="typeOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[cardType()]" (optionSelected)="selectType($event)"><button dropdown-trigger type="button"><span>{{optionLabel(typeOptions,cardType(),'All types')}}</span></button></shared-dropdown></label><button type="button" class="reset-filter" (click)="resetFilters()">Reset</button>
+  </div></section>
+  @if(error()){<section class="drivers-error">{{error()}}</section>}
+  <shared-data-table class="smooth-reveal tab-reveal-table" title="Driver List" [subtitle]="'Showing '+pageStart()+'–'+pageEnd()+' of '+displayedTotal()" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showPrimaryAction]="false" [showExport]="true" [minTableWidth]="1250" searchPlaceholder="Search drivers or employee ID" (searchChange)="tableSearchChanged($event)" (rowAction)="handleRowAction($event)"/>
+  <nav class="driver-pagination smooth-reveal tab-reveal-pagination"><span>Showing {{pageStart()}}–{{pageEnd()}} of {{displayedTotal()}}</span><div><button [disabled]="offset()===0||!!groupId()||!!driverId()" (click)="previousPage()">Previous</button><button [disabled]="offset()+limit>=total()||!!groupId()||!!driverId()" (click)="nextPage()">Next</button></div></nav>
+  } @else {
+    <app-driver-vehicle-allocation [refreshToken]="allocationRefresh()" (editRequested)="editAllocation($event)" />
+  }
+  <app-driver-form [open]="formOpen()" [driver]="selectedDriver()" [groups]="groups()" (cancelled)="closeForm()" (created)="driverSaved()"/>
+  <app-allocation-form [open]="allocationFormOpen()" [allocation]="selectedAllocation()" (cancelled)="closeAllocationForm()" (saved)="allocationSaved()" />
+</section>

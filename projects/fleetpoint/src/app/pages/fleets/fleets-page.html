@@ -15,7 +15,7 @@
 
   <section class="fleet-filters smooth-reveal fleet-filter-reveal">
     <label><span>Search fleets</span><input type="search" placeholder="Search by fleet name" [value]="search()" (input)="updateSearch($event)" (keyup.enter)="applyFilters()" /></label>
-    <label><span>Fleet</span><shared-dropdown class="fleet-filter-dropdown" [options]="fleetFilterOptions()" mode="single" align="left" [searchable]="true" searchPlaceholder="Search fleets" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[selectedFleetId()]" (optionSelected)="selectFleetFilter($event)"><button dropdown-trigger type="button"><span>{{ selectedFleetLabel() }}</span><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></shared-dropdown></label>
+    <label><span>Fleet</span><shared-dropdown class="fleet-filter-dropdown" [options]="fleetFilterOptions()" mode="single" align="left" [searchable]="true" searchPlaceholder="Search fleets" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[selectedFleetId()]" (optionSelected)="selectFleetFilter($event)"><button dropdown-trigger type="button"><span>{{ selectedFleetLabel() }}</span></button></shared-dropdown></label>
     <div class="fleet-filter-actions"><button type="button" class="fleet-reset" (click)="resetFilters()">Reset</button><button type="button" class="fleet-apply" (click)="applyFilters()">Apply filters</button></div>
   </section>
 

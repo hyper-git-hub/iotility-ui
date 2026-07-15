@@ -1,6 +1,6 @@
 @reference "../../../styles.css";
 
-.vehicles-page { @apply grid gap-4 p-5; }
+.vehicles-page { @apply grid content-start gap-4 p-5; }
 .vehicles-heading { @apply flex items-center justify-between; }
 .vehicles-heading h1 { @apply m-0 text-xl font-bold text-ink dark:text-white; }
 .vehicles-heading p { @apply mt-1 text-xs text-muted dark:text-brand-300; }

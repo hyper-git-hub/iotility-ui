@@ -20,6 +20,25 @@ export interface VehicleInventoryRecord {
   expiry_date: string | null;
   owner: string | null;
   image: string | null;
+  engine_number: string;
+  chassis_number: string;
+  color: string;
+  engine_capacity: string | number;
+  wheels: string | number;
+  fuel_tank_capacity: string | number;
+  purchase_type: string | number;
+  type: string | number;
+  device: string | number;
+  fleet: string | number | null;
+  fleet_category: string | number | null;
+  owner_id: string;
+  nationality: string;
+  registration_date: string;
+  speed_threshold: string | number;
+  harsh_acceleration: boolean;
+  harsh_braking: boolean;
+  sharp_turning: boolean;
+  is_immobilization_enabled: boolean;
 }
 
 export interface InventoryOption { id: number; name?: string; registration?: string; status?: number; }
@@ -72,6 +91,10 @@ export class VehicleInventoryApiService {
 
   createVehicle(payload: FormData): Observable<ApiResponse<unknown>> {
     return this.http.post<ApiResponse<unknown>>(`${FLEET_API}/vehicle`, payload);
+  }
+
+  updateVehicle(id: string | number, payload: FormData): Observable<ApiResponse<unknown>> {
+    return this.http.patch<ApiResponse<unknown>>(`${FLEET_API}/vehicle`, payload, { params: { id: String(id) } });
   }
 
   deleteVehicle(id: string | number): Observable<ApiResponse<unknown>> {
