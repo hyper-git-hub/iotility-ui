@@ -4,7 +4,7 @@
 .fleets-heading { @apply mb-5 flex items-center justify-between gap-4; }
 .fleets-heading h1 { @apply text-xl font-bold; }
 .fleets-heading p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
-.create-fleet-button { @apply inline-flex h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg border border-ink bg-ink px-3 text-xs font-medium text-white transition hover:opacity-90 dark:border-brand-600 dark:bg-brand-600; }
+.create-fleet-button { @apply inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-brand-700; }
 .create-fleet-button span { @apply text-lg leading-none; }
 .fleet-kpis { @apply mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4; }
 .fleet-grid { @apply grid grid-cols-1 gap-4 xl:grid-cols-2; }

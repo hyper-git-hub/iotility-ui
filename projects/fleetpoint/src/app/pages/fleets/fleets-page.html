@@ -1,51 +1,186 @@
 <section class="fleets-page">
-  <ui-blocking-loader [visible]="loading()" label="Loading fleets" message="Getting the latest fleet records..." />
+  <ui-blocking-loader
+    [visible]="loading()"
+    label="Loading fleets"
+    message="Getting the latest fleet records..."
+  />
 
   <header class="fleets-heading smooth-reveal">
-    <div><h1>Fleet Management</h1><p>{{ total() }} fleets · {{ totalVehicles() }} vehicles on this page</p></div>
-    <button type="button" class="create-fleet-button" (click)="formOpen.set(true)"><span>+</span>Create Fleet</button>
+    <div>
+      <h1>Fleet Management</h1>
+      <p>{{ total() }} fleets · {{ totalVehicles() }} vehicles on this page</p>
+    </div>
+    <button type="button" class="create-fleet-button" (click)="openCreate()">
+      <span>+</span>Create Fleet
+    </button>
   </header>
 
   <div class="fleet-kpis smooth-reveal">
-    <app-stat-card label="Total Fleets" [value]="total()" tone="brand"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z"/><path d="M9 12h6M12 9v6"/></svg></app-stat-card>
-    <app-stat-card label="Vehicles on Page" [value]="totalVehicles()" tone="info"><svg stat-card-icon viewBox="0 0 24 24"><path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></app-stat-card>
-    <app-stat-card label="Active Fleets" [value]="activeFleets()" tone="success"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></app-stat-card>
-    <app-stat-card label="Inactive Fleets" [value]="inactiveFleets()" tone="danger"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg></app-stat-card>
+    <app-stat-card label="Total Fleets" [value]="total()" tone="brand"
+      ><svg stat-card-icon viewBox="0 0 24 24">
+        <path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z" />
+        <path d="M9 12h6M12 9v6" /></svg
+    ></app-stat-card>
+    <app-stat-card label="Vehicles on Page" [value]="totalVehicles()" tone="info"
+      ><svg stat-card-icon viewBox="0 0 24 24">
+        <path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6" />
+        <circle cx="7" cy="17" r="2" />
+        <circle cx="17" cy="17" r="2" /></svg
+    ></app-stat-card>
+    <app-stat-card label="Active Fleets" [value]="activeFleets()" tone="success"
+      ><svg stat-card-icon viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="m8 12 2.5 2.5L16 9" /></svg
+    ></app-stat-card>
+    <app-stat-card label="Inactive Fleets" [value]="inactiveFleets()" tone="danger"
+      ><svg stat-card-icon viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M9 9l6 6M15 9l-6 6" /></svg
+    ></app-stat-card>
   </div>
 
   <section class="fleet-filters smooth-reveal fleet-filter-reveal">
-    <label><span>Search fleets</span><input type="search" placeholder="Search by fleet name" [value]="search()" (input)="updateSearch($event)" (keyup.enter)="applyFilters()" /></label>
-    <label><span>Fleet</span><shared-dropdown class="fleet-filter-dropdown" [options]="fleetFilterOptions()" mode="single" align="left" [searchable]="true" searchPlaceholder="Search fleets" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[selectedFleetId()]" (optionSelected)="selectFleetFilter($event)"><button dropdown-trigger type="button"><span>{{ selectedFleetLabel() }}</span></button></shared-dropdown></label>
-    <div class="fleet-filter-actions"><button type="button" class="fleet-reset" (click)="resetFilters()">Reset</button><button type="button" class="fleet-apply" (click)="applyFilters()">Apply filters</button></div>
+    <label
+      ><span>Search fleets</span
+      ><input
+        type="search"
+        placeholder="Search by fleet name"
+        [value]="search()"
+        (input)="updateSearch($event)"
+        (keyup.enter)="applyFilters()"
+    /></label>
+    <label
+      ><span>Fleet</span
+      ><shared-dropdown
+        class="fleet-filter-dropdown"
+        [options]="fleetFilterOptions()"
+        mode="single"
+        align="left"
+        [searchable]="true"
+        searchPlaceholder="Search fleets"
+        [showOptionIcons]="false"
+        [matchTriggerWidth]="true"
+        [selected]="[selectedFleetId()]"
+        (optionSelected)="selectFleetFilter($event)"
+        ><button dropdown-trigger type="button">
+          <span>{{ selectedFleetLabel() }}</span>
+        </button></shared-dropdown
+      ></label
+    >
+    <div class="fleet-filter-actions">
+      <button type="button" class="fleet-reset" (click)="resetFilters()">Reset</button
+      ><button type="button" class="fleet-apply" (click)="applyFilters()">Apply filters</button>
+    </div>
   </section>
 
-  @if (error()) { <section class="fleet-error" role="alert"><p>{{ error() }}</p><button type="button" (click)="loadFleets()">Try again</button></section> }
+  @if (error()) {
+    <section class="fleet-error" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" (click)="loadFleets()">Try again</button>
+    </section>
+  }
 
   <div class="fleet-grid">
     @for (fleet of fleets(); track fleet.id) {
       <article class="fleet-card smooth-reveal">
         <header>
-          <span class="fleet-avatar" [style.background]="fleet.color">{{ fleet.name.slice(0, 1) }}</span>
-          <div><h2>{{ fleet.name }}</h2><p>{{ fleet.customer }}</p></div>
-          <span [class]="fleet.status === 'Active' ? 'fleet-active' : 'fleet-inactive'">{{ fleet.status }}</span>
-          <shared-dropdown [options]="fleetActions" mode="action" density="compact" align="right" (optionSelected)="handleFleetAction($event)"><button dropdown-trigger type="button" class="more-button" aria-label="Fleet actions">•••</button></shared-dropdown>
+          <span class="fleet-avatar" [style.background]="fleet.color">{{
+            fleet.name.slice(0, 1)
+          }}</span>
+          <div>
+            <h2>{{ fleet.name }}</h2>
+            <p>{{ fleet.customer }}</p>
+          </div>
+          <span [class]="fleet.status === 'Active' ? 'fleet-active' : 'fleet-inactive'">{{
+            fleet.status
+          }}</span>
+          <shared-dropdown
+            [options]="fleetActions"
+            mode="action"
+            density="compact"
+            align="right"
+            (optionSelected)="handleFleetAction($event, fleet)"
+            ><button dropdown-trigger type="button" class="more-button" aria-label="Fleet actions">
+              •••
+            </button></shared-dropdown
+          >
         </header>
         <section class="fleet-card-content">
           <div class="fleet-stats">
-            <div><svg viewBox="0 0 24 24"><path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><strong>{{ fleet.vehicles }}</strong><small>Vehicles</small></div>
-            <div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><strong>{{ fleet.status }}</strong><small>Status</small></div>
-            <div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg><strong>{{ fleet.modifiedBy }}</strong><small>Modified by</small></div>
-            <div><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16"/></svg><strong>{{ fleet.createdAt }}</strong><small>Created</small></div>
+            <div>
+              <svg viewBox="0 0 24 24">
+                <path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6" />
+                <circle cx="7" cy="17" r="2" />
+                <circle cx="17" cy="17" r="2" /></svg
+              ><strong>{{ fleet.vehicles }}</strong
+              ><small>Vehicles</small>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m8 12 2.5 2.5L16 9" /></svg
+              ><strong>{{ fleet.status }}</strong
+              ><small>Status</small>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="3" />
+                <path d="M6 20v-2a6 6 0 0 1 12 0v2" /></svg
+              ><strong>{{ fleet.modifiedBy }}</strong
+              ><small>Modified by</small>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16" /></svg
+              ><strong>{{ fleet.createdAt }}</strong
+              ><small>Created</small>
+            </div>
           </div>
-          <div class="fleet-meta"><div><span>Modified datetime</span><strong>{{ fleet.updatedAt }}</strong></div><div><span>Customer</span><strong>{{ fleet.customer }}</strong></div></div>
-          <div class="fleet-location"><span><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16"/></svg>Created {{ fleet.createdAt }}</span><button type="button" (click)="trackFleet()">Track fleet ›</button></div>
+          <div class="fleet-meta">
+            <div>
+              <span>Modified datetime</span><strong>{{ fleet.updatedAt }}</strong>
+            </div>
+            <div>
+              <span>Customer</span><strong>{{ fleet.customer }}</strong>
+            </div>
+          </div>
+          <div class="fleet-location">
+            <span
+              ><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16" /></svg>Created
+              {{ fleet.createdAt }}</span
+            ><button type="button" (click)="trackFleet()">Track fleet ›</button>
+          </div>
         </section>
-        <footer>@for (vehicle of fleet.vehicleIds.slice(0, 5); track vehicle) { <span>{{ vehicle }}</span> } @if (fleet.vehicleIds.length > 5) { <small>+{{ fleet.vehicleIds.length - 5 }} more</small> } @if (!fleet.vehicleIds.length) { <small>No vehicle details supplied</small> }</footer>
+        <footer>
+          @for (vehicle of fleet.vehicleIds.slice(0, 5); track vehicle) {
+            <span>{{ vehicle }}</span>
+          }
+          @if (fleet.vehicleIds.length > 5) {
+            <small>+{{ fleet.vehicleIds.length - 5 }} more</small>
+          }
+          @if (!fleet.vehicleIds.length) {
+            <small>No vehicle details supplied</small>
+          }
+        </footer>
       </article>
-    } @empty { @if (!loading() && !error()) { <p class="empty-fleets">No fleets match the selected filters.</p> } }
+    } @empty {
+      @if (!loading() && !error()) {
+        <p class="empty-fleets">No fleets match the selected filters.</p>
+      }
+    }
   </div>
 
-  <nav class="fleet-pagination"><span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ total() }}</span><div><button [disabled]="offset() === 0" (click)="previousPage()">Previous</button><button [disabled]="offset() + limit >= total()" (click)="nextPage()">Next</button></div></nav>
+  <nav class="fleet-pagination">
+    <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ total() }}</span>
+    <div>
+      <button [disabled]="offset() === 0" (click)="previousPage()">Previous</button
+      ><button [disabled]="offset() + limit >= total()" (click)="nextPage()">Next</button>
+    </div>
+  </nav>
 </section>
 
-<app-fleet-form [open]="formOpen()" (cancelled)="formOpen.set(false)" (created)="createFleet($event)" />
+<app-fleet-form
+  [open]="formOpen()"
+  [fleet]="selectedFleet()"
+  (cancelled)="closeForm()"
+  (saved)="fleetSaved()"
+/>

@@ -1,4 +1,8 @@
-<div class="dropdown-root" [class.compact]="density() === 'compact'">
+<div
+  class="dropdown-root"
+  [class.compact]="density() === 'compact'"
+  [class.has-chevron]="mode() === 'single' || mode() === 'multi'"
+>
   <div class="dropdown-trigger" (click)="toggle()" [attr.aria-expanded]="isOpen()">
     <ng-content select="[dropdown-trigger]" />
     @if (mode() === 'single' || mode() === 'multi') {

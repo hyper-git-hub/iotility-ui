@@ -1,11 +1,28 @@
 @reference "../../../../styles.css";
-@import "../../../shared/styles/fields.css";
+@import '../../../shared/styles/fields.css';
 
-.fleet-form { @apply flex flex-col gap-3; }
-.fleet-form fieldset { @apply border-0 p-0; }
-.fleet-form legend { @apply mb-2 text-xs font-medium text-ink dark:text-brand-300; }
-.color-options { @apply flex flex-wrap gap-2; }
-.color-options button { @apply size-7 rounded-full border-2 border-white shadow-sm ring-1 ring-line transition hover:scale-110 dark:border-dark-surface dark:ring-dark-line; }
-.color-options button.selected { @apply scale-110 ring-2 ring-brand-500 ring-offset-2 dark:ring-offset-dark-surface; }
-.fleet-form-actions { @apply flex w-full gap-2; }
-.fleet-form-actions button { @apply flex-1; }
+.fleet-form {
+  @apply flex flex-col gap-3;
+}
+.shared-form-field b {
+  @apply text-danger;
+}
+.fleet-vehicle-dropdown {
+  @apply block;
+}
+.fleet-vehicle-dropdown [dropdown-trigger] {
+  @apply flex h-10 w-full cursor-pointer items-center rounded-xl border border-line bg-white px-3 text-left text-xs text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
+}
+.fleet-vehicle-dropdown [dropdown-trigger] span {
+  @apply min-w-0 truncate;
+}
+.fleet-form-actions {
+  @apply flex w-full gap-2;
+}
+.fleet-form-actions button {
+  @apply flex-1;
+}
+:host ::ng-deep app-modal .modal-panel,
+:host ::ng-deep app-modal .modal-content {
+  overflow: visible;
+}

@@ -6,7 +6,7 @@
 .dropdown-trigger {
   @apply contents;
 }
-.dropdown-trigger ::ng-deep [dropdown-trigger] {
+.has-chevron .dropdown-trigger ::ng-deep [dropdown-trigger] {
   padding-right: 2.5rem;
 }
 .dropdown-chevron {
