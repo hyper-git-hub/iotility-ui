@@ -229,8 +229,41 @@ export class Reports implements OnInit {
   }
   private toRow(record: ReportRecord): TableRow {
     return Object.fromEntries(
-      this.selectedReport().columns.map((column) => [column.key, record[column.key] ?? '—']),
+      this.selectedReport().columns.map((column) => {
+        const value = record[column.key];
+        const durationColumns = [
+          'powered_on',
+          'idle_time',
+          'traveling_time',
+          'productive_time',
+          'loading_duration',
+        ];
+        return [
+          column.key,
+          durationColumns.includes(column.key) ? this.formatDuration(value) : (value ?? '—'),
+        ];
+      }),
     ) as TableRow;
+  }
+  private formatDuration(value: unknown): string {
+    if (typeof value !== 'string') return String(value ?? '—');
+
+    const match = value
+      .trim()
+      .match(
+        /^(\d+)\s*(?:hr|hrs|hour|hours)\s+(\d+)\s*(?:min|mins|minute|minutes)\s+(\d+)\s*(?:sec|secs|second|seconds)$/i,
+      );
+    if (!match) return value;
+
+    const units = [
+      { value: Number(match[1]), label: 'hr' },
+      { value: Number(match[2]), label: 'min' },
+      { value: Number(match[3]), label: 'sec' },
+    ];
+    const visibleUnits = units.filter((unit) => unit.value > 0);
+    return (visibleUnits.length ? visibleUnits : [units[2]])
+      .map((unit) => `${unit.value} ${unit.label}`)
+      .join(' ');
   }
   private toInputDate(date: Date): string {
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
