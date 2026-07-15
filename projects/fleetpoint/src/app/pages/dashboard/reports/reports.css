@@ -1,0 +1,138 @@
+@reference "../../../../styles.css";
+
+:host {
+  @apply block h-full;
+}
+.reports-page {
+  @apply flex h-full min-h-0 overflow-hidden bg-canvas text-ink dark:bg-dark-canvas dark:text-white;
+}
+.reports-panel {
+  @apply flex w-72 shrink-0 flex-col overflow-y-auto border-r border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.reports-panel > header {
+  @apply border-b border-line p-4 dark:border-dark-line;
+}
+.reports-panel > header > div {
+  @apply flex items-center justify-between;
+}
+.reports-panel h1 {
+  @apply text-sm font-bold;
+}
+.reports-panel header span {
+  @apply rounded-full bg-brand-50 px-2 py-1 text-[9px] font-bold text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
+}
+.reports-panel header p {
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+.interval-filter {
+  @apply grid gap-3 border-b border-line p-4 dark:border-dark-line;
+}
+.interval-filter h2,
+.report-list > p {
+  @apply text-[10px] font-semibold uppercase tracking-wider text-muted dark:text-brand-300;
+}
+.interval-presets {
+  @apply grid grid-cols-2 gap-1;
+}
+.interval-presets button {
+  @apply cursor-pointer rounded-lg bg-canvas px-2 py-2 text-[10px] text-muted transition dark:bg-dark-canvas dark:text-brand-300;
+}
+.interval-presets button.active {
+  @apply bg-brand-600 font-semibold text-white;
+}
+.interval-filter label span {
+  @apply mb-1 block text-[9px] font-medium text-muted dark:text-brand-300;
+}
+.interval-filter input,
+.interval-filter select {
+  @apply h-9 w-full rounded-lg border border-line bg-white px-2 text-[10px] outline-none transition focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
+  color-scheme: light;
+}
+:host-context(.dark) .interval-filter input {
+  color-scheme: dark;
+}
+.apply-filter {
+  @apply h-9 cursor-pointer rounded-lg bg-brand-600 text-[10px] font-semibold text-white transition hover:bg-brand-700;
+}
+.report-list {
+  @apply py-3;
+}
+.report-list > p {
+  @apply px-4 pb-2;
+}
+.report-option {
+  @apply flex w-full cursor-pointer items-center gap-3 border-l-2 border-transparent px-4 py-3 text-left transition hover:bg-brand-50 dark:hover:bg-dark-canvas;
+}
+.report-option.selected {
+  @apply border-brand-600 bg-brand-50 dark:bg-brand-600/10;
+}
+.report-option > span:first-child {
+  @apply grid size-8 shrink-0 place-items-center rounded-lg bg-canvas text-[9px] font-bold text-brand-700 dark:bg-dark-canvas dark:text-brand-300;
+}
+.report-option.selected > span:first-child {
+  @apply bg-brand-600 text-white;
+}
+.report-option > span:nth-child(2) {
+  @apply min-w-0 flex-1;
+}
+.report-option strong {
+  @apply block text-xs font-semibold;
+}
+.report-option small {
+  @apply mt-0.5 block truncate text-[9px] text-muted dark:text-brand-300;
+}
+.report-option i {
+  @apply text-lg not-italic text-muted;
+}
+.report-content {
+  @apply flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-5 sm:p-6;
+}
+.report-content > header {
+  @apply flex items-end justify-between gap-4;
+}
+.report-content h2 {
+  @apply text-lg font-bold;
+}
+.report-content header p {
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+.report-content header > span {
+  @apply rounded-full bg-white px-3 py-1.5 text-[10px] font-semibold text-brand-700 dark:bg-dark-surface dark:text-brand-300;
+}
+.report-content shared-data-table {
+  @apply min-h-0 flex-1;
+}
+.report-error {
+  @apply flex items-center justify-between rounded-xl border border-danger/20 bg-danger/5 p-3 text-xs text-danger;
+}
+.report-error button {
+  @apply cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-[10px] font-semibold text-white;
+}
+.report-pagination {
+  @apply flex items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
+}
+.report-pagination div {
+  @apply flex gap-2;
+}
+.report-pagination button {
+  @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line;
+}
+@media (max-width: 760px) {
+  .reports-panel {
+    @apply w-60;
+  }
+  .report-content {
+    @apply p-3;
+  }
+}
+@media (max-width: 560px) {
+  .reports-page {
+    @apply block overflow-y-auto;
+  }
+  .reports-panel {
+    @apply h-auto w-full border-b border-r-0;
+  }
+  .report-content {
+    @apply min-h-[36rem];
+  }
+}

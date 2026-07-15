@@ -1,8 +1,46 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, viewChild } from '@angular/core';
-import { CircleMarker, Map as LeafletMap, Marker, Polyline, circleMarker, divIcon, latLngBounds, map as createMap, marker, polyline, tileLayer } from 'leaflet';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  effect,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
+import {
+  CircleMarker,
+  Map as LeafletMap,
+  Marker,
+  Polyline,
+  circleMarker,
+  divIcon,
+  latLngBounds,
+  map as createMap,
+  marker,
+  polyline,
+  tileLayer,
+} from 'leaflet';
 
-export interface TripPosition { lat: number; lng: number; speed: number; heading: number; time: string; }
-export interface TripReplayEvent { id: string; label: string; type: 'violation' | 'dashcam' | 'stop'; positionIndex: number; detail: string; }
+const OSRM_BASE_URL = 'https://fms.backend.iot.vodafone.com.qa:5000';
+
+export interface TripPosition {
+  lat: number;
+  lng: number;
+  speed: number;
+  heading: number;
+  time: string;
+  timestamp?: string;
+  location?: string;
+  driver?: string;
+}
+export interface TripReplayEvent {
+  id: string;
+  label: string;
+  type: 'violation' | 'dashcam' | 'stop';
+  positionIndex: number;
+  detail: string;
+}
 
 @Component({
   selector: 'app-trip-replay-map',
@@ -17,6 +55,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly playbackSpeed = input(1);
   readonly playbackStepDuration = input(260);
   readonly eventSelected = output<TripReplayEvent>();
+  readonly routeLoadingChange = output<boolean>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: LeafletMap;
   private routeCasing?: Polyline;
@@ -34,8 +73,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private displayedRoadProgress = 0;
 
   constructor() {
-    effect(() => { const positions = this.positions(); const events = this.events(); if (this.map) void this.renderRoute(positions, events); });
-    effect(() => { const index = this.positionIndex(); if (this.map) this.updateVehicle(index); });
+    effect(() => {
+      const positions = this.positions();
+      const events = this.events();
+      if (this.map) void this.renderRoute(positions, events);
+    });
+    effect(() => {
+      const index = this.positionIndex();
+      if (this.map) this.updateVehicle(index);
+    });
     effect(() => {
       const active = this.playbackActive();
       if (active && this.map && !this.playbackZoomApplied) {
@@ -47,25 +93,59 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.map = createMap(this.mapElement().nativeElement, { zoomControl: true });
-    tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(this.map);
+    tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(this.map);
+    this.map.setView([25.3548, 51.1839], 9);
     void this.renderRoute(this.positions(), this.events());
     setTimeout(() => this.map?.invalidateSize(), 0);
   }
 
   private async renderRoute(positions: TripPosition[], events: TripReplayEvent[]): Promise<void> {
-    if (!this.map || !positions.length) return;
+    if (!this.map) return;
+    if (!positions.length) {
+      this.routeVersion++;
+      this.routeRequest?.abort();
+      this.routeLoadingChange.emit(false);
+      this.routeCasing?.removeFrom(this.map);
+      this.route?.removeFrom(this.map);
+      this.completedRoute?.removeFrom(this.map);
+      this.vehicleMarker?.removeFrom(this.map);
+      this.vehicleMarker = undefined;
+      this.endpointMarkers.forEach((item) => item.removeFrom(this.map!));
+      this.endpointMarkers = [];
+      this.eventMarkers.forEach((item) => item.removeFrom(this.map!));
+      this.eventMarkers = [];
+      this.roadCoordinates = [];
+      this.map.setView([25.3548, 51.1839], 9);
+      return;
+    }
     const routeVersion = ++this.routeVersion;
-    const coordinates = await this.getRoadCoordinates(positions);
+    this.routeLoadingChange.emit(true);
+    let coordinates: Array<[number, number]>;
+    try {
+      coordinates = await this.getRoadCoordinates(positions);
+    } finally {
+      if (routeVersion === this.routeVersion) this.routeLoadingChange.emit(false);
+    }
     if (!this.map || routeVersion !== this.routeVersion) return;
     const styles = getComputedStyle(document.documentElement);
-    const color = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+    const color = (name: string, fallback: string) =>
+      styles.getPropertyValue(name).trim() || fallback;
     const success = color('--color-success', '#20a77d');
     const danger = color('--color-danger', '#df405e');
     const warning = color('--color-warning', '#eca91f');
     const info = color('--color-info', '#397bd5');
-    this.routeCasing?.removeFrom(this.map); this.route?.removeFrom(this.map); this.completedRoute?.removeFrom(this.map); this.vehicleMarker?.removeFrom(this.map); this.vehicleMarker = undefined;
-    this.endpointMarkers.forEach((item) => item.removeFrom(this.map!)); this.endpointMarkers = [];
-    this.eventMarkers.forEach((item) => item.removeFrom(this.map!)); this.eventMarkers = [];
+    this.routeCasing?.removeFrom(this.map);
+    this.route?.removeFrom(this.map);
+    this.completedRoute?.removeFrom(this.map);
+    this.vehicleMarker?.removeFrom(this.map);
+    this.vehicleMarker = undefined;
+    this.endpointMarkers.forEach((item) => item.removeFrom(this.map!));
+    this.endpointMarkers = [];
+    this.eventMarkers.forEach((item) => item.removeFrom(this.map!));
+    this.eventMarkers = [];
     this.roadCoordinates = coordinates;
     this.playbackZoomApplied = false;
     this.displayedHeading = undefined;
@@ -82,14 +162,40 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       dashArray: '10 8',
     }).addTo(this.map);
     this.endpointMarkers = [
-      circleMarker(coordinates[0], { radius: 8, color: 'white', weight: 3, fillColor: success, fillOpacity: 1 }).bindTooltip('Trip start').addTo(this.map),
-      circleMarker(coordinates.at(-1)!, { radius: 8, color: 'white', weight: 3, fillColor: danger, fillOpacity: 1 }).bindTooltip('Trip end').addTo(this.map),
+      circleMarker(coordinates[0], {
+        radius: 8,
+        color: 'white',
+        weight: 3,
+        fillColor: success,
+        fillOpacity: 1,
+      })
+        .bindTooltip('Trip start')
+        .addTo(this.map),
+      circleMarker(coordinates.at(-1)!, {
+        radius: 8,
+        color: 'white',
+        weight: 3,
+        fillColor: danger,
+        fillOpacity: 1,
+      })
+        .bindTooltip('Trip end')
+        .addTo(this.map),
     ];
     for (const event of events) {
-      const point = coordinates[this.routeIndex(event.positionIndex, positions.length)]; if (!point) continue;
-      const eventColor = event.type === 'violation' ? danger : event.type === 'dashcam' ? warning : info;
-      const eventMarker = circleMarker(point, { radius: 7, color: 'white', weight: 2, fillColor: eventColor, fillOpacity: 1 }).bindTooltip(`${event.label} · ${event.detail}`);
-      eventMarker.on('click', () => this.eventSelected.emit(event)); eventMarker.addTo(this.map); this.eventMarkers.push(eventMarker);
+      const point = coordinates[this.routeIndex(event.positionIndex, positions.length)];
+      if (!point) continue;
+      const eventColor =
+        event.type === 'violation' ? danger : event.type === 'dashcam' ? warning : info;
+      const eventMarker = circleMarker(point, {
+        radius: 7,
+        color: 'white',
+        weight: 2,
+        fillColor: eventColor,
+        fillOpacity: 1,
+      }).bindTooltip(`${event.label} · ${event.detail}`);
+      eventMarker.on('click', () => this.eventSelected.emit(event));
+      eventMarker.addTo(this.map);
+      this.eventMarkers.push(eventMarker);
     }
     this.map.fitBounds(latLngBounds(coordinates), { padding: [48, 48], maxZoom: 13 });
     this.updateVehicle(this.positionIndex());
@@ -99,17 +205,77 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const fallback = positions.map(({ lat, lng }) => [lat, lng] as [number, number]);
     this.routeRequest?.abort();
     this.routeRequest = new AbortController();
-    const waypointIndexes = [0, Math.floor((positions.length - 1) / 3), Math.floor(((positions.length - 1) * 2) / 3), positions.length - 1];
-    const waypoints = waypointIndexes.map((index) => `${positions[index].lng},${positions[index].lat}`).join(';');
     try {
-      const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`, { signal: this.routeRequest.signal });
-      if (!response.ok) return fallback;
-      const result = await response.json() as { routes?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }> };
-      const roadRoute = result.routes?.[0]?.geometry?.coordinates;
-      return roadRoute?.length ? roadRoute.map(([lng, lat]) => [lat, lng]) : fallback;
+      const chunks = this.positionChunks(positions, 95);
+      const matched: Array<[number, number]> = [];
+      for (const chunk of chunks) {
+        const coordinates = chunk.map((point) => `${point.lng},${point.lat}`).join(';');
+        const timestamps = chunk
+          .map((point, index) => {
+            const parsed = point.timestamp ? new Date(point.timestamp).getTime() : NaN;
+            return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : index;
+          })
+          .join(';');
+        const radiuses = chunk.map(() => '50').join(';');
+        const response = await fetch(
+          `${OSRM_BASE_URL}/match/v1/driving/${coordinates}?timestamps=${timestamps}&radiuses=${radiuses}&overview=full&geometries=geojson`,
+          { signal: this.routeRequest.signal },
+        );
+        if (!response.ok) throw new Error('OSRM matching failed');
+        const result = (await response.json()) as {
+          code?: string;
+          matchings?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
+        };
+        const coordinatesResult =
+          result.code === 'Ok'
+            ? result.matchings?.flatMap((match) => match.geometry?.coordinates ?? [])
+            : [];
+        if (!coordinatesResult?.length) throw new Error('OSRM returned no matching');
+        matched.push(...coordinatesResult.map(([lng, lat]) => [lat, lng] as [number, number]));
+      }
+      return this.dedupeCoordinates(matched);
     } catch {
-      return fallback;
+      if (this.routeRequest.signal.aborted) return fallback;
+      try {
+        return await this.getOsrmRoute(positions);
+      } catch {
+        return fallback;
+      }
     }
+  }
+
+  private async getOsrmRoute(positions: TripPosition[]): Promise<Array<[number, number]>> {
+    const routed: Array<[number, number]> = [];
+    for (const chunk of this.positionChunks(positions, 95)) {
+      const coordinates = chunk.map((point) => `${point.lng},${point.lat}`).join(';');
+      const response = await fetch(
+        `${OSRM_BASE_URL}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`,
+        { signal: this.routeRequest?.signal },
+      );
+      if (!response.ok) throw new Error('OSRM routing failed');
+      const result = (await response.json()) as {
+        routes?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
+      };
+      const route = result.routes?.[0]?.geometry?.coordinates;
+      if (!route?.length) throw new Error('OSRM returned no route');
+      routed.push(...route.map(([lng, lat]) => [lat, lng] as [number, number]));
+    }
+    return this.dedupeCoordinates(routed);
+  }
+
+  private positionChunks(positions: TripPosition[], size: number): TripPosition[][] {
+    const chunks: TripPosition[][] = [];
+    for (let index = 0; index < positions.length - 1; index += size - 1)
+      chunks.push(positions.slice(index, Math.min(index + size, positions.length)));
+    return chunks;
+  }
+  private dedupeCoordinates(coordinates: Array<[number, number]>): Array<[number, number]> {
+    return coordinates.filter(
+      (point, index) =>
+        index === 0 ||
+        point[0] !== coordinates[index - 1][0] ||
+        point[1] !== coordinates[index - 1][1],
+    );
   }
 
   private routeIndex(positionIndex: number, positionCount: number): number {
@@ -119,14 +285,23 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   private updateVehicle(index: number): void {
     if (!this.map) return;
-    const positions = this.positions(); const current = positions[Math.min(index, positions.length - 1)]; if (!current || !this.roadCoordinates.length) return;
+    const positions = this.positions();
+    const current = positions[Math.min(index, positions.length - 1)];
+    if (!current || !this.roadCoordinates.length) return;
     const roadIndex = this.routeIndex(index, positions.length);
     const roadPosition = this.roadCoordinates[roadIndex];
     const heading = this.headingAt(roadIndex);
     const completed = this.roadCoordinates.slice(0, roadIndex + 1);
     this.completedRoute?.removeFrom(this.map);
-    const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim();
-    if (completed.length > 1) this.completedRoute = polyline(completed, { color: brandColor, weight: 5, opacity: 0.95 }).addTo(this.map);
+    const brandColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-brand-500')
+      .trim();
+    if (completed.length > 1)
+      this.completedRoute = polyline(completed, {
+        color: brandColor,
+        weight: 5,
+        opacity: 0.95,
+      }).addTo(this.map);
     const icon = divIcon({
       className: '',
       html: `<div class="replay-vehicle" style="transform:rotate(${heading}deg)" aria-label="Vehicle position">
@@ -136,7 +311,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       iconAnchor: [29, 29],
     });
     if (this.vehicleMarker) {
-      const vehicleElement = this.vehicleMarker.getElement()?.querySelector<HTMLElement>('.replay-vehicle');
+      const vehicleElement = this.vehicleMarker
+        .getElement()
+        ?.querySelector<HTMLElement>('.replay-vehicle');
       if (this.playbackActive()) this.animateVehicleTo(roadIndex);
       else {
         this.cancelMovement();
@@ -162,12 +339,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const move = (now: number) => {
       if (!this.map || !this.vehicleMarker) return;
       const progress = Math.min((now - startedAt) / duration, 1);
-      this.displayedRoadProgress = startRoadProgress
-        + (targetRoadProgress - startRoadProgress) * progress;
+      this.displayedRoadProgress =
+        startRoadProgress + (targetRoadProgress - startRoadProgress) * progress;
       const position = this.coordinateAt(this.displayedRoadProgress);
       this.vehicleMarker.setLatLng(position);
-      const vehicleElement = this.vehicleMarker.getElement()?.querySelector<HTMLElement>('.replay-vehicle');
-      if (vehicleElement) vehicleElement.style.transform = `rotate(${this.headingAt(this.displayedRoadProgress)}deg)`;
+      const vehicleElement = this.vehicleMarker
+        .getElement()
+        ?.querySelector<HTMLElement>('.replay-vehicle');
+      if (vehicleElement)
+        vehicleElement.style.transform = `rotate(${this.headingAt(this.displayedRoadProgress)}deg)`;
       this.map.panTo(position, { animate: false, noMoveStart: true });
       if (progress < 1) this.movementFrame = requestAnimationFrame(move);
       else this.movementFrame = undefined;
@@ -182,16 +362,14 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const fraction = progress - lowerIndex;
     const start = this.roadCoordinates[lowerIndex];
     const end = this.roadCoordinates[upperIndex];
-    return [
-      start[0] + (end[0] - start[0]) * fraction,
-      start[1] + (end[1] - start[1]) * fraction,
-    ];
+    return [start[0] + (end[0] - start[0]) * fraction, start[1] + (end[1] - start[1]) * fraction];
   }
 
   private headingAt(progress: number): number {
     const roadIndex = Math.round(progress);
     const directionStart = this.roadCoordinates[Math.max(roadIndex - 2, 0)];
-    const directionEnd = this.roadCoordinates[Math.min(roadIndex + 3, this.roadCoordinates.length - 1)];
+    const directionEnd =
+      this.roadCoordinates[Math.min(roadIndex + 3, this.roadCoordinates.length - 1)];
     return this.nearestHeading(this.calculateBearing(directionStart, directionEnd));
   }
 
@@ -206,8 +384,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const endLat = toRadians(end[0]);
     const longitudeDelta = toRadians(end[1] - start[1]);
     const y = Math.sin(longitudeDelta) * Math.cos(endLat);
-    const x = Math.cos(startLat) * Math.sin(endLat)
-      - Math.sin(startLat) * Math.cos(endLat) * Math.cos(longitudeDelta);
+    const x =
+      Math.cos(startLat) * Math.sin(endLat) -
+      Math.sin(startLat) * Math.cos(endLat) * Math.cos(longitudeDelta);
     return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
   }
 
@@ -222,5 +401,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return this.displayedHeading;
   }
 
-  ngOnDestroy(): void { this.cancelMovement(); this.routeRequest?.abort(); this.map?.remove(); }
+  ngOnDestroy(): void {
+    this.cancelMovement();
+    this.routeRequest?.abort();
+    this.map?.remove();
+  }
 }

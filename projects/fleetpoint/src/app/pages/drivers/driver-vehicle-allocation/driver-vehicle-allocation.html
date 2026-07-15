@@ -1,52 +1,106 @@
-<ui-blocking-loader [visible]="loading()" label="Loading driver allocations" message="Getting the latest vehicle allocations..." />
-<ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting allocation..." />
-<section class="allocation-board">
-  <header class="allocation-heading smooth-reveal allocation-reveal-heading">
-    <div><h2>Driver Allocations</h2><p>View vehicles and the drivers currently assigned to them.</p></div>
-    <span>{{ total() }} {{ total() === 1 ? 'allocation' : 'allocations' }}</span>
-  </header>
-  @if (error()) { <section class="drivers-error">{{ error() }}</section> }
-  <div class="allocation-grid">
-    @for (allocation of allocations(); track allocation.id; let index = $index) {
-      <article class="allocation-group smooth-reveal" [style.--reveal-delay]="(260 + index * 110) + 'ms'">
-        <header>
-          <i [class]="'group-tone tone-' + (index % 4)"></i>
-          <strong>{{ allocation.vehicle_name || ('Vehicle ' + allocation.vehicle_id) }}</strong>
-          <span>({{ names(allocation).length }} {{ names(allocation).length === 1 ? 'driver' : 'drivers' }})</span>
-          <small>{{ allocation.start_date }} – {{ allocation.end_date }}</small>
-          <div class="allocation-actions"><button type="button" title="Edit allocation" aria-label="Edit allocation" (click)="edit(allocation)"><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg></button><button type="button" class="delete" title="Delete allocation" aria-label="Delete allocation" (click)="remove(allocation)"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button></div>
-        </header>
-        <div class="allocated-drivers">
-          @for (name of names(allocation); track $index) {
-            <div class="allocated-driver">
-              <span class="driver-avatar">{{ initials(name) }}</span>
-              <span><strong>{{ name }}</strong><small>{{ driverId(allocation, $index) }}</small></span>
-            </div>
-          } @empty { <p>No drivers assigned to this vehicle</p> }
-        </div>
-      </article>
-        <article class="allocation-group smooth-reveal" [style.--reveal-delay]="(260 + index * 110) + 'ms'">
-        <header>
-          <i [class]="'group-tone tone-' + (index % 4)"></i>
-          <strong>{{ allocation.vehicle_name || ('Vehicle ' + allocation.vehicle_id) }}</strong>
-          <span>({{ names(allocation).length }} {{ names(allocation).length === 1 ? 'driver' : 'drivers' }})</span>
-          <small>{{ allocation.start_date }} – {{ allocation.end_date }}</small>
-          <div class="allocation-actions"><button type="button" title="Edit allocation" aria-label="Edit allocation" (click)="edit(allocation)"><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg></button><button type="button" class="delete" title="Delete allocation" aria-label="Delete allocation" (click)="remove(allocation)"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button></div>
-        </header>
-        <div class="allocated-drivers">
-          @for (name of names(allocation); track $index) {
-            <div class="allocated-driver">
-              <span class="driver-avatar">{{ initials(name) }}</span>
-              <span><strong>{{ name }}</strong><small>{{ driverId(allocation, $index) }}</small></span>
-            </div>
-          } @empty { <p>No drivers assigned to this vehicle</p> }
-        </div>
-      </article>
-    } @empty {
-      @if (!loading() && !error()) { <div class="allocation-empty">No driver-to-vehicle allocations are available.</div> }
-    }
+<section class="driver-tab-content tab-enter">
+  <ui-blocking-loader
+    [visible]="loading()"
+    label="Loading driver allocations"
+    message="Getting the latest vehicle allocations..."
+  />
+  <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting allocation..." />
+  <div class="tab-action smooth-reveal tab-reveal-action">
+    <button type="button" class="add-driver" (click)="create()">+ Add Allocation</button>
   </div>
-  @if (total() > limit) {
-    <nav class="driver-pagination smooth-reveal tab-reveal-pagination"><span>Showing {{start()}}–{{end()}} of {{total()}}</span><div><button [disabled]="offset()===0" (click)="previous()">Previous</button><button [disabled]="offset()+limit>=total()" (click)="next()">Next</button></div></nav>
-  }
+  <section class="allocation-board">
+    @if (error()) {
+      <section class="drivers-error">{{ error() }}</section>
+    }
+    <div class="allocation-grid">
+      @for (allocation of allocations(); track allocation.id; let index = $index) {
+        <article
+          class="allocation-group smooth-reveal"
+          [style.--reveal-delay]="260 + index * 110 + 'ms'"
+        >
+          <header class="allocation-card-header">
+            <div class="allocation-vehicle">
+              <span class="vehicle-icon" aria-hidden="true"
+                ><svg viewBox="0 0 24 24">
+                  <path
+                    d="M5 17h14M6 17l-1-5 2-4h10l2 4-1 5M8 17v2M16 17v2M7 13h.01M17 13h.01"
+                  /></svg
+              ></span>
+              <span
+                ><strong>{{ allocation.vehicle_name || 'Vehicle ' + allocation.vehicle_id }}</strong
+                ><small>Vehicle ID {{ allocation.vehicle_id || allocation.vehicle }}</small></span
+              >
+            </div>
+            <span class="allocation-status" [class.inactive]="allocation.status !== '1'">{{
+              allocation.status === '1' ? 'Active' : 'Inactive'
+            }}</span>
+            <div class="allocation-actions">
+              <button
+                type="button"
+                title="Edit allocation"
+                aria-label="Edit allocation"
+                (click)="edit(allocation)"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 20h4l11-11-4-4L4 16v4Z" />
+                  <path d="m13.5 6.5 4 4" />
+                </svg></button
+              ><button
+                type="button"
+                class="delete"
+                title="Delete allocation"
+                aria-label="Delete allocation"
+                (click)="remove(allocation)"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+                </svg>
+              </button>
+            </div>
+          </header>
+          <div class="allocation-details">
+            <div class="allocated-driver" [class.unassigned]="!driverName(allocation)">
+              <span class="driver-avatar">{{ initials(driverName(allocation)) }}</span>
+              <span
+                ><small>Assigned driver</small
+                ><strong>{{ driverName(allocation) || 'No driver assigned' }}</strong
+                ><small>{{ driverLabel(allocation) }}</small></span
+              >
+            </div>
+            <div class="allocation-period">
+              <span
+                ><small>Starts</small><strong>{{ formatDate(allocation.start_date) }}</strong></span
+              ><i aria-hidden="true">→</i
+              ><span
+                ><small>Ends</small><strong>{{ formatDate(allocation.end_date) }}</strong></span
+              >
+            </div>
+          </div>
+          <footer>
+            <span>Allocation #{{ allocation.id }}</span
+            ><span>1 driver</span>
+          </footer>
+        </article>
+      } @empty {
+        @if (!loading() && !error()) {
+          <div class="allocation-empty">No driver-to-vehicle allocations are available.</div>
+        }
+      }
+    </div>
+    @if (total() > limit) {
+      <nav class="driver-pagination smooth-reveal tab-reveal-pagination">
+        <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span>
+        <div>
+          <button [disabled]="offset() === 0" (click)="previous()">Previous</button
+          ><button [disabled]="offset() + limit >= total()" (click)="next()">Next</button>
+        </div>
+      </nav>
+    }
+  </section>
+  <app-allocation-form
+    [open]="formOpen()"
+    [allocation]="selectedAllocation()"
+    (cancelled)="closeForm()"
+    (saved)="allocationSaved()"
+  />
 </section>

@@ -50,12 +50,16 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'reports',
+        title: 'Reports | FleetPoint',
+        loadComponent: () =>
+          import('./pages/dashboard/reports/reports').then((module) => module.Reports),
+      },
+      {
         path: 'trip-replay',
         title: 'Trip Replay | FleetPoint',
         loadComponent: () =>
-          import('./pages/trip-replay/trip-replay-page').then(
-            (module) => module.TripReplayPage,
-          ),
+          import('./pages/trip-replay/trip-replay-page').then((module) => module.TripReplayPage),
       },
       {
         path: 'fleets',
@@ -83,10 +87,32 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/drivers/drivers-page').then((module) => module.DriversPage),
         children: [
-          { path: '', loadComponent: () => import('./pages/drivers/driver-list/driver-list').then((module) => module.DriverList) },
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/drivers/driver-list/driver-list').then((module) => module.DriverList),
+          },
           { path: 'drivers', pathMatch: 'full', redirectTo: '' },
-          { path: 'groups', loadComponent: () => import('./pages/drivers/group-list/group-list').then((module) => module.GroupList) },
-          { path: 'managers', loadComponent: () => import('./pages/drivers/manager-list/manager-list').then((module) => module.ManagerList) },
+          {
+            path: 'allocations',
+            title: 'Driver Allocations | FleetPoint',
+            loadComponent: () =>
+              import('./pages/drivers/driver-vehicle-allocation/driver-vehicle-allocation').then(
+                (module) => module.DriverVehicleAllocation,
+              ),
+          },
+          {
+            path: 'groups',
+            loadComponent: () =>
+              import('./pages/drivers/group-list/group-list').then((module) => module.GroupList),
+          },
+          {
+            path: 'managers',
+            loadComponent: () =>
+              import('./pages/drivers/manager-list/manager-list').then(
+                (module) => module.ManagerList,
+              ),
+          },
         ],
       },
       { path: '**', redirectTo: 'dashboard' },
