@@ -10,7 +10,6 @@ import { Dropdown, DropdownOption } from '../dropdown/dropdown';
 export class PlatformHeader {
   readonly showLive = input(false);
   readonly userName = input('Haris Khan');
-  readonly userRole = input('Super Admin');
   readonly userInitials = input('HK');
   readonly profileAction = output<DropdownOption>();
   protected readonly profileOptions: DropdownOption[] = [

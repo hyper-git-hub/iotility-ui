@@ -15,7 +15,7 @@
     </button>
     <shared-dropdown [options]="profileOptions" mode="action" (optionSelected)="selectProfileOption($event)">
       <button dropdown-trigger type="button" class="profile-button">
-        <span class="profile-copy"><strong>{{ userName() }}</strong><small>{{ userRole() }}</small></span>
+        <span class="profile-copy"><small>Signed in as</small><strong>{{ userName() }}</strong></span>
         <span class="profile-avatar">{{ userInitials() }}<i></i></span>
       </button>
     </shared-dropdown>

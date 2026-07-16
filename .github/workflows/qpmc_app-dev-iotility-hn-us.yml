@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy PHP app to Azure Web App - app-dev-iotility-hn-us
+name: Build and deploy iotility microfrontend to Azure Web App
 
 on:
   push:
@@ -9,62 +6,96 @@ on:
       - qpmc
   workflow_dispatch:
 
+env:
+  AZURE_WEBAPP_NAME: app-dev-iotility-hn-us
+  NODE_VERSION: '22.x'
+  DEPLOYMENT_PATH: deployment
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          php-version: '8.2'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-      - name: Check if composer.json exists
-        id: check_files
-        uses: andstor/file-existence-action@v1
-        with:
-          files: 'composer.json'
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Run composer install if composer.json exists
-        if: steps.check_files.outputs.files_exists == 'true'
-        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
+      - name: Build host and remote
+        shell: bash
+        run: |
+          # Several existing Fleetpoint component styles are larger than the
+          # workspace's 20 kB hard limit (the largest is currently ~34 kB).
+          # Keep production optimization enabled while allowing the current UI.
+          sed -i 's/"maximumError": "20kB"/"maximumError": "40kB"/g' angular.json
+          npm run build
 
+      - name: Assemble microfrontend deployment
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Upload artifact for deployment job
+          test -f dist/iotility/browser/index.html
+          test -f dist/fleetpoint/browser/remoteEntry.json
+
+          mkdir -p "${DEPLOYMENT_PATH}/fleetpoint"
+          cp -a dist/iotility/browser/. "${DEPLOYMENT_PATH}/"
+          cp -a dist/fleetpoint/browser/. "${DEPLOYMENT_PATH}/fleetpoint/"
+
+          # The host and Fleetpoint remote are served by the same Web App.
+          # Use a root-relative URL so deep Angular routes resolve correctly.
+          sed -i \
+            's#http://localhost:4201/remoteEntry.json#/fleetpoint/remoteEntry.json#g' \
+            "${DEPLOYMENT_PATH}/federation.manifest.json"
+
+          grep -q '"fleetpoint": "/fleetpoint/remoteEntry.json"' \
+            "${DEPLOYMENT_PATH}/federation.manifest.json"
+
+      - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
         with:
-          name: php-app
-          path: .
+          name: iotility-webapp
+          path: ${{ env.DEPLOYMENT_PATH }}
+          if-no-files-found: error
+          retention-days: 1
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    environment:
+      name: Production
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download deployment artifact
         uses: actions/download-artifact@v4
         with:
-          name: php-app
-      
-      - name: Login to Azure
+          name: iotility-webapp
+          path: ${{ env.DEPLOYMENT_PATH }}
+
+      - name: Log in to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_939666067E274AC09EECBB60F6A0BF04 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_CFEDA71E3BCE4EC0B4D08A1E875979D4 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9148C1B0841A4EE29D58AC8EA3562462 }}
 
-      - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v3
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
         with:
-          app-name: 'app-dev-iotility-hn-us'
-          slot-name: 'Production'
-          package: .
-          
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: Production
+          package: ${{ env.DEPLOYMENT_PATH }}

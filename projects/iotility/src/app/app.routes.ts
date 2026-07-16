@@ -1,6 +1,8 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 import { loadRemoteModule } from '@angular-architects/native-federation-v4';
 import { authGuard, guestGuard } from './shared/guards/auth.guard';
+import { AuthSessionService } from './shared/services/auth-session.service';
 
 export const routes: Routes = [
   {
@@ -18,6 +20,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/home/home-page').then((module) => module.HomePage),
       },
     ],
+  },
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: () => (inject(AuthSessionService).isAuthenticated ? '/home' : '/auth/login'),
   },
   {
     path: '',
@@ -60,6 +67,5 @@ export const routes: Routes = [
     loadChildren: () => loadRemoteModule('fleetpoint', './Routes').then((module) => module.routes),
   },
   { path: 'fleet', redirectTo: 'fleetpoint/dashboard' },
-  { path: '', pathMatch: 'full', redirectTo: 'auth/login' },
   { path: '**', redirectTo: 'auth/login' },
 ];
