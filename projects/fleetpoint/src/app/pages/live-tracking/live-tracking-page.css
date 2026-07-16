@@ -40,9 +40,6 @@
 .location-filter [dropdown-trigger] span {
   @apply min-w-0 flex-1 truncate;
 }
-.location-filter [dropdown-trigger] .chevron {
-  @apply text-muted;
-}
 .status-filters {
   @apply flex gap-1 overflow-x-auto p-3;
   scrollbar-width: none;

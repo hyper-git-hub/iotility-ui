@@ -58,9 +58,10 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadVehicles();
-    // SignalR is temporarily disabled until the staging connection is available.
-    // this.subscription.add(this.realtime.updates$.subscribe((update) => this.applyRealtimeUpdate(update)));
-    // void this.realtime.connect();
+    this.subscription.add(
+      this.realtime.updates$.subscribe((update) => this.applyRealtimeUpdate(update)),
+    );
+    void this.realtime.connect();
     this.startVehiclePolling();
   }
 
@@ -139,6 +140,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   }
 
   private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {
+    if (update.rtp !== undefined && Number(update.rtp) !== 1) return;
     const updateId = String(update.vehicle_id ?? update.id ?? '');
     const registration = update.registration?.toLowerCase();
     let selected: LiveVehicle | undefined;
@@ -180,6 +182,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
-    // void this.realtime.disconnect();
+    void this.realtime.disconnect();
   }
 }

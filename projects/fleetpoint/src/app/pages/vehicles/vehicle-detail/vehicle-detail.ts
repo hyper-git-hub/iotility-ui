@@ -1,15 +1,16 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BlockingLoader } from '@iotility/shared-ui';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
 import { FleetMap, TrackedVehicle } from '../../../shared/fleet-map/fleet-map';
 import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../../../shared/services/vehicle-detail-api.service';
+import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/services/vehicle-realtime.service';
 import { StatCard } from '../../../shared/stat-card/stat-card';
 
 interface DetailItem { label: string; value: string; }
 
 @Component({ selector: 'app-vehicle-detail', imports: [BlockingLoader, FleetMap, StatCard], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
-export class VehicleDetail implements OnInit {
+export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -22,7 +23,7 @@ export class VehicleDetail implements OnInit {
   protected readonly hasCoordinates = computed(() => Number.isFinite(this.coordinate(this.record()?.latitude)) && Number.isFinite(this.coordinate(this.record()?.longitude)));
   protected readonly mapVehicle = computed<TrackedVehicle>(() => ({
     id: this.vehicleId, model: `${this.text(this.record()?.make)} ${this.text(this.record()?.model)}`.trim(),
-    driver: this.text(this.record()?.vehicle_driver_name, 'Unassigned'), status: this.record()?.online_status ? 'Idling' : 'Offline',
+    driver: this.text(this.record()?.vehicle_driver_name, 'Unassigned'), status: this.record()?.online_status ? (Number(this.record()?.speed || 0) > 5 ? 'Moving' : 'Idling') : 'Offline',
     speed: Number(this.record()?.speed || 0), fuel: Number(this.record()?.heavy_equipment?.['fuel_level'] || 0),
     location: this.text(this.record()?.location), updated: this.text(this.record()?.updated_time || this.record()?.updated_at),
     lat: this.coordinate(this.record()?.latitude) || 0, lng: this.coordinate(this.record()?.longitude) || 0,
@@ -45,8 +46,20 @@ export class VehicleDetail implements OnInit {
       .map(([label, value]) => ({ label: String(label), value: this.text(value) }));
   });
 
-  constructor(route: ActivatedRoute, private readonly api: VehicleDetailApiService, private readonly router: Router) { this.vehicleId = route.snapshot.paramMap.get('registration') || route.snapshot.paramMap.get('id') || ''; }
-  ngOnInit(): void { this.load(); }
+  private readonly subscription = new Subscription();
+
+  constructor(
+    route: ActivatedRoute,
+    private readonly api: VehicleDetailApiService,
+    private readonly router: Router,
+    private readonly realtime: VehicleRealtimeService,
+  ) { this.vehicleId = route.snapshot.paramMap.get('registration') || route.snapshot.paramMap.get('id') || ''; }
+  ngOnInit(): void {
+    this.subscription.add(
+      this.realtime.updates$.subscribe((update) => this.applyRealtimeUpdate(update)),
+    );
+    this.load();
+  }
   protected load(): void {
     this.loading.set(true); this.error.set('');
     forkJoin({
@@ -55,7 +68,7 @@ export class VehicleDetail implements OnInit {
       maintenance: this.api.getMaintenance(this.vehicleId).pipe(catchError(() => of(null))),
       lastJob: this.api.getLastJob(this.vehicleId).pipe(catchError(() => of(null))),
     }).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: (result) => { const vehicle = result.vehicle.data?.data?.[0]; if (!vehicle) { this.error.set('Vehicle details were not found.'); return; } this.record.set(vehicle); this.metrics.set(result.metrics.data ?? []); this.violations.set(result.violations?.data ?? null); this.maintenance.set(result.maintenance?.data ?? null); this.lastJob.set(result.lastJob?.data ?? null); },
+      next: (result) => { const vehicle = result.vehicle.data?.data?.[0]; if (!vehicle) { this.error.set('Vehicle details were not found.'); return; } this.record.set(vehicle); this.metrics.set(result.metrics.data ?? []); this.violations.set(result.violations?.data ?? null); this.maintenance.set(result.maintenance?.data ?? null); this.lastJob.set(result.lastJob?.data ?? null); void this.realtime.connect(vehicle.device_id); },
       error: (response) => this.error.set(response.error?.message || 'Vehicle details could not be loaded.'),
     });
   }
@@ -92,4 +105,56 @@ export class VehicleDetail implements OnInit {
   private coordinate(value: unknown): number { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : Number.NaN; }
   private flag(value: unknown): boolean { return value === true || value === 1 || value === '1'; }
   private falseFlag(value: unknown): boolean { return value === false || value === 0 || value === '0'; }
+
+  private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {
+    const vehicle = this.record();
+    if (!vehicle || (update.rtp !== undefined && Number(update.rtp) !== 1)) return;
+    const packetId = String(update.device_id ?? update.id ?? '');
+    const matches = packetId === String(vehicle.device_id ?? '')
+      || packetId === String(vehicle.id)
+      || update.registration?.toLowerCase() === vehicle.registration?.toLowerCase();
+    if (!matches) return;
+
+    const latitude = this.realtimeNumber(update.lat ?? update.latitude, vehicle.latitude);
+    const longitude = this.realtimeNumber(update.lon ?? update.lng ?? update.longitude, vehicle.longitude);
+    const speed = this.realtimeNumber(update.spd ?? update.speed, vehicle.speed ?? 0);
+    const ignition = update.ignition_status ?? update.ign;
+    const timestamp = this.realtimeTime(update.t ?? update.updated_time);
+    const seatBelt = update.sbStatus === undefined
+      ? vehicle['seat_belt']
+      : Number(update.sbStatus) === 0;
+
+    this.record.set({
+      ...vehicle,
+      latitude,
+      longitude,
+      speed,
+      ignition_status: ignition === undefined ? vehicle.ignition_status : this.flag(ignition),
+      online_status: true,
+      updated_time: timestamp,
+      location: update.location ?? vehicle.location,
+      last_volume: update.vol ?? vehicle.last_volume,
+      seat_belt: seatBelt,
+    });
+  }
+
+  private realtimeNumber(value: unknown, fallback: unknown): number {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+    const fallbackNumber = Number(fallback);
+    return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
+  }
+
+  private realtimeTime(value: string | number | undefined): string {
+    if (!value) return new Date().toLocaleString();
+    const date = typeof value === 'number'
+      ? new Date(value > 1e12 ? value : value * 1000)
+      : new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+    void this.realtime.disconnect();
+  }
 }
