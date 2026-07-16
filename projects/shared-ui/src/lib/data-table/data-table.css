@@ -1,7 +1,10 @@
 @reference "../../styles/theme.css";
 @reference "tailwindcss";
+:host {
+  @apply block min-w-0;
+}
 .table-card {
-  @apply overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
 }
 .table-card > header {
   @apply flex items-center justify-between gap-4 p-4;
@@ -40,7 +43,7 @@
   @apply border-ink bg-ink text-white dark:border-brand-600 dark:bg-brand-600;
 }
 .scroll {
-  @apply overflow-auto;
+  @apply max-w-full overflow-auto;
 }
 .scroll.fixed-height { @apply h-full; }
 .table-height {

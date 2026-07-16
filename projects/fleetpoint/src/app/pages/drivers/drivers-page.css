@@ -1,7 +1,7 @@
 @reference "../../../styles.css";
 
 .drivers-page {
-  @apply grid content-start gap-5 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white sm:p-6;
+  @apply grid min-w-0 content-start gap-5 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white sm:p-6;
 }
 .drivers-heading {
   @apply flex items-center justify-between gap-4;
@@ -171,7 +171,7 @@
   @apply absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600;
 }
 .driver-tab-content {
-  @apply grid gap-5;
+  @apply grid min-w-0 gap-5;
 }
 .tab-action {
   @apply absolute right-5 top-5 z-10 flex gap-2 sm:right-6 sm:top-6;

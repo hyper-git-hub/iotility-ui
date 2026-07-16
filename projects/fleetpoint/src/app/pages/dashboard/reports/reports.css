@@ -85,7 +85,7 @@
   @apply text-lg not-italic text-muted;
 }
 .report-content {
-  @apply flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-5 sm:p-6;
+  @apply flex min-w-0 flex-1 flex-col gap-4 overflow-hidden p-5 sm:p-6;
 }
 .report-content > header {
   @apply flex items-end justify-between gap-4;
@@ -114,6 +114,10 @@
 .report-content shared-data-table {
   @apply min-h-0 flex-1;
 }
+:host ::ng-deep .report-content .reports-table .scroll {
+  max-height: max(16rem, calc(100dvh - 20rem));
+  overflow-y: auto;
+}
 .report-error {
   @apply flex items-center justify-between rounded-xl border border-danger/20 bg-danger/5 p-3 text-xs text-danger;
 }
@@ -121,7 +125,7 @@
   @apply cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-[10px] font-semibold text-white;
 }
 .report-pagination {
-  @apply flex items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
+  @apply flex shrink-0 items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
 }
 .report-pagination div {
   @apply flex gap-2;
@@ -145,6 +149,9 @@
     @apply h-auto w-full border-b border-r-0;
   }
   .report-content {
-    @apply min-h-[36rem];
+    @apply min-h-[36rem] overflow-visible;
+  }
+  :host ::ng-deep .report-content .reports-table .scroll {
+    max-height: 24rem;
   }
 }
