@@ -40,13 +40,9 @@ nav .active {
 .nav-icon {
   @apply grid w-5 place-items-center text-base;
 }
-.nav-icon svg {
+.nav-icon img {
   @apply size-[18px];
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
+  filter: brightness(1.35);
 }
 .trip-replay-icon {
   @apply text-sm;

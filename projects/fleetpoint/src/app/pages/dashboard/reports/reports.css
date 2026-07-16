@@ -96,8 +96,20 @@
 .report-content header p {
   @apply mt-1 text-[10px] text-muted dark:text-brand-300;
 }
-.report-content header > span {
+.report-actions {
+  @apply flex items-center gap-2;
+}
+.report-actions > span {
   @apply rounded-full bg-white px-3 py-1.5 text-[10px] font-semibold text-brand-700 dark:bg-dark-surface dark:text-brand-300;
+}
+.report-actions button {
+  @apply grid size-8 cursor-pointer place-items-center rounded-lg bg-transparent transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-white/10;
+}
+.report-actions button img {
+  @apply size-6;
+}
+.report-actions button .excel-icon {
+  @apply size-[28px];
 }
 .report-content shared-data-table {
   @apply min-h-0 flex-1;

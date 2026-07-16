@@ -18,6 +18,8 @@ export interface ReportQuery {
   endDate: string;
 }
 
+export type ReportExportFormat = 'xls' | 'pdf';
+
 @Injectable({ providedIn: 'root' })
 export class ReportsApiService {
   constructor(private readonly http: HttpClient) {}
@@ -25,7 +27,21 @@ export class ReportsApiService {
   getReport(
     query: ReportQuery,
   ): Observable<ApiResponse<{ count: number; data: ReportRecord[] } | ReportRecord[]>> {
-    const params = new HttpParams()
+    return this.http.get<ApiResponse<{ count: number; data: ReportRecord[] } | ReportRecord[]>>(
+      REPORT_API,
+      { params: this.reportParams(query) },
+    );
+  }
+
+  exportReport(query: ReportQuery, format: ReportExportFormat): Observable<Blob> {
+    return this.http.get(REPORT_API, {
+      params: this.reportParams(query).set('export', format),
+      responseType: 'blob',
+    });
+  }
+
+  private reportParams(query: ReportQuery): HttpParams {
+    return new HttpParams()
       .set('limit', query.limit)
       .set('offset', query.offset)
       .set('order_by', '')
@@ -38,9 +54,5 @@ export class ReportsApiService {
       .set('device_id', '')
       .set('vehicle_id', '')
       .set('speed_threshold', '');
-    return this.http.get<ApiResponse<{ count: number; data: ReportRecord[] } | ReportRecord[]>>(
-      REPORT_API,
-      { params },
-    );
   }
 }

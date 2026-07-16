@@ -1,8 +1,8 @@
 <section class="reports-page">
   <ui-blocking-loader
-    [visible]="loading()"
-    label="Loading report"
-    message="Preparing fleet report data..."
+    [visible]="loading() || !!exporting()"
+    [label]="exporting() ? 'Exporting report' : 'Loading report'"
+    [message]="exporting() ? 'Preparing your download...' : 'Preparing fleet report data...'"
   />
   <aside class="reports-panel">
     <header>
@@ -102,7 +102,37 @@
         <h2>{{ selectedReport().name }} Report</h2>
         <p>{{ startDate().replace('T', ' ') }} – {{ endDate().replace('T', ' ') }}</p>
       </div>
-      <span>{{ total() }} records</span>
+      <div class="report-actions">
+        <span>{{ total() }} records</span>
+        <button
+          type="button"
+          aria-label="Export Excel"
+          title="Export Excel"
+          [disabled]="!!exporting()"
+          (click)="exportReport('xls')"
+        >
+          <img
+            class="excel-icon"
+            src="assets/fleetpoint/report-icons/excel.svg"
+            alt=""
+            aria-hidden="true"
+          />
+        </button>
+        <button
+          type="button"
+          aria-label="Export PDF"
+          title="Export PDF"
+          [disabled]="!!exporting()"
+          (click)="exportReport('pdf')"
+        >
+          <img
+            class="pdf-icon"
+            src="assets/fleetpoint/report-icons/pdf.svg"
+            alt=""
+            aria-hidden="true"
+          />
+        </button>
+      </div>
     </header>
     @if (error()) {
       <div class="report-error" role="alert">

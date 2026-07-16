@@ -1,9 +1,12 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { BlockingLoader, DataTable, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import {
   QpmcReportType,
   ReportRecord,
+  ReportExportFormat,
+  ReportQuery,
   ReportsApiService,
 } from '../../../shared/services/reports-api.service';
 
@@ -84,6 +87,7 @@ export class Reports implements OnInit {
   protected readonly offset = signal(0);
   protected readonly limit = 10;
   protected readonly loading = signal(true);
+  protected readonly exporting = signal<ReportExportFormat | null>(null);
   protected readonly error = signal('');
   protected readonly interval = signal('today');
   protected readonly startDate = signal('');
@@ -159,6 +163,20 @@ export class Reports implements OnInit {
     this.load();
   }
 
+  protected exportReport(format: ReportExportFormat): void {
+    if (this.exporting()) return;
+
+    this.exporting.set(format);
+    this.error.set('');
+    this.api
+      .exportReport(this.reportQuery(0), format)
+      .pipe(finalize(() => this.exporting.set(null)))
+      .subscribe({
+        next: (blob) => void this.handleExportResponse(blob, format),
+        error: (response: HttpErrorResponse) => void this.handleExportError(response),
+      });
+  }
+
   private setPreset(value: string, reload: boolean): void {
     this.interval.set(value);
     const now = new Date();
@@ -203,13 +221,7 @@ export class Reports implements OnInit {
     this.loading.set(true);
     this.error.set('');
     this.api
-      .getReport({
-        limit: this.limit,
-        offset: this.offset(),
-        reportType: this.selectedType(),
-        startDate: this.toApiDate(this.startDate()),
-        endDate: this.toApiDate(this.endDate()),
-      })
+      .getReport(this.reportQuery(this.offset()))
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
@@ -226,6 +238,58 @@ export class Reports implements OnInit {
           this.error.set(response.error?.message || 'The report could not be loaded.');
         },
       });
+  }
+
+  private reportQuery(offset: number): ReportQuery {
+    return {
+      limit: this.limit,
+      offset,
+      reportType: this.selectedType(),
+      startDate: this.toApiDate(this.startDate()),
+      endDate: this.toApiDate(this.endDate()),
+    };
+  }
+
+  private async handleExportResponse(blob: Blob, format: ReportExportFormat): Promise<void> {
+    if (blob.type.includes('json')) {
+      this.error.set(await this.messageFromBlob(blob));
+      return;
+    }
+
+    const extension = format === 'pdf' ? 'pdf' : 'xlsx';
+    const fileName = `${this.fileName(this.selectedReport().name)}-report.${extension}`;
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  private async handleExportError(response: HttpErrorResponse): Promise<void> {
+    this.error.set(
+      response.error instanceof Blob
+        ? await this.messageFromBlob(response.error)
+        : response.error?.message || response.statusText || 'The report could not be exported.',
+    );
+  }
+
+  private async messageFromBlob(blob: Blob): Promise<string> {
+    try {
+      const payload = JSON.parse(await blob.text()) as { message?: string };
+      return payload.message || 'The report could not be exported.';
+    } catch {
+      return 'The report could not be exported.';
+    }
+  }
+
+  private fileName(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-');
   }
   private toRow(record: ReportRecord): TableRow {
     return Object.fromEntries(

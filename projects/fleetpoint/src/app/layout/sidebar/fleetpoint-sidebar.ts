@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, Inject } from '@angular/core';
+import { Component, computed, Inject, Input } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { FeatureAccessService } from '../../shared/services/feature-access.service';
+import { MenuGroup, SIDEBAR_MENU } from './menu.config';
 
 interface HostDialogRequest {
   handled: boolean;
@@ -21,21 +23,24 @@ interface HostDialogRequest {
   styleUrl: './fleetpoint-sidebar.css',
 })
 export class FleetpointSidebar {
+  @Input() badgeCounts: Record<string, number> = {};
+
   constructor(
     @Inject(DOCUMENT) private readonly document: Document,
     private readonly router: Router,
+    private readonly features: FeatureAccessService,
   ) {}
 
-  protected readonly groups = [
-    { label: 'Overview', items: ['Dashboard', 'Live Tracking', 'Trip Replay'] },
-    { label: 'Fleet Management', items: ['Fleets', 'Vehicles', 'Drivers', 'Devices', 'POI'] },
-    {
-      label: 'Operations',
-      items: ['Jobs', 'Routes', 'DashCam', 'Maintenance', 'Violations', 'Geozones'],
-    },
-    { label: 'Insights', items: ['Reports', 'Documents'] },
-    { label: 'Admin', items: ['Users & Roles', 'Settings'] },
-  ];
+  protected readonly visibleMenu = computed<MenuGroup[]>(() =>
+    SIDEBAR_MENU.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => this.features.has(item.featureId)),
+    })).filter((group) => group.items.length > 0),
+  );
+
+  protected routeFor(route: string): string {
+    return this.router.url.startsWith('/fleetpoint') ? `/fleetpoint${route}` : route;
+  }
 
   protected async confirmReturnToIotility(): Promise<void> {
     const config: HostDialogRequest['config'] = {
