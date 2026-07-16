@@ -1,3 +1,4 @@
+```yaml
 name: Build and deploy iotility microfrontend to Azure Web App
 
 on:
@@ -14,6 +15,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
 
@@ -26,6 +28,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -33,10 +36,14 @@ jobs:
       - name: Build host and remote
         shell: bash
         run: |
-          # Several existing Fleetpoint component styles are larger than the
-          # workspace's 20 kB hard limit (the largest is currently ~34 kB).
-          # Keep production optimization enabled while allowing the current UI.
-          sed -i 's/"maximumError": "20kB"/"maximumError": "40kB"/g' angular.json
+          set -euo pipefail
+
+          # Temporary workaround for Fleetpoint component styles
+          # that currently exceed the 20 kB component-style limit.
+          sed -i \
+            's/"maximumError": "20kB"/"maximumError": "40kB"/g' \
+            angular.json
+
           npm run build
 
       - name: Assemble microfrontend deployment
@@ -44,21 +51,30 @@ jobs:
         run: |
           set -euo pipefail
 
-          test -f dist/iotility/browser/index.html
-          test -f dist/fleetpoint/browser/remoteEntry.json
+          HOST_OUTPUT="dist/iotility/browser"
+          REMOTE_OUTPUT="dist/fleetpoint/browser"
 
+          test -f "${HOST_OUTPUT}/index.html"
+          test -f "${HOST_OUTPUT}/federation.manifest.json"
+          test -f "${REMOTE_OUTPUT}/remoteEntry.json"
+
+          rm -rf "${DEPLOYMENT_PATH}"
           mkdir -p "${DEPLOYMENT_PATH}/fleetpoint"
-          cp -a dist/iotility/browser/. "${DEPLOYMENT_PATH}/"
-          cp -a dist/fleetpoint/browser/. "${DEPLOYMENT_PATH}/fleetpoint/"
 
-          # The host and Fleetpoint remote are served by the same Web App.
-          # Use a root-relative URL so deep Angular routes resolve correctly.
+          cp -a "${HOST_OUTPUT}/." "${DEPLOYMENT_PATH}/"
+          cp -a "${REMOTE_OUTPUT}/." "${DEPLOYMENT_PATH}/fleetpoint/"
+
+          # Serve the Fleetpoint remote from the same Azure Web App.
           sed -i \
             's#http://localhost:4201/remoteEntry.json#/fleetpoint/remoteEntry.json#g' \
             "${DEPLOYMENT_PATH}/federation.manifest.json"
 
-          grep -q '"fleetpoint": "/fleetpoint/remoteEntry.json"' \
+          grep -q \
+            '"fleetpoint": "/fleetpoint/remoteEntry.json"' \
             "${DEPLOYMENT_PATH}/federation.manifest.json"
+
+          test -f "${DEPLOYMENT_PATH}/index.html"
+          test -f "${DEPLOYMENT_PATH}/fleetpoint/remoteEntry.json"
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
@@ -71,9 +87,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: Production
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
     permissions:
       id-token: write
       contents: read
@@ -84,6 +98,15 @@ jobs:
         with:
           name: iotility-webapp
           path: ${{ env.DEPLOYMENT_PATH }}
+
+      - name: Verify deployment artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f "${DEPLOYMENT_PATH}/index.html"
+          test -f "${DEPLOYMENT_PATH}/federation.manifest.json"
+          test -f "${DEPLOYMENT_PATH}/fleetpoint/remoteEntry.json"
 
       - name: Log in to Azure
         uses: azure/login@v2
@@ -99,3 +122,4 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           slot-name: Production
           package: ${{ env.DEPLOYMENT_PATH }}
+```
