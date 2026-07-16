@@ -43,12 +43,6 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/users/users-page').then((module) => module.UsersPage),
       },
       {
-        path: 'profile',
-        title: 'My Profile | IoTility',
-        loadComponent: () =>
-          import('./pages/profile/profile-page').then((module) => module.ProfilePage),
-      },
-      {
         path: 'settings',
         title: 'Settings | IoTility',
         loadComponent: () =>

@@ -21,6 +21,6 @@ export class Header {
   }
   protected handleProfileAction(option: DropdownOption): void {
     if (option.id === 'logout') { void this.logout.request(); return; }
-    void this.router.navigateByUrl('/profile');
+    void this.router.navigateByUrl('/fleetpoint/profile');
   }
 }

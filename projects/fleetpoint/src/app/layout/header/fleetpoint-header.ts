@@ -18,7 +18,10 @@ export class FleetpointHeader {
       window.dispatchEvent(new CustomEvent('iotility:logout'));
       return;
     }
-    void this.router.navigateByUrl('/profile');
+    const profileUrl = this.router.url.startsWith('/fleetpoint')
+      ? '/fleetpoint/profile'
+      : '/profile';
+    void this.router.navigateByUrl(profileUrl);
   }
 
   private readIdentity(): { name: string; initials: string } {

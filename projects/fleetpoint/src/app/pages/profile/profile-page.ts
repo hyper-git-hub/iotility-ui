@@ -3,8 +3,8 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BlockingLoader, SmoothHeight } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
-import { AuthApiService, UserProfile } from '../../shared/services/auth-api.service';
-import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
+import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
+import { ProfileApiService, UserProfile } from '../../shared/services/profile-api.service';
 
 @Component({
   selector: 'app-profile-page',
@@ -42,8 +42,8 @@ export class ProfilePage implements OnInit {
   protected readonly imageUrl = computed(() => this.imagePreview() || this.profile()?.user_image || this.profile()?.image || '');
 
   constructor(
-    private readonly authApi: AuthApiService,
-    private readonly feedback: FeedbackDialogService,
+    private readonly authApi: ProfileApiService,
+    private readonly feedback: FeedbackDialogBridgeService,
     formBuilder: FormBuilder,
   ) {
     this.profileForm = formBuilder.nonNullable.group({

@@ -57,6 +57,12 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'profile',
+        title: 'My Profile | FleetPoint',
+        loadComponent: () =>
+          import('./pages/profile/profile-page').then((module) => module.ProfilePage),
+      },
+      {
         path: 'reports',
         title: 'Reports | FleetPoint',
         loadComponent: () =>
