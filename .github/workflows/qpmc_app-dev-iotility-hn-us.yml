@@ -1,4 +1,3 @@
-```yaml
 name: Build and deploy iotility microfrontend to Azure Web App
 
 on:
@@ -122,4 +121,3 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           slot-name: Production
           package: ${{ env.DEPLOYMENT_PATH }}
-```
