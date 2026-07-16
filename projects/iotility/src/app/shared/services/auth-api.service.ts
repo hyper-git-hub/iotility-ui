@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AuthApiResponse<T = unknown> {
+  status?: number;
   error?: boolean;
   message?: string;
   data?: T;
@@ -16,13 +17,33 @@ export interface LoginResponseData {
 }
 
 export interface UserProfile {
+  guid?: string;
   email?: string;
   first_name?: string;
   last_name?: string;
   username?: string | null;
-  group?: string;
+  phone?: string | null;
+  department?: string | null;
+  designation?: string | null;
+  work_location?: string | null;
+  internal_role?: string | null;
+  group?: string | null;
   language?: string;
   user_type?: number;
+  is_active?: boolean;
+  date_joined?: string;
+  image?: string | null;
+  user_image?: string | null;
+  permissions?: { code: string }[];
+  customer?: {
+    customer_id?: number;
+    name?: string;
+    timezone?: string;
+    subscription_is_valid?: boolean;
+    associations?: {
+      package?: { package_id?: number; name?: string; no_of_users?: number; usecase?: number };
+    }[];
+  } | null;
   [key: string]: unknown;
 }
 
@@ -44,6 +65,24 @@ export class AuthApiService {
 
   getUserProfile(): Observable<AuthApiResponse<UserProfile>> {
     return this.http.get<AuthApiResponse<UserProfile>>(`${environment.userMsBaseUrl}/users/user-profile`);
+  }
+
+  updateUserProfile(payload: FormData): Observable<AuthApiResponse<UserProfile>> {
+    return this.http.patch<AuthApiResponse<UserProfile>>(
+      `${environment.userMsBaseUrl}/users/user-profile`,
+      payload,
+    );
+  }
+
+  changePassword(payload: {
+    current_password: string;
+    email: string;
+    new_password: string;
+  }): Observable<AuthApiResponse> {
+    return this.http.post<AuthApiResponse>(
+      `${this.authenticationUrl}/password`,
+      payload,
+    );
   }
 
   getRoleAccess(): Observable<AuthApiResponse> {

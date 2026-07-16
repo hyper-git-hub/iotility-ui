@@ -27,6 +27,20 @@
 .shared-form-control[aria-invalid='true'] {
   @apply border-danger focus:border-danger focus:ring-danger/15;
 }
+.shared-form-control:-webkit-autofill,
+.shared-form-control:-webkit-autofill:hover,
+.shared-form-control:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  box-shadow: 0 0 0 1000px white inset;
+  caret-color: var(--color-ink);
+}
+:host-context(.dark) .shared-form-control:-webkit-autofill,
+:host-context(.dark) .shared-form-control:-webkit-autofill:hover,
+:host-context(.dark) .shared-form-control:-webkit-autofill:focus {
+  -webkit-text-fill-color: white;
+  box-shadow: 0 0 0 1000px var(--color-dark-canvas) inset;
+  caret-color: white;
+}
 .shared-form-error {
   @apply mt-1 block text-[10px] text-danger;
 }

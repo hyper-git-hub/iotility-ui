@@ -34,6 +34,7 @@ export const routes: Routes = [
       },
       {
         path: 'profile',
+        title: 'My Profile | IoTility',
         loadComponent: () =>
           import('./pages/profile/profile-page').then((module) => module.ProfilePage),
       },
