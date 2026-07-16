@@ -8,10 +8,12 @@ export const AUTH_ROUTES: Routes = [
     children: [
       {
         path: 'login',
+        title: 'Sign In | IoTility',
         loadComponent: () => import('./login/login-page').then((module) => module.LoginPage),
       },
       {
         path: 'forgot-password',
+        title: 'Forgot Password | IoTility',
         loadComponent: () =>
           import('./forgot-password/forgot-password-page').then(
             (module) => module.ForgotPasswordPage,

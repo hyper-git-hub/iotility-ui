@@ -12,6 +12,7 @@ export const routes: Routes = [
   },
   {
     path: 'home',
+    title: 'Home | IoTility',
     canMatch: [authGuard],
     loadComponent: () => import('./layout/host-layout').then((module) => module.HostLayout),
     children: [
@@ -33,10 +34,12 @@ export const routes: Routes = [
     children: [
       {
         path: 'use-cases',
+        title: 'Use Cases | IoTility',
         loadComponent: () => import('./pages/home/home-page').then((module) => module.HomePage),
       },
       {
         path: 'users',
+        title: 'Users | IoTility',
         loadComponent: () => import('./pages/users/users-page').then((module) => module.UsersPage),
       },
       {
@@ -47,16 +50,19 @@ export const routes: Routes = [
       },
       {
         path: 'settings',
+        title: 'Settings | IoTility',
         loadComponent: () =>
           import('./pages/settings/settings-page').then((module) => module.SettingsPage),
       },
       {
         path: 'billing',
+        title: 'Billing | IoTility',
         loadComponent: () =>
           import('./pages/billing/billing-page').then((module) => module.BillingPage),
       },
       {
         path: 'help',
+        title: 'Help | IoTility',
         loadComponent: () => import('./pages/help/help-page').then((module) => module.HelpPage),
       },
     ],

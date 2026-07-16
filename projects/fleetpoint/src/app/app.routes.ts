@@ -9,22 +9,26 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
         path: 'dashboard',
+        title: 'Dashboard | FleetPoint',
         loadComponent: () =>
           import('./pages/dashboard/dashboard-page').then((module) => module.DashboardPage),
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'overview' },
           {
             path: 'overview',
+            title: 'Dashboard | FleetPoint',
             loadComponent: () =>
               import('./pages/dashboard/overview/overview').then((module) => module.Overview),
           },
           {
             path: 'safety',
+            title: 'Safety | FleetPoint',
             loadComponent: () =>
               import('./pages/dashboard/safety/safety').then((module) => module.Safety),
           },
           {
             path: 'maintenance',
+            title: 'Maintenance | FleetPoint',
             loadComponent: () =>
               import('./pages/dashboard/maintenance/maintenance').then(
                 (module) => module.Maintenance,
@@ -32,11 +36,13 @@ export const routes: Routes = [
           },
           {
             path: 'jobs',
+            title: 'Jobs | FleetPoint',
             loadComponent: () =>
               import('./pages/dashboard/jobs/jobs').then((module) => module.Jobs),
           },
           {
             path: 'reports',
+            title: 'Reports | FleetPoint',
             loadComponent: () =>
               import('./pages/dashboard/reports/reports').then((module) => module.Reports),
           },
@@ -44,6 +50,7 @@ export const routes: Routes = [
       },
       {
         path: 'live-tracking',
+        title: 'Live Tracking | FleetPoint',
         loadComponent: () =>
           import('./pages/live-tracking/live-tracking-page').then(
             (module) => module.LiveTrackingPage,
@@ -103,11 +110,13 @@ export const routes: Routes = [
           },
           {
             path: 'groups',
+            title: 'Driver Groups | FleetPoint',
             loadComponent: () =>
               import('./pages/drivers/group-list/group-list').then((module) => module.GroupList),
           },
           {
             path: 'managers',
+            title: 'Driver Managers | FleetPoint',
             loadComponent: () =>
               import('./pages/drivers/manager-list/manager-list').then(
                 (module) => module.ManagerList,
