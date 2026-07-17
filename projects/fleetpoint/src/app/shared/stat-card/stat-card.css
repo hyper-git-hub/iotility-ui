@@ -1,5 +1,7 @@
 @reference "../../../styles.css";
 
+:host { @apply block; }
+
 .stat-card {
   --stat-card-accent: var(--color-brand-500);
   --stat-card-border: color-mix(in srgb, var(--stat-card-accent) 82%, black);

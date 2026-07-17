@@ -103,6 +103,12 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'drivers/:id',
+        title: 'Driver Details | FleetPoint',
+        loadComponent: () =>
+          import('./pages/drivers/driver-detail/driver-detail').then((module) => module.DriverDetail),
+      },
+      {
         path: 'drivers',
         title: 'Drivers | FleetPoint',
         loadComponent: () =>

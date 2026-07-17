@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   BlockingLoader,
   DataTable,
@@ -42,7 +43,7 @@ export class DriverList implements OnInit {
   protected readonly limit = 10;
   protected readonly actions: TableAction[] = ['map', 'edit', 'delete'];
   protected readonly columns: TableColumn[] = [
-    { key: 'name', label: 'Driver', type: 'user', secondaryKey: 'details' },
+    { key: 'name', label: 'Driver', type: 'user', secondaryKey: 'details', clickable: true },
     { key: 'group', label: 'Group' },
     { key: 'shift', label: 'Shift', type: 'status' },
     { key: 'phone', label: 'Phone' },
@@ -109,6 +110,7 @@ export class DriverList implements OnInit {
   constructor(
     private readonly api: DriverApiService,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly router: Router,
   ) {}
   ngOnInit(): void {
     this.refreshGroups();
@@ -168,6 +170,7 @@ export class DriverList implements OnInit {
       }
     }
   }
+  protected openDriver(row: TableRow): void { void this.router.navigate(['/fleetpoint/drivers', row['id']]); }
   protected previousPage(): void {
     this.offset.update((v) => Math.max(0, v - this.limit));
     this.loadDrivers();

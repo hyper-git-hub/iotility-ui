@@ -13,22 +13,15 @@
 }
 
 .loading-bar {
-  transform-origin: left;
-  animation: loading-progress 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: loading-progress 2.2s ease-in-out infinite;
 }
 
 @keyframes loading-progress {
   0% {
-    transform: scaleX(0);
-  }
-  25% {
-    transform: scaleX(0.2);
-  }
-  65% {
-    transform: scaleX(0.72);
+    transform: translateX(-120%);
   }
   100% {
-    transform: scaleX(1);
+    transform: translateX(405%);
   }
 }
 

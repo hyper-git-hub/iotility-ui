@@ -102,6 +102,7 @@
     searchPlaceholder="Search drivers or employee ID"
     (searchChange)="tableSearchChanged($event)"
     (rowAction)="handleRowAction($event)"
+    (cellSelected)="openDriver($event.row)"
   />
   <nav class="driver-pagination smooth-reveal tab-reveal-pagination">
     <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ displayedTotal() }}</span>

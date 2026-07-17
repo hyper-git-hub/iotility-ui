@@ -142,7 +142,7 @@ export class HomePage {
         message: 'Preparing your fleet command center...',
         initials: 'FP',
       },
-      3000,
+      2000,
     );
   }
 }

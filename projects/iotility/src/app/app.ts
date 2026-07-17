@@ -30,6 +30,7 @@ export class App implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    /* IoTility startup loading is handled by the pre-bootstrap loader in index.html.
     this.loading.showFor(
       {
         label: 'Hypernym',
@@ -40,7 +41,7 @@ export class App implements OnInit {
         labelLogoSrc: 'assets/hypernym-full.svg',
       },
       2500,
-    );
+    ); */
   }
 
   @HostListener('window:iotility:logout')

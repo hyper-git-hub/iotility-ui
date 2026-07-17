@@ -45,8 +45,7 @@
                 @if (c.type === 'status') {
                   <span class="status" [class]="statusClass(r[c.key])">{{ r[c.key] }}</span>
                 } @else if (c.type === 'user') {
-                  <strong>{{ r[c.key] }}</strong
-                  ><small>{{ r[c.secondaryKey ?? ''] }}</small>
+                  <span class="user-cell" [class.clickable-cell]="c.clickable" [attr.role]="c.clickable ? 'link' : null" [attr.tabindex]="c.clickable ? 0 : null" (click)="selectCell($event, c, r)" (keydown.enter)="selectCell($event, c, r)"><strong>{{ r[c.key] }}</strong><small>{{ r[c.secondaryKey ?? ''] }}</small></span>
                 } @else if (c.type === 'vehicle') {
                   <span class="vehicle-cell" [class.clickable-cell]="c.clickable" [attr.role]="c.clickable ? 'link' : null" [attr.tabindex]="c.clickable ? 0 : null" (click)="selectCell($event, c, r)" (keydown.enter)="selectCell($event, c, r)">
                     @if (c.imageKey) {
