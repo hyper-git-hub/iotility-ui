@@ -10,10 +10,13 @@
         <p>{{ group.title }}</p>
         @for (item of group.items; track item.route) {
           <a [routerLink]="routeFor(item.route)" routerLinkActive="active">
-            <span class="nav-icon">
+            <span class="nav-icon" [class.vehicle-nav-icon]="item.route === '/vehicles'">
               <img [src]="item.icon" alt="" aria-hidden="true" />
             </span>
-            {{ item.label }}
+            <span class="nav-label">{{ item.label }}</span>
+            @if (item.route === '/live-tracking') {
+              <span class="live-status-dot" title="Realtime tracking" aria-label="Realtime tracking"></span>
+            }
             @if (item.badgeKey && badgeCounts[item.badgeKey]) {
               <em>{{ badgeCounts[item.badgeKey] }}</em>
             }

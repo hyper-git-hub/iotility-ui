@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { BlockingLoader } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
@@ -81,6 +82,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
   private playbackTimer?: ReturnType<typeof setInterval>;
+  private readonly requestedVehicleId: string;
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
     return this.vehicles().filter((vehicle) =>
@@ -109,7 +111,10 @@ export class TripReplayPage implements OnInit, OnDestroy {
   constructor(
     private readonly api: TripReplayApiService,
     private readonly feedback: FeedbackDialogBridgeService,
+    router: Router,
   ) {
+    const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
+    this.requestedVehicleId = String(navigationState?.['vehicleId'] ?? '');
     const end = new Date();
     const start = new Date(end);
     start.setHours(0, 0, 0, 0);
@@ -124,9 +129,14 @@ export class TripReplayPage implements OnInit, OnDestroy {
         next: (response) => {
           const vehicles = response.data?.data ?? [];
           this.vehicles.set(vehicles);
-        if (vehicles[0]) {
-          this.selectedVehicleId.set(vehicles[0].id);
-        }
+          const selected = vehicles.find((vehicle) =>
+            String(vehicle.id) === this.requestedVehicleId ||
+            vehicle.registration.toLowerCase() === this.requestedVehicleId.toLowerCase(),
+          ) ?? vehicles[0];
+          if (selected) {
+            this.selectVehicle(selected);
+            if (this.requestedVehicleId) this.loadTrip();
+          }
         },
         error: (response) =>
           this.error.set(response.error?.message || 'Vehicles could not be loaded.'),
@@ -267,7 +277,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       void this.feedback.open({
         type: 'warning',
         title: 'No trip data found',
-        message: 'No trip data was found for this vehicle and period.',
+        message: `No trip data was found for this vehicle from ${this.selectedPeriod()}.`,
         confirmText: 'Close',
         showCancel: false,
       });
@@ -401,6 +411,15 @@ export class TripReplayPage implements OnInit, OnDestroy {
   private inputDate(date: Date): string {
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 16);
+  }
+  private selectedPeriod(): string {
+    const format = (value: string) => {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime())
+        ? value
+        : new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    };
+    return `${format(this.startDate())} to ${format(this.endDate())}`;
   }
   private apiDate(value: string): string {
     return `${value.replace('T', ' ')}:00`;

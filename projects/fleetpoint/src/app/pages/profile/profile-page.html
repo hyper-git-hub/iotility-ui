@@ -46,7 +46,7 @@
               <label>Department<input type="text" [value]="user.department || 'Not assigned'" readonly /></label>
               <label>Designation<input type="text" [value]="user.designation || role()" readonly /></label>
               <label>Date joined<input type="text" [value]="user.date_joined ? (user.date_joined | date: 'dd MMM yyyy') : 'Not available'" readonly /></label>
-              <div class="form-actions"><button type="button" class="cancel-button" (click)="cancelEditing()">Cancel</button><button type="submit" class="save-button" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save changes' }}</button></div>
+              <div class="form-actions"><button type="button" class="cancel-button" (click)="cancelEditing()">Cancel</button><button type="submit" class="save-button" [disabled]="profileForm.invalid || saving()">{{ saving() ? 'Saving...' : 'Save changes' }}</button></div>
               </form>
             } @else {
               <dl class="info-grid">
@@ -82,7 +82,7 @@
             <label>Current password<div class="password-control"><input [type]="showPasswords() ? 'text' : 'password'" formControlName="currentPassword" autocomplete="current-password" /><button type="button" (click)="showPasswords.set(!showPasswords())">{{ showPasswords() ? 'Hide' : 'Show' }}</button></div>@if (passwordForm.controls.currentPassword.touched && passwordForm.controls.currentPassword.invalid) { <small>Current password is required.</small> }</label>
             <label>New password<div class="password-control"><input [type]="showPasswords() ? 'text' : 'password'" formControlName="newPassword" autocomplete="new-password" /></div>@if (passwordForm.controls.newPassword.touched && passwordForm.controls.newPassword.invalid) { <small>Password does not meet the requirements.</small> }</label>
             <label>Confirm password<div class="password-control"><input [type]="showPasswords() ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" /></div>@if (passwordForm.controls.confirmPassword.touched && passwordForm.controls.confirmPassword.invalid) { <small>{{ passwordForm.controls.confirmPassword.hasError('mismatch') ? 'Passwords do not match.' : 'Please confirm your password.' }}</small> }</label>
-            <button type="submit" class="save-button" [disabled]="changingPassword()">{{ changingPassword() ? 'Updating...' : 'Update password' }}</button>
+            <button type="submit" class="save-button" [disabled]="passwordForm.invalid || passwordForm.controls.newPassword.value !== passwordForm.controls.confirmPassword.value || changingPassword()">{{ changingPassword() ? 'Updating...' : 'Update password' }}</button>
           </form>
         </article>
       </main>

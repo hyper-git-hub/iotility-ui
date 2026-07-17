@@ -44,6 +44,19 @@ nav .active {
   @apply size-[18px];
   filter: brightness(1.35);
 }
+.vehicle-nav-icon img {
+  @apply size-5;
+}
+.nav-label {
+  @apply min-w-0 truncate;
+}
+.live-status-dot {
+  @apply relative ml-auto size-2 shrink-0 rounded-full bg-success;
+}
+.live-status-dot::after {
+  content: '';
+  @apply absolute inset-0 animate-ping rounded-full bg-success opacity-60;
+}
 .trip-replay-icon {
   @apply text-sm;
 }

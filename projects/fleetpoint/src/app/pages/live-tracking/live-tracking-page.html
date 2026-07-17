@@ -98,12 +98,19 @@
         </div>
         <button
           type="button"
-          (click)="selectedVehicle.set(null)"
+          (click)="clearSelectedVehicle()"
           aria-label="Close vehicle details"
         >
           ×
         </button>
       </header>
+      <div class="live-tracking-notice" role="status">
+        <span class="live-tracking-pulse" aria-hidden="true"></span>
+        <div>
+          <strong>Live tracking enabled</strong>
+          <small>Receiving realtime updates for this vehicle</small>
+        </div>
+      </div>
       <section>
         <h2>Live data</h2>
         <div class="detail-grid">
@@ -133,21 +140,29 @@
         <div class="driver-card">
           <span>{{ vehicle.driver.slice(0, 1) }}</span>
           <div>
-            <strong>{{ vehicle.driver }}</strong
-            ><small>{{
-              vehicle.driver === 'Unassigned' ? 'Assign driver →' : 'Assigned driver'
-            }}</small>
+            <strong>{{ vehicle.driver }}</strong>
+            <button type="button" class="driver-allocation-action" (click)="openDriverAllocation()">
+              {{ vehicle.driver === 'Unassigned' ? 'Assign driver' : 'Change driver' }} →
+            </button>
           </div>
         </div>
       </section>
       <section>
         <h2>Quick actions</h2>
         <div class="quick-actions">
-          <button type="button">View trip history <span>›</span></button
+          <button type="button" (click)="viewTripHistory()">View trip history <span>›</span></button
           ><button type="button">View all alerts <span>›</span></button
           ><button type="button">Contact driver <span>›</span></button>
         </div>
       </section>
     </aside>
   }
+  <app-allocation-form
+    [open]="allocationOpen()"
+    [presetVehicleId]="selectedVehicle()?.numericId ?? null"
+    [presetVehicleLabel]="selectedVehicle()?.id ?? ''"
+    [lockVehicle]="true"
+    (cancelled)="closeDriverAllocation()"
+    (saved)="allocationSaved()"
+  />
 </div>

@@ -7,6 +7,7 @@ const FLEET_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet/api';
 
 export interface RealtimeVehicleRecord {
   id: number;
+  device_id?: string | number | null;
   poi: string | null;
   speed: number | string | null;
   latitude: string | null;

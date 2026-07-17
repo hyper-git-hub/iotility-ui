@@ -8,12 +8,24 @@ import { AuthSessionService } from '../services/auth-session.service';
 export const apiInterceptor: HttpInterceptorFn = (request, next) => {
   const router = inject(Router);
   const authSession = inject(AuthSessionService);
+  const isCobApi = request.url.startsWith(environment.cobPackagesBaseUrl);
   const isPlatformApi =
     request.url.startsWith(environment.userMsBaseUrl) ||
     request.url.startsWith(environment.fleetBaseUrl) ||
     request.url.startsWith(environment.apiBaseUrl);
 
   if (!isPlatformApi) return next(request);
+
+  if (isCobApi) {
+    return next(
+      request.clone({
+        headers: request.headers.set(
+          'consumer-app-secret',
+          environment.cobConsumerAppSecret,
+        ),
+      }),
+    );
+  }
 
   const token = localStorage.getItem('userMS-token') || localStorage.getItem('token');
   let headers = request.headers

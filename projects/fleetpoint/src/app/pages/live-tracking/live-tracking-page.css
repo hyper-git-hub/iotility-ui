@@ -137,6 +137,25 @@
 .details-panel header button {
   @apply text-xl text-muted hover:text-danger;
 }
+.live-tracking-notice {
+  @apply mx-4 mt-4 flex items-center gap-3 rounded-xl border border-success/25 bg-success/10 px-3 py-2.5;
+}
+.live-tracking-pulse {
+  @apply relative size-2.5 shrink-0 rounded-full bg-success;
+}
+.live-tracking-pulse::after {
+  content: '';
+  @apply absolute inset-0 animate-ping rounded-full bg-success opacity-60;
+}
+.live-tracking-notice div {
+  @apply min-w-0;
+}
+.live-tracking-notice strong {
+  @apply block text-xs font-semibold text-success;
+}
+.live-tracking-notice small {
+  @apply mt-0.5 block text-[9px] text-muted dark:text-brand-300;
+}
 .details-panel section {
   @apply border-b border-line p-4 dark:border-dark-line;
 }
@@ -169,6 +188,9 @@
 }
 .driver-card small {
   @apply mt-1 block text-[10px] text-brand-600;
+}
+.driver-allocation-action {
+  @apply mt-1 cursor-pointer text-[10px] font-medium text-brand-600 hover:text-brand-700 hover:underline dark:text-brand-300;
 }
 .quick-actions {
   @apply flex flex-col gap-2;

@@ -1,4 +1,5 @@
 @reference "../../../styles.css";
+@import "../../shared/styles/fields.css";
 
 .fleets-page { @apply min-h-full bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white sm:p-6; }
 .fleets-heading { @apply mb-5 flex items-center justify-between gap-4; }
@@ -10,7 +11,6 @@
 .fleet-grid { @apply grid grid-cols-1 gap-4 xl:grid-cols-2; }
 .fleet-filters { @apply mb-5 grid items-end gap-3 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface md:grid-cols-[minmax(14rem,1fr)_minmax(12rem,0.7fr)_auto]; }
 .fleet-filters label > span { @apply mb-1.5 block text-[10px] font-medium text-muted dark:text-brand-300; }
-.fleet-filters input, .fleet-filters select { @apply h-10 w-full rounded-xl border border-line bg-white px-3 text-xs text-ink outline-none focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
 .fleet-filter-actions { @apply flex gap-2; }
 .fleet-filter-actions button { @apply h-10 cursor-pointer rounded-xl px-3 text-xs font-semibold; }
 .fleet-filter-dropdown { @apply block; }

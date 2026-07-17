@@ -8,7 +8,7 @@ import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-d
 
 @Component({ selector:'app-allocation-form', imports:[BlockingLoader,Dropdown,Modal,ReactiveFormsModule], templateUrl:'./allocation-form.html', styleUrl:'./allocation-form.css' })
 export class AllocationForm implements OnChanges {
-  readonly open=input(false); readonly allocation=input<DriverVehicleAllocation|null>(null); readonly cancelled=output<void>(); readonly saved=output<void>();
+  readonly open=input(false); readonly allocation=input<DriverVehicleAllocation|null>(null); readonly presetVehicleId=input<string|number|null>(null); readonly presetVehicleLabel=input(''); readonly lockVehicle=input(false); readonly cancelled=output<void>(); readonly saved=output<void>();
   protected readonly editing=computed(()=>!!this.allocation());
   protected readonly loading=signal(false); protected readonly optionsLoading=signal(false); protected readonly submitted=signal(false); protected readonly error=signal('');
   protected readonly vehicleOptions=signal<DropdownOption[]>([]); protected readonly driverOptions=signal<DropdownOption[]>([]);
@@ -17,7 +17,7 @@ export class AllocationForm implements OnChanges {
     this.form=this.fb.nonNullable.group({vehicle:['',Validators.required],drivers:this.fb.nonNullable.control<string[]>([],Validators.required),start_date:['',Validators.required],end_date:['',Validators.required]});
   }
   ngOnChanges(changes:SimpleChanges):void{if(changes['open']?.currentValue){this.reset();this.patchAllocation();this.loadOptions();}}
-  protected selectVehicle(option:DropdownOption):void{this.form.controls.vehicle.setValue(option.id);}
+  protected selectVehicle(option:DropdownOption):void{if(!this.lockVehicle())this.form.controls.vehicle.setValue(option.id);}
   protected selectDrivers(ids:string[]):void{this.form.controls.drivers.setValue(ids);this.form.controls.drivers.markAsTouched();}
   protected label(options:DropdownOption[],id:string,fallback:string):string{return options.find(option=>option.id===id)?.label||fallback;}
   protected driversLabel():string{const count=this.form.controls.drivers.value.length;return count?`${count} driver${count===1?'':'s'} selected`:'Select drivers';}
@@ -33,7 +33,7 @@ export class AllocationForm implements OnChanges {
     });
   }
   protected cancel():void{if(this.loading())return;this.reset();this.cancelled.emit();}
-  private loadOptions():void{this.optionsLoading.set(true);forkJoin({vehicles:this.api.getAllocationVehicles(),drivers:this.api.getActiveDrivers()}).pipe(finalize(()=>this.optionsLoading.set(false))).subscribe({next:({vehicles,drivers})=>{this.vehicleOptions.set((vehicles.data??[]).map(vehicle=>({id:String(vehicle.id),label:vehicle.registration,description:`Vehicle ID ${vehicle.vehicle_id}`})));this.driverOptions.set((drivers.data?.data??[]).filter(driver=>driver.status==='1').map(driver=>({id:String(driver.id),label:driver.name,description:driver.employee_id})));},error:response=>this.error.set(response.error?.message||'Vehicles and drivers could not be loaded.')});}
-  private reset():void{this.form.reset({vehicle:'',drivers:[],start_date:'',end_date:''});this.submitted.set(false);this.error.set('');}
+  private loadOptions():void{this.optionsLoading.set(true);forkJoin({vehicles:this.api.getAllocationVehicles(),drivers:this.api.getActiveDrivers()}).pipe(finalize(()=>this.optionsLoading.set(false))).subscribe({next:({vehicles,drivers})=>{const records=vehicles.data??[];const preset=String(this.presetVehicleId()??'');const matched=records.find(vehicle=>String(vehicle.id)===preset||String(vehicle.vehicle_id)===preset);const options=records.map(vehicle=>({id:String(vehicle.id),label:vehicle.registration,description:`Vehicle ID ${vehicle.vehicle_id}`}));if(preset&&matched)this.form.controls.vehicle.setValue(String(matched.id));else if(preset&&!options.some(option=>option.id===preset))options.unshift({id:preset,label:this.presetVehicleLabel()||`Vehicle ${preset}`,description:`Vehicle ID ${preset}`});this.vehicleOptions.set(options);this.driverOptions.set((drivers.data?.data??[]).filter(driver=>driver.status==='1').map(driver=>({id:String(driver.id),label:driver.name,description:driver.employee_id})));},error:response=>this.error.set(response.error?.message||'Vehicles and drivers could not be loaded.')});}
+  private reset():void{this.form.reset({vehicle:String(this.presetVehicleId()??''),drivers:[],start_date:'',end_date:''});this.submitted.set(false);this.error.set('');}
   private patchAllocation():void{const allocation=this.allocation();if(allocation)this.form.patchValue({vehicle:String(allocation.vehicle_id),drivers:(allocation.driver??[]).map(String),start_date:allocation.start_date,end_date:allocation.end_date});}
 }

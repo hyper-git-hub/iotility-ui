@@ -47,7 +47,7 @@
       type="submit"
       form="fleet-form"
       class="shared-button-primary"
-      [disabled]="loading() || optionsLoading()"
+      [disabled]="form.invalid || !form.controls.vehicle.value.length || loading() || optionsLoading()"
     >
       {{ editing() ? 'Update Fleet' : 'Create Fleet' }}
     </button>

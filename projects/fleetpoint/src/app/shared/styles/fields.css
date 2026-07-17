@@ -24,6 +24,12 @@
 .shared-form-control {
   @apply w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-muted/70 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
 }
+.shared-form-control--single-line {
+  @apply h-10 resize-none overflow-hidden;
+}
+.shared-form-control[readonly] {
+  @apply cursor-not-allowed bg-canvas text-muted dark:bg-dark-canvas dark:text-brand-300;
+}
 .shared-form-control[aria-invalid='true'] {
   @apply border-danger focus:border-danger focus:ring-danger/15;
 }

@@ -20,5 +20,5 @@
     <label class="poi-field"><input type="checkbox" formControlName="poi" /><span></span><strong>P.O.I</strong></label>
     <section class="driver-picture wide"><div class="picture-preview">@if (imagePreview()) { <img [src]="imagePreview()" alt="Driver preview" /> } @else { <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="34" r="20"/><path d="M12 96c2-27 15-40 38-40s36 13 38 40"/></svg> }</div><div><strong>Driver Picture</strong><p>PNG or JPG, up to 5 MB</p><label><input type="file" accept="image/png,image/jpeg,image/webp" (change)="chooseImage($event)" />Choose picture</label></div></section>
   </form>
-  <div modal-footer class="form-footer"><button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">Close</button><button type="submit" form="driver-form" class="shared-button-primary" [disabled]="loading()">{{ editing() ? 'Update Driver' : 'Save Driver' }}</button></div>
+  <div modal-footer class="form-footer"><button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">Close</button><button type="submit" form="driver-form" class="shared-button-primary" [disabled]="form.invalid || loading()">{{ editing() ? 'Update Driver' : 'Save Driver' }}</button></div>
 </app-modal>

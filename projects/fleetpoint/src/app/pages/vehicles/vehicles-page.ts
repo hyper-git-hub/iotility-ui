@@ -122,7 +122,9 @@ export class VehiclesPage implements OnInit {
   protected closeForm(): void { this.formOpen.set(false); this.selectedVehicle.set(null); }
   protected saveVehicle(_: VehicleFormValue): void { this.closeForm(); this.loadVehicles(); }
   protected handleRowAction(event: { action: TableAction; row: TableRow }): void {
-    if (event.action === 'map') void this.router.navigateByUrl('/fleetpoint/live-tracking');
+    if (event.action === 'map') void this.router.navigate(['/fleetpoint/live-tracking'], {
+      queryParams: { vehicle_id: event.row['id'] },
+    });
     else if (event.action === 'history') void this.router.navigateByUrl('/fleetpoint/trip-replay');
     else if (event.action === 'edit') {
       const vehicle = this.records().find((record) => record.id === Number(event.row['id'])) ?? null;
