@@ -65,7 +65,10 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     private readonly router: Router,
     route: ActivatedRoute,
   ) {
-    this.requestedVehicleId = route.snapshot.queryParamMap.get('vehicle_id') ?? '';
+    const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
+    this.requestedVehicleId = String(
+      navigationState?.['vehicleId'] ?? route.snapshot.queryParamMap.get('vehicle_id') ?? '',
+    );
   }
 
   ngOnInit(): void {

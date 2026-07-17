@@ -104,6 +104,9 @@ strong {
   @apply border-brand-600 bg-brand-600 text-white;
 }
 .vehicle-cell { @apply flex items-center gap-2; }
+.clickable-cell { @apply cursor-pointer rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40; }
+.clickable-cell strong { @apply text-brand-600 dark:text-brand-300; }
+.clickable-cell:hover strong { @apply underline underline-offset-2; }
 .vehicle-image { @apply size-8 shrink-0 rounded-lg bg-canvas object-contain p-1 dark:bg-dark-canvas; }
 .vehicle-glyph { @apply text-lg text-brand-600; }
 .fleet-cell { @apply inline-flex items-center gap-2; }

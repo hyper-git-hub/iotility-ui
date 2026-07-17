@@ -37,7 +37,7 @@
     [columns]="columns"
     [rows]="vehicles()"
     [actions]="tableActions"
-    [rowsClickable]="true"
+    [rowsClickable]="false"
     [showToolbar]="true"
     [showExport]="false"
     [showPrimaryAction]="false"
@@ -45,7 +45,7 @@
     searchPlaceholder="Search vehicles"
     (searchChange)="tableSearchChanged($event)"
     (rowAction)="handleRowAction($event)"
-    (rowSelected)="openVehicle($event)"
+    (cellSelected)="openVehicle($event.row)"
   ></shared-data-table>
 
   <nav class="vehicle-pagination" aria-label="Vehicle pages">

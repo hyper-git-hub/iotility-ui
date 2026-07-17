@@ -43,7 +43,7 @@ export class VehiclesPage implements OnInit {
   protected readonly limit = 10;
   protected readonly tableActions: TableAction[] = ['map', 'history', 'edit', 'delete'];
   protected readonly columns: TableColumn[] = [
-    { key: 'registration', label: 'Vehicle', type: 'vehicle', secondaryKey: 'makeModel', imageKey: 'image' },
+    { key: 'registration', label: 'Vehicle', type: 'vehicle', secondaryKey: 'makeModel', imageKey: 'image', clickable: true },
     { key: 'fleet', label: 'Fleet', type: 'fleet' },
     { key: 'status', label: 'Status', type: 'status' },
     { key: 'device', label: 'Device ID' },
@@ -123,7 +123,7 @@ export class VehiclesPage implements OnInit {
   protected saveVehicle(_: VehicleFormValue): void { this.closeForm(); this.loadVehicles(); }
   protected handleRowAction(event: { action: TableAction; row: TableRow }): void {
     if (event.action === 'map') void this.router.navigate(['/fleetpoint/live-tracking'], {
-      queryParams: { vehicle_id: event.row['id'] },
+      state: { vehicleId: event.row['id'] },
     });
     else if (event.action === 'history') void this.router.navigateByUrl('/fleetpoint/trip-replay');
     else if (event.action === 'edit') {

@@ -7,6 +7,7 @@ export interface TableColumn {
   secondaryKey?: string;
   imageKey?: string;
   widthClass?: string;
+  clickable?: boolean;
 }
 export type TableRow = Record<string, string | number | boolean>;
 export type TableAction = 'view' | 'map' | 'history' | 'edit' | 'delete';
@@ -36,6 +37,7 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly searchChange = output<string>();
   readonly rowAction = output<{ action: TableAction; row: TableRow }>();
   readonly rowSelected = output<TableRow>();
+  readonly cellSelected = output<{ column: TableColumn; row: TableRow }>();
   private readonly tableBody = viewChild.required<ElementRef<HTMLElement>>('tableBody');
   protected readonly searchTerm = signal('');
   protected readonly bodyHeight = signal<number | null>(null);
@@ -65,6 +67,11 @@ export class DataTable implements AfterViewInit, OnDestroy {
     const image = event.target as HTMLImageElement;
     image.onerror = null;
     image.src = 'assets/fleetpoint/vehicle.svg';
+  }
+  protected selectCell(event: Event, column: TableColumn, row: TableRow): void {
+    if (!column.clickable) return;
+    event.stopPropagation();
+    this.cellSelected.emit({ column, row });
   }
   ngAfterViewInit(): void {
     const element = this.tableBody().nativeElement;

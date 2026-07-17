@@ -48,7 +48,7 @@
                   <strong>{{ r[c.key] }}</strong
                   ><small>{{ r[c.secondaryKey ?? ''] }}</small>
                 } @else if (c.type === 'vehicle') {
-                  <span class="vehicle-cell">
+                  <span class="vehicle-cell" [class.clickable-cell]="c.clickable" [attr.role]="c.clickable ? 'link' : null" [attr.tabindex]="c.clickable ? 0 : null" (click)="selectCell($event, c, r)" (keydown.enter)="selectCell($event, c, r)">
                     @if (c.imageKey) {
                       <img class="vehicle-image" [src]="r[c.imageKey]" (error)="useFallbackImage($event)" alt="" />
                     } @else {
