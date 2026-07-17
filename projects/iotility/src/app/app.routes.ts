@@ -4,12 +4,16 @@ import { loadRemoteModule } from '@angular-architects/native-federation-v4';
 import { authGuard, guestGuard } from './shared/guards/auth.guard';
 import { AuthSessionService } from './shared/services/auth-session.service';
 
+const fleetpointDashboard = 'fleetpoint/dashboard';
+
 export const routes: Routes = [
   {
     path: 'auth',
     canMatch: [guestGuard],
     loadChildren: () => import('./auth/auth.routes').then((module) => module.AUTH_ROUTES),
   },
+
+  /* IoTility host routes are temporarily disabled.
   {
     path: 'home',
     title: 'Home | IoTility',
@@ -21,11 +25,6 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/home/home-page').then((module) => module.HomePage),
       },
     ],
-  },
-  {
-    path: '',
-    pathMatch: 'full',
-    redirectTo: () => (inject(AuthSessionService).isAuthenticated ? '/home' : '/auth/login'),
   },
   {
     path: '',
@@ -61,11 +60,32 @@ export const routes: Routes = [
       },
     ],
   },
+  */
+
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: () =>
+      inject(AuthSessionService).isAuthenticated ? `/${fleetpointDashboard}` : '/auth/login',
+  },
   {
     path: 'fleetpoint',
     canMatch: [authGuard],
     loadChildren: () => loadRemoteModule('fleetpoint', './Routes').then((module) => module.routes),
   },
-  { path: 'fleet', redirectTo: 'fleetpoint/dashboard' },
-  { path: '**', redirectTo: 'auth/login' },
+  { path: 'fleet', redirectTo: fleetpointDashboard },
+
+  // Temporary redirects while the IoTility host routes above are disabled.
+  { path: 'home', redirectTo: fleetpointDashboard },
+  { path: 'use-cases', redirectTo: fleetpointDashboard },
+  { path: 'users', redirectTo: fleetpointDashboard },
+  { path: 'settings', redirectTo: fleetpointDashboard },
+  { path: 'billing', redirectTo: fleetpointDashboard },
+  { path: 'help', redirectTo: fleetpointDashboard },
+
+  {
+    path: '**',
+    redirectTo: () =>
+      inject(AuthSessionService).isAuthenticated ? `/${fleetpointDashboard}` : '/auth/login',
+  },
 ];

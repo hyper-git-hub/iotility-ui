@@ -109,6 +109,7 @@ export class LoginPage {
   }
 
   private safeReturnUrl(returnUrl: string | null): string {
-    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/home';
+    // Change the fallback back to '/home' when the IoTility host routes are enabled again.
+    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/fleetpoint/dashboard';
   }
 }
