@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BlockingLoader, Dropdown, DropdownOption } from '@iotility/shared-ui';
+import { BlockingLoader, DropdownOption } from '@iotility/shared-ui';
 import { EMPTY, Subscription, catchError, finalize, forkJoin, switchMap, timer } from 'rxjs';
 import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
 import {
@@ -26,7 +26,7 @@ interface LiveVehicle extends TrackedVehicle {
 
 @Component({
   selector: 'app-live-tracking-page',
-  imports: [BlockingLoader, FleetMap, Dropdown, AllocationForm],
+  imports: [BlockingLoader, FleetMap, AllocationForm],
   templateUrl: './live-tracking-page.html',
   styleUrl: './live-tracking-page.css',
 })
