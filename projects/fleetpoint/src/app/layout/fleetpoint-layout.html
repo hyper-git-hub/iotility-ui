@@ -1,7 +1,17 @@
-<div class="flex h-screen w-screen overflow-hidden bg-canvas dark:bg-dark-canvas">
-  <app-fleetpoint-sidebar />
+<div class="layout-shell">
+  @if (sidebarOpen()) {
+    <button
+      type="button"
+      class="mobile-sidebar-backdrop"
+      aria-label="Close navigation"
+      (click)="closeSidebar()"
+    ></button>
+  }
+  <div class="sidebar-region" [class.open]="sidebarOpen()" (click)="closeSidebar()">
+    <app-fleetpoint-sidebar />
+  </div>
   <div class="flex min-w-0 flex-1 flex-col">
-    <app-fleetpoint-header />
+    <app-fleetpoint-header (menuToggle)="openSidebar()" />
     <main class="min-h-0 flex-1 overflow-y-auto"><router-outlet /></main>
   </div>
 </div>

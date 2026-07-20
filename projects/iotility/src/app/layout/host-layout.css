@@ -1,0 +1,24 @@
+@reference "../../styles.css";
+.layout-shell {
+  @apply flex h-screen w-screen overflow-hidden bg-canvas dark:bg-dark-canvas;
+}
+.sidebar-region {
+  @apply h-full shrink-0;
+}
+.sidebar-region app-sidebar {
+  @apply block h-full;
+}
+.mobile-sidebar-backdrop {
+  display: none;
+}
+@media (max-width: 767px) {
+  .sidebar-region {
+    @apply fixed inset-y-0 left-0 z-[1800] -translate-x-full transition-transform duration-200;
+  }
+  .sidebar-region.open {
+    @apply translate-x-0;
+  }
+  .mobile-sidebar-backdrop {
+    @apply fixed inset-0 z-[1700] block border-0 bg-dark-canvas/60 backdrop-blur-sm;
+  }
+}

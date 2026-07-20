@@ -56,15 +56,22 @@
         </button>
       </div>
       @if (interval() === 'monthSelect') {
-        <label
-          ><span>Month</span
-          ><select (change)="selectMonth($event)">
-            <option value="">Choose a month</option>
-            @for (month of monthOptions; track month.value) {
-              <option [value]="month.value">{{ month.label }}</option>
-            }
-          </select></label
-        >
+        <label>
+          <span>Month</span>
+          <shared-dropdown
+            class="month-dropdown"
+            [options]="monthDropdownOptions"
+            mode="single"
+            density="compact"
+            align="left"
+            [showOptionIcons]="false"
+            [matchTriggerWidth]="true"
+            [selected]="selectedMonth() ? [selectedMonth()] : []"
+            (optionSelected)="selectMonth($event)"
+          >
+            <button dropdown-trigger type="button">{{ monthLabel() }}</button>
+          </shared-dropdown>
+        </label>
       }
       @if (interval() === 'custom') {
         <label

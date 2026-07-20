@@ -3,3 +3,18 @@
 .theme-toggle {
   @apply flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-sm text-muted transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:text-brand-300 dark:hover:border-brand-400 dark:hover:text-white;
 }
+.mobile-menu-button {
+  display: none;
+}
+@media (max-width: 767px) {
+  .mobile-menu-button {
+    @apply grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-transparent text-ink dark:border-dark-line dark:text-white;
+  }
+  .mobile-menu-button svg {
+    @apply size-5;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.8;
+  }
+}

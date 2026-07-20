@@ -4,6 +4,8 @@ import {
   BlockingLoader,
   DataTable,
   DateTimePicker,
+  Dropdown,
+  DropdownOption,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
@@ -33,7 +35,7 @@ interface MonthOption {
 
 @Component({
   selector: 'app-dashboard-reports',
-  imports: [BlockingLoader, DataTable, DateTimePicker],
+  imports: [BlockingLoader, DataTable, DateTimePicker, Dropdown],
   templateUrl: './reports.html',
   styleUrl: './reports.css',
 })
@@ -99,6 +101,11 @@ export class Reports implements OnInit {
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
   protected readonly monthOptions: MonthOption[] = this.createMonthOptions();
+  protected readonly selectedMonth = signal('');
+  protected readonly monthDropdownOptions: DropdownOption[] = this.monthOptions.map((month) => ({
+    id: month.value,
+    label: month.label,
+  }));
   protected readonly start = computed(() => (this.total() ? this.offset() + 1 : 0));
   protected readonly end = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
@@ -121,16 +128,21 @@ export class Reports implements OnInit {
     }
     this.setPreset(value, true);
   }
-  protected selectMonth(event: Event): void {
-    const option = this.monthOptions.find(
-      (month) => month.value === (event.target as HTMLSelectElement).value,
-    );
+  protected selectMonth(selected: DropdownOption): void {
+    const option = this.monthOptions.find((month) => month.value === selected.id);
     if (!option) return;
+    this.selectedMonth.set(option.value);
     this.interval.set('monthSelect');
     this.startDate.set(this.toInputDate(option.start));
     this.endDate.set(this.toInputDate(option.end));
     this.offset.set(0);
     this.load();
+  }
+  protected monthLabel(): string {
+    return (
+      this.monthDropdownOptions.find((month) => month.id === this.selectedMonth())?.label ??
+      'Choose a month'
+    );
   }
   protected updateStart(value: string): void {
     this.interval.set('custom');

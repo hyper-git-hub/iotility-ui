@@ -48,6 +48,12 @@
   @apply h-9 w-full rounded-lg border border-line bg-white px-2 text-[10px] outline-none transition focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
   color-scheme: light;
 }
+.month-dropdown {
+  @apply block;
+}
+.month-dropdown [dropdown-trigger] {
+  @apply flex h-9 w-full items-center rounded-lg border border-line bg-white px-2 pr-8 text-left text-[10px] text-ink outline-none transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
+}
 :host-context(.dark) .interval-filter input {
   color-scheme: dark;
 }
