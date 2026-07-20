@@ -136,6 +136,7 @@ export class DateTimePicker implements ControlValueAccessor, OnDestroy {
     this.mountTimer = setTimeout(() => {
       const panel = this.panel()?.nativeElement;
       if (!panel) return;
+      panel.classList.toggle('dark', this.host.nativeElement.closest('.dark') !== null);
       document.body.appendChild(panel);
       this.positionPanel();
     }, 0);
