@@ -46,6 +46,9 @@
 .dropdown-option {
   @apply flex w-full cursor-pointer items-center gap-3 rounded-lg border-0 bg-transparent px-3 py-2.5 text-left text-ink hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-white dark:hover:bg-dark-canvas;
 }
+.dropdown-option.selected {
+  @apply bg-brand-50 font-semibold text-brand-700 hover:bg-brand-100 dark:bg-brand-600/15 dark:text-brand-300 dark:hover:bg-brand-600/25;
+}
 .dropdown-option.danger {
   @apply text-danger;
 }
@@ -65,6 +68,9 @@
 }
 .compact .dropdown-panel {
   @apply w-52 p-1.5;
+}
+.compact .dropdown-panel.match-trigger {
+  @apply w-full min-w-full;
 }
 .compact .dropdown-options {
   @apply gap-0.5;

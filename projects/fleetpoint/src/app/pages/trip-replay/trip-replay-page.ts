@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { BlockingLoader } from '@iotility/shared-ui';
+import { BlockingLoader, DateTimePicker } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
 import {
@@ -61,7 +61,7 @@ const EMPTY_TRIP: ReplayTrip = {
 
 @Component({
   selector: 'app-trip-replay-page',
-  imports: [BlockingLoader, TripReplayMap],
+  imports: [BlockingLoader, DateTimePicker, TripReplayMap],
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
 })
@@ -129,10 +129,12 @@ export class TripReplayPage implements OnInit, OnDestroy {
         next: (response) => {
           const vehicles = response.data?.data ?? [];
           this.vehicles.set(vehicles);
-          const selected = vehicles.find((vehicle) =>
-            String(vehicle.id) === this.requestedVehicleId ||
-            vehicle.registration.toLowerCase() === this.requestedVehicleId.toLowerCase(),
-          ) ?? vehicles[0];
+          const selected =
+            vehicles.find(
+              (vehicle) =>
+                String(vehicle.id) === this.requestedVehicleId ||
+                vehicle.registration.toLowerCase() === this.requestedVehicleId.toLowerCase(),
+            ) ?? vehicles[0];
           if (selected) {
             this.selectVehicle(selected);
             if (this.requestedVehicleId) this.loadTrip();
@@ -145,11 +147,11 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected updateSearch(event: Event): void {
     this.search.set((event.target as HTMLInputElement).value);
   }
-  protected updateStart(event: Event): void {
-    this.startDate.set((event.target as HTMLInputElement).value);
+  protected updateStart(value: string): void {
+    this.startDate.set(value);
   }
-  protected updateEnd(event: Event): void {
-    this.endDate.set((event.target as HTMLInputElement).value);
+  protected updateEnd(value: string): void {
+    this.endDate.set(value);
   }
   protected selectVehicle(vehicle: RealtimeVehicleRecord): void {
     if (vehicle.id === this.selectedVehicleId()) return;

@@ -16,11 +16,19 @@
       <section class="replay-filters">
         <label
           ><span>From</span
-          ><input type="datetime-local" [value]="startDate()" (change)="updateStart($event)"
+          ><shared-date-time-picker
+            density="compact"
+            [value]="startDate()"
+            (valueChange)="updateStart($event)"
+            ariaLabel="Choose trip start date and time"
         /></label>
         <label
           ><span>To</span
-          ><input type="datetime-local" [value]="endDate()" (change)="updateEnd($event)"
+          ><shared-date-time-picker
+            density="compact"
+            [value]="endDate()"
+            (valueChange)="updateEnd($event)"
+            ariaLabel="Choose trip end date and time"
         /></label>
         <button type="button" (click)="loadTrip()">Load trip</button>
       </section>
@@ -174,22 +182,22 @@
           }
         } @else {
           <dl class="statistics-list">
-              @for (stat of selectedTrip().statistics; track stat.label) {
-                <div>
-                  <dt>{{ stat.label }}</dt>
-                  <dd>
-                    @if (stat.isImage) {
-                      <img
-                        class="stat-vehicle-image"
-                        [src]="stat.value"
-                        (error)="useDefaultVehicleImage($event)"
-                        alt="Vehicle"
-                      />
-                    } @else {
-                      {{ stat.value }}
-                    }
-                  </dd>
-                </div>
+            @for (stat of selectedTrip().statistics; track stat.label) {
+              <div>
+                <dt>{{ stat.label }}</dt>
+                <dd>
+                  @if (stat.isImage) {
+                    <img
+                      class="stat-vehicle-image"
+                      [src]="stat.value"
+                      (error)="useDefaultVehicleImage($event)"
+                      alt="Vehicle"
+                    />
+                  } @else {
+                    {{ stat.value }}
+                  }
+                </dd>
+              </div>
             } @empty {
               <div>
                 <dt>Current speed</dt>

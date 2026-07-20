@@ -30,6 +30,7 @@ export class Dropdown {
   readonly align = input<'left' | 'right'>('right');
   readonly density = input<'default' | 'compact'>('default');
   readonly showOptionIcons = input(true);
+  readonly showSelectionMarks = input(true);
   readonly matchTriggerWidth = input(false);
   readonly placement = input<'bottom' | 'top'>('bottom');
   readonly selected = input<string[]>([]);

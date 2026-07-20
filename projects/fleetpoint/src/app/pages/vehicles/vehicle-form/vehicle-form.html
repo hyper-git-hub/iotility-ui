@@ -1,57 +1,405 @@
-<ui-blocking-loader [visible]="loading()" [compact]="true" [label]="editing() ? 'Updating vehicle...' : 'Creating vehicle...'" />
-<app-modal [open]="open()" [busy]="loading()" size="xl" labelledBy="add-vehicle-title" (closed)="cancel()">
+<ui-blocking-loader
+  [visible]="loading()"
+  [compact]="true"
+  [label]="editing() ? 'Updating vehicle...' : 'Creating vehicle...'"
+/>
+<app-modal
+  [open]="open()"
+  [busy]="loading()"
+  size="xl"
+  labelledBy="add-vehicle-title"
+  (closed)="cancel()"
+>
   <h2 modal-header id="add-vehicle-title">{{ editing() ? 'Update Vehicle' : 'Add Vehicle' }}</h2>
   <div class="step-form-shell">
     <app-stepper [steps]="steps" [activeIndex]="activeStep()" (stepSelected)="goToStep($event)" />
-    <shared-smooth-height class="step-content"><form id="vehicle-form" [formGroup]="form" (ngSubmit)="submit()">
-      @if (error()) { <div class="form-error" role="alert">{{ error() }}</div> }
-      @if (activeStep() === 0) {
-        <section class="details-step step-enter">
-          <label class="shared-form-field"><span>Registration Number *</span><input class="shared-form-control" formControlName="registration" placeholder="e.g. LC-3029" />@if (submitted() && form.controls.registration.invalid) { <small class="field-error">Registration number is required.</small> }</label>
-          <label class="shared-form-field"><span>Engine Number *</span><input class="shared-form-control" formControlName="engine_number" />@if (submitted() && form.controls.engine_number.invalid) { <small class="field-error">Engine number is required.</small> }</label>
-          <label class="shared-form-field"><span>Chassis Number *</span><input class="shared-form-control" formControlName="chassis_number" />@if (submitted() && form.controls.chassis_number.invalid) { <small class="field-error">Chassis number is required.</small> }</label>
-          <label class="shared-form-field"><span>Make *</span><input class="shared-form-control" formControlName="make" placeholder="e.g. Volvo" />@if (submitted() && form.controls.make.invalid) { <small class="field-error">Make is required.</small> }</label>
-          <label class="shared-form-field"><span>Model *</span><input class="shared-form-control" formControlName="model" placeholder="e.g. L150H" />@if (submitted() && form.controls.model.invalid) { <small class="field-error">Model is required.</small> }</label>
-          <label class="shared-form-field"><span>Year *</span><input type="number" class="shared-form-control" formControlName="year" />@if (submitted() && form.controls.year.invalid) { <small class="field-error">Enter a valid vehicle year.</small> }</label>
-          <label class="shared-form-field"><span>Color *</span><input class="shared-form-control" formControlName="color" />@if (submitted() && form.controls.color.invalid) { <small class="field-error">Color is required.</small> }</label>
-          <label class="shared-form-field"><span>Odometer Reading *</span><input type="number" class="shared-form-control" formControlName="odo_reading" />@if (submitted() && form.controls.odo_reading.invalid) { <small class="field-error">Enter a valid odometer reading.</small> }</label>
-          <label class="shared-form-field"><span>Engine Capacity (CC) *</span><input type="number" class="shared-form-control" formControlName="engine_capacity" />@if (submitted() && form.controls.engine_capacity.invalid) { <small class="field-error">Enter a valid engine capacity.</small> }</label>
-          <label class="shared-form-field"><span>Wheels *</span><input type="number" class="shared-form-control" formControlName="wheels" />@if (submitted() && form.controls.wheels.invalid) { <small class="field-error">Vehicle must have at least two wheels.</small> }</label>
-          <label class="shared-form-field"><span>Fuel Tank Capacity (litres) *</span><input type="number" class="shared-form-control" formControlName="fuel_tank_capacity" />@if (submitted() && form.controls.fuel_tank_capacity.invalid) { <small class="field-error">Enter a valid fuel tank capacity.</small> }</label>
-          <label class="shared-form-field"><span>Type of Purchase *</span><shared-dropdown class="form-dropdown" [options]="purchaseOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.purchase_type.value]" (optionSelected)="selectPurchase($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(purchaseOptions, form.controls.purchase_type.value, 'Select purchase type') }}</span></button></shared-dropdown>@if (submitted() && form.controls.purchase_type.invalid) { <small class="field-error">Purchase type is required.</small> }</label>
-          <div class="vehicle-picture wide"><div><span>Vehicle Picture</span><p>PNG or JPG, up to 5 MB</p><label><input type="file" accept="image/png,image/jpeg,image/webp" (change)="chooseImage($event)" />Choose picture</label></div><img [src]="imagePreview()" (error)="imageFailed()" alt="Vehicle preview" /></div>
-        </section>
-      } @else if (activeStep() === 1) {
-        <section class="details-step step-enter">
-          <label class="shared-form-field"><span>Vehicle Type *</span><shared-dropdown class="form-dropdown" [options]="vehicleTypeDropdownOptions()" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search vehicle types" [selected]="[form.controls.type.value]" (optionSelected)="selectVehicleType($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(vehicleTypeDropdownOptions(), form.controls.type.value, 'Select vehicle type') }}</span></button></shared-dropdown>@if (submitted() && form.controls.type.invalid) { <small class="field-error">Vehicle type is required.</small> }</label>
-          <label class="shared-form-field"><span>Device Attached *</span><shared-dropdown class="form-dropdown" [options]="deviceDropdownOptions()" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search devices" [selected]="[form.controls.device.value]" (optionSelected)="selectDevice($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(deviceDropdownOptions(), form.controls.device.value, 'Select device') }}</span></button></shared-dropdown>@if (submitted() && form.controls.device.invalid) { <small class="field-error">An attached device is required.</small> }</label>
-          <label class="shared-form-field"><span>Date Commissioned *</span><input type="date" class="shared-form-control" formControlName="date_commissioned" />@if (submitted() && form.controls.date_commissioned.invalid) { <small class="field-error">Commissioned date is required.</small> }</label>
-          <label class="shared-form-field"><span>Owner Name *</span><input class="shared-form-control" formControlName="owner" />@if (submitted() && form.controls.owner.invalid) { <small class="field-error">Owner name is required.</small> }</label>
-          <label class="shared-form-field"><span>Owner ID *</span><input class="shared-form-control" formControlName="owner_id" />@if (submitted() && form.controls.owner_id.invalid) { <small class="field-error">Owner ID is required.</small> }</label>
-          <label class="shared-form-field"><span>Nationality *</span><input class="shared-form-control" formControlName="nationality" />@if (submitted() && form.controls.nationality.invalid) { <small class="field-error">Nationality is required.</small> }</label>
-          <label class="shared-form-field"><span>Registration Date *</span><input type="date" class="shared-form-control" formControlName="registration_date" />@if (submitted() && form.controls.registration_date.invalid) { <small class="field-error">Registration date is required.</small> }</label>
-          <label class="shared-form-field"><span>Expiry Date *</span><input type="date" class="shared-form-control" formControlName="expiry_date" />@if (submitted() && form.controls.expiry_date.invalid) { <small class="field-error">Expiry date is required.</small> }</label>
-          <label class="shared-form-field"><span>Fleet</span><shared-dropdown class="form-dropdown" [options]="fleetDropdownOptions()" mode="single" align="left" placement="top" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search fleets" [selected]="[form.controls.fleet.value]" (optionSelected)="selectFleet($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(fleetDropdownOptions(), form.controls.fleet.value, 'Select fleet') }}</span></button></shared-dropdown></label>
-          <label class="shared-form-field"><span>Category</span><shared-dropdown class="form-dropdown" [options]="categoryDropdownOptions()" mode="single" align="left" placement="top" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search categories" [selected]="[form.controls.category.value]" (optionSelected)="selectCategory($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(categoryDropdownOptions(), form.controls.category.value, 'Select category') }}</span></button></shared-dropdown></label>
-          @if (editing()) { <section class="edit-settings wide"><label><input type="checkbox" formControlName="status" /><span></span><strong>Active vehicle</strong></label><label><input type="checkbox" formControlName="is_immobilization_enabled" /><span></span><strong>RFID authentication</strong></label></section> }
-        </section>
-      } @else {
-        <section class="monitoring-step step-enter">
-          <header><h3>Enable Violations</h3><p>Choose the vehicle events that should generate violations.</p></header>
-          <fieldset class="violations">
-            <label><input type="checkbox" formControlName="speed" /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-5"/><circle cx="12" cy="18" r="1.4"/></svg><strong>Speed</strong></label>
-            <label><input type="checkbox" formControlName="harsh_acceleration" /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h7M3 12h10M3 16h7"/><path d="m14 7 5 5-5 5"/></svg><strong>Harsh Acceleration</strong></label>
-            <label><input type="checkbox" formControlName="harsh_braking" /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3 7.5 7.5 9.5 4.5-2 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="M12 8v5M12 16h.01"/></svg><strong>Harsh Braking</strong></label>
-            <label><input type="checkbox" formControlName="sharp_turning" /><span class="monitor-check">✓</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19v-3a8 8 0 0 1 8-8h6"/><path d="m16 5 3 3-3 3"/></svg><strong>Sharp Turning</strong></label>
-          </fieldset>
-          @if (form.controls.speed.value) { <label class="shared-form-field speed-threshold"><span>Speed Threshold (km/h) *</span><input type="number" class="shared-form-control" formControlName="speed_threshold" min="1" /></label> }
-        </section>
-      }
-    </form></shared-smooth-height>
+    <shared-smooth-height class="step-content"
+      ><form id="vehicle-form" [formGroup]="form" (ngSubmit)="submit()">
+        @if (error()) {
+          <div class="form-error" role="alert">{{ error() }}</div>
+        }
+        @if (activeStep() === 0) {
+          <section class="details-step step-enter">
+            <label class="shared-form-field"
+              ><span>Registration Number *</span
+              ><input
+                class="shared-form-control"
+                formControlName="registration"
+                placeholder="e.g. LC-3029"
+              />
+              @if (submitted() && form.controls.registration.invalid) {
+                <small class="field-error">Registration number is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Engine Number *</span
+              ><input class="shared-form-control" formControlName="engine_number" />
+              @if (submitted() && form.controls.engine_number.invalid) {
+                <small class="field-error">Engine number is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Chassis Number *</span
+              ><input class="shared-form-control" formControlName="chassis_number" />
+              @if (submitted() && form.controls.chassis_number.invalid) {
+                <small class="field-error">Chassis number is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Make *</span
+              ><input class="shared-form-control" formControlName="make" placeholder="e.g. Volvo" />
+              @if (submitted() && form.controls.make.invalid) {
+                <small class="field-error">Make is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Model *</span
+              ><input
+                class="shared-form-control"
+                formControlName="model"
+                placeholder="e.g. L150H"
+              />
+              @if (submitted() && form.controls.model.invalid) {
+                <small class="field-error">Model is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Year *</span
+              ><input type="number" class="shared-form-control" formControlName="year" />
+              @if (submitted() && form.controls.year.invalid) {
+                <small class="field-error">Enter a valid vehicle year.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Color *</span><input class="shared-form-control" formControlName="color" />
+              @if (submitted() && form.controls.color.invalid) {
+                <small class="field-error">Color is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Odometer Reading *</span
+              ><input type="number" class="shared-form-control" formControlName="odo_reading" />
+              @if (submitted() && form.controls.odo_reading.invalid) {
+                <small class="field-error">Enter a valid odometer reading.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Engine Capacity (CC) *</span
+              ><input type="number" class="shared-form-control" formControlName="engine_capacity" />
+              @if (submitted() && form.controls.engine_capacity.invalid) {
+                <small class="field-error">Enter a valid engine capacity.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Wheels *</span
+              ><input type="number" class="shared-form-control" formControlName="wheels" />
+              @if (submitted() && form.controls.wheels.invalid) {
+                <small class="field-error">Vehicle must have at least two wheels.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Fuel Tank Capacity (litres) *</span
+              ><input
+                type="number"
+                class="shared-form-control"
+                formControlName="fuel_tank_capacity"
+              />
+              @if (submitted() && form.controls.fuel_tank_capacity.invalid) {
+                <small class="field-error">Enter a valid fuel tank capacity.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Type of Purchase *</span
+              ><shared-dropdown
+                class="form-dropdown"
+                [options]="purchaseOptions"
+                mode="single"
+                align="left"
+                [showOptionIcons]="false"
+                [matchTriggerWidth]="true"
+                [selected]="[form.controls.purchase_type.value]"
+                (optionSelected)="selectPurchase($event)"
+                ><button dropdown-trigger type="button">
+                  <span>{{
+                    optionLabel(
+                      purchaseOptions,
+                      form.controls.purchase_type.value,
+                      'Select purchase type'
+                    )
+                  }}</span>
+                </button></shared-dropdown
+              >
+              @if (submitted() && form.controls.purchase_type.invalid) {
+                <small class="field-error">Purchase type is required.</small>
+              }
+            </label>
+            <div class="vehicle-picture wide">
+              <div>
+                <span>Vehicle Picture</span>
+                <p>PNG or JPG, up to 5 MB</p>
+                <label
+                  ><input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    (change)="chooseImage($event)"
+                  />Choose picture</label
+                >
+              </div>
+              <img [src]="imagePreview()" (error)="imageFailed()" alt="Vehicle preview" />
+            </div>
+          </section>
+        } @else if (activeStep() === 1) {
+          <section class="details-step step-enter">
+            <label class="shared-form-field"
+              ><span>Vehicle Type *</span
+              ><shared-dropdown
+                class="form-dropdown"
+                [options]="vehicleTypeDropdownOptions()"
+                mode="single"
+                align="left"
+                [showOptionIcons]="false"
+                [matchTriggerWidth]="true"
+                [searchable]="true"
+                searchPlaceholder="Search vehicle types"
+                [selected]="[form.controls.type.value]"
+                (optionSelected)="selectVehicleType($event)"
+                ><button dropdown-trigger type="button">
+                  <span>{{
+                    optionLabel(
+                      vehicleTypeDropdownOptions(),
+                      form.controls.type.value,
+                      'Select vehicle type'
+                    )
+                  }}</span>
+                </button></shared-dropdown
+              >
+              @if (submitted() && form.controls.type.invalid) {
+                <small class="field-error">Vehicle type is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Device Attached *</span
+              ><shared-dropdown
+                class="form-dropdown"
+                [options]="deviceDropdownOptions()"
+                mode="single"
+                align="left"
+                [showOptionIcons]="false"
+                [matchTriggerWidth]="true"
+                [searchable]="true"
+                searchPlaceholder="Search devices"
+                [selected]="[form.controls.device.value]"
+                (optionSelected)="selectDevice($event)"
+                ><button dropdown-trigger type="button">
+                  <span>{{
+                    optionLabel(
+                      deviceDropdownOptions(),
+                      form.controls.device.value,
+                      'Select device'
+                    )
+                  }}</span>
+                </button></shared-dropdown
+              >
+              @if (submitted() && form.controls.device.invalid) {
+                <small class="field-error">An attached device is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Date Commissioned *</span
+              ><shared-date-time-picker
+                mode="date"
+                formControlName="date_commissioned"
+                ariaLabel="Choose commissioned date"
+              />
+              @if (submitted() && form.controls.date_commissioned.invalid) {
+                <small class="field-error">Commissioned date is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Owner Name *</span
+              ><input class="shared-form-control" formControlName="owner" />
+              @if (submitted() && form.controls.owner.invalid) {
+                <small class="field-error">Owner name is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Owner ID *</span
+              ><input class="shared-form-control" formControlName="owner_id" />
+              @if (submitted() && form.controls.owner_id.invalid) {
+                <small class="field-error">Owner ID is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Nationality *</span
+              ><input class="shared-form-control" formControlName="nationality" />
+              @if (submitted() && form.controls.nationality.invalid) {
+                <small class="field-error">Nationality is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Registration Date *</span
+              ><shared-date-time-picker
+                mode="date"
+                formControlName="registration_date"
+                ariaLabel="Choose registration date"
+              />
+              @if (submitted() && form.controls.registration_date.invalid) {
+                <small class="field-error">Registration date is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Expiry Date *</span
+              ><shared-date-time-picker
+                mode="date"
+                formControlName="expiry_date"
+                ariaLabel="Choose registration expiry date"
+              />
+              @if (submitted() && form.controls.expiry_date.invalid) {
+                <small class="field-error">Expiry date is required.</small>
+              }
+            </label>
+            <label class="shared-form-field"
+              ><span>Fleet</span
+              ><shared-dropdown
+                class="form-dropdown"
+                [options]="fleetDropdownOptions()"
+                mode="single"
+                align="left"
+                placement="top"
+                [showOptionIcons]="false"
+                [matchTriggerWidth]="true"
+                [searchable]="true"
+                searchPlaceholder="Search fleets"
+                [selected]="[form.controls.fleet.value]"
+                (optionSelected)="selectFleet($event)"
+                ><button dropdown-trigger type="button">
+                  <span>{{
+                    optionLabel(fleetDropdownOptions(), form.controls.fleet.value, 'Select fleet')
+                  }}</span>
+                </button></shared-dropdown
+              ></label
+            >
+            <label class="shared-form-field"
+              ><span>Category</span
+              ><shared-dropdown
+                class="form-dropdown"
+                [options]="categoryDropdownOptions()"
+                mode="single"
+                align="left"
+                placement="top"
+                [showOptionIcons]="false"
+                [matchTriggerWidth]="true"
+                [searchable]="true"
+                searchPlaceholder="Search categories"
+                [selected]="[form.controls.category.value]"
+                (optionSelected)="selectCategory($event)"
+                ><button dropdown-trigger type="button">
+                  <span>{{
+                    optionLabel(
+                      categoryDropdownOptions(),
+                      form.controls.category.value,
+                      'Select category'
+                    )
+                  }}</span>
+                </button></shared-dropdown
+              ></label
+            >
+            @if (editing()) {
+              <section class="edit-settings wide">
+                <label
+                  ><input type="checkbox" formControlName="status" /><span></span
+                  ><strong>Active vehicle</strong></label
+                ><label
+                  ><input type="checkbox" formControlName="is_immobilization_enabled" /><span></span
+                  ><strong>RFID authentication</strong></label
+                >
+              </section>
+            }
+          </section>
+        } @else {
+          <section class="monitoring-step step-enter">
+            <header>
+              <h3>Enable Violations</h3>
+              <p>Choose the vehicle events that should generate violations.</p>
+            </header>
+            <fieldset class="violations">
+              <label
+                ><input type="checkbox" formControlName="speed" /><span class="monitor-check"
+                  >✓</span
+                ><svg viewBox="0 0 24 24">
+                  <path d="M4 18a8 8 0 1 1 16 0" />
+                  <path d="M12 18l4-5" />
+                  <circle cx="12" cy="18" r="1.4" /></svg
+                ><strong>Speed</strong></label
+              >
+              <label
+                ><input type="checkbox" formControlName="harsh_acceleration" /><span
+                  class="monitor-check"
+                  >✓</span
+                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 8h7M3 12h10M3 16h7" />
+                  <path d="m14 7 5 5-5 5" /></svg
+                ><strong>Harsh Acceleration</strong></label
+              >
+              <label
+                ><input type="checkbox" formControlName="harsh_braking" /><span
+                  class="monitor-check"
+                  >✓</span
+                ><svg viewBox="0 0 24 24">
+                  <path d="M12 3 4.5 6v5.5c0 4.6 3 7.5 7.5 9.5 4.5-2 7.5-4.9 7.5-9.5V6L12 3Z" />
+                  <path d="M12 8v5M12 16h.01" /></svg
+                ><strong>Harsh Braking</strong></label
+              >
+              <label
+                ><input type="checkbox" formControlName="sharp_turning" /><span
+                  class="monitor-check"
+                  >✓</span
+                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 19v-3a8 8 0 0 1 8-8h6" />
+                  <path d="m16 5 3 3-3 3" /></svg
+                ><strong>Sharp Turning</strong></label
+              >
+            </fieldset>
+            @if (form.controls.speed.value) {
+              <label class="shared-form-field speed-threshold"
+                ><span>Speed Threshold (km/h) *</span
+                ><input
+                  type="number"
+                  class="shared-form-control"
+                  formControlName="speed_threshold"
+                  min="1"
+              /></label>
+            }
+          </section>
+        }</form
+    ></shared-smooth-height>
   </div>
   <div modal-footer class="step-footer">
-    <button type="button" class="shared-button-secondary" [disabled]="activeStep() === 0 || loading()" (click)="back()">Back</button>
-    <div class="step-progress"><span [style.--step-progress]="progress() + '%'">{{ progress() }}%</span><p>Step {{ activeStep() + 1 }}/{{ steps.length }}: {{ steps[activeStep()].label }}</p></div>
-      @if (activeStep() < steps.length - 1) { <button type="button" class="shared-button-primary" [disabled]="loading()" (click)="next()">Next</button> } @else { <button type="submit" form="vehicle-form" class="shared-button-primary" [disabled]="form.invalid || loading()">{{ editing() ? 'Update Vehicle' : 'Save Vehicle' }}</button> }
+    <button
+      type="button"
+      class="shared-button-secondary"
+      [disabled]="activeStep() === 0 || loading()"
+      (click)="back()"
+    >
+      Back
+    </button>
+    <div class="step-progress">
+      <span [style.--step-progress]="progress() + '%'">{{ progress() }}%</span>
+      <p>Step {{ activeStep() + 1 }}/{{ steps.length }}: {{ steps[activeStep()].label }}</p>
+    </div>
+    @if (activeStep() < steps.length - 1) {
+      <button type="button" class="shared-button-primary" [disabled]="loading()" (click)="next()">
+        Next
+      </button>
+    } @else {
+      <button
+        type="submit"
+        form="vehicle-form"
+        class="shared-button-primary"
+        [disabled]="form.invalid || loading()"
+      >
+        {{ editing() ? 'Update Vehicle' : 'Save Vehicle' }}
+      </button>
+    }
   </div>
 </app-modal>

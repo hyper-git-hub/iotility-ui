@@ -1,77 +1,228 @@
 <main class="driver-detail-page">
-  <ui-blocking-loader [visible]="loading()" label="Loading driver details" message="Getting the latest driver profile and activity..." />
-  <ui-blocking-loader [visible]="dataLoading()" [compact]="true" label="Updating driver activity..." />
+  <ui-blocking-loader
+    [visible]="loading()"
+    label="Loading driver details"
+    message="Getting the latest driver profile and activity..."
+  />
+  <ui-blocking-loader
+    [visible]="dataLoading()"
+    [compact]="true"
+    label="Updating driver activity..."
+  />
 
-  @if (error()) { <section class="detail-error" role="alert">{{ error() }}</section> }
+  @if (error()) {
+    <section class="detail-error" role="alert">{{ error() }}</section>
+  }
 
   @if (driver(); as item) {
     <section class="summary-heading smooth-reveal reveal-cards-heading">
-      <div class="summary-copy"><button type="button" (click)="back()" aria-label="Back to drivers">&larr;</button><div><p>Drivers / {{ item.name }}</p><h2>Driver overview</h2><span>High-level driver metrics for the selected preset</span></div></div>
-      <label class="cards-filter"><span>Cards period</span><shared-dropdown class="card-period-dropdown" [options]="cardPeriodOptions" mode="single" align="right" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[cardPeriod()]" (optionSelected)="updateCardPeriod($event)"><button dropdown-trigger type="button"><span>{{ cardPeriodLabel() }}</span></button></shared-dropdown></label>
+      <div class="summary-copy">
+        <button type="button" (click)="back()" aria-label="Back to drivers">&larr;</button>
+        <div>
+          <p>Drivers / {{ item.name }}</p>
+          <h2>Driver overview</h2>
+          <span>High-level driver metrics for the selected preset</span>
+        </div>
+      </div>
+      <label class="cards-filter"
+        ><span>Cards period</span
+        ><shared-dropdown
+          class="card-period-dropdown"
+          [options]="cardPeriodOptions"
+          mode="single"
+          align="right"
+          [showOptionIcons]="false"
+          [matchTriggerWidth]="true"
+          [selected]="[cardPeriod()]"
+          (optionSelected)="updateCardPeriod($event)"
+          ><button dropdown-trigger type="button">
+            <span>{{ cardPeriodLabel() }}</span>
+          </button></shared-dropdown
+        ></label
+      >
     </section>
 
     <section class="driver-overview-grid">
       <article class="detail-card profile-panel smooth-reveal reveal-profile">
-        <header><h2>Driver profile</h2><span>{{ item.employee_id || 'No employee ID' }}</span></header>
+        <header>
+          <h2>Driver profile</h2>
+          <span>{{ item.employee_id || 'No employee ID' }}</span>
+        </header>
         <div class="driver-identity">
           <img [src]="image()" (error)="useFallbackImage($event)" alt="Driver" />
-          <div><h3>{{ item.name }}</h3><p class="email-badge">{{ item.email || 'Email unavailable' }}</p></div>
+          <div>
+            <h3>{{ item.name }}</h3>
+            <p class="email-badge">{{ item.email || 'Email unavailable' }}</p>
+          </div>
         </div>
         <dl class="details-list">
-          <div><dt>Phone</dt><dd>{{ text(item.phone) }}</dd></div>
-          <div><dt>Driver group</dt><dd>{{ item.group || 'No driver group' }}</dd></div>
-          <div><dt>Licence number</dt><dd>{{ text(item.licence_number) }}</dd></div>
-          <div><dt>Licence expiry</dt><dd>{{ formatDate(item.licence_expiry_date) }}</dd></div>
-          <div><dt>Date joined</dt><dd>{{ formatDate(item.data_joined) }}</dd></div>
-          <div><dt>Shift status</dt><dd>{{ item.driver_shift_status ? 'On shift' : 'Off shift' }}</dd></div>
+          <div>
+            <dt>Phone</dt>
+            <dd>{{ text(item.phone) }}</dd>
+          </div>
+          <div>
+            <dt>Driver group</dt>
+            <dd>{{ item.group || 'No driver group' }}</dd>
+          </div>
+          <div>
+            <dt>Licence number</dt>
+            <dd>{{ text(item.licence_number) }}</dd>
+          </div>
+          <div>
+            <dt>Licence expiry</dt>
+            <dd>{{ formatDate(item.licence_expiry_date) }}</dd>
+          </div>
+          <div>
+            <dt>Date joined</dt>
+            <dd>{{ formatDate(item.data_joined) }}</dd>
+          </div>
+          <div>
+            <dt>Shift status</dt>
+            <dd>{{ item.driver_shift_status ? 'On shift' : 'Off shift' }}</dd>
+          </div>
         </dl>
       </article>
 
       <section class="cards-column smooth-reveal reveal-metrics">
         <div class="metric-grid" aria-label="Driver summary">
           @for (card of cards(); track card.code || $index) {
-            <app-stat-card [label]="card.name" [value]="card.data ?? 0" [tone]="$index % 2 ? 'info' : 'brand'" [animatedBorder]="true" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4 3 7 8 9 5-2 8-5 8-9V6l-8-3Z"/><path d="M8 14l3-3 2 2 3-5"/></svg></app-stat-card>
+            <app-stat-card
+              [label]="card.name"
+              [value]="card.data ?? 0"
+              [tone]="$index % 2 ? 'info' : 'brand'"
+              [animatedBorder]="true"
+              [compact]="true"
+              ><svg stat-card-icon viewBox="0 0 24 24">
+                <path d="M12 3 4 6v6c0 4 3 7 8 9 5-2 8-5 8-9V6l-8-3Z" />
+                <path d="M8 14l3-3 2 2 3-5" /></svg
+            ></app-stat-card>
           } @empty {
-            <app-stat-card label="Distance travelled" [value]="(graphs().total_distance_travelled || 0) + ' km'" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/><circle cx="12" cy="17" r="1.5"/></svg></app-stat-card>
-            <app-stat-card label="Total violations" [value]="totalViolations()" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 3 20h18L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg></app-stat-card>
-            <app-stat-card label="Idle time" [value]="totalIdle() + ' min'" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></app-stat-card>
-            <app-stat-card label="Recorded alerts" [value]="violationCount()" tone="info" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg></app-stat-card>
+            <app-stat-card
+              label="Distance travelled"
+              [value]="(graphs().total_distance_travelled || 0) + ' km'"
+              tone="brand"
+              [compact]="true"
+              ><svg stat-card-icon viewBox="0 0 24 24">
+                <path d="M4 17a8 8 0 1 1 16 0M12 17l4-5" />
+                <circle cx="12" cy="17" r="1.5" /></svg
+            ></app-stat-card>
+            <app-stat-card
+              label="Total violations"
+              [value]="totalViolations()"
+              tone="danger"
+              [compact]="true"
+              ><svg stat-card-icon viewBox="0 0 24 24">
+                <path d="M12 3 3 20h18L12 3Z" />
+                <path d="M12 9v5M12 17h.01" /></svg
+            ></app-stat-card>
+            <app-stat-card
+              label="Idle time"
+              [value]="totalIdle() + ' min'"
+              tone="warning"
+              [compact]="true"
+              ><svg stat-card-icon viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" /></svg
+            ></app-stat-card>
+            <app-stat-card
+              label="Recorded alerts"
+              [value]="violationCount()"
+              tone="info"
+              [compact]="true"
+              ><svg stat-card-icon viewBox="0 0 24 24">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" />
+                <path d="M10 21h4" /></svg
+            ></app-stat-card>
           }
         </div>
       </section>
     </section>
 
     <section class="detail-card filter-panel smooth-reveal reveal-filters">
-      <header><div><h2>Performance filters</h2><p>Updates the period summary, violation breakdown, idle history and driver alerts below</p></div><span>Custom range</span></header>
+      <header>
+        <div>
+          <h2>Performance filters</h2>
+          <p>
+            Updates the period summary, violation breakdown, idle history and driver alerts below
+          </p>
+        </div>
+        <span>Custom range</span>
+      </header>
       <div class="period-controls">
-        <label><span>From</span><input class="shared-form-control" type="datetime-local" [value]="startDate()" (change)="updateStart($event)" /></label>
-        <label><span>To</span><input class="shared-form-control" type="datetime-local" [value]="endDate()" (change)="updateEnd($event)" /></label>
+        <label
+          ><span>From</span
+          ><shared-date-time-picker
+            [value]="startDate()"
+            (valueChange)="updateStart($event)"
+            ariaLabel="Choose performance start date and time"
+        /></label>
+        <label
+          ><span>To</span
+          ><shared-date-time-picker
+            [value]="endDate()"
+            (valueChange)="updateEnd($event)"
+            ariaLabel="Choose performance end date and time"
+        /></label>
         <button type="button" (click)="applyPeriod()">Apply filters</button>
       </div>
     </section>
 
-    <section class="performance-summary smooth-reveal reveal-summary" aria-label="Selected-period summary">
-      <div><span>Distance</span><strong>{{ graphs().total_distance_travelled || 0 }} km</strong></div>
-      <div><span>Violations</span><strong>{{ totalViolations() }}</strong></div>
-      <div><span>Idle time</span><strong>{{ totalIdle() }} min</strong></div>
-      <div><span>Alerts</span><strong>{{ violationCount() }}</strong></div>
+    <section
+      class="performance-summary smooth-reveal reveal-summary"
+      aria-label="Selected-period summary"
+    >
+      <div>
+        <span>Distance</span><strong>{{ graphs().total_distance_travelled || 0 }} km</strong>
+      </div>
+      <div>
+        <span>Violations</span><strong>{{ totalViolations() }}</strong>
+      </div>
+      <div>
+        <span>Idle time</span><strong>{{ totalIdle() }} min</strong>
+      </div>
+      <div>
+        <span>Alerts</span><strong>{{ violationCount() }}</strong>
+      </div>
     </section>
 
     <section class="analytics-grid">
       <article class="detail-card analytics-card smooth-reveal reveal-violations">
-        <header><div><h2>Violation breakdown</h2><p>Events grouped by safety category</p></div><span>{{ totalViolations() }} total</span></header>
+        <header>
+          <div>
+            <h2>Violation breakdown</h2>
+            <p>Events grouped by safety category</p>
+          </div>
+          <span>{{ totalViolations() }} total</span>
+        </header>
         <div class="bar-list">
           @for (metric of graphs().violation_graph; track metric.label) {
-            <div><span>{{ metric.label }}</span><i><b [style.width.%]="barWidth(metric)"></b></i><strong>{{ metric.value }}</strong></div>
-          } @empty { <p class="empty-state">No violation metrics for this period.</p> }
+            <div>
+              <span>{{ metric.label }}</span
+              ><i><b [style.width.%]="barWidth(metric)"></b></i><strong>{{ metric.value }}</strong>
+            </div>
+          } @empty {
+            <p class="empty-state">No violation metrics for this period.</p>
+          }
         </div>
       </article>
       <article class="detail-card analytics-card smooth-reveal reveal-idle">
-        <header><div><h2>Idle history</h2><p>Idle duration recorded over the selected period</p></div><span>Minutes</span></header>
+        <header>
+          <div>
+            <h2>Idle history</h2>
+            <p>Idle duration recorded over the selected period</p>
+          </div>
+          <span>Minutes</span>
+        </header>
         <div class="idle-list">
           @for (point of graphs().idle_history; track point.date) {
-            <div><span>{{ formatDate(point.date) }}</span><i><b [style.width.%]="idleWidth(point)"></b></i><strong>{{ point.value }} min</strong></div>
-          } @empty { <p class="empty-state">No idle history for this period.</p> }
+            <div>
+              <span>{{ formatDate(point.date) }}</span
+              ><i><b [style.width.%]="idleWidth(point)"></b></i
+              ><strong>{{ point.value }} min</strong>
+            </div>
+          } @empty {
+            <p class="empty-state">No idle history for this period.</p>
+          }
         </div>
       </article>
     </section>
@@ -87,7 +238,12 @@
       />
       <nav class="alerts-pagination" aria-label="Driver alert pages">
         <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ violationCount() }}</span>
-        <div><button type="button" [disabled]="offset() === 0" (click)="previous()">Previous</button><button type="button" [disabled]="offset() + limit >= violationCount()" (click)="next()">Next</button></div>
+        <div>
+          <button type="button" [disabled]="offset() === 0" (click)="previous()">Previous</button
+          ><button type="button" [disabled]="offset() + limit >= violationCount()" (click)="next()">
+            Next
+          </button>
+        </div>
       </nav>
     </section>
   }

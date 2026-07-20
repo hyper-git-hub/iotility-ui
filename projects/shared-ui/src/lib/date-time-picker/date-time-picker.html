@@ -1,0 +1,170 @@
+<button
+  #trigger
+  type="button"
+  class="picker-trigger"
+  [class.has-value]="displayValue()"
+  [disabled]="effectiveDisabled()"
+  [attr.aria-label]="ariaLabel()"
+  [attr.aria-expanded]="isOpen()"
+  aria-haspopup="dialog"
+  (click)="$event.stopPropagation(); $event.preventDefault(); toggle()"
+>
+  <span>{{ displayValue() || resolvedPlaceholder() }}</span>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"
+    />
+  </svg>
+</button>
+
+@if (isOpen()) {
+  <section
+    #panel
+    class="picker-panel"
+    role="dialog"
+    [attr.aria-label]="ariaLabel()"
+    [style.top.px]="panelTop()"
+    [style.left.px]="panelLeft()"
+    (pointerdown)="$event.stopPropagation()"
+    (click)="$event.stopPropagation(); $event.preventDefault()"
+  >
+    @if (mode() !== 'time') {
+      <header class="calendar-header">
+        <button type="button" aria-label="Previous month" (click)="previousMonth()">
+          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+        </button>
+        <strong>
+          @if (!selectingYear()) {
+            <span>{{ monthLabel() }}</span>
+          }
+          <button
+            type="button"
+            class="year-trigger"
+            aria-label="Select year"
+            [attr.aria-expanded]="selectingYear()"
+            (click)="toggleYearSelection()"
+          >
+            {{ visibleYear() }}
+          </button>
+        </strong>
+        <button type="button" aria-label="Next month" (click)="nextMonth()">
+          <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
+        </button>
+      </header>
+      <div class="weekdays" aria-hidden="true">
+        @for (weekday of weekdays; track weekday) {
+          <span>{{ weekday }}</span>
+        }
+      </div>
+      <div class="calendar-grid" role="grid">
+        @for (item of calendarDays(); track item.date.getTime()) {
+          <button
+            type="button"
+            role="gridcell"
+            [class.outside]="item.outside"
+            [class.today]="item.today"
+            [class.selected]="item.selected"
+            [disabled]="item.disabled"
+            [attr.aria-label]="item.date.toDateString()"
+            [attr.aria-selected]="item.selected"
+            (click)="selectDay(item)"
+          >
+            {{ item.day }}
+          </button>
+        }
+      </div>
+      @if (selectingYear()) {
+        <div class="year-picker">
+          <div class="year-grid">
+            @for (year of yearOptions(); track year) {
+              <button
+                type="button"
+                [class.selected]="year === visibleYear()"
+                (click)="chooseYear(year)"
+              >
+                {{ year }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    }
+
+    @if (mode() !== 'date') {
+      <div class="time-section">
+        <div class="time-controls">
+          <label>
+            <span>Hour</span>
+            <shared-dropdown
+              class="time-dropdown"
+              [options]="hourOptions"
+              mode="single"
+              density="compact"
+              align="left"
+              placement="top"
+              [showOptionIcons]="false"
+              [showSelectionMarks]="false"
+              [matchTriggerWidth]="true"
+              [selected]="[displayHour()]"
+              (optionSelected)="setHour($event)"
+            >
+              <button dropdown-trigger type="button" [attr.aria-label]="'Hour ' + displayHour()">
+                {{ displayHour() }}
+              </button>
+            </shared-dropdown>
+          </label>
+          <b>:</b>
+          <label>
+            <span>Minute</span>
+            <shared-dropdown
+              class="time-dropdown"
+              [options]="minuteOptions"
+              mode="single"
+              density="compact"
+              align="left"
+              placement="top"
+              [showOptionIcons]="false"
+              [showSelectionMarks]="false"
+              [matchTriggerWidth]="true"
+              [selected]="[draftMinute()]"
+              (optionSelected)="setMinute($event)"
+            >
+              <button dropdown-trigger type="button" [attr.aria-label]="'Minute ' + draftMinute()">
+                {{ draftMinute() }}
+              </button>
+            </shared-dropdown>
+          </label>
+          <div class="meridiem-control" aria-label="AM or PM">
+            <button
+              type="button"
+              [class.active]="meridiem() === 'AM'"
+              [attr.aria-pressed]="meridiem() === 'AM'"
+              (click)="setMeridiem('AM')"
+            >
+              AM
+            </button>
+            <button
+              type="button"
+              [class.active]="meridiem() === 'PM'"
+              [attr.aria-pressed]="meridiem() === 'PM'"
+              (click)="setMeridiem('PM')"
+            >
+              PM
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <footer>
+      <button type="button" class="text-action" (click)="clear()">Clear</button>
+      @if (mode() !== 'time') {
+        <button type="button" class="text-action" (click)="chooseToday()">Today</button>
+      }
+      <span></span>
+      @if (mode() !== 'date') {
+        <button type="button" class="apply-action" (click)="apply()">Apply</button>
+      }
+    </footer>
+  </section>
+}

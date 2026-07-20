@@ -1,6 +1,12 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { BlockingLoader, DataTable, TableColumn, TableRow } from '@iotility/shared-ui';
+import {
+  BlockingLoader,
+  DataTable,
+  DateTimePicker,
+  TableColumn,
+  TableRow,
+} from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import {
   QpmcReportType,
@@ -27,7 +33,7 @@ interface MonthOption {
 
 @Component({
   selector: 'app-dashboard-reports',
-  imports: [BlockingLoader, DataTable],
+  imports: [BlockingLoader, DataTable, DateTimePicker],
   templateUrl: './reports.html',
   styleUrl: './reports.css',
 })
@@ -126,13 +132,13 @@ export class Reports implements OnInit {
     this.offset.set(0);
     this.load();
   }
-  protected updateStart(event: Event): void {
+  protected updateStart(value: string): void {
     this.interval.set('custom');
-    this.startDate.set((event.target as HTMLInputElement).value);
+    this.startDate.set(value);
   }
-  protected updateEnd(event: Event): void {
+  protected updateEnd(value: string): void {
     this.interval.set('custom');
-    this.endDate.set((event.target as HTMLInputElement).value);
+    this.endDate.set(value);
   }
   protected applyInterval(): void {
     const start = new Date(this.startDate());

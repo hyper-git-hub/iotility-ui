@@ -1,8 +1,137 @@
-<ui-blocking-loader [visible]="loading()" [compact]="true" [label]="editing()?'Updating manager...':'Creating manager...'"/><app-modal [open]="open()" size="xl" labelledBy="manager-title" (closed)="cancel()"><h2 modal-header id="manager-title">{{editing()?'Edit Manager':'Add Manager'}}</h2><form id="manager-form" class="manager-form" [formGroup]="form" (ngSubmit)="submit()">@if(error()){<div class="form-error wide">{{error()}}</div>}
-<label class="shared-form-field"><span>Name *</span><input class="shared-form-control" formControlName="name" placeholder="Enter name"/>@if(submitted()&&form.controls.name.invalid){<small class="field-error">Enter a valid name.</small>}</label>
-<label class="shared-form-field"><span>Employee ID *</span><input class="shared-form-control" formControlName="employee_id" maxlength="18" placeholder="Enter employee ID"/>@if(submitted()&&form.controls.employee_id.invalid){<small class="field-error">Employee ID must be 3–18 characters.</small>}</label>
-<label class="shared-form-field"><span>Birth Date *</span><input type="date" class="shared-form-control" formControlName="date_of_birth"/></label><label class="shared-form-field"><span>Joining Date *</span><input type="date" class="shared-form-control" formControlName="date_joined"/></label><label class="shared-form-field"><span>Salary *</span><input type="number" min="0" class="shared-form-control" formControlName="salary" placeholder="Enter salary"/></label>
-<label class="shared-form-field"><span>Marital Status *</span><shared-dropdown class="form-dropdown" [options]="maritalOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.marital_status.value]" (optionSelected)="selectMarital($event)"><button dropdown-trigger type="button"><span>{{label(maritalOptions,form.controls.marital_status.value,'Select status')}}</span></button></shared-dropdown></label>
-<label class="shared-form-field"><span>Gender *</span><shared-dropdown class="form-dropdown" [options]="genderOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.gender.value]" (optionSelected)="selectGender($event)"><button dropdown-trigger type="button"><span>{{label(genderOptions,form.controls.gender.value,'Select gender')}}</span></button></shared-dropdown></label><label class="shared-form-field"><span>Contact Number *</span><input class="shared-form-control" formControlName="phone"/></label>
-@if(editing()){<label class="shared-form-field"><span>Status</span><shared-dropdown class="form-dropdown" [options]="statusOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.status.value]" (optionSelected)="selectStatus($event)"><button dropdown-trigger type="button"><span>{{label(statusOptions,form.controls.status.value,'Select status')}}</span></button></shared-dropdown></label>}
-<section class="driver-picture wide"><div class="picture-preview">@if(imagePreview()){<img [src]="imagePreview()" alt="Manager preview"/>}@else{<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="34" r="20"/><path d="M12 96c2-27 15-40 38-40s36 13 38 40"/></svg>}</div><div><strong>Manager Picture</strong><p>PNG or JPG, up to 1 MB</p><label><input type="file" accept="image/png,image/jpeg" (change)="chooseImage($event)"/>Choose picture</label></div></section></form><div modal-footer class="manager-footer"><button class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">Close</button><button type="submit" form="manager-form" class="shared-button-primary" [disabled]="form.invalid || loading()">{{editing()?'Update':'Submit'}}</button></div></app-modal>
+<ui-blocking-loader
+  [visible]="loading()"
+  [compact]="true"
+  [label]="editing() ? 'Updating manager...' : 'Creating manager...'"
+/><app-modal [open]="open()" size="xl" labelledBy="manager-title" (closed)="cancel()"
+  ><h2 modal-header id="manager-title">{{ editing() ? 'Edit Manager' : 'Add Manager' }}</h2>
+  <form id="manager-form" class="manager-form" [formGroup]="form" (ngSubmit)="submit()">
+    @if (error()) {
+      <div class="form-error wide">{{ error() }}</div>
+    }
+    <label class="shared-form-field"
+      ><span>Name *</span
+      ><input class="shared-form-control" formControlName="name" placeholder="Enter name" />
+      @if (submitted() && form.controls.name.invalid) {
+        <small class="field-error">Enter a valid name.</small>
+      }
+    </label>
+    <label class="shared-form-field"
+      ><span>Employee ID *</span
+      ><input
+        class="shared-form-control"
+        formControlName="employee_id"
+        maxlength="18"
+        placeholder="Enter employee ID"
+      />
+      @if (submitted() && form.controls.employee_id.invalid) {
+        <small class="field-error">Employee ID must be 3–18 characters.</small>
+      }
+    </label>
+    <label class="shared-form-field"
+      ><span>Birth Date *</span
+      ><shared-date-time-picker
+        mode="date"
+        formControlName="date_of_birth"
+        ariaLabel="Choose manager birth date" /></label
+    ><label class="shared-form-field"
+      ><span>Joining Date *</span
+      ><shared-date-time-picker
+        mode="date"
+        formControlName="date_joined"
+        ariaLabel="Choose manager joining date" /></label
+    ><label class="shared-form-field"
+      ><span>Salary *</span
+      ><input
+        type="number"
+        min="0"
+        class="shared-form-control"
+        formControlName="salary"
+        placeholder="Enter salary"
+    /></label>
+    <label class="shared-form-field"
+      ><span>Marital Status *</span
+      ><shared-dropdown
+        class="form-dropdown"
+        [options]="maritalOptions"
+        mode="single"
+        align="left"
+        [showOptionIcons]="false"
+        [matchTriggerWidth]="true"
+        [selected]="[form.controls.marital_status.value]"
+        (optionSelected)="selectMarital($event)"
+        ><button dropdown-trigger type="button">
+          <span>{{
+            label(maritalOptions, form.controls.marital_status.value, 'Select status')
+          }}</span>
+        </button></shared-dropdown
+      ></label
+    >
+    <label class="shared-form-field"
+      ><span>Gender *</span
+      ><shared-dropdown
+        class="form-dropdown"
+        [options]="genderOptions"
+        mode="single"
+        align="left"
+        [showOptionIcons]="false"
+        [matchTriggerWidth]="true"
+        [selected]="[form.controls.gender.value]"
+        (optionSelected)="selectGender($event)"
+        ><button dropdown-trigger type="button">
+          <span>{{ label(genderOptions, form.controls.gender.value, 'Select gender') }}</span>
+        </button></shared-dropdown
+      ></label
+    ><label class="shared-form-field"
+      ><span>Contact Number *</span><input class="shared-form-control" formControlName="phone"
+    /></label>
+    @if (editing()) {
+      <label class="shared-form-field"
+        ><span>Status</span
+        ><shared-dropdown
+          class="form-dropdown"
+          [options]="statusOptions"
+          mode="single"
+          align="left"
+          [showOptionIcons]="false"
+          [matchTriggerWidth]="true"
+          [selected]="[form.controls.status.value]"
+          (optionSelected)="selectStatus($event)"
+          ><button dropdown-trigger type="button">
+            <span>{{ label(statusOptions, form.controls.status.value, 'Select status') }}</span>
+          </button></shared-dropdown
+        ></label
+      >
+    }
+    <section class="driver-picture wide">
+      <div class="picture-preview">
+        @if (imagePreview()) {
+          <img [src]="imagePreview()" alt="Manager preview" />
+        } @else {
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="34" r="20" />
+            <path d="M12 96c2-27 15-40 38-40s36 13 38 40" />
+          </svg>
+        }
+      </div>
+      <div>
+        <strong>Manager Picture</strong>
+        <p>PNG or JPG, up to 1 MB</p>
+        <label
+          ><input type="file" accept="image/png,image/jpeg" (change)="chooseImage($event)" />Choose
+          picture</label
+        >
+      </div>
+    </section>
+  </form>
+  <div modal-footer class="manager-footer">
+    <button class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">Close</button
+    ><button
+      type="submit"
+      form="manager-form"
+      class="shared-button-primary"
+      [disabled]="form.invalid || loading()"
+    >
+      {{ editing() ? 'Update' : 'Submit' }}
+    </button>
+  </div></app-modal
+>

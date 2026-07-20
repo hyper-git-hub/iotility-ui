@@ -69,11 +69,19 @@
       @if (interval() === 'custom') {
         <label
           ><span>From</span
-          ><input type="datetime-local" [value]="startDate()" (change)="updateStart($event)"
+          ><shared-date-time-picker
+            density="compact"
+            [value]="startDate()"
+            (valueChange)="updateStart($event)"
+            ariaLabel="Choose report start date and time"
         /></label>
         <label
           ><span>To</span
-          ><input type="datetime-local" [value]="endDate()" (change)="updateEnd($event)"
+          ><shared-date-time-picker
+            density="compact"
+            [value]="endDate()"
+            (valueChange)="updateEnd($event)"
+            ariaLabel="Choose report end date and time"
         /></label>
         <button type="button" class="apply-filter" (click)="applyInterval()">Apply period</button>
       }
