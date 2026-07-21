@@ -7,6 +7,12 @@
 .auth-brand-row img { @apply h-7 w-auto max-w-36; }
 .auth-brand-row span { @apply h-7 w-px bg-brand-400/60; }
 .auth-illustration { @apply relative z-10 mx-auto grid w-full place-items-center py-12; }
+.auth-illustration::before {
+  @apply absolute inset-x-0 top-1/2 -z-10 w-full -translate-y-1/2 bg-center bg-contain bg-no-repeat opacity-60;
+  aspect-ratio: 1136 / 522;
+  content: '';
+  background-image: url('/assets/grid.svg');
+}
 .auth-illustration img { @apply w-full max-w-4xl; }
 .auth-tagline { @apply relative z-10 mx-auto text-center; }
 .auth-tagline h1 { @apply text-3xl font-bold leading-snug; }

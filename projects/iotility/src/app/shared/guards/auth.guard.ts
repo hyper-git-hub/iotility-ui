@@ -17,7 +17,5 @@ export const authGuard: CanMatchFn = (_route, segments) => {
 export const guestGuard: CanMatchFn = () => {
   const session = inject(AuthSessionService);
   const router = inject(Router);
-  // Restore this destination when the IoTility host routes are enabled again:
-  // return session.isAuthenticated ? router.createUrlTree(['/home']) : true;
-  return session.isAuthenticated ? router.createUrlTree(['/fleetpoint/dashboard']) : true;
+  return session.isAuthenticated ? router.createUrlTree(['/home']) : true;
 };

@@ -29,7 +29,10 @@ export class LoginPage {
     private readonly router: Router,
   ) {
     this.form = formBuilder.nonNullable.group({
-      email: [localStorage.getItem('rememberedEmail') ?? '', [Validators.required, Validators.email]],
+      email: [
+        localStorage.getItem('rememberedEmail') ?? '',
+        [Validators.required, Validators.email],
+      ],
       password: ['', Validators.required],
       remember: [Boolean(localStorage.getItem('rememberedEmail'))],
     });
@@ -43,52 +46,57 @@ export class LoginPage {
     this.submitting.set(true);
     this.error.set('');
 
-    this.authApi.login(email, password, remember).pipe(
-      tap((response) => {
-        const token = response.data?.Token;
-        if (response.error || !token) throw new Error(response.message || 'Login failed.');
-        localStorage.setItem('token', token);
-        localStorage.setItem('userMS-token', token);
-        remember
-          ? localStorage.setItem('rememberedEmail', email.trim().toLowerCase())
-          : localStorage.removeItem('rememberedEmail');
-      }),
-      switchMap(() => forkJoin({
-        profile: this.authApi.getUserProfile(),
-        roleAccess: this.authApi.getRoleAccess(),
-      })),
-      finalize(() => this.submitting.set(false)),
-    ).subscribe({
-      next: ({ profile, roleAccess }) => {
-        if (profile.error) {
+    this.authApi
+      .login(email, password, remember)
+      .pipe(
+        tap((response) => {
+          const token = response.data?.Token;
+          if (response.error || !token) throw new Error(response.message || 'Login failed.');
+          localStorage.setItem('token', token);
+          localStorage.setItem('userMS-token', token);
+          remember
+            ? localStorage.setItem('rememberedEmail', email.trim().toLowerCase())
+            : localStorage.removeItem('rememberedEmail');
+        }),
+        switchMap(() =>
+          forkJoin({
+            profile: this.authApi.getUserProfile(),
+            roleAccess: this.authApi.getRoleAccess(),
+          }),
+        ),
+        finalize(() => this.submitting.set(false)),
+      )
+      .subscribe({
+        next: ({ profile, roleAccess }) => {
+          if (profile.error) {
+            this.clearSession();
+            this.error.set(profile.message || 'Unable to load your profile.');
+            return;
+          }
+          if (roleAccess.error) {
+            this.clearSession();
+            this.error.set(roleAccess.message || 'Unable to load your access permissions.');
+            return;
+          }
+          localStorage.setItem('user', JSON.stringify(profile.data ?? {}));
+          localStorage.setItem('language', profile.data?.language || 'en');
+          localStorage.setItem('roleAccess', JSON.stringify(roleAccess.data ?? {}));
+          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+          void this.router.navigateByUrl(this.safeReturnUrl(returnUrl));
+        },
+        error: (response: HttpErrorResponse | Error) => {
           this.clearSession();
-          this.error.set(profile.message || 'Unable to load your profile.');
-          return;
-        }
-        if (roleAccess.error) {
-          this.clearSession();
-          this.error.set(roleAccess.message || 'Unable to load your access permissions.');
-          return;
-        }
-        localStorage.setItem('user', JSON.stringify(profile.data ?? {}));
-        localStorage.setItem('language', profile.data?.language || 'en');
-        localStorage.setItem('roleAccess', JSON.stringify(roleAccess.data ?? {}));
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        void this.router.navigateByUrl(this.safeReturnUrl(returnUrl));
-      },
-      error: (response: HttpErrorResponse | Error) => {
-        this.clearSession();
-        const message = this.errorMessage(response);
-        this.error.set('');
-        void this.feedbackDialog.open({
-          type: 'error',
-          title: 'Unable to sign in',
-          message,
-          confirmText: 'Try again',
-          showCancel: false,
-        });
-      },
-    });
+          const message = this.errorMessage(response);
+          this.error.set('');
+          void this.feedbackDialog.open({
+            type: 'error',
+            title: 'Unable to sign in',
+            message,
+            confirmText: 'Try again',
+            showCancel: false,
+          });
+        },
+      });
   }
 
   protected togglePasswordVisibility(): void {
@@ -109,7 +117,6 @@ export class LoginPage {
   }
 
   private safeReturnUrl(returnUrl: string | null): string {
-    // Change the fallback back to '/home' when the IoTility host routes are enabled again.
-    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/fleetpoint/dashboard';
+    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/home';
   }
 }

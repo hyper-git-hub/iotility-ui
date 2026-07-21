@@ -1,8 +1,6 @@
-import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 import { loadRemoteModule } from '@angular-architects/native-federation-v4';
 import { authGuard, guestGuard } from './shared/guards/auth.guard';
-import { AuthSessionService } from './shared/services/auth-session.service';
 
 const fleetpointDashboard = 'fleetpoint/dashboard';
 
@@ -13,7 +11,6 @@ export const routes: Routes = [
     loadChildren: () => import('./auth/auth.routes').then((module) => module.AUTH_ROUTES),
   },
 
-  /* IoTility host routes are temporarily disabled.
   {
     path: 'home',
     title: 'Home | IoTility',
@@ -60,13 +57,11 @@ export const routes: Routes = [
       },
     ],
   },
-  */
 
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: () =>
-      inject(AuthSessionService).isAuthenticated ? `/${fleetpointDashboard}` : '/auth/login',
+    redirectTo: 'home',
   },
   {
     path: 'fleetpoint',
@@ -75,17 +70,8 @@ export const routes: Routes = [
   },
   { path: 'fleet', redirectTo: fleetpointDashboard },
 
-  // Temporary redirects while the IoTility host routes above are disabled.
-  { path: 'home', redirectTo: fleetpointDashboard },
-  { path: 'use-cases', redirectTo: fleetpointDashboard },
-  { path: 'users', redirectTo: fleetpointDashboard },
-  { path: 'settings', redirectTo: fleetpointDashboard },
-  { path: 'billing', redirectTo: fleetpointDashboard },
-  { path: 'help', redirectTo: fleetpointDashboard },
-
   {
     path: '**',
-    redirectTo: () =>
-      inject(AuthSessionService).isAuthenticated ? `/${fleetpointDashboard}` : '/auth/login',
+    redirectTo: 'home',
   },
 ];
