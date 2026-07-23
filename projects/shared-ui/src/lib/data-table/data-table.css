@@ -4,7 +4,7 @@
   @apply block min-w-0;
 }
 .table-card {
-  @apply min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply min-w-0 overflow-visible rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
 }
 .table-card > header {
   @apply flex items-center justify-between gap-4 p-4;
@@ -20,7 +20,7 @@
   @apply cursor-pointer border-0 bg-transparent text-xs text-brand-600;
 }
 .toolbar {
-  @apply ml-auto flex items-center justify-end gap-2;
+  @apply ml-auto flex items-end justify-end gap-2;
 }
 .toolbar label {
   @apply flex h-9 w-64 items-center gap-2 rounded-lg border border-line px-3 text-xs text-muted dark:border-dark-line;
@@ -39,6 +39,10 @@
 .toolbar button {
   @apply inline-flex h-9 cursor-pointer items-center whitespace-nowrap rounded-lg border border-line bg-transparent px-3 text-xs font-medium text-muted dark:border-dark-line dark:text-brand-300;
 }
+.toolbar .header-filter { @apply block; }
+.header-filter-field { @apply grid gap-1; }
+.header-filter-field > span { @apply text-[10px] text-muted dark:text-brand-300; }
+.toolbar .header-filter [dropdown-trigger] { @apply min-w-32 justify-between bg-white dark:bg-dark-canvas; }
 .toolbar .primary {
   @apply border-ink bg-ink text-white dark:border-brand-600 dark:bg-brand-600;
 }
@@ -71,7 +75,11 @@ tbody tr {
 tbody tr:hover {
   @apply bg-brand-50/60 dark:bg-dark-canvas/70;
 }
+.selected-row { @apply bg-brand-50/80 dark:bg-brand-600/10; }
 .clickable-row { @apply cursor-pointer; }
+.clickable-row td:first-child { box-shadow: inset 2px 0 0 transparent; transition: box-shadow 150ms ease; }
+.clickable-row:hover td:first-child,
+.clickable-row.selected-row td:first-child { box-shadow: inset 2px 0 0 var(--color-brand-500); }
 .strong,
 strong {
   @apply text-ink dark:text-white;
@@ -84,16 +92,30 @@ strong {
   @apply inline-flex rounded-full px-2.5 py-1 text-[10px];
 }
 .status-active,
-.status-upcoming {
+.status-upcoming,
+.status-completed {
   @apply bg-success/10 text-success;
 }
 .status-inactive,
-.status-overdue {
+.status-overdue,
+.status-failed {
   @apply bg-danger/10 text-danger;
 }
-.status-due-soon {
+.status-due-soon,
+.status-pending {
   @apply bg-warning/10 text-warning;
 }
+.status-in-progress { @apply bg-brand-600/10 text-brand-600 dark:text-brand-300; }
+.status-assigned { @apply bg-info/10 text-info; }
+.priority-cell { @apply inline-flex items-center gap-1.5 font-medium; }
+.priority-cell i { @apply size-2 rounded-full; }
+.priority-high { @apply text-danger; }
+.priority-high i { @apply bg-danger; }
+.priority-normal { @apply text-info; }
+.priority-normal i { @apply bg-info; }
+.tasks-cell { @apply flex items-center gap-2 whitespace-nowrap; }
+.tasks-cell > i { @apply h-1.5 w-16 overflow-hidden rounded-full bg-canvas dark:bg-dark-canvas; }
+.tasks-cell b { @apply block h-full rounded-full bg-brand-500; }
 .actions {
   @apply flex gap-1.5;
 }
@@ -106,8 +128,14 @@ strong {
 .vehicle-cell { @apply flex items-center gap-2; }
 .clickable-cell { @apply cursor-pointer rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40; }
 .user-cell { @apply inline-grid; }
-.clickable-cell strong { @apply text-brand-600 dark:text-brand-300; }
+.clickable-cell strong { @apply text-brand-600 dark:text-brand-600; }
 .clickable-cell:hover strong { @apply underline underline-offset-2; }
+.clickable-cell.strong { @apply font-semibold text-brand-600 dark:text-brand-600; }
+.clickable-cell.strong:hover { @apply underline underline-offset-2; }
+:host-context(.dark) .clickable-cell.strong,
+:host-context(.dark) .clickable-cell strong {
+  color: var(--color-brand-600) !important;
+}
 .vehicle-image { @apply size-8 shrink-0 rounded-lg bg-canvas object-contain p-1 dark:bg-dark-canvas; }
 .vehicle-glyph { @apply text-lg text-brand-600; }
 .fleet-cell { @apply inline-flex items-center gap-2; }

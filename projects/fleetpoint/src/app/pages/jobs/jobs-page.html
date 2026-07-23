@@ -1,0 +1,136 @@
+<section class="jobs-page">
+  <header class="jobs-heading smooth-reveal">
+    <div>
+      <h1>Jobs</h1>
+      <p>{{ total }} jobs today · {{ inProgress }} in progress · {{ highPriority }} high priority</p>
+    </div>
+    <div class="heading-actions">
+      <div class="view-switch" aria-label="Job view">
+        <button type="button" [class.active]="activeView() === 'list'" (click)="selectView('list')"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8"/><circle cx="4.5" cy="12" r=".8"/><circle cx="4.5" cy="18" r=".8"/></svg>List</button>
+        <button type="button" [class.active]="activeView() === 'dispatch'" (click)="selectView('dispatch')"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>Dispatch</button>
+      </div>
+      <button type="button" class="export-job"><svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4"/></svg>Export</button>
+      <button type="button" class="add-job" (click)="openJobForm()">+ Create Job</button>
+    </div>
+  </header>
+
+  <section class="jobs-stats smooth-reveal" aria-label="Job summary">
+    <app-stat-card label="Total Jobs" [value]="total" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5v-1h6v1M8.5 9h7M8.5 13h7M8.5 17H13"/></svg></app-stat-card>
+    <app-stat-card label="Pending" [value]="pending" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2M7 3.8 4.5 6M17 3.8 19.5 6"/></svg></app-stat-card>
+    <app-stat-card label="In Progress" [value]="inProgress" tone="info" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8.5 12h6.5m-2.5-2.5L15 12l-2.5 2.5"/></svg></app-stat-card>
+    <app-stat-card label="Completed" [value]="completed" tone="success" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg></app-stat-card>
+    <app-stat-card label="Failed" [value]="failed" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg></app-stat-card>
+    <app-stat-card label="High Priority" [value]="highPriority" tone="priority" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.2 4.7 3.5 17a2 2 0 0 0 1.8 3h13.4a2 2 0 0 0 1.8-3L13.8 4.7a2 2 0 0 0-3.6 0Z"/><path d="M12 9v4.5M12 17h.01"/></svg></app-stat-card>
+  </section>
+
+  @if (activeView() === 'list') {
+  <section class="job-filters view-enter smooth-reveal" aria-label="Job filters">
+    <div class="filter-controls">
+      <label><span>Job Type</span><shared-dropdown class="filter-dropdown" [options]="jobTypeOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[jobTypeFilter()]" (optionSelected)="selectJobType($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(jobTypeOptions, jobTypeFilter(), 'All job types') }}</span></button></shared-dropdown></label>
+      <label><span>Driver</span><shared-dropdown class="filter-dropdown" [options]="driverOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search drivers" [selected]="[driverFilter()]" (optionSelected)="selectDriver($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(driverOptions, driverFilter(), 'All drivers') }}</span></button></shared-dropdown></label>
+      <label><span>Status</span><shared-dropdown class="filter-dropdown" [options]="filterOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[filter()]" (optionSelected)="selectFilter($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(filterOptions, filter(), 'All statuses') }}</span></button></shared-dropdown></label>
+      <div class="filter-actions"><button type="button" class="reset-filter" (click)="resetFilters()">Reset</button><button type="button" class="apply-filter" (click)="applyFilters()">Apply filters</button></div>
+    </div>
+  </section>
+  <section class="jobs-workspace view-enter smooth-reveal" [class.details-open]="selectedJob()">
+    <div class="jobs-list-column">
+    <shared-data-table
+      class="jobs-table"
+      title="Job List"
+      [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + filteredTotal() + ' jobs · Click a row to view details'"
+      [columns]="columns"
+      [rows]="rows()"
+      [clientSideSearch]="false"
+      [showExport]="false"
+      [showPrimaryAction]="false"
+      [minTableWidth]="1450"
+      [rowsClickable]="true"
+      [actions]="tableActions"
+      [selectedRowId]="selectedJob()?.id ?? null"
+      searchPlaceholder="Search job name, driver, vehicle, location..."
+      (searchChange)="tableSearchChanged($event)"
+      (cellSelected)="openVehicle()"
+      (rowSelected)="selectJob($event)"
+      (rowAction)="selectJob($event.row)"
+    />
+    <nav class="job-pagination" aria-label="Job pages">
+      <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ filteredTotal() }}</span>
+      <div><button type="button" [disabled]="offset() === 0" (click)="previousPage()">Previous</button><button type="button" [disabled]="offset() + limit >= filteredTotal()" (click)="nextPage()">Next</button></div>
+    </nav>
+    </div>
+
+    <aside class="job-details" [attr.aria-hidden]="!selectedJob()">
+      @if (selectedJob(); as job) {
+        <header><h2>Job Details</h2><button type="button" aria-label="Close job details" (click)="closeJobDetails()">×</button></header>
+        <div class="job-details-content">
+          <section class="job-summary">
+            <h3>{{ job.name }}</h3>
+            <div><span class="status" [class]="'status status-' + job.status.toLowerCase().replaceAll(' ', '-')">{{ job.status }}</span><span class="priority" [class.high]="job.priority === 'High'">{{ job.priority }} priority</span></div>
+          </section>
+          <dl class="job-facts">
+            <div><dt>Driver</dt><dd>{{ job.driver }}</dd></div>
+            <div><dt>Vehicle</dt><dd>{{ job.vehicle }}</dd></div>
+            <div><dt>Type</dt><dd>{{ job.type }}</dd></div>
+            <div><dt>Distance</dt><dd>{{ job.type === 'Inspection' ? '24 miles' : '118 miles' }}</dd></div>
+            <div><dt>Est. Time</dt><dd>{{ job.type === 'Inspection' ? '180 mins' : '134 mins' }}</dd></div>
+            <div><dt>Scheduled</dt><dd>{{ job.scheduled }}</dd></div>
+            <div><dt>Started</dt><dd>{{ job.status === 'Pending' || job.status === 'Assigned' ? 'Not started' : '06:12' }}</dd></div>
+            <div><dt>Completed</dt><dd>{{ job.status === 'Completed' ? '09:18' : '—' }}</dd></div>
+          </dl>
+          <section class="job-locations">
+            <div><i class="pickup-dot"></i><span><strong>Pickup</strong><small>{{ job.pickup }}</small></span></div>
+            <div><i class="dropoff-dot"></i><span><strong>Dropoff</strong><small>{{ job.dropoff }}</small></span></div>
+          </section>
+          <section class="job-tasks">
+            <h4>Tasks ({{ job.tasks }})</h4>
+            @for (task of taskItems(job); track task; let index = $index) {
+              <div [class.complete]="index < completedTasks(job)"><i>{{ index < completedTasks(job) ? '✓' : index + 1 }}</i><span>{{ task }}</span></div>
+            }
+          </section>
+          <section class="job-notes"><strong>Notes</strong><p>Priority delivery — time sensitive. Call the site manager on arrival.</p></section>
+          <footer>Created by Ali Mujtaba · 20 May</footer>
+        </div>
+      }
+    </aside>
+  </section>
+  } @else {
+    <section class="jobs-workspace dispatch-workspace view-enter smooth-reveal" [class.details-open]="selectedJob()">
+    <section class="dispatch-card">
+      <header>
+        <div><h2>Dispatch Calendar — Today</h2><span>Thursday 23 July</span></div>
+        <div class="dispatch-legend"><span class="pending"><i></i>Pending</span><span class="assigned"><i></i>Assigned</span><span class="progress"><i></i>In Progress</span><span class="completed"><i></i>Completed</span></div>
+      </header>
+      <div class="dispatch-scroll">
+        <div class="dispatch-hours"><span></span>@for (hour of dispatchHours; track hour) { <span>{{ hour }}</span> }</div>
+        @for (row of dispatchRows; track row.vehicle) {
+          <div class="dispatch-row">
+            <div class="dispatch-driver"><i>{{ row.initials }}</i><span><strong>{{ row.driver }}</strong><small>{{ row.vehicle }}</small></span></div>
+            <button type="button" class="dispatch-job" [attr.data-tone]="row.tone" [style.--job-start]="row.start" [style.--job-span]="row.span" (click)="selectDispatchJob(row.jobId)">
+              <strong>{{ row.title }}</strong><small>{{ row.time }}</small>
+            </button>
+          </div>
+        }
+      </div>
+      <footer>💡 Click any job block to see details · Click an empty slot to create a job</footer>
+    </section>
+    <aside class="job-details" [attr.aria-hidden]="!selectedJob()">
+      @if (selectedJob(); as job) {
+        <header><h2>Job Details</h2><button type="button" aria-label="Close job details" (click)="closeJobDetails()">×</button></header>
+        <div class="job-details-content">
+          <section class="job-summary"><h3>{{ job.name }}</h3><div><span class="status" [class]="'status status-' + job.status.toLowerCase().replaceAll(' ', '-')">{{ job.status }}</span><span class="priority" [class.high]="job.priority === 'High'">{{ job.priority }} priority</span></div></section>
+          <dl class="job-facts">
+            <div><dt>Driver</dt><dd>{{ job.driver }}</dd></div><div><dt>Vehicle</dt><dd>{{ job.vehicle }}</dd></div><div><dt>Type</dt><dd>{{ job.type }}</dd></div>
+            <div><dt>Distance</dt><dd>{{ job.type === 'Inspection' ? '24 miles' : '118 miles' }}</dd></div><div><dt>Est. Time</dt><dd>{{ job.type === 'Inspection' ? '180 mins' : '134 mins' }}</dd></div>
+            <div><dt>Scheduled</dt><dd>{{ job.scheduled }}</dd></div><div><dt>Started</dt><dd>{{ job.status === 'Pending' || job.status === 'Assigned' ? 'Not started' : '06:12' }}</dd></div><div><dt>Completed</dt><dd>{{ job.status === 'Completed' ? '09:18' : '—' }}</dd></div>
+          </dl>
+          <section class="job-locations"><div><i class="pickup-dot"></i><span><strong>Pickup</strong><small>{{ job.pickup }}</small></span></div><div><i class="dropoff-dot"></i><span><strong>Dropoff</strong><small>{{ job.dropoff }}</small></span></div></section>
+          <section class="job-tasks"><h4>Tasks ({{ job.tasks }})</h4>@for (task of taskItems(job); track task; let index = $index) { <div [class.complete]="index < completedTasks(job)"><i>{{ index < completedTasks(job) ? '✓' : index + 1 }}</i><span>{{ task }}</span></div> }</section>
+          <section class="job-notes"><strong>Notes</strong><p>Priority delivery — time sensitive. Call the site manager on arrival.</p></section>
+          <footer>Created by Ali Mujtaba · 20 May</footer>
+        </div>
+      }
+    </aside>
+    </section>
+  }
+  <app-job-form [open]="jobFormOpen()" (cancelled)="closeJobForm()" (created)="createJob($event)" />
+</section>

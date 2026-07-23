@@ -9,9 +9,6 @@
     <button type="button" class="add-driver" (click)="create()">+ Add Allocation</button>
   </div>
   <section class="allocation-board">
-    @if (error()) {
-      <section class="drivers-error">{{ error() }}</section>
-    }
     <div class="allocation-grid">
       @for (allocation of allocations(); track allocation.id; let index = $index) {
         <article
@@ -82,7 +79,7 @@
           </footer>
         </article>
       } @empty {
-        @if (!loading() && !error()) {
+        @if (!loading()) {
           <div class="allocation-empty">No driver-to-vehicle allocations are available.</div>
         }
       }

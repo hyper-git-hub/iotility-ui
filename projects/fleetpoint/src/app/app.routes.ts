@@ -77,6 +77,18 @@ export const routes: Routes = [
           import('./pages/dashboard/reports/reports').then((module) => module.Reports),
       },
       {
+        path: 'jobs',
+        title: 'Jobs | FleetPoint',
+        loadComponent: () =>
+          import('./pages/jobs/jobs-page').then((module) => module.JobsPage),
+      },
+      {
+        path: 'poi',
+        title: 'Points of Interest | FleetPoint',
+        loadComponent: () =>
+          import('./pages/poi/poi-page').then((module) => module.PoiPage),
+      },
+      {
         path: 'trip-replay',
         title: 'Trip Replay | FleetPoint',
         loadComponent: () =>

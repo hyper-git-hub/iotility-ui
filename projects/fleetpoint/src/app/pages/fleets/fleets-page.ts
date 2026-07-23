@@ -9,6 +9,7 @@ import {
 import { InventoryOption } from '../../shared/services/vehicle-inventory-api.service';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { FleetForm } from './fleet-form/fleet-form';
+import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 
 interface FleetSummary {
   id: number;
@@ -66,8 +67,9 @@ export class FleetsPage implements OnInit {
   protected readonly pageEnd = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
   constructor(
-    private readonly api: FleetInventoryApiService,
-    private readonly router: Router,
+      private readonly api: FleetInventoryApiService,
+      private readonly router: Router,
+      private readonly feedback: FeedbackDialogBridgeService,
   ) {}
 
   ngOnInit(): void {
@@ -95,8 +97,11 @@ export class FleetsPage implements OnInit {
           this.fleets.set(records.map((fleet, index) => this.toFleet(fleet, index)));
           this.total.set(response.data?.count ?? 0);
         },
-        error: (response) =>
-          this.error.set(response.error?.message || 'Fleet data could not be loaded.'),
+        error: (response) => {
+          const message = response.error?.message || 'Fleet data could not be loaded.';
+          this.error.set(message);
+          void this.feedback.open({ type: 'error', title: 'Unable to load fleets', message, confirmText: 'Close', showCancel: false });
+        },
       });
   }
 

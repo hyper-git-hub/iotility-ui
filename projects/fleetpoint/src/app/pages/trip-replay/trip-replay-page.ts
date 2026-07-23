@@ -140,8 +140,10 @@ export class TripReplayPage implements OnInit, OnDestroy {
             if (this.requestedVehicleId) this.loadTrip();
           }
         },
-        error: (response) =>
-          this.error.set(response.error?.message || 'Vehicles could not be loaded.'),
+        error: (response) => {
+          const message = response.error?.message || 'Vehicles could not be loaded.';
+          void this.feedback.open({ type: 'error', title: 'Unable to load vehicles', message, confirmText: 'Close', showCancel: false });
+        },
       });
   }
   protected updateSearch(event: Event): void {
@@ -197,7 +199,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
           ),
         error: (response) => {
           this.trip.set(EMPTY_TRIP);
-          this.error.set(response.error?.message || 'Trip replay data could not be loaded.');
+          const message = response.error?.message || 'Trip replay data could not be loaded.';
+          void this.feedback.open({ type: 'error', title: 'Unable to load trip replay', message, confirmText: 'Close', showCancel: false });
         },
       });
   }

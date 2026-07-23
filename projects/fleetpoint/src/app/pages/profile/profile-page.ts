@@ -65,12 +65,21 @@ export class ProfilePage implements OnInit {
     this.error.set('');
     this.authApi.getUserProfile().pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (response) => {
-        if (!response.data) { this.error.set(response.message || 'Profile details could not be loaded.'); return; }
+        if (!response.data) {
+          const message = response.message || 'Profile details could not be loaded.';
+          this.error.set(message);
+          void this.feedback.open({ type: 'error', title: 'Unable to load profile', message, confirmText: 'Close', showCancel: false });
+          return;
+        }
         this.profile.set(response.data);
         this.patchProfileForm(response.data);
         localStorage.setItem('user', JSON.stringify(response.data));
       },
-      error: (response) => this.error.set(response.error?.message || 'Profile details could not be loaded.'),
+      error: (response) => {
+        const message = response.error?.message || 'Profile details could not be loaded.';
+        this.error.set(message);
+        void this.feedback.open({ type: 'error', title: 'Unable to load profile', message, confirmText: 'Close', showCancel: false });
+      },
     });
   }
 

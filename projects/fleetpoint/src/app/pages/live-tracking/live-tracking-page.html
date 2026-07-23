@@ -46,9 +46,6 @@
       }
     </div>
     <div class="vehicle-list">
-      @if (error()) {
-        <div class="tracking-error" role="alert"><p>{{ error() }}</p><button type="button" (click)="loadVehicles()">Try again</button></div>
-      }
       @for (vehicle of filteredVehicles(); track vehicle.id) {
         <button
           type="button"

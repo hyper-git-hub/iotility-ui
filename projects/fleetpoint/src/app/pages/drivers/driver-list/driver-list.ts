@@ -197,7 +197,11 @@ export class DriverList implements OnInit {
           this.records.set(r.data?.data ?? []);
           this.total.set(r.data?.count ?? 0);
         },
-        error: (r) => this.error.set(r.error?.message || 'Drivers could not be loaded.'),
+        error: (r) => {
+          const message = r.error?.message || 'Drivers could not be loaded.';
+          this.error.set(message);
+          void this.feedback.open({ type: 'error', title: 'Unable to load drivers', message, confirmText: 'Close', showCancel: false });
+        },
       });
   }
   private refreshGroups(): void {

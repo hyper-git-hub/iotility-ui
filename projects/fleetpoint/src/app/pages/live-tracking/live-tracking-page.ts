@@ -15,6 +15,7 @@ import {
 } from '../../shared/services/vehicle-realtime.service';
 import { VehicleDetailApiService } from '../../shared/services/vehicle-detail-api.service';
 import { AllocationForm } from '../drivers/allocation-form/allocation-form';
+import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 
 interface LiveVehicle extends TrackedVehicle {
   numericId: number;
@@ -63,6 +64,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     private readonly realtime: VehicleRealtimeService,
     private readonly vehicleDetailApi: VehicleDetailApiService,
     private readonly router: Router,
+    private readonly feedback: FeedbackDialogBridgeService,
     route: ActivatedRoute,
   ) {
     const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
@@ -92,7 +94,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
           this.selectRequestedVehicle();
         },
         error: (response: HttpErrorResponse) => {
-          this.error.set(response.error?.message || 'Live vehicle data could not be loaded.');
+          const message = response.error?.message || 'Live vehicle data could not be loaded.';
+          this.error.set(message);
+          void this.feedback.open({ type: 'error', title: 'Unable to load live tracking', message, confirmText: 'Close', showCancel: false });
         },
       });
   }

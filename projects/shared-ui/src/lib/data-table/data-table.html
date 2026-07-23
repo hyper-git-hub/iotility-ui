@@ -18,6 +18,23 @@
           </svg>
           <input type="search" [placeholder]="searchPlaceholder()" (input)="updateSearch($event)" />
         </label>
+        @if (headerFilterOptions().length) {
+          <div class="header-filter-field">
+            <span>{{ headerFilterTitle() }}</span>
+            <shared-dropdown
+              class="header-filter"
+              [options]="headerFilterOptions()"
+              mode="single"
+              align="right"
+              [showOptionIcons]="false"
+              [selected]="headerFilterSelected()"
+              (optionSelected)="headerFilterChange.emit($event)"
+            >
+              <button dropdown-trigger type="button">{{ headerFilterLabel() }}</button>
+            </shared-dropdown>
+          </div>
+        }
+        <ng-content select="[table-toolbar]" />
         @if (showExport()) {
           <button>Export</button>
         }
@@ -39,11 +56,15 @@
       </thead>
       <tbody>
         @for (r of filteredRows(); track $index) {
-          <tr [class.clickable-row]="rowsClickable()" (click)="rowsClickable() && rowSelected.emit(r)">
+          <tr [class.clickable-row]="rowsClickable()" [class.selected-row]="isSelectedRow(r)" (click)="rowsClickable() && rowSelected.emit(r)">
             @for (c of columns(); track c.key) {
               <td>
                 @if (c.type === 'status') {
-                  <span class="status" [class]="statusClass(r[c.key])">{{ r[c.key] }}</span>
+                  <span [class]="'status ' + statusClass(r[c.key])">{{ r[c.key] }}</span>
+                } @else if (c.type === 'priority') {
+                  <span [class]="'priority-cell ' + priorityClass(r[c.key])"><i></i>{{ r[c.key] }}</span>
+                } @else if (c.type === 'tasks') {
+                  <span class="tasks-cell"><i><b [style.width.%]="taskProgress(r[c.key])"></b></i>{{ r[c.key] }}</span>
                 } @else if (c.type === 'user') {
                   <span class="user-cell" [class.clickable-cell]="c.clickable" [attr.role]="c.clickable ? 'link' : null" [attr.tabindex]="c.clickable ? 0 : null" (click)="selectCell($event, c, r)" (keydown.enter)="selectCell($event, c, r)"><strong>{{ r[c.key] }}</strong><small>{{ r[c.secondaryKey ?? ''] }}</small></span>
                 } @else if (c.type === 'vehicle') {
@@ -82,7 +103,7 @@
                     }
                   </span>
                 } @else {
-                  <span [class.strong]="c.key === 'vehicle'">{{ r[c.key] }}</span>
+                  <span [class.strong]="c.key === 'vehicle'" [class.clickable-cell]="c.clickable" [attr.role]="c.clickable ? 'link' : null" [attr.tabindex]="c.clickable ? 0 : null" (click)="selectCell($event, c, r)" (keydown.enter)="selectCell($event, c, r)">{{ r[c.key] }}</span>
                 }
               </td>
             }

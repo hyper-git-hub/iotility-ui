@@ -31,10 +31,15 @@
 .stat-card[data-tone='success'] { --stat-card-accent: var(--color-success); }
 .stat-card[data-tone='warning'] { --stat-card-accent: var(--color-warning); }
 .stat-card[data-tone='danger'] { --stat-card-accent: var(--color-danger); }
+.stat-card[data-tone='priority'] { --stat-card-accent: #f97316; }
 .stat-card[data-tone='info'] .stat-card-icon { @apply bg-info/10 text-info; }
 .stat-card[data-tone='success'] .stat-card-icon { @apply bg-success/10 text-success; }
 .stat-card[data-tone='warning'] .stat-card-icon { @apply bg-warning/10 text-warning; }
 .stat-card[data-tone='danger'] .stat-card-icon { @apply bg-danger/10 text-danger; }
+.stat-card[data-tone='priority'] .stat-card-icon {
+  color: #ea580c;
+  background: color-mix(in srgb, #f97316 12%, transparent);
+}
 .stat-card.animated-border {
   @apply border-transparent;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--stat-card-border) 32%, transparent);

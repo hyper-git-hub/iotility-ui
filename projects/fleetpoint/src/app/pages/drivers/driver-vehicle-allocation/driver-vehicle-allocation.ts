@@ -144,7 +144,9 @@ export class DriverVehicleAllocation implements OnInit {
         error: (response) => {
           this.allocations.set([]);
           this.total.set(0);
-          this.error.set(response.error?.message || 'Driver allocations could not be loaded.');
+          const message = response.error?.message || 'Driver allocations could not be loaded.';
+          this.error.set(message);
+          void this.feedback.open({ type: 'error', title: 'Unable to load allocations', message, confirmText: 'Close', showCancel: false });
         },
       });
   }

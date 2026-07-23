@@ -47,7 +47,7 @@ export class LoginPage {
     this.error.set('');
 
     this.authApi
-      .login(email, password, remember)
+      .login(email, password, remember) 
       .pipe(
         tap((response) => {
           const token = response.data?.Token;

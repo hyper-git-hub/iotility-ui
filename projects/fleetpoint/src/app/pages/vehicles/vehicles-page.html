@@ -26,10 +26,6 @@
     </div>
   </section>
 
-  @if (error()) {
-    <section class="vehicles-error" role="alert"><p>{{ error() }}</p><button type="button" (click)="loadVehicles()">Try again</button></section>
-  }
-
   <shared-data-table
     class="smooth-reveal vehicles-table"
     title="Vehicle List"

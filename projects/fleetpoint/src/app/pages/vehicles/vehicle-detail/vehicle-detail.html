@@ -1,6 +1,5 @@
 <main class="vehicle-detail-page">
   <ui-blocking-loader [visible]="loading()" label="Loading vehicle" message="Getting vehicle telemetry and activity..." />
-  @if (error()) { <section class="detail-error" role="alert"><p>{{ error() }}</p><button type="button" (click)="load()">Try again</button></section> }
   @if (record(); as vehicle) {
     <header class="detail-heading smooth-reveal">
       <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p>Vehicles / {{ registration() }}</p><h1>{{ registration() }}</h1><span>{{ text(vehicle.year) }} {{ text(vehicle.make) }} {{ text(vehicle.model) }} · {{ text(vehicle.fleet_name, 'Unassigned fleet') }}</span></div></div>

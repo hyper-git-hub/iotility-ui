@@ -1,0 +1,154 @@
+@reference "../../../styles.css";
+
+.jobs-page { @apply grid content-start gap-4 p-5; }
+.jobs-heading { @apply flex items-center justify-between gap-4; }
+.jobs-heading h1 { @apply m-0 text-xl font-bold text-ink dark:text-white; }
+.jobs-heading p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
+.heading-actions { @apply flex flex-wrap items-center justify-end gap-2; }
+.view-switch { @apply flex overflow-hidden rounded-xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
+.view-switch button,.export-job { @apply inline-flex h-10 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-3 text-xs font-medium text-muted dark:text-brand-300; }
+.view-switch button + button { @apply border-l border-line dark:border-dark-line; }
+.view-switch button.active { @apply bg-brand-600 text-white; }
+.view-switch svg,.export-job svg { @apply size-4; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7; }
+.export-job { @apply rounded-xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
+.add-job { @apply cursor-pointer rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-brand-700; }
+.jobs-stats { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6; }
+.job-filters { @apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
+.filter-controls { @apply grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(10rem,1fr))_auto]; }
+.job-filters label { @apply min-w-0; }
+.job-filters label > span { @apply mb-1.5 block text-[10px] font-medium text-muted dark:text-brand-300; }
+.filter-dropdown { @apply block; }
+.filter-dropdown [dropdown-trigger] { @apply flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-line bg-white px-3 text-left text-xs text-ink outline-none transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
+.filter-dropdown [dropdown-trigger] span { @apply min-w-0 truncate; }
+.filter-actions { @apply flex gap-2; }
+.filter-actions button { @apply h-10 cursor-pointer whitespace-nowrap rounded-xl px-3 text-xs font-semibold; }
+.reset-filter { @apply border border-line text-muted dark:border-dark-line dark:text-brand-300; }
+.apply-filter { @apply bg-brand-600 text-white; }
+.jobs-workspace {
+  --reveal-delay: 280ms;
+  @apply flex min-w-0 items-start gap-0;
+  transition: gap 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.jobs-workspace.details-open { @apply gap-4; }
+.jobs-list-column { @apply grid min-w-0 flex-1 content-start gap-4; }
+.jobs-table { @apply min-w-0; }
+.job-details {
+  @apply min-w-0 shrink-0 overflow-hidden rounded-2xl border border-line bg-white opacity-0 dark:border-dark-line dark:bg-dark-surface;
+  width: 0;
+  visibility: hidden;
+  transition:
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    visibility 0s linear 420ms;
+}
+.details-open .job-details { @apply opacity-100; transition-delay: 100ms; }
+.details-open .job-details {
+  width: 21rem;
+  visibility: visible;
+  transition:
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease 100ms,
+    visibility 0s;
+}
+.job-details > header { @apply flex items-center justify-between border-b border-line px-4 py-3 dark:border-dark-line; }
+.job-details > header,.job-details-content { width: 21rem; }
+.job-details h2 { @apply text-sm font-bold text-ink dark:text-white; }
+.job-details > header button { @apply grid size-7 cursor-pointer place-items-center border-0 bg-transparent text-xl text-muted hover:text-ink dark:hover:text-white; }
+.job-details-content { @apply grid gap-4 p-4; }
+.job-summary h3 { @apply text-sm font-bold text-ink dark:text-white; }
+.job-summary > div { @apply mt-2 flex items-center gap-2; }
+.job-summary .status { @apply rounded-full px-2.5 py-1 text-[10px]; }
+.job-summary .status-completed { @apply bg-success/10 text-success; }
+.job-summary .status-in-progress { @apply bg-brand-600/10 text-brand-600 dark:text-brand-300; }
+.job-summary .status-failed { @apply bg-danger/10 text-danger; }
+.job-summary .status-pending { @apply bg-warning/10 text-warning; }
+.job-summary .status-assigned { @apply bg-info/10 text-info; }
+.priority { @apply text-[10px] text-info; }.priority.high { @apply text-danger; }
+.job-facts { @apply grid gap-3; }
+.job-facts > div { @apply flex items-center justify-between gap-4 text-xs; }
+.job-facts dt { @apply text-muted dark:text-brand-300; }.job-facts dd { @apply text-right font-medium text-ink dark:text-white; }
+.job-locations { @apply grid gap-3 rounded-xl bg-canvas p-3 dark:bg-dark-canvas; }
+.job-locations > div { @apply flex gap-2 text-xs; }.job-locations i { @apply mt-1 size-2 shrink-0 rounded-full; }
+.pickup-dot { @apply bg-brand-500; }.dropoff-dot { @apply bg-success; }
+.job-locations strong,.job-locations small { @apply block; }.job-locations strong { @apply text-ink dark:text-white; }.job-locations small { @apply mt-1 text-[11px] text-muted dark:text-brand-300; }
+.job-tasks h4 { @apply mb-2 text-[11px] font-semibold uppercase text-muted dark:text-brand-300; }
+.job-tasks > div { @apply mb-2 flex items-center gap-2 rounded-lg bg-canvas px-2.5 py-2 text-[11px] text-muted dark:bg-dark-canvas dark:text-brand-300; }
+.job-tasks i { @apply grid size-5 shrink-0 place-items-center rounded-full border border-muted text-[9px] not-italic; }
+.job-tasks > div.complete { @apply bg-success/10 text-muted; }
+.job-tasks > div.complete > span { @apply line-through; }
+.job-tasks > div.complete i { @apply border-success bg-success text-white; }
+.job-notes { @apply rounded-xl border border-warning/50 bg-warning/5 p-3 text-xs text-warning; }.job-notes p { @apply mt-1 text-[11px]; }
+.job-details footer { @apply text-[10px] text-muted dark:text-brand-300; }
+.job-pagination { @apply flex items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }
+.job-pagination div { @apply flex gap-2; }
+.job-pagination button { @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line; }
+.view-enter { animation: jobs-view-enter 240ms ease-out; }
+.dispatch-card { @apply min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
+.dispatch-workspace .dispatch-card { @apply flex-1; }
+.dispatch-card > header { @apply flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 dark:border-dark-line; }
+.dispatch-card > header > div:first-child { @apply flex items-baseline gap-4; }
+.dispatch-card h2 { @apply text-sm font-bold text-ink dark:text-white; }
+.dispatch-card header span,.dispatch-card > footer { @apply text-[10px] text-muted dark:text-brand-300; }
+.dispatch-legend { @apply flex flex-wrap gap-4; }.dispatch-legend span { @apply inline-flex items-center gap-1.5; }.dispatch-legend i { @apply size-2 rounded-full; }
+.dispatch-legend .pending i { @apply bg-warning; }.dispatch-legend .assigned i { @apply bg-info; }.dispatch-legend .progress i { @apply bg-brand-600; }.dispatch-legend .completed i { @apply bg-success; }
+.dispatch-scroll { @apply min-w-0 overflow-x-auto; }
+.dispatch-hours {
+  display: grid;
+  grid-template-columns: 11rem repeat(14, minmax(5.5rem, 1fr));
+  min-width: 88rem;
+}
+.dispatch-row {
+  display: grid;
+  grid-template-columns: 11rem repeat(28, minmax(2.75rem, 1fr));
+  min-width: 88rem;
+}
+.dispatch-hours { @apply border-b border-line dark:border-dark-line; }
+.dispatch-hours span { @apply border-l border-line px-2 py-2 text-center text-[10px] text-muted first:border-0 dark:border-dark-line dark:text-brand-300; }
+.dispatch-row { @apply relative min-h-16 border-b border-line last:border-0 dark:border-dark-line; }
+.dispatch-row::after {
+  content: '';
+  @apply pointer-events-none absolute inset-y-0 left-44 right-0;
+  background: repeating-linear-gradient(to right, var(--color-line) 0 1px, transparent 1px calc((100% / 14)));
+  opacity: .55;
+}
+.dispatch-driver { @apply z-[1] flex items-center gap-2 border-r border-line bg-white px-3 dark:border-dark-line dark:bg-dark-surface; }
+.dispatch-driver > i { @apply grid size-7 shrink-0 place-items-center rounded-full bg-brand-500 text-[10px] font-bold not-italic text-white; }
+.dispatch-driver strong,.dispatch-driver small,.dispatch-job strong,.dispatch-job small { @apply block; }
+.dispatch-driver strong { @apply text-[11px] text-ink dark:text-white; }.dispatch-driver small { @apply mt-0.5 text-[10px] text-muted dark:text-brand-300; }
+.dispatch-job {
+  grid-column: var(--job-start) / span var(--job-span);
+  @apply z-[2] my-1.5 cursor-pointer rounded-lg border-0 px-2.5 py-1.5 text-left text-white shadow-sm transition hover:brightness-95;
+}
+.dispatch-job strong { @apply truncate text-[11px]; }.dispatch-job small { @apply mt-0.5 text-[10px] text-white/90; }
+.dispatch-job[data-tone='completed'] { @apply bg-success; }.dispatch-job[data-tone='progress'] { @apply bg-brand-500; }.dispatch-job[data-tone='assigned'] { @apply bg-info; }.dispatch-job[data-tone='pending'] { @apply bg-warning; }.dispatch-job[data-tone='failed'] { @apply bg-danger; }
+.dispatch-card > footer { @apply border-t border-line px-5 py-3 dark:border-dark-line; }
+@keyframes jobs-view-enter { from { opacity: 0; transform: translateY(5px); } }
+@media (max-width: 1100px) {
+  .details-open .job-details { width: 20rem; }
+  .job-details > header,.job-details-content { width: 20rem; }
+}
+@media (max-width: 700px) {
+  .jobs-heading { @apply items-start; }
+  .heading-actions { @apply justify-start; }
+}
+@media (max-width: 800px) {
+  .jobs-workspace { @apply flex-col; }
+  .jobs-workspace.details-open { @apply gap-4; }
+  .job-details {
+    @apply max-h-0;
+    width: 100%;
+    transition:
+      max-height 420ms cubic-bezier(0.22,1,0.36,1),
+      opacity 180ms ease,
+      visibility 0s linear 420ms;
+  }
+  .details-open .job-details {
+    @apply max-h-[80rem];
+    width: 100%;
+    transition:
+      max-height 420ms cubic-bezier(0.22,1,0.36,1),
+      opacity 180ms ease 100ms,
+      visibility 0s;
+  }
+  .job-details > header,.job-details-content { width: 100%; }
+}

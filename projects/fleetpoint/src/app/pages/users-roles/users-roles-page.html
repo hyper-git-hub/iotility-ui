@@ -19,8 +19,6 @@
     <button type="button" [class.active]="activeTab() === 'roles'" (click)="selectTab('roles')">Roles &amp; Access <span>{{ roleTotal() }}</span></button>
   </nav>
 
-  @if (error()) { <div class="page-error" role="alert">{{ error() }}</div> }
-
   @if (activeTab() === 'users') {
     <section class="management-card smooth-reveal">
       <header class="card-toolbar">

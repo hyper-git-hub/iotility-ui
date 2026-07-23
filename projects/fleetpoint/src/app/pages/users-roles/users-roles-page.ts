@@ -362,7 +362,7 @@ export class UsersRolesPage implements OnInit {
           this.users.set(response.data?.data ?? []);
           this.userTotal.set(response.data?.count ?? 0);
         },
-        error: (response) => this.error.set(response.error?.message || 'The users listing could not be loaded.'),
+        error: (response) => this.apiError(response, 'The users listing could not be loaded.'),
       });
   }
 
@@ -382,7 +382,7 @@ export class UsersRolesPage implements OnInit {
         },
         error: (response) => {
           if (showLoading) {
-            this.error.set(response.error?.message || 'The roles listing could not be loaded.');
+            this.apiError(response, 'The roles listing could not be loaded.');
           }
         },
       });

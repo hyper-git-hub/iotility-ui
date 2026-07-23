@@ -85,9 +85,6 @@
       ><button type="button" class="reset-filter" (click)="resetFilters()">Reset</button>
     </div>
   </section>
-  @if (error()) {
-    <section class="drivers-error">{{ error() }}</section>
-  }
   <shared-data-table
     class="smooth-reveal tab-reveal-table"
     title="Driver List"

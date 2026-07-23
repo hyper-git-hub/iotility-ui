@@ -1,11 +1,6 @@
 <ui-blocking-loader [visible]="loading()" label="Loading dashboard" message="Getting the latest fleet activity..." />
 
-@if (error()) {
-  <section class="dashboard-error" role="alert">
-    <div><strong>Unable to load dashboard</strong><p>{{ error() }}</p></div>
-    <button type="button" (click)="loadDashboard()">Try again</button>
-  </section>
-} @else if (!loading()) {
+@if (!loading()) {
   <section class="metric-grid" aria-label="Fleet summary">
     @for (card of displayedCards(); track card.code) {
       <app-stat-card class="smooth-reveal" [style.--reveal-delay]="(200 + $index * 60) + 'ms'" [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [accent]="cardAccent(card.code)" [animatedBorder]="true" [compact]="true">

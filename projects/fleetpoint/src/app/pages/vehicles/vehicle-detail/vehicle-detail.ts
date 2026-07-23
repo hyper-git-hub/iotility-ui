@@ -6,6 +6,7 @@ import { FleetMap, TrackedVehicle } from '../../../shared/fleet-map/fleet-map';
 import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../../../shared/services/vehicle-detail-api.service';
 import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/services/vehicle-realtime.service';
 import { StatCard } from '../../../shared/stat-card/stat-card';
+import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 
 interface DetailItem { label: string; value: string; }
 
@@ -53,7 +54,16 @@ export class VehicleDetail implements OnInit, OnDestroy {
     private readonly api: VehicleDetailApiService,
     private readonly router: Router,
     private readonly realtime: VehicleRealtimeService,
-  ) { this.vehicleId = route.snapshot.paramMap.get('registration') || route.snapshot.paramMap.get('id') || ''; }
+    private readonly feedback: FeedbackDialogBridgeService,
+  ) {
+    this.vehicleId = route.snapshot.paramMap.get('registration') || route.snapshot.paramMap.get('id') || '';
+    this.record.set(this.fallbackRecord());
+    this.metrics.set([
+      { code: 'VA', name: 'Violation Alerts', data: 0 },
+      { code: 'DS', name: 'Distance Today', data: '0 km' },
+      { code: 'FS', name: 'Fuel Status', data: 'Not available' },
+    ]);
+  }
   ngOnInit(): void {
     this.subscription.add(
       this.realtime.updates$.subscribe((update) => this.applyRealtimeUpdate(update)),
@@ -68,8 +78,12 @@ export class VehicleDetail implements OnInit, OnDestroy {
       maintenance: this.api.getMaintenance(this.vehicleId).pipe(catchError(() => of(null))),
       lastJob: this.api.getLastJob(this.vehicleId).pipe(catchError(() => of(null))),
     }).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: (result) => { const vehicle = result.vehicle.data?.data?.[0]; if (!vehicle) { this.error.set('Vehicle details were not found.'); return; } this.record.set(vehicle); this.metrics.set(result.metrics.data ?? []); this.violations.set(result.violations?.data ?? null); this.maintenance.set(result.maintenance?.data ?? null); this.lastJob.set(result.lastJob?.data ?? null); void this.realtime.connect(vehicle.device_id); },
-      error: (response) => this.error.set(response.error?.message || 'Vehicle details could not be loaded.'),
+      next: (result) => {
+        const vehicle = result.vehicle.data?.data?.[0];
+        if (!vehicle) { this.showLoadError('Vehicle details were not found.'); return; }
+        this.record.set(vehicle); this.metrics.set(result.metrics.data ?? []); this.violations.set(result.violations?.data ?? null); this.maintenance.set(result.maintenance?.data ?? null); this.lastJob.set(result.lastJob?.data ?? null); void this.realtime.connect(vehicle.device_id);
+      },
+      error: (response) => this.showLoadError(response.error?.message || 'Vehicle details could not be loaded.'),
     });
   }
   protected metricTone(index: number): 'brand' | 'info' | 'success' | 'warning' | 'danger' { return ['danger', 'warning', 'info', 'success', 'brand', 'danger'][index % 6] as never; }
@@ -151,6 +165,48 @@ export class VehicleDetail implements OnInit, OnDestroy {
       ? new Date(value > 1e12 ? value : value * 1000)
       : new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  }
+
+  private showLoadError(message: string): void {
+    this.error.set(message);
+    void this.feedback.open({
+      type: 'error',
+      title: 'Unable to load vehicle details',
+      message,
+      confirmText: 'Close',
+      showCancel: false,
+    });
+  }
+
+  private fallbackRecord(): VehicleDetailRecord {
+    return {
+      id: 0,
+      name: 'Vehicle details',
+      registration: '',
+      make: '',
+      model: '',
+      year: '',
+      image: null,
+      vehicle_type_image: null,
+      status: 0,
+      online_status: false,
+      speed: 0,
+      latitude: null,
+      longitude: null,
+      location: null,
+      updated_time: null,
+      updated_at: null,
+      heavy_equipment: null,
+      fleet_name: null,
+      device_id: null,
+      ignition_status: false,
+      last_volume: null,
+      km_per_day: 0,
+      vehicle_driver_name: null,
+      total_distance_traveled: 0,
+      total_violations: 0,
+      next_maintenance: null,
+    };
   }
 
   ngOnDestroy(): void {

@@ -12,6 +12,7 @@ import {
   FleetDashboardApiService,
   Vehicle,
 } from '../../../shared/services/fleet-dashboard-api.service';
+import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 
 @Component({
   selector: 'app-dashboard-overview',
@@ -64,7 +65,10 @@ export class Overview implements OnInit {
     alerts: camera.notifications ? `${camera.notifications} alerts` : 'Active',
   })));
 
-  constructor(private readonly api: FleetDashboardApiService) {}
+  constructor(
+    private readonly api: FleetDashboardApiService,
+    private readonly feedback: FeedbackDialogBridgeService,
+  ) {}
 
   ngOnInit(): void { this.loadDashboard(); }
 
@@ -84,7 +88,9 @@ export class Overview implements OnInit {
         this.dashcams.set([]);
       },
       error: (response: HttpErrorResponse) => {
-        this.error.set(response.error?.message || 'Dashboard data could not be loaded. Please try again.');
+        const message = response.error?.message || 'Dashboard data could not be loaded. Please try again.';
+        this.error.set(message);
+        void this.feedback.open({ type: 'error', title: 'Unable to load dashboard', message, confirmText: 'Close', showCancel: false });
       },
     });
   }

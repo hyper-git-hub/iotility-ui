@@ -17,6 +17,7 @@ import {
   ReportQuery,
   ReportsApiService,
 } from '../../../shared/services/reports-api.service';
+import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 
 interface ReportDefinition {
   type: QpmcReportType;
@@ -109,7 +110,10 @@ export class Reports implements OnInit {
   protected readonly start = computed(() => (this.total() ? this.offset() + 1 : 0));
   protected readonly end = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
-  constructor(private readonly api: ReportsApiService) {
+  constructor(
+    private readonly api: ReportsApiService,
+    private readonly feedback: FeedbackDialogBridgeService,
+  ) {
     this.setPreset('today', false);
   }
   ngOnInit(): void {
@@ -253,7 +257,8 @@ export class Reports implements OnInit {
         error: (response) => {
           this.rows.set([]);
           this.total.set(0);
-          this.error.set(response.error?.message || 'The report could not be loaded.');
+          const message = response.error?.message || 'The report could not be loaded.';
+          void this.feedback.open({ type: 'error', title: 'Unable to load report', message, confirmText: 'Close', showCancel: false });
         },
       });
   }
@@ -270,7 +275,8 @@ export class Reports implements OnInit {
 
   private async handleExportResponse(blob: Blob, format: ReportExportFormat): Promise<void> {
     if (blob.type.includes('json')) {
-      this.error.set(await this.messageFromBlob(blob));
+      const message = await this.messageFromBlob(blob);
+      void this.feedback.open({ type: 'error', title: 'Unable to export report', message, confirmText: 'Close', showCancel: false });
       return;
     }
 
@@ -287,11 +293,10 @@ export class Reports implements OnInit {
   }
 
   private async handleExportError(response: HttpErrorResponse): Promise<void> {
-    this.error.set(
-      response.error instanceof Blob
-        ? await this.messageFromBlob(response.error)
-        : response.error?.message || response.statusText || 'The report could not be exported.',
-    );
+    const message = response.error instanceof Blob
+      ? await this.messageFromBlob(response.error)
+      : response.error?.message || response.statusText || 'The report could not be exported.';
+    void this.feedback.open({ type: 'error', title: 'Unable to export report', message, confirmText: 'Close', showCancel: false });
   }
 
   private async messageFromBlob(blob: Blob): Promise<string> {

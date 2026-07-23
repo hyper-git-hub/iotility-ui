@@ -9,9 +9,7 @@
     <div><h1>My Profile</h1><p>View your personal and account information</p></div>
   </header>
 
-  @if (!loading() && error()) {
-    <div class="profile-state error" role="alert"><p>{{ error() }}</p><button type="button" (click)="loadProfile()">Try again</button></div>
-  } @else if (!loading() && profile(); as user) {
+  @if (!loading() && profile(); as user) {
     <div class="profile-layout">
       <aside class="identity-card smooth-reveal">
         <shared-smooth-height>

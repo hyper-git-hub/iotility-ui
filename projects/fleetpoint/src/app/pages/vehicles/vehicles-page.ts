@@ -95,7 +95,11 @@ export class VehiclesPage implements OnInit {
         this.records.set(response.data?.data ?? []);
         this.total.set(response.data?.count ?? 0);
       },
-      error: (response) => this.error.set(response.error?.message || 'Vehicle inventory could not be loaded.'),
+      error: (response) => {
+        const message = response.error?.message || 'Vehicle inventory could not be loaded.';
+        this.error.set(message);
+        void this.feedback.open({ type: 'error', title: 'Unable to load vehicles', message, confirmText: 'Close', showCancel: false });
+      },
     });
   }
 

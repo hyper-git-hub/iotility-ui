@@ -41,5 +41,3 @@
 .equipment-grid > div { @apply rounded-xl border border-line bg-canvas p-4 dark:border-dark-line dark:bg-dark-canvas; }
 .equipment-grid span { @apply block text-[10px] text-muted dark:text-brand-300; }
 .equipment-grid strong { @apply mt-2 block text-sm; }
-.detail-error { @apply flex items-center justify-between rounded-xl border border-danger/30 bg-danger/10 p-4 text-xs text-danger; }
-.detail-error button { @apply cursor-pointer rounded-lg bg-danger px-3 py-2 font-semibold text-white; }

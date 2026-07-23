@@ -1,6 +1,6 @@
 import { Component, input } from '@angular/core';
 
-export type StatCardTone = 'brand' | 'info' | 'success' | 'warning' | 'danger';
+export type StatCardTone = 'brand' | 'info' | 'success' | 'warning' | 'danger' | 'priority';
 
 @Component({
   selector: 'app-stat-card',
