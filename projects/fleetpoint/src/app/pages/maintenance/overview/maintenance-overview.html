@@ -1,0 +1,16 @@
+<section class="overview-grid">
+  <article class="health-panel">
+    <header><h2>Fleet Health Scores</h2><span><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="11" rx="3"/><path d="M9 12h.01M15 12h.01M12 7V4"/></svg>Calculated by ML microservice</span></header>
+    <div class="health-grid">
+      @for(item of health;track item.vehicle){<section class="health-card" [class]="tone(item.score)">
+        <div class="health-title"><i class="score-ring" [style.--score]="item.score"></i><div><strong>{{item.vehicle}}</strong><span>{{item.score}}/100 — {{item.condition}}</span></div></div>
+        <div class="component-list">@for(component of components(item);track component.label){<div><label>{{component.label}}</label><i><b [style.width.%]="component.value"></b></i><span>{{component.value}}</span></div>}</div>
+        @if(item.faults.length){<div class="faults">@for(fault of item.faults;track fault){<code>{{fault}}</code>}</div>}
+      </section>}
+    </div>
+  </article>
+  <div class="overview-lower">
+    <article class="list-panel"><header><h2>Active Work Orders</h2><a routerLink="../work-orders">View all</a></header><div class="rows">@for(order of orders;track order.vehicle){<div class="order-row"><i class="tool-icon"><svg viewBox="0 0 24 24"><path d="M14 6a4 4 0 0 0-5 5L3 17l4 4 6-6a4 4 0 0 0 5-5l-3 3-3-3 2-4Z"/></svg></i><span><strong>{{order.vehicle}} — {{order.service}}</strong><small>{{order.workshop}}</small></span><em [class]="order.status.toLowerCase().replaceAll(' ','-')">{{order.status}}</em></div>}</div></article>
+    <article class="list-panel"><header><h2 class="ai-title"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="11" rx="3"/><path d="M9 12h.01M15 12h.01M12 7V4"/></svg>Top AI Predictions</h2><a routerLink="../predictions">View all</a></header><div class="rows">@for(prediction of predictions;track prediction.vehicle){<div class="prediction-row"><span><strong>{{prediction.vehicle}} <em [class]="prediction.urgency.toLowerCase()">{{prediction.urgency}}</em></strong><small>{{prediction.component}} — {{prediction.remaining}} · {{prediction.confidence}} confidence</small></span>@if(prediction.raised){<b>WO Raised ✓</b>}@else{<button type="button">Raise WO</button>}</div>}</div></article>
+  </div>
+</section>

@@ -1,0 +1,12 @@
+<app-modal [open]="open()" labelledBy="workshop-form-title" (closed)="cancel()">
+  <h2 modal-header id="workshop-form-title">Add Workshop</h2>
+  <form id="workshop-form" class="workshop-form" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="shared-form-field"><span>Workshop Name <b>*</b></span><input class="shared-form-control" formControlName="name" placeholder="e.g. Volvo Truck Centre"/>@if(invalid('name')){<small class="shared-form-error">Enter a workshop name.</small>}</label>
+    <label class="shared-form-field"><span>Type <b>*</b></span><shared-dropdown class="form-dropdown" [options]="typeOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.type.value]" (optionSelected)="select($event)"><button dropdown-trigger type="button">{{form.controls.type.value}}</button></shared-dropdown></label>
+    <label class="shared-form-field full"><span>Address <b>*</b></span><input class="shared-form-control" formControlName="address" placeholder="Full address"/>@if(invalid('address')){<small class="shared-form-error">Enter the workshop address.</small>}</label>
+    <label class="shared-form-field"><span>Phone</span><input class="shared-form-control" formControlName="phone" placeholder="+44..."/></label>
+    <label class="shared-form-field"><span>Capacity (bays)</span><input class="shared-form-control" type="number" min="1" formControlName="capacity" placeholder="e.g. 6"/>@if(invalid('capacity')){<small class="shared-form-error">Enter at least one bay.</small>}</label>
+    <label class="shared-form-field full"><span>Specialisations (comma separated)</span><input class="shared-form-control" formControlName="specialisations" placeholder="e.g. HGV Service, Tyres, Brake Systems"/></label>
+  </form>
+  <div modal-footer class="workshop-form-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="workshop-form" class="shared-button-primary">Add Workshop</button></div>
+</app-modal>

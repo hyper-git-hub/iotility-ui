@@ -102,6 +102,20 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'maintenance',
+        title: 'Maintenance | FleetPoint',
+        loadComponent: () =>
+          import('./pages/maintenance/maintenance-page').then((module) => module.MaintenancePage),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'overview' },
+          { path: 'overview', loadComponent: () => import('./pages/maintenance/overview/maintenance-overview').then((module) => module.MaintenanceOverview) },
+          { path: 'work-orders', loadComponent: () => import('./pages/maintenance/work-orders/maintenance-work-orders').then((module) => module.MaintenanceWorkOrders) },
+          { path: 'workshops', loadComponent: () => import('./pages/maintenance/workshops/maintenance-workshops').then((module) => module.MaintenanceWorkshops) },
+          { path: 'service-log', loadComponent: () => import('./pages/maintenance/service-log/maintenance-service-log').then((module) => module.MaintenanceServiceLog) },
+          { path: 'predictions', loadComponent: () => import('./pages/maintenance/predictions/maintenance-predictions').then((module) => module.MaintenancePredictions) },
+        ],
+      },
+      {
         path: 'trip-replay',
         title: 'Trip Replay | FleetPoint',
         loadComponent: () =>

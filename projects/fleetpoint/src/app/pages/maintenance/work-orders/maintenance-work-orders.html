@@ -1,0 +1,23 @@
+<section class="work-order-filters">
+  <label><span>Status</span><shared-dropdown class="filter-dropdown" [options]="statusOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[status()]" (optionSelected)="selectFilter('status',$event)"><button dropdown-trigger type="button">{{filterLabel(statusOptions,status(),'All Status')}}</button></shared-dropdown></label>
+  <label><span>Priority</span><shared-dropdown class="filter-dropdown" [options]="priorityOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[priority()]" (optionSelected)="selectFilter('priority',$event)"><button dropdown-trigger type="button">{{filterLabel(priorityOptions,priority(),'All Priority')}}</button></shared-dropdown></label>
+  <label><span>Type</span><shared-dropdown class="filter-dropdown" [options]="typeOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[type()]" (optionSelected)="selectFilter('type',$event)"><button dropdown-trigger type="button">{{filterLabel(typeOptions,type(),'All types')}}</button></shared-dropdown></label>
+</section>
+<section class="work-orders-workspace" [class.details-open]="selectedOrder()">
+  <div class="work-orders-list">
+    <shared-data-table class="work-orders-table" title="Work Orders" [subtitle]="'Showing '+filtered().length+' of '+total+' work orders · Click a row to view details'" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showExport]="false" [showPrimaryAction]="false" [minTableWidth]="selectedOrder()?1180:1380" searchPlaceholder="Search work order, vehicle, service or workshop..." [rowsClickable]="true" [selectedRowId]="selectedOrder()?.id??null" (searchChange)="search.set($event)" (rowSelected)="selectOrder($event)"/>
+  </div>
+  <aside class="work-order-details" [attr.aria-hidden]="!selectedOrder()">
+    @if(selectedOrder();as order){
+      <header><h2>{{order.id}}</h2><button type="button" aria-label="Close work order details" (click)="closeDetails()">×</button></header>
+      <div class="details-scroll">
+        <section class="workflow"><h3>Workflow</h3><div class="workflow-track">@for(step of [1,2,3,4,5,6,7,8];track step){<i [class.complete]="step<=workflowStep(order)"></i>}</div><strong>{{order.status}}</strong></section>
+        <dl class="facts"><div><dt>Vehicle</dt><dd>{{order.vehicle}} — Volvo FH</dd></div><div><dt>Service</dt><dd>{{order.service}}</dd></div><div><dt>Type</dt><dd>{{order.type}}</dd></div><div><dt>Priority</dt><dd>{{order.priority}}</dd></div><div><dt>Workshop</dt><dd>{{order.workshop}}</dd></div><div><dt>Driver</dt><dd>{{driver(order)}}</dd></div><div><dt>Est. Cost</dt><dd>{{order.cost}}</dd></div><div><dt>Actual Cost</dt><dd>{{actualCost(order)}}</dd></div><div><dt>Mileage</dt><dd>{{mileage(order)}}</dd></div><div><dt>Due</dt><dd>{{order.target}}</dd></div><div><dt>Raised by</dt><dd>System (Auto)</dd></div></dl>
+        <section class="description"><h3>Description</h3><p>Vehicle reported a service fault. Full inspection and corrective maintenance are required.</p></section>
+        <section class="diagnosis"><h3>Diagnosis</h3><p>GPS tracker firmware corrupted. Engine mounts worn. Front brake pads require replacement.</p></section>
+        <section class="parts"><h3>Parts Required</h3>@for(part of parts;track part.name){<div><span><strong>{{part.name}}</strong><small>Qty: {{part.quantity}}</small></span><b>{{part.cost}}</b></div>}<footer><strong>Parts Total</strong><b>£645</b></footer></section>
+        <section class="timeline"><h3>Timeline</h3>@for(item of timeline;track item.status){<div><i></i><span><strong>{{item.status}} <time>{{item.time}}</time></strong><p>{{item.detail}}</p><small>by {{item.by}}</small></span></div>}</section>
+      </div>
+    }
+  </aside>
+</section>

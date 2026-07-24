@@ -1,0 +1,13 @@
+<section class="maintenance-page">
+  <header class="heading"><div><h1>Maintenance</h1><p>{{active}} active work orders · {{critical}} critical · {{poorHealth}} vehicles need attention</p></div><div><button class="export" type="button"><svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4"/></svg>Export</button><button class="create" type="button" (click)="workOrderFormOpen.set(true)">+ New Work Order</button></div></header>
+  <section class="stats">
+    <app-stat-card label="Active WOs" [value]="active" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="m14 6 4-4 4 4-4 4M10 18l-4 4-4-4 4-4M14 10 10 14"/></svg></app-stat-card>
+    <app-stat-card label="Critical" [value]="critical" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg></app-stat-card>
+    <app-stat-card label="Completed" [value]="completed" tone="success" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8 12 3 3 5-6"/></svg></app-stat-card>
+    <app-stat-card label="Poor Health" [value]="poorHealth" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M4 12h3l2-5 4 10 2-5h5"/></svg></app-stat-card>
+    <app-stat-card label="AI Predictions" [value]="predictions" tone="info" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><rect x="5" y="6" width="14" height="12" rx="3"/><path d="M9 11h.01M15 11h.01M9 15h6M12 6V3"/></svg></app-stat-card>
+    <app-stat-card label="Cost This Month" [value]="monthlyCost" tone="success" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3v18M16 7.5c0-2-1.8-3-4-3s-4 1-4 3 1.8 3 4 3 4 1 4 3-1.8 3-4 3-4-1-4-3"/></svg></app-stat-card>
+  </section>
+  <nav class="tabs"><a routerLink="overview" routerLinkActive="active">Overview</a><a routerLink="work-orders" routerLinkActive="active">Work Orders <span>{{active}}</span></a><a routerLink="workshops" routerLinkActive="active">Workshops <span>{{workshopCount}}</span></a><a routerLink="service-log" routerLinkActive="active">Service Log</a><a routerLink="predictions" routerLinkActive="active">AI Predictions <span>{{critical}}</span></a></nav>
+  <router-outlet/><app-work-order-form [open]="workOrderFormOpen()" (cancelled)="workOrderFormOpen.set(false)" (created)="createWorkOrder($event)"/>
+</section>

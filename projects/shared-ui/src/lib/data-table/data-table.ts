@@ -79,7 +79,9 @@ export class DataTable implements AfterViewInit, OnDestroy {
     this.searchChange.emit(value);
   }
   protected statusClass(v: unknown): string {
-    return `status-${String(v).toLowerCase().replaceAll(' ', '-')}`;
+    const value = String(v).toLowerCase();
+    if (/^\d+\s+available$/.test(value)) return 'status-available';
+    return `status-${value.replaceAll(' ', '-')}`;
   }
   protected priorityClass(v: unknown): string {
     return `priority-${String(v).toLowerCase().replaceAll(' ', '-')}`;
