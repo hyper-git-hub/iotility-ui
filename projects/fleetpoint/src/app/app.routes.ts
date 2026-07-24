@@ -89,6 +89,19 @@ export const routes: Routes = [
           import('./pages/poi/poi-page').then((module) => module.PoiPage),
       },
       {
+        path: 'routes',
+        title: 'Routes | FleetPoint',
+        loadComponent: () =>
+          import('./pages/routes/routes-page').then((module) => module.RoutesPage),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'library' },
+          { path: 'library', loadComponent: () => import('./pages/routes/route-library/route-library').then((module) => module.RouteLibrary) },
+          { path: 'active-runs', loadComponent: () => import('./pages/routes/active-runs/active-runs').then((module) => module.ActiveRuns) },
+          { path: 'dispatch', loadComponent: () => import('./pages/routes/dispatch/route-dispatch').then((module) => module.RouteDispatch) },
+          { path: 'adherence', loadComponent: () => import('./pages/routes/adherence/route-adherence').then((module) => module.RouteAdherence) },
+        ],
+      },
+      {
         path: 'trip-replay',
         title: 'Trip Replay | FleetPoint',
         loadComponent: () =>

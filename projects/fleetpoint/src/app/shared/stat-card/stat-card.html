@@ -2,10 +2,13 @@
   class="stat-card"
   [class.animated-border]="animatedBorder()"
   [class.compact]="compact()"
+  [class.iconless]="!showIcon()"
   [attr.data-tone]="tone()"
   [style.--stat-card-accent]="accent() || null"
 >
-  <span class="stat-card-icon"><ng-content select="[stat-card-icon]" /></span>
+  @if (showIcon()) {
+    <span class="stat-card-icon"><ng-content select="[stat-card-icon]" /></span>
+  }
   <strong>{{ value() }}</strong>
   <span>{{ label() }}</span>
 </article>

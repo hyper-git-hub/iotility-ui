@@ -80,6 +80,10 @@ tbody tr:hover {
 .clickable-row td:first-child { box-shadow: inset 2px 0 0 transparent; transition: box-shadow 150ms ease; }
 .clickable-row:hover td:first-child,
 .clickable-row.selected-row td:first-child { box-shadow: inset 2px 0 0 var(--color-brand-500); }
+.expanded-row > td { @apply bg-canvas/70 p-0 dark:bg-dark-canvas/70; }
+.expanded-row:hover { @apply bg-transparent; }
+.expanded-row-content { @apply overflow-hidden; animation: expanded-row-enter 260ms cubic-bezier(0.22,1,0.36,1); }
+@keyframes expanded-row-enter { from { opacity:0;transform:translateY(-6px); } to { opacity:1;transform:none; } }
 .strong,
 strong {
   @apply text-ink dark:text-white;

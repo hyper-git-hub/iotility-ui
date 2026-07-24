@@ -32,9 +32,18 @@
             <label class="shared-form-field full"><span>Address <b>*</b></span><input class="shared-form-control" formControlName="address" placeholder="Full address or postcode" [attr.aria-invalid]="invalid('address')"/>@if(invalid('address')){<small class="shared-form-error">Enter an address.</small>}</label>
             <label class="shared-form-field"><span>Radius (meters) <b>*</b></span><input type="number" min="10" class="shared-form-control" formControlName="radius" [attr.aria-invalid]="invalid('radius')"/></label>
             <span></span>
-            <label class="shared-form-field"><span>Latitude <b>*</b></span><input class="shared-form-control" formControlName="latitude" placeholder="e.g. 52.4862" [attr.aria-invalid]="invalid('latitude')"/></label>
-            <label class="shared-form-field"><span>Longitude <b>*</b></span><input class="shared-form-control" formControlName="longitude" placeholder="e.g. -1.8904" [attr.aria-invalid]="invalid('longitude')"/></label>
-            <div class="map-hint full"><svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span><strong>Map location</strong><small>Map selection will populate latitude and longitude when backend mapping is connected.</small></span></div>
+            <div class="location-picker full">
+              <div class="location-picker-heading"><span><strong>Choose location <b>*</b></strong><small>Click anywhere on the map to place the marker. Drag it to adjust the position.</small></span>
+                @if (form.controls.latitude.value) { <span class="location-selected"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-8"/></svg>Location selected</span> }
+              </div>
+              <app-poi-location-picker (locationSelected)="setLocation($event)"/>
+              @if (form.controls.latitude.value) {
+                <div class="coordinate-values"><span><small>Latitude</small><strong>{{ form.controls.latitude.value }}</strong></span><span><small>Longitude</small><strong>{{ form.controls.longitude.value }}</strong></span></div>
+              } @else {
+                <div class="map-hint"><svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span><strong>No location selected</strong><small>Select a point on the map to continue.</small></span></div>
+              }
+              @if (submitted() && invalid('latitude')) { <small class="shared-form-error">Choose a location on the map.</small> }
+            </div>
           </section>
         } @else if (activeStep() === 2) {
           <section class="form-step rules-grid"><header class="full"><h3>Assignment &amp; Alert Rules</h3><p>Choose which vehicles use this POI and when alerts are raised.</p></header>
@@ -43,12 +52,12 @@
             <label class="rule-toggle"><input type="checkbox" formControlName="alertOnEntry"/><span><strong>Alert on entry</strong><small>Notify when a vehicle enters this POI.</small></span></label>
             <label class="rule-toggle"><input type="checkbox" formControlName="alertOnExit"/><span><strong>Alert on exit</strong><small>Notify when a vehicle leaves this POI.</small></span></label>
             <label class="shared-form-field"><span>Maximum dwell time (minutes)</span><input type="number" min="1" class="shared-form-control" formControlName="maxDwell" placeholder="No limit"/></label>
-            <label class="shared-form-field"><span>Link to Geozone (optional)</span><shared-dropdown class="poi-dropdown" [options]="geozoneOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.geozone.value]" (optionSelected)="select('geozone',$event)"><button dropdown-trigger type="button">{{ optionsLabel(geozoneOptions,form.controls.geozone.value,'No geozone') }}</button></shared-dropdown></label>
+            <label class="shared-form-field"><span>Link to Geozone (optional)</span><shared-dropdown class="poi-dropdown" [options]="geozoneOptions" mode="single" align="left" placement="top" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.geozone.value]" (optionSelected)="select('geozone',$event)"><button dropdown-trigger type="button">{{ optionsLabel(geozoneOptions,form.controls.geozone.value,'No geozone') }}</button></shared-dropdown></label>
             <label class="shared-form-field full"><span>Notes</span><textarea class="shared-form-control" formControlName="notes" rows="3" placeholder="Operational notes or special instructions..."></textarea></label>
           </section>
         } @else {
           <section class="form-step confirmation">
-            <span class="confirm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.5 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5V9.5"/><path d="m13 11 6.2-6.2a1.4 1.4 0 0 1 2 2L15 13l-3.5 1.5L13 11Z"/><path d="M8 9h2M8 13h1M8 16h5"/></svg></span>
+            <span class="confirm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V17a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 17V6A2.5 2.5 0 0 1 7 3.5Z"/><path d="M14 3.5V8h4M8 10.5h6M8 14h3"/><circle class="review-lens" cx="16.5" cy="16.5" r="3.25"/><path class="review-lens" d="m19 19 2 2"/></svg></span>
             <header><span class="review-label">Final review</span><h3>Review your POI</h3><p>Check these details before creating the point of interest.</p></header>
             <dl>
               <div><dt>Type</dt><dd><span class="summary-badge">{{ selectedTypeLabel() }}</span></dd></div>

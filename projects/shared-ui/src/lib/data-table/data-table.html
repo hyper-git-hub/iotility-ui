@@ -56,7 +56,7 @@
       </thead>
       <tbody>
         @for (r of filteredRows(); track $index) {
-          <tr [class.clickable-row]="rowsClickable()" [class.selected-row]="isSelectedRow(r)" (click)="rowsClickable() && rowSelected.emit(r)">
+          <tr [class.clickable-row]="rowsClickable() || expandableRows()" [class.selected-row]="isSelectedRow(r) || isExpandedRow(r)" (click)="selectRow(r)" [attr.aria-expanded]="expandableRows() ? isExpandedRow(r) : null">
             @for (c of columns(); track c.key) {
               <td>
                 @if (c.type === 'status') {
@@ -108,6 +108,15 @@
               </td>
             }
           </tr>
+          @if (expandableRows() && isExpandedRow(r) && expandedRowTemplate(); as template) {
+            <tr class="expanded-row">
+              <td [attr.colspan]="columns().length">
+                <div class="expanded-row-content">
+                  <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="{ $implicit: r, row: r }"/>
+                </div>
+              </td>
+            </tr>
+          }
         } @empty {
           <tr>
             <td [attr.colspan]="columns().length" class="empty">No matching records found.</td>

@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Dropdown, DropdownOption, SmoothHeight } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
 import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
+import { PoiCoordinates, PoiLocationPicker } from './poi-location-picker';
 
 export interface PoiFormValue {
   type: string; name: string; address: string; radius: number; latitude: string; longitude: string;
@@ -12,7 +13,7 @@ export interface PoiFormValue {
 
 @Component({
   selector: 'app-poi-form',
-  imports: [Dropdown, Modal, ReactiveFormsModule, SmoothHeight, Stepper],
+  imports: [Dropdown, Modal, PoiLocationPicker, ReactiveFormsModule, SmoothHeight, Stepper],
   templateUrl: './poi-form.html',
   styleUrl: './poi-form.css',
 })
@@ -65,6 +66,12 @@ export class PoiForm {
   }
 
   protected chooseType(type: string): void { this.form.controls.type.setValue(type); }
+  protected setLocation({ latitude, longitude }: PoiCoordinates): void {
+    this.form.controls.latitude.setValue(latitude.toFixed(6));
+    this.form.controls.longitude.setValue(longitude.toFixed(6));
+    this.form.controls.latitude.markAsTouched();
+    this.form.controls.longitude.markAsTouched();
+  }
   protected select(control: 'assignment' | 'assignedTarget' | 'geozone', option: DropdownOption): void {
     this.form.controls[control].setValue(option.id);
     if (control === 'assignment') this.form.controls.assignedTarget.setValue('');

@@ -1,0 +1,23 @@
+<app-modal [open]="open()" size="lg" labelledBy="route-form-title" (closed)="cancel()">
+  <div modal-header><h2 id="route-form-title">Create Route</h2><p>Define route details and build the journey on the map</p></div>
+  <form id="route-form" class="route-form" [formGroup]="form" (ngSubmit)="submit()">
+    <section class="route-fields">
+      <label class="shared-form-field wide"><span>Route Name *</span><input class="shared-form-control" formControlName="name" placeholder="e.g. London → Birmingham Express"/>@if(submitted()&&form.controls.name.invalid){<small class="shared-form-error">Enter a route name.</small>}</label>
+      <label class="shared-form-field wide"><span>Description</span><textarea class="shared-form-control" rows="2" formControlName="description" placeholder="Brief description of this route"></textarea></label>
+      <label class="shared-form-field"><span>Tolerance (meters)</span><input class="shared-form-control" type="number" min="10" formControlName="tolerance"/></label>
+      <label class="shared-form-field"><span>Assign to Fleet</span><shared-dropdown class="form-dropdown" [options]="fleetOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.fleet.value]" (optionSelected)="selectFleet($event)"><button dropdown-trigger type="button">{{fleetLabel()}}</button></shared-dropdown></label>
+    </section>
+    <section class="builder">
+      <header><div><h3>Build Route</h3><p>Select the point type, then click its location on the map.</p></div><button type="button" (click)="resetRoute()">Reset route</button></header>
+      <nav class="point-tools">
+        <button type="button" [class.active]="mode()==='start'" [class.complete]="hasStart()" (click)="chooseMode('start')"><i>1</i><span><strong>Start Point</strong><small>{{hasStart()?'Selected':'Choose on map'}}</small></span></button>
+        <button type="button" [class.active]="mode()==='stop'" [disabled]="!hasStart()||hasEnd()" (click)="chooseMode('stop')"><i>+</i><span><strong>Add Stops</strong><small>{{points().length>1?(points().length-(hasEnd()?2:1))+' added':'Optional'}}</small></span></button>
+        <button type="button" [class.active]="mode()==='end'" [class.complete]="hasEnd()" [disabled]="!hasStart()" (click)="chooseMode('end')"><i>3</i><span><strong>End Point</strong><small>{{hasEnd()?'Selected':'Finish route'}}</small></span></button>
+      </nav>
+      <div class="builder-map"><app-route-builder-map [mode]="mode()" (pointSelected)="addPoint($event)"/><span class="map-instruction">Click the map to add {{mode()==='start'?'the start point':mode()==='end'?'the end point':'a stop'}}</span></div>
+      @if(points().length){<div class="route-builder-footer"><div class="selected-points">@for(point of points();track $index){<span [class]="point.type"><i></i>{{point.label}} <small>{{point.lat}}, {{point.lng}}</small></span>}</div>@if(hasStart()&&hasEnd()){<button type="button" class="calculate-route" [class.complete]="routeCalculated()" [disabled]="calculating()" (click)="calculateRoute()"><svg viewBox="0 0 24 24"><path d="M4 17.5h5l2-11h9M17 3l3 3.5-3 3.5"/><circle cx="4" cy="17.5" r="2"/></svg>{{calculating()?'Calculating...':routeCalculated()?'Route Calculated':'Calculate Route'}}</button>}</div>}
+      @if(submitted()&&(!hasStart()||!hasEnd())){<small class="shared-form-error">Select both a start and end point on the map.</small>}
+    </section>
+  </form>
+  <div modal-footer class="route-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="route-form" class="shared-button-primary">Create Route</button></div>
+</app-modal>

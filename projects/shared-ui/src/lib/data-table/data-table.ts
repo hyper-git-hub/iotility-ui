@@ -1,4 +1,5 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, computed, input, output, signal, viewChild } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { AfterViewInit, Component, Directive, ElementRef, OnDestroy, TemplateRef, computed, contentChild, inject, input, output, signal, viewChild } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
 export type TableColumnType = 'text' | 'user' | 'email' | 'date' | 'status' | 'priority' | 'tasks' | 'actions' | 'vehicle' | 'fleet' | 'fuel' | 'mot' | 'alert';
 export interface TableColumn {
@@ -12,9 +13,17 @@ export interface TableColumn {
 }
 export type TableRow = Record<string, string | number | boolean>;
 export type TableAction = 'view' | 'map' | 'history' | 'edit' | 'delete';
+export interface ExpandedRowContext {
+  $implicit: TableRow;
+  row: TableRow;
+}
+@Directive({ selector: 'ng-template[tableExpandedRow]' })
+export class DataTableExpandedRow {
+  readonly template = inject<TemplateRef<ExpandedRowContext>>(TemplateRef);
+}
 @Component({
   selector: 'shared-data-table',
-  imports: [Dropdown],
+  imports: [Dropdown, NgTemplateOutlet],
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
 })
@@ -36,6 +45,7 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly clientSideSearch = input(true);
   readonly actions = input<TableAction[]>([]);
   readonly rowsClickable = input(false);
+  readonly expandableRows = input(false);
   readonly selectedRowId = input<string | number | null>(null);
   readonly rowIdentityKey = input('id');
   readonly viewportHeight = input<number | null>(null);
@@ -47,6 +57,9 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly rowAction = output<{ action: TableAction; row: TableRow }>();
   readonly rowSelected = output<TableRow>();
   readonly cellSelected = output<{ column: TableColumn; row: TableRow }>();
+  readonly rowExpanded = output<TableRow | null>();
+  private readonly expandedTemplate = contentChild(DataTableExpandedRow);
+  protected readonly expandedRowIdentity = signal<string | null>(null);
   private readonly tableBody = viewChild.required<ElementRef<HTMLElement>>('tableBody');
   protected readonly searchTerm = signal('');
   protected readonly bodyHeight = signal<number | null>(null);
@@ -92,6 +105,20 @@ export class DataTable implements AfterViewInit, OnDestroy {
   protected isSelectedRow(row: TableRow): boolean {
     const selected = this.selectedRowId();
     return selected !== null && String(row[this.rowIdentityKey()]) === String(selected);
+  }
+  protected isExpandedRow(row: TableRow): boolean {
+    return this.expandedRowIdentity() === String(row[this.rowIdentityKey()]);
+  }
+  protected selectRow(row: TableRow): void {
+    if (this.expandableRows()) {
+      const next = this.isExpandedRow(row) ? null : String(row[this.rowIdentityKey()]);
+      this.expandedRowIdentity.set(next);
+      this.rowExpanded.emit(next === null ? null : row);
+    }
+    if (this.rowsClickable()) this.rowSelected.emit(row);
+  }
+  protected expandedRowTemplate(): TemplateRef<ExpandedRowContext> | null {
+    return this.expandedTemplate()?.template ?? null;
   }
   ngAfterViewInit(): void {
     const element = this.tableBody().nativeElement;

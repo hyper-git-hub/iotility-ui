@@ -1,0 +1,7 @@
+@reference "../../../../styles.css";
+:host { @apply block h-56 w-full overflow-hidden rounded-xl border border-line dark:border-dark-line; }
+.location-map { @apply h-full w-full bg-brand-50; }
+:host ::ng-deep .poi-picker-marker { @apply block h-[46px] w-9; filter: drop-shadow(0 4px 5px rgb(15 23 42 / 28%)); }
+:host ::ng-deep .poi-picker-marker svg { @apply block h-full w-full; }
+:host ::ng-deep .poi-picker-marker path { fill: var(--color-brand-600); stroke: white; stroke-width: 2; }
+:host ::ng-deep .poi-picker-marker circle { fill: white; }

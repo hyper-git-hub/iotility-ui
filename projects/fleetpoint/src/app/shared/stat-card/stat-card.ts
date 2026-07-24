@@ -13,5 +13,6 @@ export class StatCard {
   readonly tone = input<StatCardTone>('brand');
   readonly animatedBorder = input(false);
   readonly compact = input(false);
+  readonly showIcon = input(true);
   readonly accent = input('');
 }

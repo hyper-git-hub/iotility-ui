@@ -1,0 +1,2 @@
+@reference "../../../../styles.css";
+:host,.map-host{@apply block h-full w-full;}.map-host{@apply bg-brand-50;}

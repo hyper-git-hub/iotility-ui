@@ -26,6 +26,7 @@
   @apply mt-0.5 text-xs text-muted dark:text-brand-300;
 }
 .stat-card.compact { @apply min-h-24 p-3; }
+.stat-card.compact.iconless { @apply min-h-20 justify-center; }
 .stat-card.compact .stat-card-icon { @apply mb-2 size-8; }
 .stat-card[data-tone='info'] { --stat-card-accent: var(--color-info); }
 .stat-card[data-tone='success'] { --stat-card-accent: var(--color-success); }

@@ -1,0 +1,2 @@
+@reference "../../../../styles.css";
+:host{@apply grid gap-4;}.run-status-chips{@apply flex flex-wrap items-center gap-2;}.run-status-chips button{@apply cursor-pointer rounded-full border border-line bg-white px-3 py-2 text-xs font-medium text-ink transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface dark:text-white;}.run-status-chips button.active{@apply border-brand-600 bg-brand-600 font-semibold text-white hover:text-white;}
