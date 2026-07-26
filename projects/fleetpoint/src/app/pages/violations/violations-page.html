@@ -1,0 +1,13 @@
+<section class="violations-page">
+  <header class="heading"><div><h1>Violations</h1><p>{{total}} violations · {{critical}} critical · {{pending}} pending review · {{totalFines}} in fines</p></div><div><button class="export" type="button"><svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4"/></svg>Export XLS</button><button class="export" type="button">Export PDF</button><button class="create" type="button">+ Add Manual Violation</button></div></header>
+  <section class="stats">
+    <app-stat-card label="Total Violations" [value]="total" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg></app-stat-card>
+    <app-stat-card label="Critical" [value]="critical" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5"/></svg></app-stat-card>
+    <app-stat-card label="Pending Review" [value]="pending" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></app-stat-card>
+    <app-stat-card label="Pending Fines" [value]="finesPending" tone="info" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3v18M16 7.5c0-2-1.8-3-4-3s-4 1-4 3 1.8 3 4 3"/></svg></app-stat-card>
+    <app-stat-card label="Total Fines" [value]="totalFines" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3v18M16 7.5c0-2-1.8-3-4-3s-4 1-4 3"/></svg></app-stat-card>
+    <app-stat-card label="Score Impact" [value]="scoreImpact" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M5 7h14M5 12h10M5 17h6"/></svg></app-stat-card>
+  </section>
+  <nav class="tabs"><a routerLink="all" routerLinkActive="active">All Violations <span>{{total}}</span></a><a routerLink="fines" routerLinkActive="active">Fines &amp; Penalties <span>{{finesPending}}</span></a><a routerLink="configuration" routerLinkActive="active">Configuration</a></nav>
+  <router-outlet/>
+</section>

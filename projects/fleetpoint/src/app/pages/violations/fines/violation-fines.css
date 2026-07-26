@@ -1,0 +1,2 @@
+@reference "../../../../styles.css";
+.fine-summary{@apply mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4;}.fine-summary article{@apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;}.fine-summary strong,.fine-summary span{@apply block;}.fine-summary strong{@apply text-lg font-bold text-brand-600 dark:text-brand-300;}.fine-summary span{@apply mt-1 text-[10px] text-muted dark:text-brand-300;}:host-context(.dark) .fine-summary article{background:var(--color-dark-surface);border-color:var(--color-dark-line);}

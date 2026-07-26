@@ -116,6 +116,18 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'violations',
+        title: 'Violations | FleetPoint',
+        loadComponent: () =>
+          import('./pages/violations/violations-page').then((module) => module.ViolationsPage),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'all' },
+          { path: 'all', loadComponent: () => import('./pages/violations/all-violations/all-violations').then((module) => module.AllViolations) },
+          { path: 'fines', loadComponent: () => import('./pages/violations/fines/violation-fines').then((module) => module.ViolationFines) },
+          { path: 'configuration', loadComponent: () => import('./pages/violations/configuration/violation-configuration').then((module) => module.ViolationConfiguration) },
+        ],
+      },
+      {
         path: 'trip-replay',
         title: 'Trip Replay | FleetPoint',
         loadComponent: () =>
