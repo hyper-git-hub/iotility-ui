@@ -37,6 +37,16 @@ export class Reports implements OnInit {
   protected readonly visibleReports = computed(() =>
     this.reports.filter((report) => this.features.has(report.featureId)),
   );
+  protected readonly reportSearch = signal('');
+  protected readonly filteredReports = computed(() => {
+    const query = this.reportSearch().trim().toLowerCase();
+    if (!query) return this.visibleReports();
+    return this.visibleReports().filter((report) =>
+      [report.name, report.description, report.type].some((value) =>
+        value.toLowerCase().includes(query),
+      ),
+    );
+  });
   protected readonly hasReports = computed(() => this.visibleReports().length > 0);
   protected readonly selectedType = signal<ReportType | null>(null);
   protected readonly selectedReport = computed(() =>

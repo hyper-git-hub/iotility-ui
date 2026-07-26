@@ -7,7 +7,7 @@
   @apply flex h-full min-h-0 overflow-hidden bg-canvas text-ink dark:bg-dark-canvas dark:text-white;
 }
 .reports-panel {
-  @apply flex w-72 shrink-0 flex-col overflow-y-auto border-r border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply flex w-72 shrink-0 flex-col overflow-hidden border-r border-line bg-white dark:border-dark-line dark:bg-dark-surface;
 }
 .reports-panel > header {
   @apply border-b border-line p-4 dark:border-dark-line;
@@ -61,10 +61,30 @@
   @apply h-9 cursor-pointer rounded-lg bg-brand-600 text-[10px] font-semibold text-white transition hover:bg-brand-700;
 }
 .report-list {
-  @apply py-3;
+  @apply flex min-h-0 flex-1 flex-col pt-3;
 }
 .report-list > p {
   @apply px-4 pb-2;
+}
+.report-search {
+  @apply relative mx-4 mb-3 block;
+}
+.report-search svg {
+  @apply pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 fill-none stroke-muted;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.report-search input {
+  @apply h-9 w-full rounded-lg border border-line bg-canvas pl-9 pr-3 text-[10px] text-ink outline-none transition placeholder:text-muted focus:border-brand-500 focus:bg-white dark:border-dark-line dark:bg-dark-canvas dark:text-white dark:focus:bg-dark-surface;
+}
+.report-options {
+  @apply min-h-0 flex-1 overflow-y-auto pb-3;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-600) transparent;
+}
+.no-report-results {
+  @apply px-4 py-8 text-center text-[10px] text-muted dark:text-brand-300;
 }
 .report-option {
   @apply flex w-full cursor-pointer items-center gap-3 border-l-2 border-transparent px-4 py-3 text-left transition hover:bg-brand-50 dark:hover:bg-dark-canvas;

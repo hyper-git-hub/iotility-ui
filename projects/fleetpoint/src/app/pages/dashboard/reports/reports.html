@@ -95,8 +95,19 @@
       }
     </section>
     <div class="report-list">
+      <label class="report-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+        <input
+          type="search"
+          placeholder="Search reports"
+          aria-label="Search available reports"
+          [value]="reportSearch()"
+          (input)="reportSearch.set($any($event.target).value)"
+        />
+      </label>
       <p>Available reports</p>
-      @for (report of visibleReports(); track report.type) {
+      <div class="report-options">
+      @for (report of filteredReports(); track report.type) {
         <button
           type="button"
           class="report-option"
@@ -109,7 +120,10 @@
             ><small>{{ report.description }}</small></span
           ><i>›</i>
         </button>
+      } @empty {
+        <p class="no-report-results">No matching reports</p>
       }
+      </div>
     </div>
     }
   </aside>
