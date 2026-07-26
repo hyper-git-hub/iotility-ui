@@ -24,7 +24,7 @@ export class Overview implements OnInit {
   protected readonly error = signal('');
   protected readonly cards = signal<DashboardCard[]>([]);
   protected readonly displayedCards = computed(() => {
-    const order = ['QFU', 'QHB', 'QLC', 'QIT', 'QPT'];
+    const order = ['QFU', 'QHB', 'QIT', 'QLC', 'QPT', 'QRH', 'QSF', 'QUL'];
     return this.cards()
       .filter((card) => card.code !== 'VIO')
       .sort((first, second) => {
@@ -97,9 +97,9 @@ export class Overview implements OnInit {
   }
 
   protected cardTone(code: string): StatCardTone {
-    if (['DVC', 'MOD', 'QHB'].includes(code)) return 'danger';
-    if (['MD', 'VIM', 'QIT'].includes(code)) return 'warning';
-    if (['VIO', 'TD', 'QFU'].includes(code)) return 'success';
+    if (['DVC', 'MOD', 'QHB', 'QSF'].includes(code)) return 'danger';
+    if (['MD', 'VIM', 'QIT', 'QUL'].includes(code)) return 'warning';
+    if (['VIO', 'TD', 'QFU', 'QRH'].includes(code)) return 'success';
     if (code === 'QPT') return 'brand';
     return 'info';
   }
@@ -122,6 +122,9 @@ export class Overview implements OnInit {
       QIT: 'var(--color-warning)',
       QLC: 'var(--color-info)',
       QPT: 'var(--color-brand-500)',
+      QRH: 'color-mix(in srgb, var(--color-success) 55%, var(--color-info))',
+      QSF: 'color-mix(in srgb, var(--color-danger) 55%, var(--color-brand-500))',
+      QUL: 'color-mix(in srgb, var(--color-warning) 58%, var(--color-danger))',
     };
     return accents[code] ?? 'var(--color-brand-500)';
   }
