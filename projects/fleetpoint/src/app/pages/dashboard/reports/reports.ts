@@ -17,6 +17,7 @@ import {
   ReportsApiService,
 } from '../../../shared/services/reports-api.service';
 import { FeatureAccessService } from '../../../shared/services/feature-access.service';
+import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { REPORT_DEFINITIONS } from './report-definitions';
 
 interface MonthOption {
@@ -74,6 +75,7 @@ export class Reports implements OnInit {
   constructor(
     private readonly api: ReportsApiService,
     private readonly features: FeatureAccessService,
+    private readonly feedback: FeedbackDialogBridgeService,
   ) {
     this.setPreset('today', false);
   }
