@@ -30,7 +30,7 @@
               <button type="button" [class.selected]="form.controls.shape.value==='polygon'" (click)="chooseShape('polygon')"><svg viewBox="0 0 24 24"><path d="m12 3 8 6-3 10H7L4 9l8-6Z"/></svg>Polygon</button>
             </div></div>
             <div class="drawing-field full">
-              <app-geozone-drawing-map [shape]="form.controls.shape.value" (geometryChanged)="setGeometry($event)" (geometryCleared)="clearGeometry()"/>
+              <app-geozone-drawing-map [active]="open()" [shape]="form.controls.shape.value" (geometryChanged)="setGeometry($event)" (geometryCleared)="clearGeometry()"/>
               @if(submitted()&&form.controls.geometry.invalid){<small class="shared-form-error">Draw the zone boundary on the map.</small>}
             </div>
           </section>

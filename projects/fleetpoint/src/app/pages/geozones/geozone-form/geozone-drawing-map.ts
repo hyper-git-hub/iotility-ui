@@ -14,6 +14,7 @@ export interface GeozoneGeometry {
   styleUrl:'./geozone-drawing-map.css',
 })
 export class GeozoneDrawingMap implements AfterViewInit,OnDestroy{
+  readonly active=input(true);
   readonly shape=input.required<'circle'|'polygon'>();
   readonly geometryChanged=output<GeozoneGeometry>();
   readonly geometryCleared=output<void>();
@@ -36,18 +37,25 @@ export class GeozoneDrawingMap implements AfterViewInit,OnDestroy{
 
   constructor(){
     effect(()=>{
+      const active=this.active();
       const shape=this.shape();
       if(!this.map)return;
+      if(!active){this.resetDrawing(true);return;}
       if(this.previousShape&&this.previousShape!==shape)this.resetDrawing(true);
       this.previousShape=shape;
       this.startDrawing();
+      setTimeout(()=>this.map?.invalidateSize(),0);
     });
   }
 
   async ngAfterViewInit():Promise<void>{
-    const leafletRuntime=Object.assign({},L) as typeof L;
-    (globalThis as typeof globalThis & {L:typeof L}).L=leafletRuntime;
-    await import('leaflet-draw');
+    const globalScope=globalThis as typeof globalThis&{L?:typeof L};
+    let leafletRuntime=globalScope.L;
+    if(!leafletRuntime||!('Draw' in leafletRuntime)){
+      leafletRuntime=Object.assign({},L) as typeof L;
+      globalScope.L=leafletRuntime;
+      await import('leaflet-draw');
+    }
     this.leafletDraw=leafletRuntime;
     this.previousShape=this.shape();
     this.map=leafletRuntime.map(this.mapElement().nativeElement,{zoomControl:true}).setView([51.5074,-0.1278],12);
@@ -58,7 +66,7 @@ export class GeozoneDrawingMap implements AfterViewInit,OnDestroy{
       const layers=(event as unknown as {layers:L.LayerGroup}).layers;
       this.pointCount.set(layers.getLayers().length);
     });
-    this.startDrawing();
+    if(this.active())this.startDrawing();
     this.resizeObserver=new ResizeObserver(()=>this.map?.invalidateSize());
     this.resizeObserver.observe(this.mapElement().nativeElement);
     setTimeout(()=>this.map?.invalidateSize(),0);
