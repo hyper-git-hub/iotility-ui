@@ -32,11 +32,19 @@ export class DashboardGraphComponent {
   protected hasChartData(): boolean {
     const graph = this.graph();
     if (graph.code === 'DA') return false;
-    if (Array.isArray(graph.data)) return graph.data.length > 0;
-    return Boolean(
-      graph.data.categories?.length &&
-      (graph.data.values?.length || graph.data.series?.length),
-    );
+    if (Array.isArray(graph.data)) {
+      return graph.data.some((row) => Number.isFinite(row.vehicle_count) && row.vehicle_count !== 0);
+    }
+
+    if (!graph.data.categories?.length) return false;
+
+    const values = [
+      ...(graph.data.values ?? []),
+      ...this.numericSeries(graph.data.series),
+      ...this.namedSeries(graph.data.series).flatMap((series) => series.data),
+    ];
+
+    return values.some((value) => Number.isFinite(value) && value !== 0);
   }
 
   protected isDoughnut(): boolean {

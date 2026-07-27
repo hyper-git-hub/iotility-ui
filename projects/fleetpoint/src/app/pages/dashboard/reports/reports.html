@@ -9,6 +9,7 @@
       <div><h1>Reports</h1></div>
       <p>Fleet operations and vehicle insights</p>
     </header>
+    @if (hasReports()) {
     <section class="interval-filter">
       <h2>Time interval</h2>
       <div class="interval-presets">
@@ -94,8 +95,19 @@
       }
     </section>
     <div class="report-list">
-      <p>QPMC reports</p>
-      @for (report of reports; track report.type) {
+      <label class="report-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+        <input
+          type="search"
+          placeholder="Search reports"
+          aria-label="Search available reports"
+          [value]="reportSearch()"
+          (input)="reportSearch.set($any($event.target).value)"
+        />
+      </label>
+      <p>Available reports</p>
+      <div class="report-options">
+      @for (report of filteredReports(); track report.type) {
         <button
           type="button"
           class="report-option"
@@ -108,9 +120,14 @@
             ><small>{{ report.description }}</small></span
           ><i>›</i>
         </button>
+      } @empty {
+        <p class="no-report-results">No matching reports</p>
       }
+      </div>
     </div>
+    }
   </aside>
+  @if (hasReports()) {
   <main class="report-content">
     <header>
       <div>
@@ -164,7 +181,7 @@
       [showToolbar]="false"
       [showExport]="false"
       [showPrimaryAction]="false"
-      [minTableWidth]="selectedType() === 'qpmc_yard_utilization_report' ? 1100 : 760"
+      [minTableWidth]="selectedReport().minTableWidth ?? 760"
     />
     <nav class="report-pagination">
       <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span>
@@ -176,4 +193,13 @@
       </div>
     </nav>
   </main>
+  } @else {
+    <main class="report-content no-report-access">
+      <span class="no-report-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+      </span>
+      <h2>No reports available</h2>
+      <p>Your role does not include access to QPMC reports.</p>
+    </main>
+  }
 </section>

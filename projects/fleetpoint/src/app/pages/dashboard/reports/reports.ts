@@ -6,26 +6,18 @@ import {
   DateTimePicker,
   Dropdown,
   DropdownOption,
-  TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import {
-  QpmcReportType,
+  ReportType,
   ReportRecord,
   ReportExportFormat,
   ReportQuery,
   ReportsApiService,
 } from '../../../shared/services/reports-api.service';
-import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
-
-interface ReportDefinition {
-  type: QpmcReportType;
-  name: string;
-  description: string;
-  icon: string;
-  columns: TableColumn[];
-}
+import { FeatureAccessService } from '../../../shared/services/feature-access.service';
+import { REPORT_DEFINITIONS } from './report-definitions';
 
 interface MonthOption {
   label: string;
@@ -41,55 +33,24 @@ interface MonthOption {
   styleUrl: './reports.css',
 })
 export class Reports implements OnInit {
-  protected readonly reports: ReportDefinition[] = [
-    {
-      type: 'qpmc_yard_utilization_report',
-      name: 'Yard Utilization',
-      description: 'Vehicle productivity and efficiency',
-      icon: 'YU',
-      columns: [
-        { key: 'vehicle_registration', label: 'Vehicle' },
-        { key: 'report_date', label: 'Report Date', type: 'date' },
-        { key: 'powered_on', label: 'Powered On' },
-        { key: 'idle_time', label: 'Idle Time' },
-        { key: 'traveling_time', label: 'Travelling Time' },
-        { key: 'productive_time', label: 'Productive Time' },
-        { key: 'loading_cycles', label: 'Loading Cycles' },
-        { key: 'efficiency_ratio', label: 'Efficiency Ratio' },
-        { key: 'distance_travelled', label: 'Distance Travelled' },
-      ],
-    },
-    {
-      type: 'qpmc_loading_activity_report',
-      name: 'Loading Activity',
-      description: 'Loading events and durations',
-      icon: 'LA',
-      columns: [
-        { key: 'vehicle_registration', label: 'Vehicle' },
-        { key: 'driver_name', label: 'Driver Name' },
-        { key: 'location', label: 'Location' },
-        { key: 'loading_duration', label: 'Loading Duration' },
-        { key: 'start_time', label: 'Start Time' },
-        { key: 'end_time', label: 'End Time' },
-      ],
-    },
-    {
-      type: 'qpmc_engine_health_report',
-      name: 'Engine Health',
-      description: 'Engine breaches and thresholds',
-      icon: 'EH',
-      columns: [
-        { key: 'vehicle_registration', label: 'Vehicle' },
-        { key: 'breach_type', label: 'Breach Type' },
-        { key: 'value', label: 'Value' },
-        { key: 'threshold', label: 'Threshold' },
-        { key: 'location', label: 'Location' },
-      ],
-    },
-  ];
-  protected readonly selectedType = signal<QpmcReportType>('qpmc_yard_utilization_report');
+  protected readonly reports = REPORT_DEFINITIONS;
+  protected readonly visibleReports = computed(() =>
+    this.reports.filter((report) => this.features.has(report.featureId)),
+  );
+  protected readonly reportSearch = signal('');
+  protected readonly filteredReports = computed(() => {
+    const query = this.reportSearch().trim().toLowerCase();
+    if (!query) return this.visibleReports();
+    return this.visibleReports().filter((report) =>
+      [report.name, report.description, report.type].some((value) =>
+        value.toLowerCase().includes(query),
+      ),
+    );
+  });
+  protected readonly hasReports = computed(() => this.visibleReports().length > 0);
+  protected readonly selectedType = signal<ReportType | null>(null);
   protected readonly selectedReport = computed(() =>
-    this.reports.find((report) => report.type === this.selectedType())!,
+    this.visibleReports().find((report) => report.type === this.selectedType())!,
   );
   protected readonly rows = signal<TableRow[]>([]);
   protected readonly total = signal(0);
@@ -112,14 +73,19 @@ export class Reports implements OnInit {
 
   constructor(
     private readonly api: ReportsApiService,
-    private readonly feedback: FeedbackDialogBridgeService,
+    private readonly features: FeatureAccessService,
   ) {
     this.setPreset('today', false);
   }
   ngOnInit(): void {
-    this.load();
+    if (this.hasReports()) {
+      this.selectedType.set(this.visibleReports()[0].type);
+      this.load();
+    } else {
+      this.loading.set(false);
+    }
   }
-  protected selectReport(type: QpmcReportType): void {
+  protected selectReport(type: ReportType): void {
     if (type === this.selectedType()) return;
     this.selectedType.set(type);
     this.offset.set(0);
@@ -264,10 +230,12 @@ export class Reports implements OnInit {
   }
 
   private reportQuery(offset: number): ReportQuery {
+    const report = this.selectedReport();
     return {
       limit: this.limit,
       offset,
-      reportType: this.selectedType(),
+      reportType: report.type,
+      reportClass: report.reportClass,
       startDate: this.toApiDate(this.startDate()),
       endDate: this.toApiDate(this.endDate()),
     };
@@ -315,19 +283,13 @@ export class Reports implements OnInit {
       .replace(/[^a-z0-9]+/g, '-');
   }
   private toRow(record: ReportRecord): TableRow {
+    const report = this.selectedReport();
     return Object.fromEntries(
-      this.selectedReport().columns.map((column) => {
+      report.columns.map((column) => {
         const value = record[column.key];
-        const durationColumns = [
-          'powered_on',
-          'idle_time',
-          'traveling_time',
-          'productive_time',
-          'loading_duration',
-        ];
         return [
           column.key,
-          durationColumns.includes(column.key) ? this.formatDuration(value) : (value ?? '—'),
+          report.durationColumns?.includes(column.key) ? this.formatDuration(value) : (value ?? '—'),
         ];
       }),
     ) as TableRow;
