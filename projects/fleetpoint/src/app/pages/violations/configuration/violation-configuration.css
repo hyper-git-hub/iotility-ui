@@ -1,2 +1,43 @@
 @reference "../../../../styles.css";
+:host-context(.dark) .rule-row input {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-line);
+  color: #fff;
+  color-scheme: dark;
+}
+:host-context(.dark) .shift-picker {
+  color-scheme: dark;
+}
+.rule-row input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.rule-row input[type='number']::-webkit-inner-spin-button,
+.rule-row input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.speed-rules { @apply grid gap-4; }
+.speed-rule { --speed-accent: var(--color-warning); @apply grid gap-2; }
+.speed-rule.danger { --speed-accent: #ef4444; }
+.speed-rule.critical { --speed-accent: #991b1b; }
+.speed-rule > header { @apply flex items-center justify-between gap-4; }
+.speed-rule > header strong { @apply text-[11px] font-semibold; }
+.speed-rule > header small { @apply text-right text-[9px] text-muted dark:text-brand-300; }
+.speed-rule > div { @apply grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3; }
+.speed-rule label { @apply flex items-center gap-2; }
+.speed-rule label input { @apply h-10 min-w-0 flex-1 rounded-xl border border-line bg-white px-3 text-xs outline-none focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
+.speed-rule label span { @apply shrink-0 text-[10px] text-muted dark:text-brand-300; }
+.speed-range { @apply h-5 w-full cursor-pointer appearance-none bg-transparent; }
+.speed-range::-webkit-slider-runnable-track { height:0.35rem;border-radius:999px;background:linear-gradient(to right,var(--speed-accent) 0 var(--range-progress),var(--color-line) var(--range-progress) 100%); }
+.speed-range::-webkit-slider-thumb { width:0.75rem;height:0.75rem;margin-top:-0.2rem;appearance:none;border:2px solid white;border-radius:999px;background:var(--speed-accent);box-shadow:0 1px 3px rgb(0 0 0 / 20%);transition:transform 120ms ease,box-shadow 120ms ease; }
+.speed-range:hover::-webkit-slider-thumb,.speed-range:focus-visible::-webkit-slider-thumb { transform:scale(1.12);box-shadow:0 0 0 3px color-mix(in srgb,var(--speed-accent) 16%,transparent); }
+.speed-range::-moz-range-track { height:0.35rem;border-radius:999px;background:var(--color-line); }
+.speed-range::-moz-range-progress { height:0.35rem;border-radius:999px;background:var(--speed-accent); }
+.speed-range::-moz-range-thumb { width:0.55rem;height:0.55rem;border:2px solid white;border-radius:999px;background:var(--speed-accent);box-shadow:0 1px 3px rgb(0 0 0 / 20%); }
+:host-context(.dark) .speed-range::-webkit-slider-runnable-track { background:linear-gradient(to right,var(--speed-accent) 0 var(--range-progress),var(--color-dark-line) var(--range-progress) 100%); }
+:host-context(.dark) .speed-range::-webkit-slider-thumb { border-color:var(--color-dark-surface); }
+:host-context(.dark) .speed-range::-moz-range-thumb { border-color:var(--color-dark-surface); }
+@media(max-width:600px){.speed-rule>header{@apply items-start flex-col gap-1;}.speed-rule>header small{@apply text-left;}.speed-rule>div{@apply grid-cols-1;}}
 .configuration-page{@apply grid gap-4;}.config-intro{@apply flex items-end justify-between gap-4 rounded-2xl border border-brand-300 bg-brand-50/50 p-4 dark:border-brand-500/30 dark:bg-brand-500/10;}.config-intro h2{@apply text-sm font-bold;}.config-intro p{@apply mt-1 text-[10px] text-muted dark:text-brand-300;}.config-intro label{@apply grid w-72 gap-1;}.config-intro label>span{@apply text-[10px] text-muted dark:text-brand-300;}.fleet-dropdown [dropdown-trigger]{@apply flex h-10 w-full items-center justify-between rounded-xl border border-line bg-white px-3 text-left text-xs dark:border-dark-line dark:bg-dark-canvas dark:text-white;}.config-grid{@apply grid gap-4 xl:grid-cols-2;}.config-card{@apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;}.config-card>header{@apply mb-3;}.config-card h3{@apply text-sm font-bold;}.config-card header span{@apply mt-1 block text-[10px] text-muted dark:text-brand-300;}.rule-list{@apply grid gap-2;}.rule-row{@apply flex items-center justify-between gap-4 rounded-xl bg-canvas p-3 dark:bg-dark-canvas;}.rule-row span strong,.rule-row span small{@apply block;}.rule-row strong{@apply text-[11px];}.rule-row small{@apply mt-0.5 text-[9px] text-muted dark:text-brand-300;}.rule-row>div{@apply flex items-center gap-2;}.rule-row input,.schedule input{@apply h-9 w-24 rounded-lg border border-line bg-white px-2 text-right text-xs outline-none focus:border-brand-500 dark:border-dark-line dark:bg-dark-surface dark:text-white;}.rule-row em{@apply text-[10px] not-italic text-muted dark:text-brand-300;}.active-types>div{@apply grid gap-2 sm:grid-cols-2;}.toggle-row,.schedule button{@apply flex items-center justify-between rounded-xl bg-canvas p-3 text-[11px] dark:bg-dark-canvas;}.toggle-row i{@apply relative h-5 w-9 rounded-full bg-line transition dark:bg-dark-line;}.toggle-row i b{@apply absolute left-0.5 top-0.5 size-4 rounded-full bg-white transition;}.toggle-row i.enabled{@apply bg-brand-600;}.toggle-row i.enabled b{@apply translate-x-4;}.schedule{@apply grid grid-cols-2 gap-3;}.schedule>header{@apply col-span-2;}.schedule label{@apply grid gap-1 text-[10px] text-muted dark:text-brand-300;}.schedule input{@apply w-full text-left;}.schedule button strong{@apply text-[10px] text-brand-600 dark:text-brand-300;}.configuration-page>footer{@apply flex justify-end;}.configuration-page>footer button{@apply h-10 rounded-xl bg-brand-600 px-5 text-xs font-semibold text-white;}:host-context(.dark) .config-intro{background:color-mix(in srgb,var(--color-brand-500) 10%,var(--color-dark-surface));border-color:color-mix(in srgb,var(--color-brand-500) 35%,var(--color-dark-line));}:host-context(.dark) .config-card{background:var(--color-dark-surface);border-color:var(--color-dark-line);color:white;}:host-context(.dark) .rule-row,:host-context(.dark) .toggle-row,:host-context(.dark) .schedule button{background:var(--color-dark-canvas);}:host-context(.dark) .fleet-dropdown [dropdown-trigger]{background:var(--color-dark-canvas);border-color:var(--color-dark-line);color:white;}@media(max-width:700px){.config-intro{@apply items-start flex-col;}.config-intro label{@apply w-full;}.schedule{@apply grid-cols-1;}.schedule>header{@apply col-span-1;}}

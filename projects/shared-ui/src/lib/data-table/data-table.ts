@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { AfterViewInit, Component, Directive, ElementRef, OnDestroy, TemplateRef, computed, contentChild, inject, input, output, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, Directive, ElementRef, OnDestroy, TemplateRef, computed, contentChild, contentChildren, inject, input, output, signal, viewChild } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
 export type TableColumnType = 'text' | 'user' | 'email' | 'date' | 'status' | 'priority' | 'tasks' | 'actions' | 'vehicle' | 'fleet' | 'fuel' | 'mot' | 'alert';
 export interface TableColumn {
@@ -20,6 +20,20 @@ export interface ExpandedRowContext {
 @Directive({ selector: 'ng-template[tableExpandedRow]' })
 export class DataTableExpandedRow {
   readonly template = inject<TemplateRef<ExpandedRowContext>>(TemplateRef);
+}
+@Directive({ selector: 'ng-template[tableBottomPanel]' })
+export class DataTableBottomPanel {
+  readonly template = inject<TemplateRef<unknown>>(TemplateRef);
+}
+export interface TableCellContext {
+  $implicit: TableRow;
+  row: TableRow;
+  column: TableColumn;
+}
+@Directive({ selector: 'ng-template[tableCell]' })
+export class DataTableCellTemplate {
+  readonly key = input.required<string>({ alias: 'tableCell' });
+  readonly template = inject<TemplateRef<TableCellContext>>(TemplateRef);
 }
 @Component({
   selector: 'shared-data-table',
@@ -49,8 +63,10 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly selectedRowId = input<string | number | null>(null);
   readonly rowIdentityKey = input('id');
   readonly viewportHeight = input<number | null>(null);
+  readonly cardHeight = input<number | null>(null);
   readonly minTableWidth = input(760);
   readonly bodyBottomPadding = input(0);
+  readonly showBottomPanel = input(true);
   readonly primaryAction = output<void>();
   readonly searchChange = output<string>();
   readonly headerFilterChange = output<DropdownOption>();
@@ -59,6 +75,8 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly cellSelected = output<{ column: TableColumn; row: TableRow }>();
   readonly rowExpanded = output<TableRow | null>();
   private readonly expandedTemplate = contentChild(DataTableExpandedRow);
+  private readonly bottomPanel = contentChild(DataTableBottomPanel);
+  private readonly cellTemplates = contentChildren(DataTableCellTemplate);
   protected readonly expandedRowIdentity = signal<string | null>(null);
   private readonly tableBody = viewChild.required<ElementRef<HTMLElement>>('tableBody');
   protected readonly searchTerm = signal('');
@@ -121,6 +139,12 @@ export class DataTable implements AfterViewInit, OnDestroy {
   }
   protected expandedRowTemplate(): TemplateRef<ExpandedRowContext> | null {
     return this.expandedTemplate()?.template ?? null;
+  }
+  protected bottomPanelTemplate(): TemplateRef<unknown> | null {
+    return this.bottomPanel()?.template ?? null;
+  }
+  protected cellTemplate(key: string): TemplateRef<TableCellContext> | null {
+    return this.cellTemplates().find((item) => item.key() === key)?.template ?? null;
   }
   ngAfterViewInit(): void {
     const element = this.tableBody().nativeElement;

@@ -1,0 +1,239 @@
+@reference "../../../../styles.css";
+
+.zone-list-page {
+  @apply grid content-start gap-4;
+}
+
+.zone-list-controls {
+  @apply relative z-[1200] flex gap-3;
+}
+
+.zone-search {
+  @apply flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-white px-3 dark:border-dark-line dark:bg-dark-surface;
+}
+
+.zone-search svg {
+  @apply size-4 shrink-0 fill-none stroke-muted;
+  stroke-width: 1.8;
+}
+
+.zone-search input {
+  @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-muted dark:text-white;
+}
+
+.zone-filter {
+  @apply w-36 shrink-0;
+}
+
+.zone-filter [dropdown-trigger] {
+  @apply flex h-10 w-full items-center justify-between rounded-xl border border-line bg-white px-3 text-xs text-ink dark:border-dark-line dark:bg-dark-surface dark:text-white;
+}
+
+.zone-filter [dropdown-trigger] svg {
+  @apply size-4 fill-none stroke-current;
+  stroke-width: 1.8;
+}
+
+.zone-cards {
+  @apply grid content-start gap-3;
+}
+
+.zone-card {
+  @apply overflow-hidden rounded-2xl border border-line bg-white transition hover:border-brand-300 dark:border-dark-line dark:bg-dark-surface;
+}
+
+.zone-card.expanded {
+  @apply border-brand-400;
+}
+
+.zone-card.has-violations {
+  @apply border-l-4 border-l-danger;
+}
+
+.zone-summary {
+  @apply flex w-full cursor-pointer items-center gap-4 p-4 text-left;
+}
+
+.zone-type-icon {
+  @apply grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-600/15 dark:text-brand-300;
+}
+
+.zone-type-icon svg {
+  @apply size-5 fill-none stroke-current;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.zone-card[data-type='allowed'] .zone-type-icon { @apply bg-success/10 text-success; }
+.zone-card[data-type='restricted'] .zone-type-icon { @apply bg-danger/10 text-danger; }
+.zone-card[data-type='speed'] .zone-type-icon { @apply bg-warning/10 text-warning; }
+.zone-card[data-type='curfew'] .zone-type-icon { @apply bg-brand-600/10 text-brand-600 dark:text-brand-300; }
+.zone-card[data-type='poi'] .zone-type-icon { @apply bg-info/10 text-info; }
+.zone-card[data-type='corridor'] .zone-type-icon { @apply bg-teal-500/10 text-teal-600 dark:text-teal-300; }
+
+.zone-copy {
+  @apply min-w-0 flex-1;
+}
+
+.zone-title {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.zone-title strong {
+  @apply truncate text-sm font-bold text-ink dark:text-white;
+}
+
+.zone-title b {
+  @apply rounded-full border border-brand-300 bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700 dark:border-brand-600/30 dark:bg-brand-600/10 dark:text-brand-300;
+}
+
+.zone-card[data-type='allowed'] .zone-title b { @apply border-success/30 bg-success/10 text-success; }
+.zone-card[data-type='restricted'] .zone-title b { @apply border-danger/30 bg-danger/10 text-danger; }
+.zone-card[data-type='speed'] .zone-title b { @apply border-warning/30 bg-warning/10 text-warning; }
+
+.zone-meta {
+  @apply mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted dark:text-brand-300;
+}
+
+.zone-meta .speed { @apply text-warning; }
+.zone-meta .hours { @apply text-brand-600 dark:text-brand-300; }
+.zone-meta .linked { @apply text-brand-600 dark:text-brand-300; }
+
+.zone-counts {
+  @apply flex shrink-0 items-center gap-6;
+}
+
+.zone-counts > span {
+  @apply min-w-9 text-center;
+}
+
+.zone-counts strong,
+.zone-counts small {
+  @apply block;
+}
+
+.zone-counts strong {
+  @apply text-sm font-bold text-ink dark:text-white;
+}
+
+.zone-counts small {
+  @apply mt-0.5 text-[9px] text-muted dark:text-brand-300;
+}
+
+.zone-counts .inside strong { @apply text-success; }
+.zone-counts .violations strong { @apply text-danger; }
+
+.zone-actions {
+  @apply flex shrink-0 gap-1;
+}
+
+.zone-actions button {
+  @apply grid size-8 cursor-pointer place-items-center rounded-lg text-muted transition hover:bg-canvas hover:text-brand-600 dark:hover:bg-dark-canvas;
+}
+
+.zone-actions button.delete {
+  @apply hover:text-danger;
+}
+
+.zone-actions svg,
+.expand-icon svg {
+  @apply size-4 fill-none stroke-current;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.expand-icon {
+  @apply shrink-0 text-muted transition-transform;
+}
+
+.expanded .expand-icon {
+  @apply rotate-180 text-brand-600;
+}
+
+.zone-expanded {
+  @apply border-t border-line p-4 dark:border-dark-line;
+}
+
+.zone-metrics {
+  @apply grid grid-cols-2 gap-3 lg:grid-cols-4;
+}
+
+.zone-metrics article {
+  @apply rounded-xl bg-canvas p-4 text-center dark:bg-dark-canvas;
+}
+
+.zone-metrics strong,
+.zone-metrics span {
+  @apply block;
+}
+
+.zone-metrics strong {
+  @apply text-lg font-bold text-ink dark:text-white;
+}
+
+.zone-metrics span {
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+
+.zone-expanded h3 {
+  @apply mt-4 text-[10px] font-semibold uppercase tracking-wide text-muted dark:text-brand-300;
+}
+
+.recent-events {
+  @apply mt-2 flex flex-wrap gap-2;
+}
+
+.recent-events span {
+  @apply rounded-xl px-3 py-2 text-[10px];
+}
+
+.recent-events .exit {
+  @apply bg-info/10 text-info;
+}
+
+.recent-events .entry {
+  @apply bg-success/10 text-success;
+}
+
+.recent-events p,
+.zone-empty {
+  @apply text-xs text-muted dark:text-brand-300;
+}
+
+.zone-empty {
+  @apply rounded-2xl border border-line bg-white p-8 text-center dark:border-dark-line dark:bg-dark-surface;
+}
+
+@media (max-width: 800px) {
+  .zone-summary {
+    @apply items-start gap-3;
+  }
+
+  .zone-counts {
+    @apply gap-3;
+  }
+}
+
+@media (max-width: 650px) {
+  .zone-list-controls {
+    @apply flex-col;
+  }
+
+  .zone-filter {
+    @apply w-full;
+  }
+
+  .zone-summary {
+    @apply flex-wrap;
+  }
+
+  .zone-copy {
+    @apply basis-[calc(100%-4rem)];
+  }
+
+  .zone-counts {
+    @apply ml-14;
+  }
+}

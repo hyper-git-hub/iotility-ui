@@ -270,11 +270,13 @@ export class DateTimePicker implements ControlValueAccessor, OnDestroy {
     const rect = this.trigger().nativeElement.getBoundingClientRect();
     const width = Math.min(328, window.innerWidth - 24);
     const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
-    const estimatedHeight = this.mode() === 'time' ? 190 : this.mode() === 'date' ? 390 : 456;
+    const estimatedHeight = this.mode() === 'time' ? 150 : this.mode() === 'date' ? 390 : 456;
+    const panelHeight = this.panel()?.nativeElement.offsetHeight || estimatedHeight;
+    const requiredHeight = panelHeight + (this.mode() === 'time' ? 128 : 0);
     const top =
-      rect.bottom + estimatedHeight > window.innerHeight
-        ? Math.max(12, rect.top - estimatedHeight - 8)
-        : rect.bottom + 8;
+      rect.bottom + requiredHeight > window.innerHeight
+        ? Math.max(12, rect.top - panelHeight - 8)
+        : Math.min(rect.bottom + 8, window.innerHeight - requiredHeight - 12);
     const renderedPanel = this.panel()?.nativeElement.getBoundingClientRect();
     if (renderedPanel) {
       this.panelLeft.update((current) => current + left - renderedPanel.left);

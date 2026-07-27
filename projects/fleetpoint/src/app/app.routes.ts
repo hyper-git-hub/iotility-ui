@@ -128,6 +128,18 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'geozones',
+        title: 'Geozones | FleetPoint',
+        loadComponent: () =>
+          import('./pages/geozones/geozones-page').then((module) => module.GeozonesPage),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'map' },
+          { path: 'map', loadComponent: () => import('./pages/geozones/zone-map/zone-map').then((module) => module.ZoneMap) },
+          { path: 'list', loadComponent: () => import('./pages/geozones/zone-list/zone-list').then((module) => module.ZoneList) },
+          { path: 'analytics', loadComponent: () => import('./pages/geozones/analytics/geozone-analytics').then((module) => module.GeozoneAnalytics) },
+        ],
+      },
+      {
         path: 'trip-replay',
         title: 'Trip Replay | FleetPoint',
         loadComponent: () =>

@@ -1,0 +1,144 @@
+<section class="zone-map-workspace" [class.details-open]="selectedZone()">
+  <aside class="zone-panel">
+    <label class="zone-search">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+      <input
+        type="search"
+        placeholder="Search zones..."
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+    </label>
+
+    <div class="zone-filters">
+      @for (filter of filters; track filter.id) {
+        <button
+          type="button"
+          [class.active]="type() === filter.id"
+          (click)="choose(filter.id)"
+        >
+          {{ filter.label }}
+        </button>
+      }
+    </div>
+
+    <div class="zone-list">
+      @for (zone of filtered(); track zone.id) {
+        <button
+          type="button"
+          class="zone-row"
+          [class.selected]="selected() === zone.id"
+          [attr.data-type]="zone.type"
+          (click)="toggle(zone)"
+        >
+          <i class="zone-dot" aria-hidden="true"></i>
+          <span class="zone-copy">
+            <strong>{{ zone.name }}</strong>
+            <small>{{ label(zone.type) }}</small>
+          </span>
+          <span class="zone-metrics">
+            @if (zone.inside) {
+              <b>{{ zone.inside }} inside</b>
+            }
+            @if (zone.violations) {
+              <em>{{ zone.violations }} <span aria-hidden="true">▲</span></em>
+            }
+          </span>
+        </button>
+      } @empty {
+        <p class="empty-list">No zones match your search.</p>
+      }
+    </div>
+  </aside>
+
+  <article class="zone-map-card">
+    <header class="map-toolbar">
+      <div class="zone-legend" aria-label="Zone type legend">
+        @for (filter of filters; track filter.id) {
+          @if (filter.id !== 'all' && filter.id !== 'corridor') {
+            <span [attr.data-type]="filter.id"><i></i>{{ filter.label }} Zone</span>
+          }
+        }
+      </div>
+      <span class="draw-note">Draw tools coming soon</span>
+    </header>
+    <div class="map-canvas">
+      <app-fleet-map
+        [vehicles]="markers()"
+        [zones]="overlays()"
+        [showMarkers]="false"
+        [fitZoomOffset]="2"
+        [selectedVehicleId]="selected()"
+        (vehicleSelected)="selectMarker($event)"
+      />
+    </div>
+  </article>
+
+  <aside class="zone-details">
+    @if (selectedZone(); as zone) {
+      <header>
+        <strong>Zone Details</strong>
+        <button type="button" aria-label="Close zone details" (click)="closeDetails()">×</button>
+      </header>
+
+      <div class="zone-details-scroll">
+        <section class="zone-details-summary" [attr.data-type]="zone.type">
+          <h2>{{ zone.name }}</h2>
+          <span class="detail-type">{{ label(zone.type) }}</span>
+          <p>{{ zone.description }} — {{ zone.assigned }} fleet only</p>
+        </section>
+
+        <section class="zone-rules">
+          <h3>Rules</h3>
+          <dl>
+            <div><dt>Alert on Entry</dt><dd class="disabled">× No</dd></div>
+            <div><dt>Alert on Exit</dt><dd class="enabled">✓ Yes</dd></div>
+            <div><dt>Speed Limit</dt><dd class="speed">{{ zone.speed ? zone.speed + ' km/h' : '—' }}</dd></div>
+            <div><dt>Curfew</dt><dd class="curfew">{{ zone.hours || 'Not set' }}</dd></div>
+          </dl>
+        </section>
+
+        <section class="detail-metrics">
+          <article><strong>{{ zone.visitsToday }}</strong><span>Today</span></article>
+          <article><strong>{{ zone.visitsWeek }}</strong><span>This Week</span></article>
+          <article><strong>{{ zone.avgDwell }}</strong><span>Avg Dwell</span></article>
+          <article><strong>{{ zone.violations }}</strong><span>Violations</span></article>
+        </section>
+
+        @if (zone.link === 'POI' || zone.link === 'Route') {
+          <section class="linked-zone">
+            <h3>Linked To</h3>
+            <a href="javascript:void(0)">
+              <svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              {{ zone.link }}: {{ zone.id.replace('GZ-', 'EP') }}
+            </a>
+          </section>
+        }
+
+        <section class="recent-zone-activity">
+          <h3>Recent Activity</h3>
+          @if (zone.visitsToday) {
+            <article class="activity-exit"><b>←</b><span><strong>{{ zone.id }}</strong><small>{{ zone.avgDwell }} dwell</small></span></article>
+            <article class="activity-entry"><b>→</b><span><strong>{{ zone.assigned }}</strong><small>Entered zone</small></span></article>
+          } @else {
+            <p>No recent activity.</p>
+          }
+        </section>
+      </div>
+
+      <footer>
+        <button type="button" class="edit-zone">
+          <svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>
+          Edit
+        </button>
+        <button type="button" class="delete-zone">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
+          Delete
+        </button>
+      </footer>
+    }
+  </aside>
+</section>

@@ -1,0 +1,115 @@
+<section class="zone-list-page">
+  <div class="zone-list-controls">
+    <label class="zone-search">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+      <input
+        type="search"
+        placeholder="Search zones..."
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+    </label>
+    <shared-dropdown
+      class="zone-filter"
+      [options]="options"
+      mode="single"
+      align="right"
+      [showOptionIcons]="false"
+      [selected]="[type()]"
+      (optionSelected)="choose($event)"
+    >
+      <button dropdown-trigger type="button">
+        <span>{{ selectedTypeLabel() }}</span>
+      </button>
+    </shared-dropdown>
+  </div>
+
+  <div class="zone-cards">
+    @for (zone of filtered(); track zone.id) {
+      <article
+        class="zone-card"
+        [class.expanded]="expandedId() === zone.id"
+        [class.has-violations]="zone.violations"
+        [attr.data-type]="zone.type"
+      >
+        <div
+          class="zone-summary"
+          role="button"
+          tabindex="0"
+          (click)="toggle(zone)"
+          (keydown.enter)="toggle(zone)"
+          (keydown.space)="toggle(zone); $event.preventDefault()"
+        >
+          <span class="zone-type-icon" aria-hidden="true">
+            @if (zone.type === 'speed') {
+              <svg viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" /></svg>
+            } @else if (zone.type === 'curfew') {
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M12 7.5V12l3 2" /></svg>
+            } @else if (zone.type === 'poi') {
+              <svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>
+            } @else {
+              <svg viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4 2.8 7 7 9 4.2-2 7-5 7-9V6l-7-3Z" /></svg>
+            }
+          </span>
+
+          <span class="zone-copy">
+            <span class="zone-title">
+              <strong>{{ zone.name }}</strong>
+              <b>{{ label(zone.type) }}</b>
+            </span>
+            <span class="zone-meta">
+              <span>{{ zone.shape }}{{ zone.radius ? ' · ' + zone.radius + 'm radius' : '' }}</span>
+              <span>Assigned: {{ zone.assigned }}</span>
+              @if (zone.speed) { <span class="speed">{{ zone.speed }} km/h</span> }
+              @if (zone.hours) { <span class="hours">{{ zone.hours }}</span> }
+              @if (zone.link !== '—') { <span class="linked">{{ zone.link }} linked</span> }
+            </span>
+          </span>
+
+          <span class="zone-counts">
+            <span><strong>{{ zone.visitsToday }}</strong><small>Today</small></span>
+            @if (zone.inside) {
+              <span class="inside"><strong>{{ zone.inside }}</strong><small>Inside</small></span>
+            }
+            @if (zone.violations) {
+              <span class="violations"><strong>{{ zone.violations }}</strong><small>Violations</small></span>
+            }
+          </span>
+
+          <span class="zone-actions" (click)="$event.stopPropagation()">
+            <button type="button" title="Edit zone"><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg></button>
+            <button type="button" class="delete" title="Delete zone"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" /></svg></button>
+          </span>
+          <span class="expand-icon"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5" /></svg></span>
+        </div>
+
+        <shared-smooth-height>
+          @if (expandedId() === zone.id) {
+            <section class="zone-expanded">
+              <div class="zone-metrics">
+                <article><strong>{{ zone.visitsToday }}</strong><span>Visits Today</span></article>
+                <article><strong>{{ zone.visitsWeek }}</strong><span>This Week</span></article>
+                <article><strong>{{ zone.avgDwell }}</strong><span>Avg Dwell</span></article>
+                <article><strong>{{ zone.violations }}</strong><span>Violations</span></article>
+              </div>
+              <h3>Recent Events</h3>
+              <div class="recent-events">
+                @if (zone.visitsToday) {
+                  <span class="exit">← Exited &nbsp; {{ zone.id }} · {{ zone.avgDwell }}</span>
+                  <span class="entry">→ Entered &nbsp; {{ zone.assigned }}</span>
+                } @else {
+                  <p>No recent events for this zone.</p>
+                }
+              </div>
+            </section>
+          }
+        </shared-smooth-height>
+      </article>
+    } @empty {
+      <div class="zone-empty">No zones match your search.</div>
+    }
+  </div>
+</section>

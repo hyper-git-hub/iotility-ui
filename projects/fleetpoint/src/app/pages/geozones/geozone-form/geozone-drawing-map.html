@@ -1,0 +1,22 @@
+<div class="drawing-map-shell" [class.is-drawing]="drawingState()==='drawing'">
+  <div #map class="drawing-map" aria-label="Draw the geozone boundary"></div>
+  <div class="drawing-instruction" [class.complete]="drawingState()==='complete'">
+    <span>
+      @if(drawingState()==='complete'){
+        <strong>{{shape()==='circle'?'Circle':'Polygon'}} boundary complete</strong>
+        <small>Use Draw again to replace it.</small>
+      }@else if(shape()==='circle'){
+        <strong>Click and drag to draw a circle</strong>
+        <small>Release when the boundary reaches the required size.</small>
+      }@else{
+        <strong>Click around the zone boundary</strong>
+        <small>{{pointCount()}} vertices · add as many as needed, then finish.</small>
+      }
+    </span>
+  </div>
+  <div class="drawing-actions">
+    @if(shape()==='polygon'&&drawingState()==='drawing'&&pointCount()>=3){<button type="button" class="finish" (click)="finishPolygon()">Finish polygon</button>}
+    @if(drawingState()==='complete'){<button type="button" class="redraw" (click)="startDrawing()">Draw again</button>}
+    @if(drawingState()!=='idle'){<button type="button" class="clear" (click)="clear()">Clear</button>}
+  </div>
+</div>

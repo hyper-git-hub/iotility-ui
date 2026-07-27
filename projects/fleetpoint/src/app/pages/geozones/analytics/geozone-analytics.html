@@ -1,0 +1,38 @@
+<section class="analytics-grid">
+  <app-fleet-bar-chart title="Visits Today — by Zone" subtitle="Daily zone traffic" [height]="320" [data]="visits" [options]="options"/>
+  <app-fleet-bar-chart title="Violations — by Zone" subtitle="Triggered geozone events" [height]="320" [data]="violations" [options]="options"/>
+</section>
+
+<shared-data-table
+  title="Zone Summary"
+  [columns]="columns"
+  [rows]="rows"
+  [showToolbar]="false"
+  [showExport]="false"
+  [showPrimaryAction]="false"
+  [minTableWidth]="1100"
+>
+  <ng-template tableCell="violationsLabel" let-row>
+    @if (+row['violations'] === 0) {
+      <span class="no-violations">
+        <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>
+        None
+      </span>
+    } @else {
+      <span class="violation-count">
+        {{ row['violations'] }}
+        <svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg>
+      </span>
+    }
+  </ng-template>
+
+  <ng-template tableCell="link" let-row>
+    @if (row['link'] === 'POI') {
+      <span class="zone-link poi-link">POI</span>
+    } @else if (row['link'] === 'Route') {
+      <span class="zone-link route-link">Route</span>
+    } @else {
+      <span class="no-link">—</span>
+    }
+  </ng-template>
+</shared-data-table>

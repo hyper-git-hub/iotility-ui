@@ -64,7 +64,7 @@
   z-index: 2000;
   width: min(20.5rem, calc(100vw - 1.5rem));
   margin: 0;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--color-line);
   border-radius: 1rem;
   background: #fff;
@@ -251,6 +251,9 @@
 .time-dropdown {
   display: block;
   width: 4.25rem;
+}
+.time-dropdown ::ng-deep .dropdown-options {
+  max-height: 7.5rem;
 }
 .time-dropdown [dropdown-trigger] {
   display: flex;

@@ -1,0 +1,13 @@
+<section class="geozones-page">
+  <header class="geo-heading"><div><h1>Geozones</h1><p>{{total}} zones · {{active}} active · {{inside}} vehicles inside now · {{violations}} violations</p></div><div><button type="button">Export</button><button type="button" class="primary" (click)="openForm()">+ New Zone</button></div></header>
+  <section class="geo-stats">
+    <app-stat-card label="Total Zones" [value]="total" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></app-stat-card>
+    <app-stat-card label="Active" [value]="active" tone="success" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></app-stat-card>
+    <app-stat-card label="Restricted" [value]="restricted" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4 2.8 7 7 9 4.2-2 7-5 7-9V6l-7-3Z"/></svg></app-stat-card>
+    <app-stat-card label="Vehicles Inside" [value]="inside" tone="info" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M3 16V9h12v7M15 11h3l3 3v2M3 16h2M9 16h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></app-stat-card>
+    <app-stat-card label="Total Violations" [value]="violations" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg></app-stat-card>
+  </section>
+  <nav class="geo-tabs"><a routerLink="map" routerLinkActive="active">Zone Map</a><a routerLink="list" routerLinkActive="active">Zone List</a><a routerLink="analytics" routerLinkActive="active">Analytics</a></nav>
+  <router-outlet/>
+  <app-geozone-form [open]="formOpen()" (cancelled)="closeForm()" (created)="createZone($event)"/>
+</section>

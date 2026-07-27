@@ -1,0 +1,58 @@
+<app-modal [open]="open()" size="lg" labelledBy="geozone-form-title" (closed)="cancel()">
+  <div modal-header><h2 id="geozone-form-title">New Geozone</h2><p>Step {{activeStep()+1}} of {{steps.length}}</p></div>
+  <div class="zone-form-layout">
+    <app-stepper [steps]="steps" [activeIndex]="activeStep()" (stepSelected)="goToStep($event)"/>
+    <shared-smooth-height>
+      <form id="geozone-form" class="zone-form" [formGroup]="form" (ngSubmit)="submit()">
+        @if(activeStep()===0){
+          <section class="form-step"><header><h3>Choose Zone Type</h3><p>What kind of geozone are you creating?</p></header>
+            <div class="type-grid">@for(type of zoneTypes;track type.id){
+              <button type="button" [class.selected]="form.controls.type.value===type.id" [attr.data-type]="type.id" (click)="chooseType(type.id)">
+                <span class="type-icon">
+                  @switch(type.icon){
+                    @case('check'){<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8 12 2.5 2.5L16 9"/></svg>}
+                    @case('bolt'){<svg viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/></svg>}
+                    @case('clock'){<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>}
+                    @case('pin'){<svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>}
+                    @case('route'){<svg viewBox="0 0 24 24"><path d="M5 19c2-7 5-3 7-9s5-2 7-7"/><path d="m16 3 3 0 0 3"/></svg>}
+                    @default{<svg viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4 2.8 7 7 9 4.2-2 7-5 7-9V6l-7-3Z"/></svg>}
+                  }
+                </span><span><strong>{{type.label}}</strong><small>{{type.description}}</small></span>
+              </button>
+            }</div>
+          </section>
+        }@else if(activeStep()===1){
+          <section class="form-step details-grid"><header class="full"><h3>Zone Details &amp; Shape</h3><p>Name the zone and define its boundary type.</p></header>
+            <label class="shared-form-field full"><span>Zone Name <b>*</b></span><input class="shared-form-control" formControlName="name" placeholder="e.g. Stratford Depot Yard" [attr.aria-invalid]="invalid('name')"/>@if(invalid('name')){<small class="shared-form-error">Enter a zone name.</small>}</label>
+            <label class="shared-form-field full"><span>Description</span><textarea class="shared-form-control" formControlName="description" rows="2" placeholder="What is this zone used for?"></textarea></label>
+            <div class="shape-field full"><span>Shape Type</span><div>
+              <button type="button" [class.selected]="form.controls.shape.value==='circle'" (click)="chooseShape('circle')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>Circle</button>
+              <button type="button" [class.selected]="form.controls.shape.value==='polygon'" (click)="chooseShape('polygon')"><svg viewBox="0 0 24 24"><path d="m12 3 8 6-3 10H7L4 9l8-6Z"/></svg>Polygon</button>
+            </div></div>
+            <div class="drawing-field full">
+              <app-geozone-drawing-map [shape]="form.controls.shape.value" (geometryChanged)="setGeometry($event)" (geometryCleared)="clearGeometry()"/>
+              @if(submitted()&&form.controls.geometry.invalid){<small class="shared-form-error">Draw the zone boundary on the map.</small>}
+            </div>
+          </section>
+        }@else if(activeStep()===2){
+          <section class="form-step rules-grid"><header class="full"><h3>Zone Rules</h3><p>Configure alerts, limits and active hours.</p></header>
+            <label class="rule-toggle"><input type="checkbox" formControlName="alertOnEntry"/><span><strong>Alert on entry</strong><small>Notify when a vehicle enters.</small></span></label>
+            <label class="rule-toggle"><input type="checkbox" formControlName="alertOnExit"/><span><strong>Alert on exit</strong><small>Notify when a vehicle leaves.</small></span></label>
+            @if(form.controls.type.value==='speed'){<label class="shared-form-field full"><span>Speed Limit (km/h)</span><input type="number" min="1" class="shared-form-control" formControlName="speedLimit" placeholder="e.g. 8"/></label>}
+            <label class="shared-form-field full"><span>Maximum Dwell Time (minutes)</span><input type="number" min="1" class="shared-form-control" formControlName="maxDwell" placeholder="Leave blank for no limit"/></label>
+            <label class="shared-form-field"><span>Curfew Start</span><shared-date-time-picker mode="time" formControlName="curfewStart" placeholder="Select start time"/></label>
+            <label class="shared-form-field"><span>Curfew End</span><shared-date-time-picker mode="time" formControlName="curfewEnd" placeholder="Select end time"/></label>
+          </section>
+        }@else{
+          <section class="form-step assignment-grid"><header class="full"><h3>Assignment &amp; Links</h3><p>Choose who the zone applies to and connect related records.</p></header>
+            <label class="shared-form-field full"><span>Assign To <b>*</b></span><shared-dropdown class="zone-dropdown" [options]="assignmentOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.assignment.value]" (optionSelected)="select('assignment',$event)"><button dropdown-trigger type="button">{{label(assignmentOptions,form.controls.assignment.value,'All vehicles')}}</button></shared-dropdown></label>
+            @if(form.controls.assignment.value!=='all'){<label class="shared-form-field full"><span>Choose {{form.controls.assignment.value}} <b>*</b></span><shared-dropdown class="zone-dropdown" [options]="assignmentTargets()" mode="single" align="left" [searchable]="true" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.assignedTarget.value]" (optionSelected)="select('assignedTarget',$event)"><button dropdown-trigger type="button">{{label(assignmentTargets(),form.controls.assignedTarget.value,'Select an option...')}}</button></shared-dropdown>@if(submitted()&&!form.controls.assignedTarget.value){<small class="shared-form-error">Select an assignment.</small>}</label>}
+            <label class="shared-form-field full"><span>Link to POI (optional)</span><shared-dropdown class="zone-dropdown" [options]="poiOptions" mode="single" align="left" placement="top" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.poi.value]" (optionSelected)="select('poi',$event)"><button dropdown-trigger type="button">{{label(poiOptions,form.controls.poi.value,'No POI link')}}</button></shared-dropdown></label>
+            <label class="shared-form-field full"><span>Link to Route (optional)</span><shared-dropdown class="zone-dropdown" [options]="routeOptions" mode="single" align="left" placement="top" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.route.value]" (optionSelected)="select('route',$event)"><button dropdown-trigger type="button">{{label(routeOptions,form.controls.route.value,'No route link')}}</button></shared-dropdown></label>
+          </section>
+        }
+      </form>
+    </shared-smooth-height>
+  </div>
+  <div modal-footer class="zone-form-actions"><button type="button" class="shared-button-secondary" (click)="back()">{{activeStep()===0?'Cancel':'Back'}}</button>@if(activeStep()<3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="geozone-form" class="shared-button-primary">Create Zone</button>}</div>
+</app-modal>

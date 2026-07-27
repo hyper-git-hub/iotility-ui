@@ -1,2 +1,59 @@
-<section class="violation-filters"><label><span>Category</span><shared-dropdown class="filter-dropdown" [options]="categoryOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[category()]" (optionSelected)="selectFilter('category',$event)"><button dropdown-trigger type="button">{{label(categoryOptions,category())}}</button></shared-dropdown></label><label><span>Severity</span><shared-dropdown class="filter-dropdown" [options]="severityOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[severity()]" (optionSelected)="selectFilter('severity',$event)"><button dropdown-trigger type="button">{{label(severityOptions,severity())}}</button></shared-dropdown></label><label><span>Source</span><shared-dropdown class="filter-dropdown" [options]="sourceOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[source()]" (optionSelected)="selectFilter('source',$event)"><button dropdown-trigger type="button">{{label(sourceOptions,source())}}</button></shared-dropdown></label></section>
-<section class="violations-workspace" [class.details-open]="selected()"><div class="list-column"><shared-data-table title="All Violations" [subtitle]="'Showing '+filtered().length+' of '+VIOLATIONS.length+' violations · Click a row to view details'" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showExport]="false" [showPrimaryAction]="false" [minTableWidth]="selected()?1250:1450" [rowsClickable]="true" [selectedRowId]="selected()?.id??null" searchPlaceholder="Search violation, driver, vehicle or location..." (searchChange)="search.set($event)" (rowSelected)="selectRow($event)"/></div><aside class="violation-details">@if(selected();as item){<header><h2>Violation Details</h2><button type="button" (click)="selected.set(null)">×</button></header><div class="details-scroll"><section><h3>{{item.type}}</h3><div><em [class]="item.severity.toLowerCase()">{{item.severity}}</em><span>{{item.source}}</span></div></section><dl><div><dt>Reference</dt><dd>{{item.id}}</dd></div><div><dt>Driver</dt><dd>{{item.driver}}</dd></div><div><dt>Vehicle</dt><dd>{{item.vehicle}}</dd></div><div><dt>Fleet</dt><dd>{{item.fleet}}</dd></div><div><dt>Location</dt><dd>{{item.location}}</dd></div><div><dt>Date &amp; Time</dt><dd>{{item.timestamp}}</dd></div><div><dt>Recorded Speed</dt><dd>{{item.speed}}</dd></div><div><dt>Score Impact</dt><dd class="danger">{{item.scoreImpact}}</dd></div><div><dt>Fine</dt><dd>{{item.fine?'£'+item.fine:'No fine'}}</dd></div><div><dt>Fine Status</dt><dd>{{item.fineStatus}}</dd></div></dl><section class="description"><h4>Description</h4><p>{{item.description}}</p></section><section class="review"><h4>Review Status</h4><span>{{item.review}}</span><button type="button">Confirm Violation</button></section></div>}</aside></section>
+<section class="violation-filters">
+  <label><span>Category</span><shared-dropdown class="filter-dropdown" [options]="categoryOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[category()]" (optionSelected)="selectFilter('category',$event)"><button dropdown-trigger type="button">{{label(categoryOptions,category())}}</button></shared-dropdown></label>
+  <label><span>Severity</span><shared-dropdown class="filter-dropdown" [options]="severityOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[severity()]" (optionSelected)="selectFilter('severity',$event)"><button dropdown-trigger type="button">{{label(severityOptions,severity())}}</button></shared-dropdown></label>
+  <label><span>Source</span><shared-dropdown class="filter-dropdown" [options]="sourceOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[source()]" (optionSelected)="selectFilter('source',$event)"><button dropdown-trigger type="button">{{label(sourceOptions,source())}}</button></shared-dropdown></label>
+</section>
+
+<section class="violations-workspace">
+  <article class="map-panel">
+    <header><h2>Violation Map</h2><span>{{ filtered().length }} shown</span></header>
+    <div class="map-legend">
+      <span><i class="speeding"></i>Speeding</span><span><i class="behaviour"></i>Behaviour</span><span><i class="safety"></i>Safety</span><span><i class="compliance"></i>Compliance</span><span><i class="geozone"></i>Geozone</span>
+    </div>
+    <app-violation-map [violations]="filtered()" [selectedId]="selected()?.id ?? null" (violationSelected)="selectViolation($event)" />
+  </article>
+
+  <div class="list-column">
+    <shared-data-table
+      title="All Violations"
+      [subtitle]="'Showing '+filtered().length+' of '+VIOLATIONS.length+' violations · Click a row to view details'"
+      [columns]="columns"
+      [rows]="rows()"
+      [clientSideSearch]="false"
+      [showExport]="false"
+      [showPrimaryAction]="false"
+      [cardHeight]="580"
+      [minTableWidth]="1100"
+      [rowsClickable]="true"
+      [selectedRowId]="selected()?.id ?? null"
+      [showBottomPanel]="!!selected()"
+      searchPlaceholder="Search violation, driver, vehicle or location..."
+      (searchChange)="search.set($event)"
+      (rowSelected)="selectRow($event)"
+    >
+      <ng-template tableBottomPanel>
+        @if (selected(); as item) {
+          <section class="violation-details">
+            <button class="detail-close" type="button" aria-label="Close details" (click)="selected.set(null)">×</button>
+            <div class="detail-copy">
+              <h3>{{ item.type }}</h3>
+              <p>{{ item.driver }} · {{ item.vehicle }} · {{ item.location }}</p>
+              <span>{{ item.description }}</span>
+            </div>
+            <div class="detail-footer">
+              <div class="detail-meta">
+                <span>Score: <strong>{{ item.scoreImpact }}</strong></span>
+                @if (item.source === 'DashCam') {
+                  <a href="#" (click)="$event.preventDefault()">▣ DashCam footage: {{ item.id }}</a>
+                } @else {
+                  <span>Severity: <strong [class]="item.severity.toLowerCase()">{{ item.severity }}</strong></span>
+                }
+              </div>
+              <div class="detail-actions"><button type="button">Mark Reviewed</button><button type="button">Raise Fine</button></div>
+            </div>
+          </section>
+        }
+      </ng-template>
+    </shared-data-table>
+  </div>
+</section>

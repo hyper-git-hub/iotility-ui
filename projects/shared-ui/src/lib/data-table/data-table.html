@@ -1,4 +1,4 @@
-<section class="table-card">
+<section class="table-card" [class.fixed-card-height]="cardHeight() !== null" [style.height.px]="cardHeight()">
   <header>
     <div>
       <h2>{{ title() }}</h2>
@@ -59,7 +59,9 @@
           <tr [class.clickable-row]="rowsClickable() || expandableRows()" [class.selected-row]="isSelectedRow(r) || isExpandedRow(r)" (click)="selectRow(r)" [attr.aria-expanded]="expandableRows() ? isExpandedRow(r) : null">
             @for (c of columns(); track c.key) {
               <td>
-                @if (c.type === 'status') {
+                @if (cellTemplate(c.key); as template) {
+                  <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="{ $implicit: r, row: r, column: c }" />
+                } @else if (c.type === 'status') {
                   <span [class]="'status ' + statusClass(r[c.key])">{{ r[c.key] }}</span>
                 } @else if (c.type === 'priority') {
                   <span [class]="'priority-cell ' + priorityClass(r[c.key])"><i></i>{{ r[c.key] }}</span>
@@ -128,4 +130,9 @@
       </table>
     </div>
   </div>
+  @if (showBottomPanel() && bottomPanelTemplate(); as template) {
+    <div class="table-bottom-panel">
+      <ng-container [ngTemplateOutlet]="template" />
+    </div>
+  }
 </section>

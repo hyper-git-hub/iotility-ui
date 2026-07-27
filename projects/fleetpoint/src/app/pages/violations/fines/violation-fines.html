@@ -1,1 +1,30 @@
-<section class="fine-summary"><article><strong>£1,410</strong><span>Total Assessed</span></article><article><strong>£180</strong><span>Paid</span></article><article><strong>£520</strong><span>Pending</span></article><article><strong>£710</strong><span>Disputed / Appealed</span></article></section><shared-data-table title="Fines & Penalties" [subtitle]="fines.length+' violations with financial penalties'" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showExport]="false" [showPrimaryAction]="false" [minTableWidth]="1080" searchPlaceholder="Search violation, driver or vehicle..." (searchChange)="search.set($event)"/>
+<section class="fine-summary">
+  <article><strong>£1,410</strong><span>Total Assessed</span></article>
+  <article><strong>£180</strong><span>Paid</span></article>
+  <article><strong>£520</strong><span>Pending</span></article>
+  <article><strong>£710</strong><span>Disputed / Appealed</span></article>
+</section>
+
+<shared-data-table
+  title="Fines & Penalties"
+  [subtitle]="fines().length + ' violations with financial penalties'"
+  [columns]="columns"
+  [rows]="rows()"
+  [clientSideSearch]="false"
+  [showExport]="false"
+  [showPrimaryAction]="false"
+  [minTableWidth]="1080"
+  searchPlaceholder="Search violation, driver or vehicle..."
+  (searchChange)="search.set($event)"
+>
+  <ng-template tableCell="actions" let-row>
+    @if (row['fineStatus'] === 'Paid') {
+      <span class="settled">✓ Settled</span>
+    } @else {
+      <span class="fine-actions">
+        <button type="button" (click)="markPaid(row)">Mark Paid</button>
+        <button type="button" (click)="dispute(row)">Dispute</button>
+      </span>
+    }
+  </ng-template>
+</shared-data-table>

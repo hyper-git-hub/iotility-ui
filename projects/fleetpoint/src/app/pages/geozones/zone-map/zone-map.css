@@ -1,0 +1,378 @@
+@reference "../../../../styles.css";
+
+:host {
+  @apply block min-h-0;
+}
+
+.zone-map-workspace {
+  @apply flex h-[580px] min-h-0;
+}
+
+.zone-panel {
+  @apply mr-4 flex w-64 shrink-0 flex-col overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+
+.zone-search {
+  @apply m-3 flex h-10 shrink-0 items-center gap-2 rounded-xl border border-line bg-canvas px-3 dark:border-dark-line dark:bg-dark-canvas;
+}
+
+.zone-search svg {
+  @apply size-4 shrink-0 fill-none stroke-muted;
+  stroke-width: 1.8;
+}
+
+.zone-search input {
+  @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-muted dark:text-white;
+}
+
+.zone-filters {
+  @apply flex shrink-0 flex-wrap gap-x-1 gap-y-1 border-y border-line px-2 py-2 dark:border-dark-line;
+}
+
+.zone-filters button {
+  @apply cursor-pointer rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-muted transition hover:bg-brand-50 hover:text-brand-600 dark:text-brand-300 dark:hover:bg-brand-600/10;
+}
+
+.zone-filters button.active {
+  @apply bg-brand-600 text-white hover:bg-brand-600 hover:text-white;
+}
+
+.zone-list {
+  @apply min-h-0 flex-1 overflow-y-auto;
+  scrollbar-width: thin;
+}
+
+.zone-row {
+  @apply flex w-full cursor-pointer items-start gap-2 border-b border-line px-3 py-3 text-left transition hover:bg-brand-50 dark:border-dark-line dark:hover:bg-dark-canvas;
+}
+
+.zone-row.selected {
+  @apply bg-brand-50 dark:bg-brand-600/10;
+}
+
+.zone-dot {
+  @apply mt-1 size-2.5 shrink-0 rounded-full bg-muted;
+}
+
+.zone-copy {
+  @apply min-w-0 flex-1;
+}
+
+.zone-copy strong {
+  @apply block truncate text-[11px] font-semibold text-ink dark:text-white;
+}
+
+.zone-copy small {
+  @apply mt-1 inline-flex rounded-md bg-canvas px-1.5 py-0.5 text-[9px] font-medium text-muted dark:bg-dark-canvas dark:text-brand-300;
+}
+
+.zone-metrics {
+  @apply flex shrink-0 flex-col items-end gap-1 text-[10px];
+}
+
+.zone-metrics b {
+  @apply whitespace-nowrap font-semibold text-success;
+}
+
+.zone-metrics em {
+  @apply whitespace-nowrap not-italic font-semibold text-danger;
+}
+
+.zone-row[data-type='allowed'] .zone-dot { @apply bg-success; }
+.zone-row[data-type='restricted'] .zone-dot { @apply bg-danger; }
+.zone-row[data-type='speed'] .zone-dot { @apply bg-warning; }
+.zone-row[data-type='curfew'] .zone-dot { @apply bg-brand-600; }
+.zone-row[data-type='poi'] .zone-dot { @apply bg-info; }
+.zone-row[data-type='corridor'] .zone-dot { @apply bg-teal-500; }
+
+.zone-row[data-type='allowed'] .zone-copy small { @apply bg-success/10 text-success; }
+.zone-row[data-type='restricted'] .zone-copy small { @apply bg-danger/10 text-danger; }
+.zone-row[data-type='speed'] .zone-copy small { @apply bg-warning/10 text-warning; }
+.zone-row[data-type='curfew'] .zone-copy small { @apply bg-brand-600/10 text-brand-600 dark:text-brand-300; }
+.zone-row[data-type='poi'] .zone-copy small { @apply bg-info/10 text-info; }
+.zone-row[data-type='corridor'] .zone-copy small { @apply bg-teal-500/10 text-teal-600 dark:text-teal-300; }
+
+.empty-list {
+  @apply p-6 text-center text-xs text-muted dark:text-brand-300;
+}
+
+.zone-map-card {
+  @apply flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+
+.map-toolbar {
+  @apply flex min-h-11 shrink-0 items-center justify-between gap-4 border-b border-line px-4 py-2 dark:border-dark-line;
+}
+
+.zone-legend {
+  @apply flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1;
+}
+
+.zone-legend span {
+  @apply flex items-center gap-1 whitespace-nowrap text-[9px] text-muted dark:text-brand-300;
+}
+
+.zone-legend i {
+  @apply size-2.5 rounded;
+}
+
+.zone-legend [data-type='allowed'] i { @apply bg-success; }
+.zone-legend [data-type='restricted'] i { @apply bg-danger; }
+.zone-legend [data-type='speed'] i { @apply bg-warning; }
+.zone-legend [data-type='curfew'] i { @apply bg-brand-600; }
+.zone-legend [data-type='poi'] i { @apply bg-info; }
+.zone-legend [data-type='corridor'] i { @apply bg-teal-500; }
+
+.draw-note {
+  @apply shrink-0 text-[9px] text-muted dark:text-brand-300;
+}
+
+.map-canvas {
+  @apply min-h-0 flex-1;
+}
+
+.map-canvas app-fleet-map {
+  @apply block h-full;
+}
+
+.zone-details {
+  @apply flex min-w-0 shrink-0 flex-col overflow-hidden rounded-2xl border border-line bg-white opacity-0 dark:border-dark-line dark:bg-dark-surface;
+  width: 0;
+  visibility: hidden;
+  transition:
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    visibility 0s linear 420ms;
+}
+
+.details-open .zone-details {
+  @apply ml-4 opacity-100;
+  width: 16rem;
+  visibility: visible;
+  transition:
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease 100ms,
+    visibility 0s;
+}
+
+.zone-details > header,
+.zone-details-scroll,
+.zone-details > footer {
+  width: 16rem;
+}
+
+.zone-details > header {
+  @apply flex shrink-0 items-center justify-between border-b border-line px-4 py-3 dark:border-dark-line;
+}
+
+.zone-details > header strong {
+  @apply text-xs font-bold text-ink dark:text-white;
+}
+
+.zone-details > header button {
+  @apply grid size-6 cursor-pointer place-items-center text-lg text-muted transition hover:text-ink dark:hover:text-white;
+}
+
+.zone-details-scroll {
+  @apply min-h-0 flex-1 overflow-y-auto p-4;
+  scrollbar-width: thin;
+}
+
+.zone-details-summary h2 {
+  @apply text-sm font-bold leading-5 text-ink dark:text-white;
+}
+
+.detail-type {
+  @apply mt-2 inline-flex rounded-full border border-brand-300 bg-brand-50 px-2 py-1 text-[10px] font-medium text-brand-700 dark:border-brand-600/30 dark:bg-brand-600/10 dark:text-brand-300;
+}
+
+.zone-details-summary[data-type='allowed'] .detail-type { @apply border-success/30 bg-success/10 text-success; }
+.zone-details-summary[data-type='restricted'] .detail-type { @apply border-danger/30 bg-danger/10 text-danger; }
+.zone-details-summary[data-type='speed'] .detail-type { @apply border-warning/30 bg-warning/10 text-warning; }
+
+.zone-details-summary p {
+  @apply mt-3 text-[10px] leading-4 text-muted dark:text-brand-300;
+}
+
+.zone-rules,
+.linked-zone {
+  @apply mt-3 rounded-xl bg-canvas p-3 dark:bg-dark-canvas;
+}
+
+.zone-rules h3,
+.linked-zone h3,
+.recent-zone-activity h3 {
+  @apply mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted dark:text-brand-300;
+}
+
+.zone-rules dl {
+  @apply grid gap-2;
+}
+
+.zone-rules dl > div {
+  @apply flex items-center justify-between gap-3 text-[10px];
+}
+
+.zone-rules dt {
+  @apply text-ink dark:text-white;
+}
+
+.zone-rules dd {
+  @apply text-right font-medium;
+}
+
+.zone-rules .disabled { @apply text-muted; }
+.zone-rules .enabled { @apply text-success; }
+.zone-rules .speed { @apply text-warning; }
+.zone-rules .curfew { @apply text-brand-600 dark:text-brand-300; }
+
+.detail-metrics {
+  @apply mt-3 grid grid-cols-2 gap-2;
+}
+
+.detail-metrics article {
+  @apply rounded-xl bg-canvas p-3 text-center dark:bg-dark-canvas;
+}
+
+.detail-metrics strong,
+.detail-metrics span {
+  @apply block;
+}
+
+.detail-metrics strong {
+  @apply text-sm font-bold text-ink dark:text-white;
+}
+
+.detail-metrics span {
+  @apply mt-1 text-[9px] text-muted dark:text-brand-300;
+}
+
+.linked-zone a {
+  @apply flex items-center gap-1.5 text-[10px] font-medium text-brand-600 no-underline dark:text-brand-300;
+}
+
+.linked-zone svg {
+  @apply size-3.5 fill-none stroke-current;
+  stroke-width: 1.8;
+}
+
+.recent-zone-activity {
+  @apply mt-4;
+}
+
+.recent-zone-activity article {
+  @apply mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[10px];
+}
+
+.recent-zone-activity .activity-exit { @apply bg-info/10 text-info; }
+.recent-zone-activity .activity-entry { @apply bg-success/10 text-success; }
+.recent-zone-activity article > b { @apply text-sm; }
+.recent-zone-activity strong,
+.recent-zone-activity small { @apply block; }
+.recent-zone-activity small { @apply mt-0.5 opacity-80; }
+.recent-zone-activity > p { @apply text-[10px] text-muted dark:text-brand-300; }
+
+.zone-details > footer {
+  @apply grid shrink-0 grid-cols-2 gap-2 border-t border-line p-3 dark:border-dark-line;
+}
+
+.zone-details > footer button {
+  @apply flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl border text-[10px] font-semibold transition;
+}
+
+.zone-details > footer svg {
+  @apply size-3.5 fill-none stroke-current;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.edit-zone {
+  @apply border-line text-muted hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:text-brand-300;
+}
+
+.delete-zone {
+  @apply border-danger/30 bg-danger/5 text-danger hover:bg-danger/10;
+}
+
+:host-context(.dark) .zone-details {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-line);
+  color: white;
+}
+
+:host-context(.dark) .zone-rules,
+:host-context(.dark) .linked-zone,
+:host-context(.dark) .detail-metrics article {
+  background: var(--color-dark-canvas);
+  border: 1px solid var(--color-dark-line);
+}
+
+:host-context(.dark) .zone-details > header,
+:host-context(.dark) .zone-details > footer {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-line);
+}
+
+:host-context(.dark) .recent-zone-activity .activity-exit {
+  background: color-mix(in srgb, var(--color-info) 14%, var(--color-dark-canvas));
+}
+
+:host-context(.dark) .recent-zone-activity .activity-entry {
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-dark-canvas));
+}
+
+:host-context(.dark) .edit-zone {
+  background: var(--color-dark-canvas);
+  border-color: var(--color-dark-line);
+}
+
+:host-context(.dark) .delete-zone {
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-dark-canvas));
+}
+
+@media (max-width: 900px) {
+  .zone-map-workspace {
+    @apply h-auto flex-col;
+  }
+
+  .zone-panel {
+    @apply mb-4 mr-0 h-72 w-full;
+  }
+
+  .map-canvas {
+    @apply h-[460px] flex-none;
+  }
+
+  .map-toolbar {
+    @apply items-start;
+  }
+
+  .zone-details,
+  .details-open .zone-details {
+    @apply ml-0 opacity-100;
+    width: 100%;
+  }
+
+  .zone-details {
+    @apply max-h-0;
+    visibility: hidden;
+  }
+
+  .details-open .zone-details {
+    @apply mt-4 max-h-[42rem];
+    visibility: visible;
+  }
+
+  .zone-details > header,
+  .zone-details-scroll,
+  .zone-details > footer {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .draw-note {
+    @apply hidden;
+  }
+}
