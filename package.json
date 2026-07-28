@@ -34,6 +34,7 @@
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
     "@deck.gl/core": "^9.3.7",
+    "@deck.gl/layers": "^9.3.7",
     "@deck.gl/mapbox": "^9.3.7",
     "@deck.gl/mesh-layers": "^9.3.7",
     "@microsoft/signalr": "^10.0.0",
