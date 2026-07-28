@@ -1,45 +1,40 @@
 import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  OnDestroy,
-  effect,
-  input,
-  output,
-  viewChild,
+  AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, viewChild,
 } from '@angular/core';
+import { AmbientLight, DirectionalLight, LightingEffect } from '@deck.gl/core';
+import { MapboxOverlay } from '@deck.gl/mapbox';
+import { ScenegraphLayer } from '@deck.gl/mesh-layers';
+import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
 import {
-  CircleMarker,
-  Map as LeafletMap,
-  Marker,
-  Polyline,
-  circleMarker,
-  divIcon,
-  latLngBounds,
-  map as createMap,
-  marker,
-  polyline,
-  tileLayer,
-} from 'leaflet';
+  LatLng, createIotMap, fitLatLngs, lineFeature, markerElement, popup,
+  removeGeoJson, upsertGeoJson,
+} from '../maps/maplibre';
 
 const OSRM_BASE_URL = 'https://fms.backend.iot.vodafone.com.qa:5000';
-
-export interface TripPosition {
-  lat: number;
-  lng: number;
-  speed: number;
+const VEHICLE_MODEL_PATHS = [
+  '/assets/fleetpoint/models-trip-vehicle.glb',
+  '/assets/models-trip-vehicle.glb',
+];
+const VEHICLE_MODEL_YAW_OFFSET = 180;
+const VEHICLE_LIGHTING = new LightingEffect({
+  ambientLight: new AmbientLight({ color: [255, 255, 255], intensity: 2.2 }),
+  directionalLight: new DirectionalLight({
+    color: [255, 255, 255],
+    intensity: 1.1,
+    direction: [-3, -8, -5],
+  }),
+});
+interface VehicleModelState {
+  position: [longitude: number, latitude: number, altitude: number];
   heading: number;
-  time: string;
-  timestamp?: string;
-  location?: string;
-  driver?: string;
+}
+export interface TripPosition {
+  lat: number; lng: number; speed: number; heading: number; time: string;
+  timestamp?: string; location?: string; driver?: string;
 }
 export interface TripReplayEvent {
-  id: string;
-  label: string;
-  type: 'violation' | 'dashcam' | 'stop';
-  positionIndex: number;
-  detail: string;
+  id: string; label: string; type: 'violation' | 'dashcam' | 'stop';
+  positionIndex: number; detail: string;
 }
 
 @Component({
@@ -57,14 +52,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly eventSelected = output<TripReplayEvent>();
   readonly routeLoadingChange = output<boolean>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
-  private map?: LeafletMap;
-  private routeCasing?: Polyline;
-  private route?: Polyline;
-  private completedRoute?: Polyline;
-  private vehicleMarker?: Marker;
-  private endpointMarkers: CircleMarker[] = [];
-  private eventMarkers: CircleMarker[] = [];
-  private roadCoordinates: Array<[number, number]> = [];
+  private map?: MapLibreMap;
+  private vehicleOverlay?: MapboxOverlay;
+  private vehicleModelUrl?: string;
+  private vehicleModelRequest?: Promise<void>;
+  private pendingVehicle?: { position: LatLng; heading: number };
+  private vehicleVisible = false;
+  private endpointMarkers: maplibregl.Marker[] = [];
+  private eventMarkers: maplibregl.Marker[] = [];
+  private roadCoordinates: LatLng[] = [];
   private routeRequest?: AbortController;
   private routeVersion = 0;
   private playbackZoomApplied = false;
@@ -74,8 +70,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      const positions = this.positions();
-      const events = this.events();
+      const positions = this.positions(), events = this.events();
       if (this.map) void this.renderRoute(positions, events);
     });
     effect(() => {
@@ -83,23 +78,27 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       if (this.map) this.updateVehicle(index);
     });
     effect(() => {
-      const active = this.playbackActive();
-      if (active && this.map && !this.playbackZoomApplied) {
+      if (this.playbackActive() && this.map && !this.playbackZoomApplied) {
         this.playbackZoomApplied = true;
-        this.map.setZoom(Math.min(this.map.getZoom() + 1, 16), { animate: true });
+        this.map.easeTo({ zoom: Math.min(this.map.getZoom() + 1, 16), duration: 450 });
       }
     });
   }
 
   ngAfterViewInit(): void {
-    this.map = createMap(this.mapElement().nativeElement, { zoomControl: true });
-    tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(this.map);
-    this.map.setView([25.3548, 51.1839], 9);
-    void this.renderRoute(this.positions(), this.events());
-    setTimeout(() => this.map?.invalidateSize(), 0);
+    this.map = createIotMap(this.mapElement().nativeElement, [25.3548, 51.1839], 9);
+    this.vehicleOverlay = new MapboxOverlay({
+      // A separate Deck canvas is more reliable than an interleaved custom layer
+      // when this component is loaded through native module federation.
+      interleaved: false,
+      layers: [],
+      effects: [VEHICLE_LIGHTING],
+      onError: (error) => console.error('Trip vehicle model could not be rendered.', error),
+    });
+    this.map.addControl(this.vehicleOverlay as unknown as maplibregl.IControl);
+    void this.loadVehicleModel();
+    this.map.on('style.load', () => this.renderRouteLayers());
+    this.map.once('load', () => void this.renderRoute(this.positions(), this.events()));
   }
 
   private async renderRoute(positions: TripPosition[], events: TripReplayEvent[]): Promise<void> {
@@ -108,157 +107,123 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.routeVersion++;
       this.routeRequest?.abort();
       this.routeLoadingChange.emit(false);
-      this.routeCasing?.removeFrom(this.map);
-      this.route?.removeFrom(this.map);
-      this.completedRoute?.removeFrom(this.map);
-      this.vehicleMarker?.removeFrom(this.map);
-      this.vehicleMarker = undefined;
-      this.endpointMarkers.forEach((item) => item.removeFrom(this.map!));
-      this.endpointMarkers = [];
-      this.eventMarkers.forEach((item) => item.removeFrom(this.map!));
-      this.eventMarkers = [];
+      this.clearMarkers();
       this.roadCoordinates = [];
-      this.map.setView([25.3548, 51.1839], 9);
+      if (this.map.isStyleLoaded())
+        removeGeoJson(this.map, 'trip-route', ['trip-route-casing', 'trip-route-line', 'trip-route-completed']);
+      this.map.jumpTo({ center: [51.1839, 25.3548], zoom: 9 });
       return;
     }
-    const routeVersion = ++this.routeVersion;
+    const version = ++this.routeVersion;
     this.routeLoadingChange.emit(true);
-    let coordinates: Array<[number, number]>;
-    try {
-      coordinates = await this.getRoadCoordinates(positions);
-    } finally {
-      if (routeVersion === this.routeVersion) this.routeLoadingChange.emit(false);
-    }
-    if (!this.map || routeVersion !== this.routeVersion) return;
-    const styles = getComputedStyle(document.documentElement);
-    const color = (name: string, fallback: string) =>
-      styles.getPropertyValue(name).trim() || fallback;
-    const success = color('--color-success', '#20a77d');
-    const danger = color('--color-danger', '#df405e');
-    const warning = color('--color-warning', '#eca91f');
-    const info = color('--color-info', '#397bd5');
-    this.routeCasing?.removeFrom(this.map);
-    this.route?.removeFrom(this.map);
-    this.completedRoute?.removeFrom(this.map);
-    this.vehicleMarker?.removeFrom(this.map);
-    this.vehicleMarker = undefined;
-    this.endpointMarkers.forEach((item) => item.removeFrom(this.map!));
-    this.endpointMarkers = [];
-    this.eventMarkers.forEach((item) => item.removeFrom(this.map!));
-    this.eventMarkers = [];
+    let coordinates: LatLng[];
+    try { coordinates = await this.getRoadCoordinates(positions); }
+    finally { if (version === this.routeVersion) this.routeLoadingChange.emit(false); }
+    if (!this.map || version !== this.routeVersion) return;
+    this.clearMarkers();
     this.roadCoordinates = coordinates;
     this.playbackZoomApplied = false;
     this.displayedHeading = undefined;
     this.displayedRoadProgress = 0;
-    this.routeCasing = polyline(coordinates, {
-      color: 'white',
-      weight: 8,
-      opacity: 0.9,
-    }).addTo(this.map);
-    this.route = polyline(coordinates, {
-      color: color('--color-brand-500', '#7435e8'),
-      weight: 5,
-      opacity: 0.95,
-      dashArray: '10 8',
-    }).addTo(this.map);
+    this.renderRouteLayers();
+    const colors = getComputedStyle(document.documentElement);
+    const css = (name: string, fallback: string) => colors.getPropertyValue(name).trim() || fallback;
     this.endpointMarkers = [
-      circleMarker(coordinates[0], {
-        radius: 8,
-        color: 'white',
-        weight: 3,
-        fillColor: success,
-        fillOpacity: 1,
-      })
-        .bindTooltip('Trip start')
-        .addTo(this.map),
-      circleMarker(coordinates.at(-1)!, {
-        radius: 8,
-        color: 'white',
-        weight: 3,
-        fillColor: danger,
-        fillOpacity: 1,
-      })
-        .bindTooltip('Trip end')
-        .addTo(this.map),
+      this.circleMarker(coordinates[0], css('--color-success', '#20a77d'), 'Trip start'),
+      this.circleMarker(coordinates.at(-1)!, css('--color-danger', '#df405e'), 'Trip end'),
     ];
     for (const event of events) {
       const point = coordinates[this.routeIndex(event.positionIndex, positions.length)];
       if (!point) continue;
-      const eventColor =
-        event.type === 'violation' ? danger : event.type === 'dashcam' ? warning : info;
-      const eventMarker = circleMarker(point, {
-        radius: 7,
-        color: 'white',
-        weight: 2,
-        fillColor: eventColor,
-        fillOpacity: 1,
-      }).bindTooltip(`${event.label} · ${event.detail}`);
-      eventMarker.on('click', () => this.eventSelected.emit(event));
-      eventMarker.addTo(this.map);
-      this.eventMarkers.push(eventMarker);
+      const color = event.type === 'violation' ? css('--color-danger', '#df405e')
+        : event.type === 'dashcam' ? css('--color-warning', '#eca91f') : css('--color-info', '#397bd5');
+      const element = markerElement(`<span style="display:block;width:14px;height:14px;border:2px solid #fff;border-radius:50%;background:${color}"></span>`);
+      element.addEventListener('click', () => this.eventSelected.emit(event));
+      this.eventMarkers.push(new maplibregl.Marker({ element }).setLngLat([point[1], point[0]])
+        .setPopup(popup(`${event.label} · ${event.detail}`)).addTo(this.map));
     }
-    this.map.fitBounds(latLngBounds(coordinates), { padding: [48, 48], maxZoom: 13 });
+    this.map.jumpTo({ pitch: 55, bearing: -20 });
+    fitLatLngs(this.map, coordinates, 40, 14);
     this.updateVehicle(this.positionIndex());
   }
 
-  private async getRoadCoordinates(positions: TripPosition[]): Promise<Array<[number, number]>> {
-    const fallback = positions.map(({ lat, lng }) => [lat, lng] as [number, number]);
+  private renderRouteLayers(): void {
+    if (!this.map?.isStyleLoaded() || this.roadCoordinates.length < 2) return;
+    const completedIndex = Math.max(0, Math.round(this.displayedRoadProgress));
+    const features = [
+      lineFeature(this.roadCoordinates, { kind: 'route' }),
+      lineFeature(this.roadCoordinates.slice(0, completedIndex + 1), { kind: 'completed' }),
+    ];
+    const brand = getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim() || '#7435e8';
+    upsertGeoJson(this.map, 'trip-route', { type: 'FeatureCollection', features }, [
+      {
+        id: 'trip-route-casing', type: 'line', filter: ['==', ['get', 'kind'], 'route'],
+        paint: { 'line-color': '#fff', 'line-width': 8, 'line-opacity': .9 },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+      {
+        id: 'trip-route-line', type: 'line', filter: ['==', ['get', 'kind'], 'route'],
+        paint: { 'line-color': brand, 'line-width': 5, 'line-opacity': .95, 'line-dasharray': [2, 1.6] },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+      {
+        id: 'trip-route-completed', type: 'line', filter: ['==', ['get', 'kind'], 'completed'],
+        paint: { 'line-color': brand, 'line-width': 5, 'line-opacity': .95 },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+    ]);
+  }
+
+  private circleMarker(point: LatLng, color: string, label: string): maplibregl.Marker {
+    const element = markerElement(`<span style="display:block;width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:${color}"></span>`);
+    return new maplibregl.Marker({ element }).setLngLat([point[1], point[0]]).setPopup(popup(label)).addTo(this.map!);
+  }
+
+  private clearMarkers(): void {
+    this.vehicleVisible = false;
+    this.vehicleOverlay?.setProps({ layers: [] });
+    this.endpointMarkers.forEach((item) => item.remove());
+    this.eventMarkers.forEach((item) => item.remove());
+    this.endpointMarkers = [];
+    this.eventMarkers = [];
+  }
+
+  private async getRoadCoordinates(positions: TripPosition[]): Promise<LatLng[]> {
+    const fallback = positions.map(({ lat, lng }) => [lat, lng] as LatLng);
     this.routeRequest?.abort();
     this.routeRequest = new AbortController();
     try {
-      const chunks = this.positionChunks(positions, 95);
-      const matched: Array<[number, number]> = [];
-      for (const chunk of chunks) {
-        const coordinates = chunk.map((point) => `${point.lng},${point.lat}`).join(';');
-        const timestamps = chunk
-          .map((point, index) => {
-            const parsed = point.timestamp ? new Date(point.timestamp).getTime() : NaN;
-            return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : index;
-          })
-          .join(';');
-        const radiuses = chunk.map(() => '50').join(';');
-        const response = await fetch(
-          `${OSRM_BASE_URL}/match/v1/driving/${coordinates}?timestamps=${timestamps}&radiuses=${radiuses}&overview=full&geometries=geojson`,
-          { signal: this.routeRequest.signal },
-        );
-        if (!response.ok) throw new Error('OSRM matching failed');
-        const result = (await response.json()) as {
-          code?: string;
-          matchings?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
-        };
-        const coordinatesResult =
-          result.code === 'Ok'
-            ? result.matchings?.flatMap((match) => match.geometry?.coordinates ?? [])
-            : [];
-        if (!coordinatesResult?.length) throw new Error('OSRM returned no matching');
-        matched.push(...coordinatesResult.map(([lng, lat]) => [lat, lng] as [number, number]));
+      const matched: LatLng[] = [];
+      for (const chunk of this.positionChunks(positions, 95)) {
+        const coordinates = chunk.map(({ lng, lat }) => `${lng},${lat}`).join(';');
+        const timestamps = chunk.map((point, index) => {
+          const parsed = point.timestamp ? new Date(point.timestamp).getTime() : NaN;
+          return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : index;
+        }).join(';');
+        const response = await fetch(`${OSRM_BASE_URL}/match/v1/driving/${coordinates}?timestamps=${timestamps}&radiuses=${chunk.map(() => '50').join(';')}&overview=full&geometries=geojson`, { signal: this.routeRequest.signal });
+        if (!response.ok) throw new Error();
+        const result = await response.json() as { code?: string; matchings?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }> };
+        const values = result.code === 'Ok' ? result.matchings?.flatMap((item) => item.geometry?.coordinates ?? []) : [];
+        if (!values?.length) throw new Error();
+        matched.push(...values.map(([lng, lat]) => [lat, lng] as LatLng));
       }
       return this.dedupeCoordinates(matched);
     } catch {
       if (this.routeRequest.signal.aborted) return fallback;
-      try {
-        return await this.getOsrmRoute(positions);
-      } catch {
-        return fallback;
-      }
+      try { return await this.getOsrmRoute(positions); } catch { return fallback; }
     }
   }
 
-  private async getOsrmRoute(positions: TripPosition[]): Promise<Array<[number, number]>> {
-    const routed: Array<[number, number]> = [];
+  private async getOsrmRoute(positions: TripPosition[]): Promise<LatLng[]> {
+    const routed: LatLng[] = [];
     for (const chunk of this.positionChunks(positions, 95)) {
-      const coordinates = chunk.map((point) => `${point.lng},${point.lat}`).join(';');
-      const response = await fetch(
-        `${OSRM_BASE_URL}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`,
-        { signal: this.routeRequest?.signal },
-      );
-      if (!response.ok) throw new Error('OSRM routing failed');
-      const result = (await response.json()) as {
-        routes?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
-      };
+      const coordinates = chunk.map(({ lng, lat }) => `${lng},${lat}`).join(';');
+      const response = await fetch(`${OSRM_BASE_URL}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`, { signal: this.routeRequest?.signal });
+      if (!response.ok) throw new Error();
+      const result = await response.json() as { routes?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }> };
       const route = result.routes?.[0]?.geometry?.coordinates;
-      if (!route?.length) throw new Error('OSRM returned no route');
-      routed.push(...route.map(([lng, lat]) => [lat, lng] as [number, number]));
+      if (!route?.length) throw new Error();
+      routed.push(...route.map(([lng, lat]) => [lat, lng] as LatLng));
     }
     return this.dedupeCoordinates(routed);
   }
@@ -269,108 +234,143 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       chunks.push(positions.slice(index, Math.min(index + size, positions.length)));
     return chunks;
   }
-  private dedupeCoordinates(coordinates: Array<[number, number]>): Array<[number, number]> {
-    return coordinates.filter(
-      (point, index) =>
-        index === 0 ||
-        point[0] !== coordinates[index - 1][0] ||
-        point[1] !== coordinates[index - 1][1],
-    );
+
+  private dedupeCoordinates(points: LatLng[]): LatLng[] {
+    return points.filter((point, index) => index === 0 || point[0] !== points[index - 1][0] || point[1] !== points[index - 1][1]);
   }
 
-  private routeIndex(positionIndex: number, positionCount: number): number {
-    if (positionCount <= 1 || this.roadCoordinates.length <= 1) return 0;
-    return Math.round((positionIndex / (positionCount - 1)) * (this.roadCoordinates.length - 1));
+  private routeIndex(positionIndex: number, count: number): number {
+    return count <= 1 || this.roadCoordinates.length <= 1 ? 0
+      : Math.round((positionIndex / (count - 1)) * (this.roadCoordinates.length - 1));
   }
 
   private updateVehicle(index: number): void {
-    if (!this.map) return;
-    const positions = this.positions();
-    const current = positions[Math.min(index, positions.length - 1)];
-    if (!current || !this.roadCoordinates.length) return;
-    const roadIndex = this.routeIndex(index, positions.length);
-    const roadPosition = this.roadCoordinates[roadIndex];
+    if (!this.map || !this.vehicleOverlay || !this.roadCoordinates.length || !this.positions().length) return;
+    const roadIndex = this.routeIndex(index, this.positions().length);
+    const position = this.roadCoordinates[roadIndex];
     const heading = this.headingAt(roadIndex);
-    const completed = this.roadCoordinates.slice(0, roadIndex + 1);
-    this.completedRoute?.removeFrom(this.map);
-    const brandColor = getComputedStyle(document.documentElement)
-      .getPropertyValue('--color-brand-500')
-      .trim();
-    if (completed.length > 1)
-      this.completedRoute = polyline(completed, {
-        color: brandColor,
-        weight: 5,
-        opacity: 0.95,
-      }).addTo(this.map);
-    const icon = divIcon({
-      className: '',
-      html: `<div class="replay-vehicle" style="transform:rotate(${heading}deg)" aria-label="Vehicle position">
-        <img src="assets/fleetpoint/vehicle-on-map.png" alt="" />
-      </div>`,
-      iconSize: [58, 58],
-      iconAnchor: [29, 29],
-    });
-    if (this.vehicleMarker) {
-      const vehicleElement = this.vehicleMarker
-        .getElement()
-        ?.querySelector<HTMLElement>('.replay-vehicle');
+    this.renderRouteLayers();
+    if (this.vehicleVisible) {
       if (this.playbackActive()) this.animateVehicleTo(roadIndex);
       else {
         this.cancelMovement();
-        if (vehicleElement) vehicleElement.style.transform = `rotate(${heading}deg)`;
         this.displayedRoadProgress = roadIndex;
-        this.vehicleMarker.setLatLng(roadPosition);
-        this.map.panTo(roadPosition, { animate: false, noMoveStart: true });
+        this.renderVehicleModel(position, heading);
+        this.map.panTo([position[1], position[0]], { duration: 0 });
       }
     } else {
-      this.vehicleMarker = marker(roadPosition, { icon, zIndexOffset: 1000 }).addTo(this.map);
+      this.vehicleVisible = true;
       this.displayedRoadProgress = roadIndex;
-      this.map.panTo(roadPosition, { animate: false, noMoveStart: true });
+      this.renderVehicleModel(position, heading);
     }
   }
 
-  private animateVehicleTo(targetRoadProgress: number): void {
-    if (!this.map || !this.vehicleMarker) return;
+  private animateVehicleTo(target: number): void {
+    if (!this.map || !this.vehicleOverlay || !this.vehicleVisible) return;
     this.cancelMovement();
-    const startRoadProgress = this.displayedRoadProgress;
+    const start = this.displayedRoadProgress;
     const duration = Math.max(40, this.playbackStepDuration() / this.playbackSpeed());
     const startedAt = performance.now();
-
     const move = (now: number) => {
-      if (!this.map || !this.vehicleMarker) return;
+      if (!this.map || !this.vehicleOverlay || !this.vehicleVisible) return;
       const progress = Math.min((now - startedAt) / duration, 1);
-      this.displayedRoadProgress =
-        startRoadProgress + (targetRoadProgress - startRoadProgress) * progress;
+      this.displayedRoadProgress = start + (target - start) * progress;
       const position = this.coordinateAt(this.displayedRoadProgress);
-      this.vehicleMarker.setLatLng(position);
-      const vehicleElement = this.vehicleMarker
-        .getElement()
-        ?.querySelector<HTMLElement>('.replay-vehicle');
-      if (vehicleElement)
-        vehicleElement.style.transform = `rotate(${this.headingAt(this.displayedRoadProgress)}deg)`;
-      this.map.panTo(position, { animate: false, noMoveStart: true });
+      this.renderVehicleModel(position, this.headingAt(this.displayedRoadProgress));
+      this.map.panTo([position[1], position[0]], { duration: 0 });
       if (progress < 1) this.movementFrame = requestAnimationFrame(move);
-      else this.movementFrame = undefined;
     };
-
     this.movementFrame = requestAnimationFrame(move);
   }
 
-  private coordinateAt(progress: number): [number, number] {
-    const lowerIndex = Math.max(0, Math.min(Math.floor(progress), this.roadCoordinates.length - 1));
-    const upperIndex = Math.min(lowerIndex + 1, this.roadCoordinates.length - 1);
-    const fraction = progress - lowerIndex;
-    const start = this.roadCoordinates[lowerIndex];
-    const end = this.roadCoordinates[upperIndex];
+  private renderVehicleModel(position: LatLng, heading: number): void {
+    if (!this.vehicleModelUrl) {
+      this.pendingVehicle = { position, heading };
+      void this.loadVehicleModel();
+      return;
+    }
+    const data: VehicleModelState[] = [{
+      position: [position[1], position[0], 0.4],
+      heading,
+    }];
+    this.vehicleOverlay?.setProps({
+      layers: [
+        new ScenegraphLayer<VehicleModelState>({
+          id: 'trip-vehicle-model',
+          data,
+          scenegraph: this.vehicleModelUrl,
+          getPosition: (vehicle) => vehicle.position,
+          getOrientation: (vehicle) => [0, -vehicle.heading + VEHICLE_MODEL_YAW_OFFSET, 90],
+          // The low-poly muscle car is approximately six authoring units long.
+          getScale: [0.4, 0.4, 0.4],
+          sizeScale: 1,
+          sizeMinPixels: 28,
+          sizeMaxPixels: 56,
+          pickable: false,
+          _lighting: 'pbr',
+          updateTriggers: {
+            getPosition: [position[0], position[1]],
+            getOrientation: [heading],
+          },
+        }),
+      ],
+    });
+  }
+
+  private loadVehicleModel(): Promise<void> {
+    if (this.vehicleModelRequest) return this.vehicleModelRequest;
+    this.vehicleModelRequest = (async () => {
+      let lastError: unknown;
+      for (const path of VEHICLE_MODEL_PATHS) {
+        try {
+          const response = await fetch(new URL(path, window.location.origin), { cache: 'no-store' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const bytes = await response.arrayBuffer();
+          const magic = new TextDecoder('ascii').decode(bytes.slice(0, 4));
+          if (magic !== 'glTF') throw new Error(`Expected GLB data but received ${magic || 'an empty response'}`);
+          this.vehicleModelUrl = URL.createObjectURL(
+            new Blob([bytes], { type: 'model/gltf-binary' }),
+          );
+          const pending = this.pendingVehicle;
+          this.pendingVehicle = undefined;
+          if (pending) this.renderVehicleModel(pending.position, pending.heading);
+          return;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      console.error('Trip vehicle GLB could not be downloaded.', lastError);
+    })();
+    return this.vehicleModelRequest;
+  }
+
+  private coordinateAt(progress: number): LatLng {
+    const lower = Math.max(0, Math.min(Math.floor(progress), this.roadCoordinates.length - 1));
+    const upper = Math.min(lower + 1, this.roadCoordinates.length - 1), fraction = progress - lower;
+    const start = this.roadCoordinates[lower], end = this.roadCoordinates[upper];
     return [start[0] + (end[0] - start[0]) * fraction, start[1] + (end[1] - start[1]) * fraction];
   }
 
   private headingAt(progress: number): number {
-    const roadIndex = Math.round(progress);
-    const directionStart = this.roadCoordinates[Math.max(roadIndex - 2, 0)];
-    const directionEnd =
-      this.roadCoordinates[Math.min(roadIndex + 3, this.roadCoordinates.length - 1)];
-    return this.nearestHeading(this.calculateBearing(directionStart, directionEnd));
+    const index = Math.round(progress);
+    return this.nearestHeading(this.calculateBearing(
+      this.roadCoordinates[Math.max(index - 2, 0)],
+      this.roadCoordinates[Math.min(index + 3, this.roadCoordinates.length - 1)],
+    ));
+  }
+
+  private calculateBearing(start: LatLng, end: LatLng): number {
+    const rad = (value: number) => value * Math.PI / 180;
+    const startLat = rad(start[0]), endLat = rad(end[0]), delta = rad(end[1] - start[1]);
+    const y = Math.sin(delta) * Math.cos(endLat);
+    const x = Math.cos(startLat) * Math.sin(endLat) - Math.sin(startLat) * Math.cos(endLat) * Math.cos(delta);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  }
+
+  private nearestHeading(next: number): number {
+    if (this.displayedHeading === undefined) return this.displayedHeading = next;
+    const current = ((this.displayedHeading % 360) + 360) % 360;
+    return this.displayedHeading += ((next - current + 540) % 360) - 180;
   }
 
   private cancelMovement(): void {
@@ -378,32 +378,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.movementFrame = undefined;
   }
 
-  private calculateBearing(start: [number, number], end: [number, number]): number {
-    const toRadians = (value: number) => value * (Math.PI / 180);
-    const startLat = toRadians(start[0]);
-    const endLat = toRadians(end[0]);
-    const longitudeDelta = toRadians(end[1] - start[1]);
-    const y = Math.sin(longitudeDelta) * Math.cos(endLat);
-    const x =
-      Math.cos(startLat) * Math.sin(endLat) -
-      Math.sin(startLat) * Math.cos(endLat) * Math.cos(longitudeDelta);
-    return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
-  }
-
-  private nearestHeading(nextHeading: number): number {
-    if (this.displayedHeading === undefined) {
-      this.displayedHeading = nextHeading;
-      return nextHeading;
-    }
-    const normalizedCurrent = ((this.displayedHeading % 360) + 360) % 360;
-    const shortestDelta = ((nextHeading - normalizedCurrent + 540) % 360) - 180;
-    this.displayedHeading += shortestDelta;
-    return this.displayedHeading;
-  }
-
   ngOnDestroy(): void {
     this.cancelMovement();
     this.routeRequest?.abort();
+    this.vehicleOverlay?.finalize();
+    if (this.vehicleModelUrl) URL.revokeObjectURL(this.vehicleModelUrl);
     this.map?.remove();
   }
 }

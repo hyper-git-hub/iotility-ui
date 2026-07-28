@@ -105,7 +105,7 @@
   @apply absolute z-[500] flex items-center gap-2 rounded-xl border border-line bg-white/95 px-3 py-2 text-[10px] text-muted shadow-lg backdrop-blur dark:border-dark-line dark:bg-dark-surface/95 dark:text-brand-300;
 }
 .map-status {
-  @apply right-4 top-4;
+  @apply left-4 top-4 max-w-[calc(100%_-_5rem)] truncate;
 }
 .map-legend {
   @apply bottom-4 left-1/2 -translate-x-1/2;
