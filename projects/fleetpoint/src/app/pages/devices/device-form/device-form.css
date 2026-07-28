@@ -1,0 +1,25 @@
+@reference "../../../../styles.css";
+@import '../../../shared/styles/fields.css';
+
+.device-form {
+  @apply grid gap-3;
+}
+.shared-form-field b {
+  @apply text-danger;
+}
+.device-dropdown {
+  @apply block;
+}
+.device-form-actions {
+  @apply flex w-full gap-2;
+}
+.device-form-actions button {
+  @apply flex-1;
+}
+:host ::ng-deep app-modal .modal-panel {
+  max-width: 28rem;
+  overflow: visible;
+}
+:host ::ng-deep app-modal .modal-content {
+  overflow: visible;
+}

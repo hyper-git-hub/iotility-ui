@@ -4,10 +4,14 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthSessionService } from '../services/auth-session.service';
+import { FeedbackDialogService } from '../services/feedback-dialog.service';
+
+let handlingInvalidSession = false;
 
 export const apiInterceptor: HttpInterceptorFn = (request, next) => {
   const router = inject(Router);
   const authSession = inject(AuthSessionService);
+  const feedbackDialog = inject(FeedbackDialogService);
   const isCobApi = request.url.startsWith(environment.cobPackagesBaseUrl);
   const isPlatformApi =
     request.url.startsWith(environment.userMsBaseUrl) ||
@@ -19,10 +23,7 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
   if (isCobApi) {
     return next(
       request.clone({
-        headers: request.headers.set(
-          'consumer-app-secret',
-          environment.cobConsumerAppSecret,
-        ),
+        headers: request.headers.set('consumer-app-secret', environment.cobConsumerAppSecret),
       }),
     );
   }
@@ -38,8 +39,21 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
   return next(request.clone({ headers })).pipe(
     catchError((error: HttpErrorResponse) => {
       if ((error.status === 401 || error.status === 403) && token) {
-        authSession.clear();
-        void router.navigate(['/auth/login']);
+        if (!handlingInvalidSession) {
+          handlingInvalidSession = true;
+          authSession.clear();
+          void router.navigate(['/auth/login']).then(async () => {
+            await feedbackDialog.open({
+              type: 'warning',
+              title: 'You have been logged out',
+              message:
+                'Your account was signed in on another device. Please sign in again to continue.',
+              confirmText: 'Sign in again',
+              showCancel: false,
+            });
+            handlingInvalidSession = false;
+          });
+        }
       }
       return throwError(() => error);
     }),

@@ -1,0 +1,62 @@
+<app-modal [open]="open()" labelledBy="device-form-title" (closed)="cancel()">
+  <h2 modal-header id="device-form-title">Register New Device</h2>
+  <form id="device-form" class="device-form" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="shared-form-field">
+      <span>IMEI Number <b>*</b></span>
+      <input
+        class="shared-form-control"
+        formControlName="imei"
+        inputmode="numeric"
+        maxlength="15"
+        placeholder="15-digit IMEI"
+      />
+      @if (invalid('imei')) {
+        <small class="shared-form-error">Enter a valid 15-digit IMEI.</small>
+      }
+    </label>
+    <label class="shared-form-field">
+      <span>Serial Number <b>*</b></span>
+      <input class="shared-form-control" formControlName="serial" placeholder="Device serial" />
+      @if (invalid('serial')) {
+        <small class="shared-form-error">Enter the serial number.</small>
+      }
+    </label>
+    <label class="shared-form-field">
+      <span>Model <b>*</b></span>
+      <input class="shared-form-control" formControlName="model" placeholder="e.g. FMC920" />
+      @if (invalid('model')) {
+        <small class="shared-form-error">Enter the device model.</small>
+      }
+    </label>
+    <label class="shared-form-field">
+      <span>Manufacturer <b>*</b></span>
+      <input
+        class="shared-form-control"
+        formControlName="manufacturer"
+        placeholder="e.g. Teltonika"
+      />
+      @if (invalid('manufacturer')) {
+        <small class="shared-form-error">Enter the manufacturer.</small>
+      }
+    </label>
+    <label class="shared-form-field">
+      <span>Device Type <b>*</b></span>
+      <shared-dropdown
+        class="device-dropdown"
+        [options]="typeOptions"
+        mode="single"
+        align="left"
+        [showOptionIcons]="false"
+        [matchTriggerWidth]="true"
+        [selected]="[form.controls.category.value]"
+        (optionSelected)="select($event)"
+      >
+        <button dropdown-trigger type="button">{{ typeLabel() }}</button>
+      </shared-dropdown>
+    </label>
+  </form>
+  <div modal-footer class="device-form-actions">
+    <button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button>
+    <button type="submit" form="device-form" class="shared-button-primary">Register Device</button>
+  </div>
+</app-modal>

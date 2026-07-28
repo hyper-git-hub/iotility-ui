@@ -1,4 +1,8 @@
-<section class="table-card" [class.fixed-card-height]="cardHeight() !== null" [style.height.px]="cardHeight()">
+<section
+  class="table-card"
+  [class.fixed-card-height]="cardHeight() !== null"
+  [style.height.px]="cardHeight()"
+>
   <header>
     <div>
       <h2>{{ title() }}</h2>
@@ -39,96 +43,188 @@
           <button>Export</button>
         }
         @if (showPrimaryAction()) {
-          <button class="primary" (click)="primaryAction.emit()">+ {{ primaryActionLabel() }}</button>
+          <button class="primary" (click)="primaryAction.emit()">
+            + {{ primaryActionLabel() }}
+          </button>
         }
       </div>
     }
   </header>
   <div class="table-height" [class.ready]="heightReady()" [style.height.px]="resolvedBodyHeight()">
-    <div class="scroll" #tableBody [class.fixed-height]="viewportHeight() !== null" [style.padding-bottom.px]="bodyBottomPadding()">
+    <div
+      class="scroll"
+      #tableBody
+      [class.fixed-height]="viewportHeight() !== null"
+      [style.padding-bottom.px]="bodyBottomPadding()"
+    >
       <table [style.min-width.px]="minTableWidth()">
-      <thead>
-        <tr>
-          @for (c of columns(); track c.key) {
-            <th>{{ c.label }}</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (r of filteredRows(); track $index) {
-          <tr [class.clickable-row]="rowsClickable() || expandableRows()" [class.selected-row]="isSelectedRow(r) || isExpandedRow(r)" (click)="selectRow(r)" [attr.aria-expanded]="expandableRows() ? isExpandedRow(r) : null">
+        <thead>
+          <tr>
             @for (c of columns(); track c.key) {
-              <td>
-                @if (cellTemplate(c.key); as template) {
-                  <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="{ $implicit: r, row: r, column: c }" />
-                } @else if (c.type === 'status') {
-                  <span [class]="'status ' + statusClass(r[c.key])">{{ r[c.key] }}</span>
-                } @else if (c.type === 'priority') {
-                  <span [class]="'priority-cell ' + priorityClass(r[c.key])"><i></i>{{ r[c.key] }}</span>
-                } @else if (c.type === 'tasks') {
-                  <span class="tasks-cell"><i><b [style.width.%]="taskProgress(r[c.key])"></b></i>{{ r[c.key] }}</span>
-                } @else if (c.type === 'user') {
-                  <span class="user-cell" [class.clickable-cell]="c.clickable" [attr.role]="c.clickable ? 'link' : null" [attr.tabindex]="c.clickable ? 0 : null" (click)="selectCell($event, c, r)" (keydown.enter)="selectCell($event, c, r)"><strong>{{ r[c.key] }}</strong><small>{{ r[c.secondaryKey ?? ''] }}</small></span>
-                } @else if (c.type === 'vehicle') {
-                  <span class="vehicle-cell" [class.clickable-cell]="c.clickable" [attr.role]="c.clickable ? 'link' : null" [attr.tabindex]="c.clickable ? 0 : null" (click)="selectCell($event, c, r)" (keydown.enter)="selectCell($event, c, r)">
-                    @if (c.imageKey) {
-                      <img class="vehicle-image" [src]="r[c.imageKey]" (error)="useFallbackImage($event)" alt="" />
-                    } @else {
-                      <span class="vehicle-glyph">▰</span>
-                    }
-                    <span><strong>{{ r[c.key] }}</strong><small>{{ r[c.secondaryKey ?? ''] }}</small></span>
-                  </span>
-                } @else if (c.type === 'fleet') {
-                  <span class="fleet-cell"><i [style.background]="r['fleetColor']"></i>{{ r[c.key] }}</span>
-                } @else if (c.type === 'fuel') {
-                  <span class="fuel-cell"><i><b [style.width.%]="r[c.key]"></b></i>{{ r[c.key] }}%</span>
-                } @else if (c.type === 'mot') {
-                  <strong class="mot" [class]="motClass(r[c.key])">{{ r[c.key] }}</strong>
-                } @else if (c.type === 'alert') {
-                  <span class="alert-cell" [class.clear]="!r[c.key]">{{ r[c.key] ? '!' : '✓' }}</span>
-                } @else if (c.type === 'actions') {
-                  <span class="actions icon-actions">
-                    @for (action of actions(); track action) {
-                      <button [class.delete-action]="action === 'delete'" [class.dispatch-action]="action === 'dispatch'" [attr.aria-label]="action" [title]="action" (click)="$event.stopPropagation(); rowAction.emit({ action, row: r })">
-                        @if (action === 'dispatch') {
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 14-7-5 14-2.5-5.5L5 12Z"/><path d="m11.5 13.5 3-3"/></svg><span>Dispatch</span>
-                        } @else if (action === 'upload') {
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M5 14v5h14v-5"/></svg>
-                        } @else if (action === 'map') {
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                        } @else if (action === 'history') {
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
-                        } @else if (action === 'edit') {
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>
-                        } @else if (action === 'delete') {
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>
-                        } @else {
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
-                        }
-                      </button>
-                    }
-                  </span>
-                } @else {
-                  <span [class.strong]="c.key === 'vehicle'" [class.clickable-cell]="c.clickable" [attr.role]="c.clickable ? 'link' : null" [attr.tabindex]="c.clickable ? 0 : null" (click)="selectCell($event, c, r)" (keydown.enter)="selectCell($event, c, r)">{{ r[c.key] }}</span>
-                }
-              </td>
+              <th>{{ c.label }}</th>
             }
           </tr>
-          @if (expandableRows() && isExpandedRow(r) && expandedRowTemplate(); as template) {
-            <tr class="expanded-row">
-              <td [attr.colspan]="columns().length">
-                <div class="expanded-row-content">
-                  <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="{ $implicit: r, row: r }"/>
-                </div>
-              </td>
+        </thead>
+        <tbody>
+          @for (r of filteredRows(); track $index) {
+            <tr
+              [class.clickable-row]="rowsClickable() || expandableRows()"
+              [class.selected-row]="isSelectedRow(r) || isExpandedRow(r)"
+              (click)="selectRow(r)"
+              [attr.aria-expanded]="expandableRows() ? isExpandedRow(r) : null"
+            >
+              @for (c of columns(); track c.key) {
+                <td>
+                  @if (cellTemplate(c.key); as template) {
+                    <ng-container
+                      [ngTemplateOutlet]="template"
+                      [ngTemplateOutletContext]="{ $implicit: r, row: r, column: c }"
+                    />
+                  } @else if (c.type === 'status') {
+                    <span [class]="'status ' + statusClass(r[c.key])">{{ r[c.key] }}</span>
+                  } @else if (c.type === 'priority') {
+                    <span [class]="'priority-cell ' + priorityClass(r[c.key])"
+                      ><i></i>{{ r[c.key] }}</span
+                    >
+                  } @else if (c.type === 'tasks') {
+                    <span class="tasks-cell"
+                      ><i><b [style.width.%]="taskProgress(r[c.key])"></b></i>{{ r[c.key] }}</span
+                    >
+                  } @else if (c.type === 'user') {
+                    <span
+                      class="user-cell"
+                      [class.clickable-cell]="isCellClickable(c, r)"
+                      [class.conditionally-disabled-cell]="c.clickable && !isCellClickable(c, r)"
+                      [attr.role]="isCellClickable(c, r) ? 'link' : null"
+                      [attr.tabindex]="isCellClickable(c, r) ? 0 : null"
+                      (click)="selectCell($event, c, r)"
+                      (keydown.enter)="selectCell($event, c, r)"
+                      ><strong>{{ r[c.key] }}</strong
+                      ><small>{{ r[c.secondaryKey ?? ''] }}</small></span
+                    >
+                  } @else if (c.type === 'vehicle') {
+                    <span
+                      class="vehicle-cell"
+                      [class.clickable-cell]="isCellClickable(c, r)"
+                      [class.conditionally-disabled-cell]="c.clickable && !isCellClickable(c, r)"
+                      [attr.role]="isCellClickable(c, r) ? 'link' : null"
+                      [attr.tabindex]="isCellClickable(c, r) ? 0 : null"
+                      (click)="selectCell($event, c, r)"
+                      (keydown.enter)="selectCell($event, c, r)"
+                    >
+                      @if (c.imageKey) {
+                        <img
+                          class="vehicle-image"
+                          [src]="r[c.imageKey]"
+                          (error)="useFallbackImage($event)"
+                          alt=""
+                        />
+                      } @else {
+                        <span class="vehicle-glyph">▰</span>
+                      }
+                      <span
+                        ><strong>{{ r[c.key] }}</strong
+                        ><small>{{ r[c.secondaryKey ?? ''] }}</small></span
+                      >
+                    </span>
+                  } @else if (c.type === 'fleet') {
+                    <span class="fleet-cell"
+                      ><i [style.background]="r['fleetColor']"></i>{{ r[c.key] }}</span
+                    >
+                  } @else if (c.type === 'fuel') {
+                    <span class="fuel-cell"
+                      ><i><b [style.width.%]="r[c.key]"></b></i>{{ r[c.key] }}%</span
+                    >
+                  } @else if (c.type === 'mot') {
+                    <strong class="mot" [class]="motClass(r[c.key])">{{ r[c.key] }}</strong>
+                  } @else if (c.type === 'alert') {
+                    <span class="alert-cell" [class.clear]="!r[c.key]">{{
+                      r[c.key] ? '!' : '✓'
+                    }}</span>
+                  } @else if (c.type === 'actions') {
+                    <span class="actions icon-actions">
+                      @for (action of actions(); track action) {
+                        <button
+                          [class.delete-action]="action === 'delete'"
+                          [class.dispatch-action]="action === 'dispatch'"
+                          [attr.aria-label]="action"
+                          [title]="action"
+                          (click)="$event.stopPropagation(); rowAction.emit({ action, row: r })"
+                        >
+                          @if (action === 'dispatch') {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path d="m5 12 14-7-5 14-2.5-5.5L5 12Z" />
+                              <path d="m11.5 13.5 3-3" /></svg
+                            ><span>Dispatch</span>
+                          } @else if (action === 'upload') {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path d="M12 16V4" />
+                              <path d="m7.5 8.5 4.5-4.5 4.5 4.5" />
+                              <path d="M5 14v5h14v-5" />
+                            </svg>
+                          } @else if (action === 'map') {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path
+                                d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"
+                              />
+                              <circle cx="12" cy="10" r="2.5" />
+                            </svg>
+                          } @else if (action === 'history') {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <circle cx="12" cy="12" r="8.5" />
+                              <path d="M12 7.5V12l3 2" />
+                            </svg>
+                          } @else if (action === 'edit') {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path d="M4 20h4l11-11-4-4L4 16v4Z" />
+                              <path d="m13.5 6.5 4 4" />
+                            </svg>
+                          } @else if (action === 'delete') {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+                            </svg>
+                          } @else {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                              <circle cx="12" cy="12" r="2.5" />
+                            </svg>
+                          }
+                        </button>
+                      }
+                    </span>
+                  } @else {
+                    <span
+                      [class.strong]="c.key === 'vehicle'"
+                      [class.clickable-cell]="isCellClickable(c, r)"
+                      [class.conditionally-disabled-cell]="c.clickable && !isCellClickable(c, r)"
+                      [attr.role]="isCellClickable(c, r) ? 'link' : null"
+                      [attr.tabindex]="isCellClickable(c, r) ? 0 : null"
+                      (click)="selectCell($event, c, r)"
+                      (keydown.enter)="selectCell($event, c, r)"
+                      >{{ r[c.key] }}</span
+                    >
+                  }
+                </td>
+              }
+            </tr>
+            @if (expandableRows() && isExpandedRow(r) && expandedRowTemplate(); as template) {
+              <tr class="expanded-row">
+                <td [attr.colspan]="columns().length">
+                  <div class="expanded-row-content">
+                    <ng-container
+                      [ngTemplateOutlet]="template"
+                      [ngTemplateOutletContext]="{ $implicit: r, row: r }"
+                    />
+                  </div>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td [attr.colspan]="columns().length" class="empty">No matching records found.</td>
             </tr>
           }
-        } @empty {
-          <tr>
-            <td [attr.colspan]="columns().length" class="empty">No matching records found.</td>
-          </tr>
-        }
-      </tbody>
+        </tbody>
       </table>
     </div>
   </div>

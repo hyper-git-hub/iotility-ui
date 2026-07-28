@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, computed, Inject, Input } from '@angular/core';
+import { Component, computed, Inject, Input, isDevMode } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
 import { MenuGroup, SIDEBAR_MENU } from './menu.config';
@@ -24,6 +24,7 @@ interface HostDialogRequest {
 })
 export class FleetpointSidebar {
   @Input() badgeCounts: Record<string, number> = {};
+  private readonly showAllDevelopmentItems = isDevMode();
 
   constructor(
     @Inject(DOCUMENT) private readonly document: Document,
@@ -34,7 +35,9 @@ export class FleetpointSidebar {
   protected readonly visibleMenu = computed<MenuGroup[]>(() =>
     SIDEBAR_MENU.map((group) => ({
       ...group,
-      items: group.items.filter((item) => this.features.has(item.featureId)),
+      items: group.items.filter(
+        (item) => this.showAllDevelopmentItems || this.features.has(item.featureId),
+      ),
     })).filter((group) => group.items.length > 0),
   );
 
