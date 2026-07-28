@@ -186,6 +186,12 @@ export const routes: Routes = [
           import('./pages/vehicles/vehicles-page').then((module) => module.VehiclesPage),
       },
       {
+        path: 'devices',
+        title: 'Devices | FleetPoint',
+        loadComponent: () =>
+          import('./pages/devices/devices-page').then((module) => module.DevicesPage),
+      },
+      {
         path: 'vehicles/:registration',
         title: 'Vehicle Details | FleetPoint',
         loadComponent: () =>

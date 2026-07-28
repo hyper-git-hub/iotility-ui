@@ -1,0 +1,306 @@
+@reference "../../../styles.css";
+.devices-page {
+  @apply grid content-start gap-4 p-5 text-ink dark:text-white;
+}
+.devices-heading {
+  @apply flex items-end justify-between gap-4;
+}
+.devices-heading h1 {
+  @apply text-xl font-bold;
+}
+.devices-heading p {
+  @apply mt-1 text-xs text-muted dark:text-brand-300;
+}
+.devices-heading > div:last-child {
+  @apply flex gap-2;
+}
+.devices-heading button {
+  @apply inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold;
+}
+.export {
+  @apply border border-line bg-white text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
+}
+.export svg {
+  @apply size-4;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.register {
+  @apply bg-brand-600 text-white;
+}
+.device-stats {
+  @apply grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-5;
+}
+.device-stats svg {
+  @apply size-4;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.device-filters {
+  @apply relative z-20 flex items-center gap-3 rounded-2xl border border-line bg-white p-3 dark:border-dark-line dark:bg-dark-surface;
+}
+.search {
+  @apply flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-canvas px-3 dark:border-dark-line dark:bg-dark-canvas;
+}
+.search svg,
+.view-toggle svg {
+  @apply size-4;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.search input {
+  @apply min-w-0 flex-1 bg-transparent text-xs outline-none dark:text-white;
+}
+.filter-dropdown {
+  @apply w-36;
+}
+.type-filter {
+  @apply w-44;
+}
+.clear {
+  @apply text-xs font-semibold text-brand-600;
+}
+.view-toggle {
+  @apply ml-auto flex overflow-hidden rounded-xl border border-line dark:border-dark-line;
+}
+.view-toggle button {
+  @apply inline-flex h-10 items-center gap-1.5 bg-white px-3 text-xs text-muted dark:bg-dark-canvas dark:text-brand-300;
+}
+.view-toggle button.active {
+  @apply bg-brand-600 text-white;
+}
+.device-cell {
+  @apply flex items-center gap-2;
+}
+.device-cell > span,
+.device-icon {
+  @apply grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-600/15;
+}
+.device-cell > span:not(.type-icon) { @apply hidden; }
+.type-icon[data-category='dashcam'] { @apply bg-info/10 text-info; }
+.type-icon[data-category='temp-sensor'] { @apply bg-orange-500/10 text-orange-500; }
+.type-icon[data-category='rfid-reader'] { @apply bg-success/10 text-success; }
+.type-icon[data-category='eye-sensor'] { @apply bg-rose-500/10 text-rose-500; }
+.type-icon[data-category='fuel-sensor'] { @apply bg-warning/10 text-warning; }
+.type-icon svg { @apply size-4; fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
+.device-icon[data-category='dashcam'] { @apply bg-info/10 text-info; }
+.device-icon[data-category='temp-sensor'] { @apply bg-orange-500/10 text-orange-500; }
+.device-icon[data-category='rfid-reader'] { @apply bg-success/10 text-success; }
+.device-icon[data-category='eye-sensor'] { @apply bg-rose-500/10 text-rose-500; }
+.device-icon[data-category='fuel-sensor'] { @apply bg-warning/10 text-warning; }
+.device-icon svg { @apply size-4; fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
+:host-context(.dark) .type-icon,
+:host-context(.dark) .device-icon {
+  background: color-mix(in srgb, currentColor 13%, var(--color-dark-canvas));
+  border: 1px solid color-mix(in srgb, currentColor 18%, var(--color-dark-line));
+}
+.device-cell strong,
+.device-cell small,
+.vehicle-cell strong,
+.vehicle-cell small {
+  @apply block;
+}
+.device-cell small,
+.vehicle-cell small {
+  @apply mt-0.5 text-[9px] text-muted;
+}
+.identifier-cell strong,.identifier-cell small { @apply block font-mono; }
+.identifier-cell strong { @apply text-[10px] font-medium text-ink dark:text-white; }
+.identifier-cell small { @apply mt-1 text-[9px] text-muted dark:text-brand-300; }
+.firmware-cell { @apply font-mono text-[10px] text-ink dark:text-white; }
+.ping-value,.warranty-value { @apply text-[10px]; }
+.ping-value[data-state='stale'],.warranty-value[data-state='expired'] { @apply font-medium text-danger; }
+.ping-value[data-state='never'] { @apply text-muted; }
+.warranty-value[data-state='warning'] { @apply text-warning; }
+.warranty-value[data-state='valid'] { @apply text-success; }
+.device-status {
+  @apply inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold;
+}
+.device-status i,
+.bundle-summary p i {
+  @apply size-1.5 rounded-full bg-current;
+}
+.device-status[data-status='active'] {
+  @apply border-success/30 bg-success/10 text-success;
+}
+.device-status[data-status='faulty'] {
+  @apply border-danger/30 bg-danger/10 text-danger;
+}
+.device-status[data-status='in-stock'] {
+  @apply border-brand-500/30 bg-brand-500/10 text-brand-600;
+}
+.meter {
+  @apply flex items-center gap-2 text-[10px];
+}
+.signal-cell {
+  @apply inline-flex w-14 items-end gap-2 text-[10px];
+}
+.signal-bars {
+  @apply flex h-4 items-end gap-0.5;
+}
+.signal-bars b {
+  @apply block w-1 rounded-sm bg-line dark:bg-dark-line;
+}
+.signal-bars b:nth-child(1) { height:25%; }
+.signal-bars b:nth-child(2) { height:50%; }
+.signal-bars b:nth-child(3) { height:75%; }
+.signal-bars b:nth-child(4) { height:100%; }
+.signal-bars b.on { @apply bg-success; }
+.no-signal {
+  @apply inline-flex w-14 justify-center text-muted/60;
+}
+.no-signal svg {
+  @apply size-4;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.meter > i {
+  @apply h-1.5 w-12 overflow-hidden rounded-full bg-line dark:bg-dark-line;
+}
+.meter b {
+  @apply block h-full rounded-full bg-success;
+}
+.meter.battery b {
+  @apply bg-info;
+}
+.bundle-list {
+  @apply grid gap-3;
+}
+.bundle-card {
+  @apply overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.bundle-card.alert {
+  @apply border-l-4 border-l-danger;
+}
+.bundle-summary {
+  @apply flex w-full items-center gap-3 p-4 text-left;
+}
+.truck {
+  @apply grid size-10 shrink-0 place-items-center rounded-xl bg-canvas dark:bg-dark-canvas;
+}
+.unassigned-icon {
+  @apply bg-warning/10 text-warning;
+}
+.unassigned-icon svg {
+  @apply size-5;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.bundle-summary > div {
+  @apply min-w-0 flex-1;
+}
+.bundle-summary h2 {
+  @apply text-sm font-bold;
+}
+.bundle-summary h2 small {
+  @apply ml-1 font-normal text-muted;
+}
+.bundle-summary h2 b {
+  @apply ml-2 rounded-full border border-danger/30 bg-danger/10 px-2 py-0.5 text-[9px] font-medium text-danger;
+}
+.bundle-summary p {
+  @apply mt-1 flex flex-wrap gap-3 text-[10px] text-muted;
+}
+.bundle-summary p span {
+  @apply inline-flex items-center gap-1;
+}
+.bundle-summary p [data-status='active'] i {
+  @apply bg-success;
+}
+.bundle-summary p [data-status='faulty'] {
+  @apply text-danger;
+}
+.bundle-summary em {
+  @apply text-[10px] not-italic text-muted;
+}
+.bundle-summary > svg {
+  @apply size-4 text-muted transition;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.bundle-summary > svg.open {
+  @apply rotate-180;
+}
+.bundle-devices {
+  @apply border-t border-line px-4 dark:border-dark-line;
+}
+.bundle-devices > div {
+  @apply flex items-center gap-3 border-b border-line py-3 text-[10px] last:border-0 dark:border-dark-line;
+}
+.bundle-devices p {
+  @apply min-w-0 flex-1;
+}
+.bundle-devices p strong,
+.bundle-devices p small {
+  @apply block;
+}
+.bundle-devices p small {
+  @apply mt-1 text-muted;
+}
+.bundle-devices > div > span:not(.device-icon):not(.device-status) {
+  @apply text-muted;
+}
+.bundle-devices > div > button {
+  @apply rounded-lg border border-line px-3 py-1.5 font-semibold text-brand-600 dark:border-dark-line;
+}
+.bundle-metric {
+  @apply grid min-w-24 gap-1 text-[10px];
+}
+.bundle-metric small {
+  @apply text-muted dark:text-brand-300;
+}
+.bundle-metric > b {
+  @apply font-medium text-ink dark:text-white;
+}
+.bundle-metric.imei > b {
+  @apply font-mono text-[9px];
+}
+.bundle-metric.signal > span {
+  @apply inline-flex items-end gap-1.5 text-ink dark:text-white;
+}
+.bundle-metric.ping > b.stale {
+  @apply text-danger;
+}
+.unassigned .bundle-summary {
+  @apply border-b border-line dark:border-dark-line;
+}
+@media (max-width: 900px) {
+  .devices-heading {
+    @apply items-start flex-col;
+  }
+  .device-filters {
+    @apply flex-wrap;
+  }
+  .search {
+    @apply basis-full;
+  }
+  .view-toggle {
+    @apply ml-0;
+  }
+}
+@media (max-width: 600px) {
+  .filter-dropdown,
+  .type-filter {
+    @apply flex-1;
+  }
+  .view-toggle {
+    @apply w-full;
+  }
+  .view-toggle button {
+    @apply flex-1 justify-center;
+  }
+}

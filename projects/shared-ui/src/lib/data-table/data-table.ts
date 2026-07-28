@@ -1,7 +1,35 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { AfterViewInit, Component, Directive, ElementRef, OnDestroy, TemplateRef, computed, contentChild, contentChildren, inject, input, output, signal, viewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  Directive,
+  ElementRef,
+  OnDestroy,
+  TemplateRef,
+  computed,
+  contentChild,
+  contentChildren,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
-export type TableColumnType = 'text' | 'user' | 'email' | 'date' | 'status' | 'priority' | 'tasks' | 'actions' | 'vehicle' | 'fleet' | 'fuel' | 'mot' | 'alert';
+export type TableColumnType =
+  | 'text'
+  | 'user'
+  | 'email'
+  | 'date'
+  | 'status'
+  | 'priority'
+  | 'tasks'
+  | 'actions'
+  | 'vehicle'
+  | 'fleet'
+  | 'fuel'
+  | 'mot'
+  | 'alert';
 export interface TableColumn {
   key: string;
   label: string;
@@ -10,6 +38,7 @@ export interface TableColumn {
   imageKey?: string;
   widthClass?: string;
   clickable?: boolean;
+  clickableWhenKey?: string;
 }
 export type TableRow = Record<string, string | number | boolean>;
 export type TableAction = 'view' | 'upload' | 'map' | 'history' | 'edit' | 'delete' | 'dispatch';
@@ -90,7 +119,9 @@ export class DataTable implements AfterViewInit, OnDestroy {
       ? this.rows().filter((r) => Object.values(r).some((v) => String(v).toLowerCase().includes(q)))
       : this.rows();
   });
-  protected readonly resolvedBodyHeight = computed(() => this.viewportHeight() ?? this.bodyHeight());
+  protected readonly resolvedBodyHeight = computed(
+    () => this.viewportHeight() ?? this.bodyHeight(),
+  );
   protected updateSearch(e: Event): void {
     const value = (e.target as HTMLInputElement).value;
     this.searchTerm.set(value);
@@ -110,7 +141,11 @@ export class DataTable implements AfterViewInit, OnDestroy {
   }
   protected motClass(v: unknown): string {
     const value = String(v).toLowerCase();
-    return value === 'expired' || Number.parseInt(value, 10) <= 30 ? 'mot-danger' : Number.parseInt(value, 10) <= 90 ? 'mot-warning' : 'mot-success';
+    return value === 'expired' || Number.parseInt(value, 10) <= 30
+      ? 'mot-danger'
+      : Number.parseInt(value, 10) <= 90
+        ? 'mot-warning'
+        : 'mot-success';
   }
   protected useFallbackImage(event: Event): void {
     const image = event.target as HTMLImageElement;
@@ -118,9 +153,12 @@ export class DataTable implements AfterViewInit, OnDestroy {
     image.src = 'assets/fleetpoint/vehicle.svg';
   }
   protected selectCell(event: Event, column: TableColumn, row: TableRow): void {
-    if (!column.clickable) return;
+    if (!this.isCellClickable(column, row)) return;
     event.stopPropagation();
     this.cellSelected.emit({ column, row });
+  }
+  protected isCellClickable(column: TableColumn, row: TableRow): boolean {
+    return Boolean(column.clickable && (!column.clickableWhenKey || row[column.clickableWhenKey]));
   }
   protected isSelectedRow(row: TableRow): boolean {
     const selected = this.selectedRowId();
