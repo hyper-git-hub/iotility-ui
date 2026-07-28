@@ -33,10 +33,23 @@ export class AuthSessionService {
 
   get isAuthenticated(): boolean {
     const token = localStorage.getItem('userMS-token') || localStorage.getItem('token');
-    return Boolean(token && this.user);
+    return Boolean(token && this.user && !this.isTokenExpired(token));
   }
 
   clear(): void {
     this.sessionKeys.forEach((key) => localStorage.removeItem(key));
+  }
+
+  private isTokenExpired(token: string): boolean {
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+
+    try {
+      const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const decoded = JSON.parse(atob(payload)) as { exp?: unknown };
+      return typeof decoded.exp === 'number' && Date.now() >= decoded.exp * 1000;
+    } catch {
+      return true;
+    }
   }
 }

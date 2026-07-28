@@ -1,0 +1,74 @@
+@reference "../../../styles.css";
+.settings-page {
+  @apply flex h-[calc(100vh-4rem)] overflow-hidden bg-canvas dark:bg-dark-canvas;
+}
+.settings-page > aside {
+  @apply flex w-56 shrink-0 flex-col border-r border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.settings-page aside > header {
+  @apply border-b border-line px-4 py-4 dark:border-dark-line;
+}
+.settings-page h1 {
+  @apply text-lg font-bold text-ink dark:text-white;
+}
+.settings-page header p {
+  @apply mt-1 text-[10px] font-medium text-warning;
+}
+.settings-page nav {
+  @apply flex-1 py-2;
+}
+.settings-page nav a {
+  @apply flex items-center gap-3 px-4 py-2.5 text-xs font-medium text-muted no-underline transition hover:bg-canvas dark:text-brand-300 dark:hover:bg-dark-canvas;
+}
+.settings-page nav a.active {
+  @apply bg-brand-600 text-white;
+}
+.nav-icon svg {
+  @apply size-4;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.settings-page nav small {
+  @apply ml-auto rounded bg-canvas px-1.5 py-0.5 text-[9px] dark:bg-dark-canvas;
+}
+.settings-page nav a.active small {
+  @apply bg-brand-500 text-white;
+}
+.settings-page aside footer {
+  @apply border-t border-line p-4 dark:border-dark-line;
+}
+.settings-page footer button {
+  @apply flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-xs font-semibold text-white disabled:bg-canvas disabled:text-muted dark:disabled:bg-dark-canvas;
+}
+.settings-page footer svg {
+  @apply size-4;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.settings-page footer button.saved {
+  @apply bg-success;
+}
+.settings-page > main {
+  @apply min-h-0 min-w-0 flex-1 overflow-y-auto p-6;
+}
+@media (max-width: 750px) {
+  .settings-page {
+    @apply h-auto min-h-[calc(100vh-4rem)] overflow-visible flex-col;
+  }
+  .settings-page > aside {
+    @apply w-full;
+  }
+  .settings-page nav {
+    @apply flex overflow-x-auto;
+  }
+  .settings-page nav a {
+    @apply shrink-0;
+  }
+  .settings-page aside footer {
+    @apply hidden;
+  }
+}

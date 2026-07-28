@@ -1,0 +1,389 @@
+<section class="documents-page">
+  <header class="page-heading">
+    <div>
+      <h1>Documents</h1>
+      <p>
+        {{ counts().total }} documents · {{ counts().expired }} expired ·
+        {{ counts().expiring }} expiring soon
+      </p>
+    </div>
+    <div class="heading-actions">
+      <button type="button" class="secondary">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4" />
+        </svg>
+        Export Report</button
+      ><button type="button" class="primary" (click)="openUpload()">＋ Upload Document</button>
+    </div>
+  </header>
+
+  <section class="document-stats">
+    <button type="button" (click)="setStatus('all')">
+      <app-stat-card label="Total Documents" [value]="counts().total" tone="brand"
+        ><svg stat-card-icon viewBox="0 0 24 24">
+          <path d="M6 4h12v16H6z" />
+          <path d="M9 8h6M9 12h6M9 16h4" /></svg
+      ></app-stat-card>
+    </button>
+    <button type="button" (click)="setStatus('valid')">
+      <app-stat-card label="Valid" [value]="counts().valid" tone="success"
+        ><svg stat-card-icon viewBox="0 0 24 24"><path d="m6 12 4 4 8-9" /></svg
+      ></app-stat-card>
+    </button>
+    <button type="button" (click)="setStatus('expiring')">
+      <app-stat-card label="Expiring Soon" [value]="counts().expiring" tone="warning"
+        ><svg stat-card-icon viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 7v5l3 2" /></svg
+      ></app-stat-card>
+    </button>
+    <button type="button" (click)="setStatus('expired')">
+      <app-stat-card label="Expired" [value]="counts().expired" tone="danger"
+        ><svg stat-card-icon viewBox="0 0 24 24">
+          <path d="M12 4 3 20h18L12 4Z" />
+          <path d="M12 9v5M12 17h.01" /></svg
+      ></app-stat-card>
+    </button>
+  </section>
+
+  <section class="attention">
+    <span class="attention-icon">!</span>
+    <div>
+      <h2>Documents Requiring Immediate Attention</h2>
+      <div>
+        @for (item of attention(); track item.id) {
+          <button type="button" [attr.data-status]="item.status" (click)="show(item)">
+            <strong>{{ item.linkedTo }}</strong
+            ><span>· {{ item.name }}</span
+            ><b>({{ deadline(item) }})</b>
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <nav class="category-tabs" aria-label="Document categories">
+    <a routerLink="all" routerLinkActive="active"
+      >All Documents <span>{{ counts().total }}</span></a
+    >
+    <a routerLink="vehicle" routerLinkActive="active"
+      >Vehicle <span>{{ counts().vehicle }}</span></a
+    >
+    <a routerLink="driver" routerLinkActive="active"
+      >Driver <span>{{ counts().driver }}</span></a
+    >
+    <a routerLink="company" routerLinkActive="active"
+      >Company <span>{{ counts().company }}</span></a
+    >
+  </nav>
+  <router-outlet />
+
+  <section class="filter-bar">
+    <label
+      ><span class="search-icon">⌕</span
+      ><input
+        type="search"
+        placeholder="Search document name, vehicle, driver or issuer..."
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+    /></label>
+    <shared-dropdown
+      class="status-dropdown"
+      [options]="categoryOptions"
+      mode="single"
+      align="right"
+      [showOptionIcons]="false"
+      [matchTriggerWidth]="true"
+      [selected]="[status()]"
+      (optionSelected)="chooseStatus($event)"
+      ><button dropdown-trigger type="button">{{ selectedStatusLabel() }}</button></shared-dropdown
+    >
+  </section>
+
+  <section class="documents-workspace" [class.with-detail]="selected()">
+    <div class="documents-list">
+      <shared-data-table
+        title="Document Library"
+        [subtitle]="'Showing ' + filtered().length + ' of ' + documents().length + ' documents'"
+        [columns]="columns"
+        [rows]="rows()"
+        [actions]="actions"
+        [showToolbar]="false"
+        [showExport]="false"
+        [showPrimaryAction]="false"
+        [rowsClickable]="true"
+        [selectedRowId]="selected()?.id ?? null"
+        [minTableWidth]="1050"
+        (rowSelected)="selectRow($event)"
+        (rowAction)="tableAction($event)"
+      >
+        <ng-template tableCell="document" let-row
+          ><div class="document-cell">
+            <span [attr.data-category]="row['category']">▤</span>
+            <div>
+              <strong>{{ row['document'] }}</strong
+              ><small>{{ row['file'] }} · {{ row['size'] }}</small>
+            </div>
+          </div></ng-template
+        >
+        <ng-template tableCell="categoryLabel" let-row
+          ><span class="category-value" [attr.data-category]="row['category']">{{
+            row['categoryLabel']
+          }}</span></ng-template
+        >
+        <ng-template tableCell="linkedTo" let-row
+          ><strong class="linked">{{ row['linkedTo'] }}</strong></ng-template
+        >
+        <ng-template tableCell="expiry" let-row
+          ><div class="expiry-cell" [attr.data-status]="row['status']">
+            <strong>{{ row['expiry'] }}</strong>
+            @if (row['days'] !== '') {
+              <small>{{
+                row['days'] < 0 ? -row['days'] + 'd overdue' : row['days'] + 'd left'
+              }}</small>
+            }
+          </div></ng-template
+        >
+        <ng-template tableCell="statusLabel" let-row
+          ><span class="document-status" [attr.data-status]="row['status']"
+            ><i></i>{{ row['statusLabel'] }}</span
+          ></ng-template
+        >
+      </shared-data-table>
+    </div>
+    <aside class="document-details">
+      @if (selected(); as item) {
+        <div class="detail-inner">
+          <header>
+            <h2>Document Details</h2>
+            <button type="button" (click)="selected.set(null)">×</button>
+          </header>
+          <div class="details-body">
+            <section class="file-preview">
+              <svg class="file-icon" viewBox="0 0 24 24">
+                <path d="M6 4h12v16H6z" />
+                <path d="M9 8h6M9 12h6M9 16h4" /></svg
+              ><strong>{{ item.fileName }}</strong
+              ><small>{{ item.fileSize }}</small
+              ><button type="button">
+                <svg viewBox="0 0 24 24">
+                  <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                  <circle cx="12" cy="12" r="2.5" /></svg
+                >View Document
+              </button>
+            </section>
+            <section class="detail-status" [attr.data-status]="item.status">
+              <span
+                ><i></i><strong>{{ statusLabel(item.status) }}</strong></span
+              ><b>{{ deadline(item) }}</b>
+            </section>
+            <dl>
+              <div>
+                <dt>Type</dt>
+                <dd>{{ item.name }}</dd>
+              </div>
+              <div>
+                <dt>Linked To</dt>
+                <dd>{{ item.linkedTo }}</dd>
+              </div>
+              <div>
+                <dt>Doc Number</dt>
+                <dd>{{ item.documentNumber || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Issued By</dt>
+                <dd>{{ item.issuedBy }}</dd>
+              </div>
+              <div>
+                <dt>Issue Date</dt>
+                <dd>{{ item.issueDate }}</dd>
+              </div>
+              <div>
+                <dt>Expiry Date</dt>
+                <dd>{{ item.expiryDate || 'No expiry' }}</dd>
+              </div>
+              <div>
+                <dt>Uploaded By</dt>
+                <dd>{{ item.uploadedBy }}</dd>
+              </div>
+            </dl>
+            @if (item.notes) {
+              <section class="notes">
+                <strong>Notes</strong>
+                <p>{{ item.notes }}</p>
+              </section>
+            }
+            @if (item.status === 'expired' || item.status === 'expiring') {
+              <button type="button" class="renew" (click)="openUpload()">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 16V4" />
+                  <path d="m7.5 8.5 4.5-4.5 4.5 4.5" />
+                  <path d="M5 14v5h14v-5" /></svg
+                >{{
+                  item.status === 'expired' ? 'Upload Renewed Document' : 'Upload Before Expiry'
+                }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </aside>
+  </section>
+
+  <section class="compliance">
+    <header>
+      <svg viewBox="0 0 24 24">
+        <path d="M12 3 5 6v6c0 4 2.8 7 7 9 4.2-2 7-5 7-9V6l-7-3Z" />
+        <path d="m9 12 2 2 4-5" />
+      </svg>
+      <h2>Compliance Gaps</h2>
+      <p>— missing required documents</p>
+    </header>
+    <div>
+      @if (category() === 'all' || category() === 'vehicle') {
+        <article>
+          <h3>
+            <svg viewBox="0 0 24 24">
+              <path d="M5 17h14l-1-7-2-3H8l-2 3-1 7Z" />
+              <circle cx="8" cy="17" r="2" />
+              <circle cx="16" cy="17" r="2" /></svg
+            >Vehicles — MOT Required
+          </h3>
+          <p><span>LP-2201</span><button type="button" (click)="openUpload()">Upload</button></p>
+          <p><span>LP-4408</span><button type="button" (click)="openUpload()">Upload</button></p>
+        </article>
+      }
+      @if (category() === 'all' || category() === 'driver') {
+        <article>
+          <h3>
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="3" />
+              <path d="M6 20c.5-4 2.5-6 6-6s5.5 2 6 6" /></svg
+            >Drivers — Licence Missing
+          </h3>
+          <p><span>Connor</span><button type="button" (click)="openUpload()">Upload</button></p>
+          <p><span>Oliver</span><button type="button" (click)="openUpload()">Upload</button></p>
+        </article>
+        <article>
+          <h3>
+            <svg viewBox="0 0 24 24">
+              <path d="M6 4h12v16H6z" />
+              <path d="m9 12 2 2 4-5" /></svg
+            >Drivers — CPC Missing
+          </h3>
+          <p><span>Priya</span><button type="button" (click)="openUpload()">Upload</button></p>
+        </article>
+      }
+      @if (category() === 'company') {
+        <article class="gap-clear">
+          <h3>
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3 5 6v6c0 4 2.8 7 7 9 4.2-2 7-5 7-9V6l-7-3Z" />
+              <path d="m9 12 2 2 4-5" /></svg
+            >Company Documents
+          </h3>
+          <p>All required company documents are up to date.</p>
+        </article>
+      }
+    </div>
+  </section>
+</section>
+
+<app-upload-document-form [open]="uploadOpen()" (cancelled)="closeUpload()" (created)="upload($event)"/>
+
+<app-modal
+  [open]="false"
+  size="lg"
+  labelledBy="upload-document-title"
+  (closed)="closeUpload()"
+>
+  <div modal-header><h2 id="upload-document-title">Upload Document</h2></div>
+  <form id="upload-document-form" class="upload-form" [formGroup]="form" (ngSubmit)="upload()">
+    <label class="shared-form-field"
+      ><span>Document Type <b>*</b></span
+      ><shared-dropdown
+        class="form-dropdown"
+        [options]="typeOptions"
+        mode="single"
+        align="left"
+        [showOptionIcons]="false"
+        [matchTriggerWidth]="true"
+        [selected]="[form.controls.type.value]"
+        (optionSelected)="choose('type', $event)"
+        ><button dropdown-trigger type="button">
+          {{ form.controls.type.value || 'Select document type...' }}
+        </button></shared-dropdown
+      >
+      @if (submitted() && form.controls.type.invalid) {
+        <small class="shared-form-error">Select a document type.</small>
+      }
+    </label>
+    <label class="shared-form-field"
+      ><span>Linked To <b>*</b></span
+      ><shared-dropdown
+        class="form-dropdown"
+        [options]="linkedOptions"
+        mode="single"
+        align="left"
+        [searchable]="true"
+        [showOptionIcons]="false"
+        [matchTriggerWidth]="true"
+        [selected]="[form.controls.linkedTo.value]"
+        (optionSelected)="choose('linkedTo', $event)"
+        ><button dropdown-trigger type="button">
+          {{ form.controls.linkedTo.value || 'Select vehicle, driver or company...' }}
+        </button></shared-dropdown
+      >
+      @if (submitted() && form.controls.linkedTo.invalid) {
+        <small class="shared-form-error">Choose a linked record.</small>
+      }
+    </label>
+    <label class="upload-drop full"
+      ><input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="pickFile($event)" /><span>↥</span
+      ><strong>{{ selectedFile() || 'Click to upload or drag and drop' }}</strong
+      ><small>PDF, JPG or PNG · maximum 10 MB</small></label
+    >
+    @if (submitted() && !selectedFile()) {
+      <small class="shared-form-error full">Select a document to upload.</small>
+    }
+    <label class="shared-form-field"
+      ><span>Issue Date</span
+      ><shared-date-time-picker
+        mode="date"
+        formControlName="issueDate"
+        placeholder="Select issue date"
+    /></label>
+    <label class="shared-form-field"
+      ><span>Expiry Date</span
+      ><shared-date-time-picker
+        mode="date"
+        formControlName="expiryDate"
+        placeholder="Select expiry date"
+    /></label>
+    <label class="shared-form-field full"
+      ><span>Issued By</span
+      ><input
+        class="shared-form-control"
+        formControlName="issuedBy"
+        placeholder="e.g. DVLA, Aviva..."
+    /></label>
+    <label class="shared-form-field full"
+      ><span>Document Number</span
+      ><input
+        class="shared-form-control"
+        formControlName="documentNumber"
+        placeholder="Licence number, policy number..."
+    /></label>
+  </form>
+  <div modal-footer class="upload-actions">
+    <button type="button" class="shared-button-secondary" (click)="closeUpload()">Cancel</button
+    ><button type="submit" form="upload-document-form" class="shared-button-primary">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 16V4" />
+        <path d="m7.5 8.5 4.5-4.5 4.5 4.5" />
+        <path d="M5 14v5h14v-5" />
+      </svg>
+      Upload Document
+    </button>
+  </div>
+</app-modal>

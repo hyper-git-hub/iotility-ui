@@ -77,6 +77,34 @@ export const routes: Routes = [
           import('./pages/dashboard/reports/reports').then((module) => module.Reports),
       },
       {
+        path: 'settings',
+        title: 'Settings | FleetPoint',
+        loadComponent: () =>
+          import('./pages/settings/settings-page').then((module) => module.SettingsPage),
+        children: [
+          { path:'',pathMatch:'full',redirectTo:'organisation' },
+          { path:'organisation',loadComponent:()=>import('./pages/settings/organisation/organisation-settings').then(module=>module.OrganisationSettings) },
+          { path:'notifications',loadComponent:()=>import('./pages/settings/notifications/notification-settings').then(module=>module.NotificationSettings) },
+          { path:'display',loadComponent:()=>import('./pages/settings/display/display-settings').then(module=>module.DisplaySettings) },
+          { path:'integrations',loadComponent:()=>import('./pages/settings/integrations/integration-settings').then(module=>module.IntegrationSettings) },
+          { path:'users',loadComponent:()=>import('./pages/settings/users/user-access-settings').then(module=>module.UserAccessSettings) },
+          { path:'mobile',loadComponent:()=>import('./pages/settings/mobile/mobile-settings').then(module=>module.MobileSettings) },
+        ],
+      },
+      {
+        path: 'documents',
+        title: 'Documents | FleetPoint',
+        loadComponent: () =>
+          import('./pages/documents/documents-page').then((module) => module.DocumentsPage),
+        children: [
+          { path:'',pathMatch:'full',redirectTo:'all' },
+          { path:'all',loadComponent:()=>import('./pages/documents/all-documents/all-documents').then((module)=>module.AllDocuments) },
+          { path:'vehicle',loadComponent:()=>import('./pages/documents/vehicle-documents/vehicle-documents').then((module)=>module.VehicleDocuments) },
+          { path:'driver',loadComponent:()=>import('./pages/documents/driver-documents/driver-documents').then((module)=>module.DriverDocuments) },
+          { path:'company',loadComponent:()=>import('./pages/documents/company-documents/company-documents').then((module)=>module.CompanyDocuments) },
+        ],
+      },
+      {
         path: 'jobs',
         title: 'Jobs | FleetPoint',
         loadComponent: () =>

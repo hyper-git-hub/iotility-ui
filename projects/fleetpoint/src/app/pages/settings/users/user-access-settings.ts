@@ -1,0 +1,1 @@
+import { Component } from '@angular/core';@Component({selector:'app-user-access-settings',templateUrl:'./user-access-settings.html',styleUrl:'./user-access-settings.css'})export class UserAccessSettings{}

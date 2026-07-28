@@ -12,7 +12,7 @@ export interface TableColumn {
   clickable?: boolean;
 }
 export type TableRow = Record<string, string | number | boolean>;
-export type TableAction = 'view' | 'map' | 'history' | 'edit' | 'delete' | 'dispatch';
+export type TableAction = 'view' | 'upload' | 'map' | 'history' | 'edit' | 'delete' | 'dispatch';
 export interface ExpandedRowContext {
   $implicit: TableRow;
   row: TableRow;

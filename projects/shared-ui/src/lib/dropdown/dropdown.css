@@ -1,5 +1,8 @@
 @reference "../../styles/theme.css";
 @reference "tailwindcss";
+:host {
+  @apply block min-w-0;
+}
 .dropdown-root {
   @apply relative;
 }
@@ -7,7 +10,15 @@
   @apply contents;
 }
 .has-chevron .dropdown-trigger ::ng-deep [dropdown-trigger] {
-  padding-right: 2.5rem;
+  @apply flex h-10 w-full items-center rounded-xl border border-line bg-white px-3 pr-10 text-left text-xs text-ink outline-none transition-colors hover:border-brand-300 focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/15 dark:border-dark-line dark:bg-dark-canvas dark:text-white dark:hover:border-brand-500;
+}
+:host-context(.dark) .has-chevron .dropdown-trigger ::ng-deep [dropdown-trigger] {
+  background: var(--color-dark-canvas);
+  border-color: var(--color-dark-line);
+  color: white;
+}
+:host-context(.dark) .has-chevron .dropdown-trigger ::ng-deep [dropdown-trigger]:hover {
+  border-color: var(--color-brand-500);
 }
 .dropdown-chevron {
   @apply pointer-events-none absolute right-3 top-1/2 z-[1] size-4 text-muted transition-transform;
