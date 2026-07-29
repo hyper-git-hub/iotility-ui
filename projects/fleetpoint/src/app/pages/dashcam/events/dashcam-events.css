@@ -1,0 +1,204 @@
+@reference "../../../../styles.css";
+.event-filters {
+  @apply relative z-20 mb-4 grid grid-cols-[minmax(15rem,1fr)_repeat(3,12rem)] gap-3 rounded-2xl border border-line bg-white p-3 dark:border-dark-line dark:bg-dark-surface;
+}
+.event-search {
+  @apply flex h-10 items-center gap-2 rounded-xl border border-line bg-canvas px-3 dark:border-dark-line dark:bg-dark-canvas;
+}
+.event-search svg {
+  @apply size-4 shrink-0 text-muted;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.event-search input {
+  @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-muted dark:text-white;
+}
+.event-filters shared-dropdown button {
+  @apply w-full;
+}
+.events-workspace {
+  @apply flex min-w-0 items-start gap-0;
+  transition: gap 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.events-workspace.details-open {
+  @apply gap-4;
+}
+.events-table {
+  @apply min-w-0 flex-1;
+}
+.driver-cell {
+  @apply inline-flex items-center gap-2 whitespace-nowrap;
+}
+.driver-cell i {
+  @apply grid size-6 shrink-0 place-items-center rounded-full bg-brand-500 text-[9px] not-italic font-semibold text-white;
+}
+.speed-cell,
+.score-cell {
+  @apply whitespace-nowrap;
+}
+.speed-alert,
+.score-cell.has-score {
+  @apply font-semibold text-danger;
+}
+.truncate-cell {
+  @apply block max-w-32 truncate;
+}
+.event-details {
+  @apply min-w-0 shrink-0 overflow-hidden rounded-2xl border border-line bg-white opacity-0 dark:border-dark-line dark:bg-dark-surface;
+  width: 0;
+  visibility: hidden;
+  transition:
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    visibility 0s linear 420ms;
+}
+.details-open .event-details {
+  width: 22rem;
+  visibility: visible;
+  @apply opacity-100;
+  transition:
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease 100ms,
+    visibility 0s;
+}
+.event-details > header,
+.event-details > .detail-body,
+.event-details > footer {
+  width: 22rem;
+}
+.event-details > header {
+  @apply flex items-start justify-between border-b border-line px-4 py-3 dark:border-dark-line;
+}
+.event-details h2 {
+  @apply text-sm font-bold;
+}
+.event-details header p {
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+.event-details header button {
+  @apply cursor-pointer bg-transparent text-xl leading-none text-muted;
+}
+.event-summary h3 {
+  @apply text-sm font-bold;
+}
+.event-summary > div {
+  @apply mt-2 flex items-center gap-2;
+}
+.category-badge,
+.severity-badge {
+  @apply rounded-full border px-2 py-1 text-[9px] font-semibold;
+}
+.category-badge {
+  @apply border-info/30 bg-info/10 text-info;
+}
+.severity-badge {
+  @apply border-warning/30 bg-warning/10 text-warning;
+}
+.severity-badge[data-severity='Critical'] {
+  @apply border-danger/30 bg-danger/10 text-danger;
+}
+.detail-list {
+  @apply grid gap-2;
+}
+.detail-list > div {
+  @apply grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 text-[10px];
+}
+.detail-list dt {
+  @apply text-muted dark:text-brand-300;
+}
+.detail-list dd {
+  @apply text-right font-semibold;
+}
+.detail-list dd.impact {
+  @apply text-danger;
+}
+.detail-body {
+  @apply grid gap-4 p-4;
+}
+.detail-grid {
+  @apply grid grid-cols-2 gap-2;
+}
+.detail-grid p {
+  @apply rounded-xl bg-canvas p-3 dark:bg-dark-canvas;
+}
+.detail-grid span,
+.detail-grid strong {
+  @apply block;
+}
+.detail-grid span {
+  @apply text-[10px] text-muted dark:text-brand-300;
+}
+.detail-grid strong {
+  @apply mt-1 text-xs;
+}
+.detail-grid .impact {
+  @apply text-danger;
+}
+.footage h3 {
+  @apply mb-2 text-xs font-bold;
+}
+.footage > div {
+  @apply grid grid-cols-2 gap-2;
+}
+.review-note {
+  @apply rounded-xl bg-canvas p-3 dark:bg-dark-canvas;
+}
+.review-note h3 {
+  @apply text-[10px] font-semibold;
+}
+.review-note p {
+  @apply mt-2 text-[10px];
+}
+.review-note small {
+  @apply mt-1 block text-[9px] text-muted dark:text-brand-300;
+}
+.event-details > footer {
+  @apply flex justify-end gap-2 border-t border-line p-3 dark:border-dark-line;
+}
+.event-details footer button {
+  @apply h-9 cursor-pointer rounded-lg px-3 text-[10px] font-semibold;
+}
+.secondary {
+  @apply border border-line bg-white text-muted dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300;
+}
+.success {
+  @apply bg-success text-white;
+}
+.danger {
+  @apply bg-danger text-white;
+}
+@media (max-width: 1050px) {
+  .event-filters {
+    @apply grid-cols-2;
+  }
+  .details-open .event-details,
+  .event-details > header,
+  .event-details > .detail-body,
+  .event-details > footer {
+    width: 19rem;
+  }
+}
+@media (max-width: 620px) {
+  .event-filters {
+    @apply grid-cols-1;
+  }
+  .detail-grid,
+  .footage > div {
+    @apply grid-cols-1;
+  }
+  .event-details > footer {
+    @apply flex-wrap;
+  }
+  .events-workspace,
+  .events-workspace.details-open {
+    @apply flex-col gap-4;
+  }
+  .event-details,
+  .details-open .event-details,
+  .event-details > header,
+  .event-details > .detail-body,
+  .event-details > footer {
+    width: 100%;
+  }
+}

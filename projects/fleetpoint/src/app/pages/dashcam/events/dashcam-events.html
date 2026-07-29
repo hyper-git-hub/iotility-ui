@@ -1,0 +1,153 @@
+<section class="event-filters">
+  <label class="event-search"
+    ><svg viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4" /></svg
+    ><input
+      type="search"
+      placeholder="Search event, driver, vehicle or location..."
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+  /></label>
+  <shared-dropdown
+    [options]="categoryOptions"
+    mode="single"
+    [showOptionIcons]="false"
+    [selected]="[category()]"
+    (optionSelected)="filter('category', $event)"
+    ><button dropdown-trigger type="button">
+      {{ label(categoryOptions, category()) }}
+    </button></shared-dropdown
+  >
+  <shared-dropdown
+    [options]="severityOptions"
+    mode="single"
+    [showOptionIcons]="false"
+    [selected]="[severity()]"
+    (optionSelected)="filter('severity', $event)"
+    ><button dropdown-trigger type="button">
+      {{ label(severityOptions, severity()) }}
+    </button></shared-dropdown
+  >
+  <shared-dropdown
+    [options]="reviewOptions"
+    mode="single"
+    align="right"
+    [showOptionIcons]="false"
+    [selected]="[review()]"
+    (optionSelected)="filter('review', $event)"
+    ><button dropdown-trigger type="button">
+      {{ label(reviewOptions, review()) }}
+    </button></shared-dropdown
+  >
+</section>
+<section class="events-workspace" [class.details-open]="selected()">
+  <div class="events-table">
+    <shared-data-table
+      title="DashCam Events"
+      [subtitle]="'Showing ' + rows().length + ' events'"
+      [columns]="columns"
+      [rows]="rows()"
+      [showToolbar]="false"
+      [showExport]="false"
+      [showPrimaryAction]="false"
+      [rowsClickable]="true"
+      [selectedRowId]="selected()?.id ?? null"
+      (rowSelected)="selectRow($event)"
+    >
+      <ng-template tableCell="driver" let-row>
+        <span class="driver-cell"
+          ><i>{{ row.driverInitials }}</i
+          >{{ row.driver }}</span
+        >
+      </ng-template>
+      <ng-template tableCell="speedLabel" let-row>
+        <span class="speed-cell" [class.speed-alert]="row.speed >= 90">{{ row.speedLabel }}</span>
+      </ng-template>
+      <ng-template tableCell="jobRoute" let-row>
+        <span class="truncate-cell" [title]="row.jobRoute">{{ row.jobRoute }}</span>
+      </ng-template>
+      <ng-template tableCell="scoreLabel" let-row>
+        <span class="score-cell" [class.has-score]="row.score < 0">{{ row.scoreLabel }}</span>
+      </ng-template>
+    </shared-data-table>
+  </div>
+  <aside class="event-details" [attr.aria-hidden]="!selected()">
+    @if (selected(); as event) {
+      <header>
+        <h2>Event Detail</h2>
+        <button type="button" aria-label="Close details" (click)="closeDetails()">×</button>
+      </header>
+      <div class="detail-body">
+        <section class="event-summary">
+          <h3>{{ event.eventType }}</h3>
+          <div>
+            <span class="category-badge">{{ categoryLabels[event.category] }}</span
+            ><span class="severity-badge" [attr.data-severity]="event.severity">{{
+              event.severity
+            }}</span>
+          </div>
+        </section>
+        <dl class="detail-list">
+          <div>
+            <dt>Driver</dt>
+            <dd>{{ event.driver }}</dd>
+          </div>
+          <div>
+            <dt>Vehicle</dt>
+            <dd>{{ event.vehicle }}</dd>
+          </div>
+          <div>
+            <dt>Fleet</dt>
+            <dd>London HGV</dd>
+          </div>
+          <div>
+            <dt>Speed</dt>
+            <dd>{{ event.speed }} km/h</dd>
+          </div>
+          <div>
+            <dt>Location</dt>
+            <dd>{{ event.location }}</dd>
+          </div>
+          <div>
+            <dt>Job</dt>
+            <dd>Amazon BHX2 Morning Delivery</dd>
+          </div>
+          <div>
+            <dt>Route</dt>
+            <dd>London → Birmingham Express</dd>
+          </div>
+          <div>
+            <dt>Score Impact</dt>
+            <dd class="impact">
+              {{ event.scoreImpact || '—' }}{{ event.scoreImpact ? ' pts' : '' }}
+            </dd>
+          </div>
+          <div>
+            <dt>BSJ Device</dt>
+            <dd>{{ event.device }}</dd>
+          </div>
+        </dl>
+        <section class="footage">
+          <h3>Footage — {{ event.id }}</h3>
+          <div>
+            @for (camera of ['Front', 'Rear', 'Cabin', 'Side']; track camera) {
+              <app-dashcam-video-tile
+                [src]="footage(event, camera)"
+                [label]="camera"
+                [compact]="true"
+              />
+            }
+          </div>
+        </section>
+        <section class="review-note">
+          <h3>Review Note</h3>
+          <p>
+            {{ event.review === 'Unreviewed' ? 'Awaiting review.' : 'Warned driver. Monitoring.' }}
+          </p>
+          <small>by Ali Mujtaba</small>
+        </section>
+      </div>
+    }
+  </aside>
+</section>

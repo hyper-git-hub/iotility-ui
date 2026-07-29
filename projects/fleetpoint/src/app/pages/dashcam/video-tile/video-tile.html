@@ -1,0 +1,13 @@
+<article class="video-tile" [class.compact]="compact()">
+  @if (!unavailable()) {
+    <video [src]="src()" autoplay muted loop playsinline (error)="unavailable.set(true)"></video>
+  } @else {
+    <div class="video-empty">
+      <svg viewBox="0 0 24 24"><path d="M15 10l4-2v8l-4-2v3H3V7h12v3Z" /></svg>
+      <strong>{{ label() }}</strong
+      ><small>Footage unavailable</small>
+    </div>
+  }
+  <span class="camera-label">{{ label() }}</span
+  ><span class="live"><i></i>Live</span>
+</article>

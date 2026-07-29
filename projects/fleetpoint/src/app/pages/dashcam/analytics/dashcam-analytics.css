@@ -1,0 +1,73 @@
+@reference "../../../../styles.css";
+.analytics-top {
+  @apply grid grid-cols-1 gap-4 lg:grid-cols-[minmax(17rem,.65fr)_minmax(0,1.35fr)];
+}
+.category-card,
+.trend-card,
+.ai-note {
+  @apply rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.category-card {
+  height: 360px;
+  @apply flex flex-col p-4;
+}
+.category-card > h2 {
+  @apply text-sm font-bold;
+}
+.category-card app-fleet-doughnut-chart {
+  @apply block shrink-0;
+}
+.category-card ::ng-deep .chart-card {
+  @apply border-0 p-0 shadow-none;
+  background: transparent !important;
+}
+.category-card ::ng-deep .chart-header {
+  @apply hidden;
+}
+.category-legend {
+  @apply mt-auto grid gap-1;
+}
+.category-legend p {
+  @apply grid grid-cols-[.5rem_1fr_1.5rem] items-center gap-2 text-[10px];
+}
+.category-legend i {
+  @apply size-2 rounded-full;
+}
+.category-legend strong {
+  @apply text-right;
+}
+.trend-card {
+  @apply mt-4 overflow-hidden;
+}
+.trend-card ::ng-deep .chart-card {
+  @apply border-0 shadow-none;
+}
+.trend-card ::ng-deep .chart-wrap {
+  @apply min-h-0;
+}
+.ai-note {
+  @apply mt-4 flex items-start gap-3 border-info/40 bg-info/5 p-4 text-info;
+}
+.ai-note svg {
+  @apply size-6 shrink-0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+}
+.ai-note h3 {
+  @apply text-xs font-bold;
+}
+.ai-note p {
+  @apply mt-1 text-[10px] leading-relaxed text-info;
+}
+:host-context(.dark) .category-card {
+  background: var(--color-dark-surface) !important;
+  border-color: var(--color-dark-line) !important;
+  color: white;
+}
+:host-context(.dark) .ai-note {
+  background: color-mix(in srgb, var(--color-info) 8%, var(--color-dark-surface));
+}
+:host-context(.dark) .ai-note p {
+  @apply text-brand-300;
+}

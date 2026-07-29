@@ -154,6 +154,7 @@ strong {
 .status-available,
 .status-confirmed,
 .status-reviewed,
+.status-acknowledged,
 .status-paid {
   @apply bg-success/10 text-success;
 }
@@ -162,6 +163,7 @@ strong {
 .status-failed,
 .status-full,
 .status-disputed,
+.status-violation,
 .status-speeding {
   @apply bg-danger/10 text-danger;
 }
@@ -182,6 +184,7 @@ strong {
 .status-vendor,
 .status-dashcam,
 .status-geozone,
+.status-false-positive,
 .status-appealed {
   @apply bg-info/10 text-info;
 }
@@ -189,9 +192,32 @@ strong {
 .status-safety {
   @apply bg-warning/10 text-warning;
 }
+.status-safety-critical {
+  @apply bg-danger/10 text-danger;
+}
+.status-distraction {
+  @apply bg-warning/10 text-warning;
+}
+.status-driver-fatigue {
+  @apply bg-orange-500/10 text-orange-600 dark:text-orange-300;
+}
+.status-driving-style {
+  @apply bg-info/10 text-info;
+}
+.status-camera {
+  @apply bg-brand-600/10 text-brand-600 dark:text-brand-300;
+}
+.status-identity {
+  @apply bg-violet-500/10 text-violet-600 dark:text-violet-300;
+}
 .status-manual,
+.status-unreviewed,
 .status-no-fine {
   @apply bg-canvas text-muted dark:bg-dark-canvas dark:text-brand-300;
+}
+:host-context(.dark) .status-unreviewed {
+  background: rgb(255 255 255 / 0.07);
+  color: var(--color-brand-300);
 }
 .status-raised {
   @apply bg-canvas text-muted dark:bg-dark-canvas dark:text-brand-300;
@@ -228,16 +254,20 @@ strong {
 .priority-high i {
   @apply bg-danger;
 }
-.priority-medium {
+.priority-medium,
+.priority-warning {
   @apply text-warning;
 }
-.priority-medium i {
+.priority-medium i,
+.priority-warning i {
   @apply bg-warning;
 }
-.priority-normal {
+.priority-normal,
+.priority-info {
   @apply text-info;
 }
-.priority-normal i {
+.priority-normal i,
+.priority-info i {
   @apply bg-info;
 }
 .priority-low {

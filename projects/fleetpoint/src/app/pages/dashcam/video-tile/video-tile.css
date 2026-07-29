@@ -1,0 +1,46 @@
+@reference "../../../../styles.css";
+.video-tile {
+  @apply relative aspect-video min-h-0 overflow-hidden rounded-xl bg-[#080910];
+}
+.video-tile video {
+  @apply size-full object-cover;
+}
+.video-empty {
+  @apply absolute inset-0 grid place-content-center justify-items-center gap-1 text-center text-slate-500;
+}
+.video-empty svg {
+  @apply size-7;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+.video-empty strong {
+  @apply text-xs;
+}
+.video-empty small {
+  @apply text-[10px];
+}
+.camera-label,
+.live {
+  @apply absolute rounded-md bg-black/65 px-2 py-1 text-[10px] font-semibold capitalize text-white;
+}
+.camera-label {
+  @apply bottom-2 left-2;
+}
+.live {
+  @apply right-2 top-2 flex items-center gap-1 uppercase;
+}
+.live i {
+  @apply size-1.5 animate-pulse rounded-full bg-danger;
+}
+.compact .video-empty svg {
+  @apply size-5;
+}
+.compact .video-empty strong {
+  @apply hidden;
+}
+.compact .video-empty small {
+  @apply text-[9px];
+}

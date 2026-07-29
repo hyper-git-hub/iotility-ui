@@ -1,0 +1,305 @@
+@reference "../../../../styles.css";
+.live-view {
+  height: min(37rem, calc(100vh - 17rem));
+  min-height: 22rem;
+  @apply grid grid-cols-[13rem_minmax(0,1fr)_14rem] gap-4 overflow-hidden;
+}
+.vehicle-list,
+.live-content,
+.recent-events,
+.live-alerts {
+  @apply rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.vehicle-list {
+  @apply flex min-h-0 flex-col overflow-hidden;
+}
+.vehicle-list > header {
+  @apply flex items-center justify-between border-b border-line px-3 py-3 text-xs uppercase tracking-wide text-muted dark:border-dark-line dark:text-brand-300;
+}
+.vehicle-list > header span {
+  @apply rounded-full bg-canvas px-2 py-0.5 dark:bg-dark-canvas;
+}
+.vehicle-list > div {
+  @apply min-h-0 flex-1 overflow-x-hidden overflow-y-auto;
+  overscroll-behavior: contain;
+}
+.vehicle-list button {
+  @apply flex w-full cursor-pointer items-center gap-2 border-b border-line/60 bg-transparent px-3 py-3 text-left dark:border-dark-line;
+}
+.vehicle-list button:hover {
+  @apply bg-canvas dark:bg-dark-canvas;
+}
+.vehicle-list button.active {
+  @apply bg-brand-600 text-white;
+}
+.vehicle-list button.offline {
+  @apply cursor-default opacity-55;
+}
+.vehicle-icon {
+  @apply relative grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/40;
+}
+.vehicle-icon svg {
+  @apply size-4;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.vehicle-icon i {
+  @apply absolute -right-0.5 -top-0.5 size-2 animate-pulse rounded-full bg-danger;
+}
+.vehicle-list button.active .vehicle-icon {
+  @apply bg-white/15 text-white;
+}
+.vehicle-list button > span:nth-child(2) {
+  @apply min-w-0 flex-1;
+}
+.vehicle-list button strong,
+.vehicle-list button small {
+  @apply block truncate;
+}
+.vehicle-list button strong {
+  @apply text-xs;
+}
+.vehicle-list button small {
+  @apply mt-0.5 text-[10px] text-muted dark:text-brand-300;
+}
+.vehicle-list button.active small {
+  @apply text-white/75;
+}
+.vehicle-list em {
+  @apply text-[9px] not-italic text-muted;
+}
+.vehicle-list em.online {
+  @apply text-success;
+}
+.vehicle-list button.active em {
+  @apply text-white;
+}
+.live-content {
+  @apply flex min-h-0 min-w-0 flex-col overflow-hidden p-4;
+}
+.live-toolbar {
+  @apply mb-3 flex min-h-10 items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-3 dark:border-dark-line dark:bg-dark-canvas;
+}
+.live-toolbar > p {
+  @apply flex min-w-0 items-center gap-2;
+}
+.live-toolbar > p i {
+  @apply size-2 shrink-0 rounded-full bg-danger;
+}
+.live-toolbar > p i.offline {
+  @apply bg-muted;
+}
+.live-toolbar > p strong {
+  @apply shrink-0 text-xs;
+}
+.live-toolbar > p span {
+  @apply truncate text-[10px] text-muted dark:text-brand-300;
+}
+.layout-switch {
+  @apply flex shrink-0 gap-1;
+}
+.layout-switch button {
+  @apply h-7 cursor-pointer rounded-lg bg-white px-2.5 text-[10px] font-semibold text-muted dark:bg-dark-surface dark:text-brand-300;
+}
+.layout-switch button.active {
+  @apply bg-brand-600 text-white dark:bg-brand-600 dark:text-white;
+}
+.camera-grid {
+  @apply grid min-h-0 flex-1 gap-3;
+}
+.camera-grid[data-columns='1'] {
+  @apply grid-cols-1 grid-rows-1;
+}
+.camera-grid[data-columns='2'] {
+  @apply grid-cols-1 grid-rows-4 lg:grid-cols-2 lg:grid-rows-2;
+}
+.camera-grid[data-columns='3'] {
+  @apply grid-cols-1 lg:grid-cols-3 lg:grid-rows-3;
+}
+.camera-grid[data-columns='4'] {
+  @apply grid-cols-2 xl:grid-cols-4 xl:grid-rows-4;
+}
+.recent-events {
+  @apply hidden;
+}
+.recent-events > header {
+  @apply flex items-center justify-between border-b border-line px-4 py-3 dark:border-dark-line;
+}
+.recent-events h3 {
+  @apply text-xs font-bold;
+}
+.recent-events a {
+  @apply text-[10px] font-semibold text-brand-600 no-underline;
+}
+.recent-events article {
+  @apply flex items-center gap-3 border-b border-line/60 px-4 py-3 last:border-0 dark:border-dark-line;
+}
+.recent-events article > span {
+  @apply rounded-full bg-canvas px-2 py-1 text-[9px] font-semibold dark:bg-dark-canvas;
+}
+.recent-events article > span[data-severity='Critical'] {
+  @apply bg-danger/10 text-danger;
+}
+.recent-events article > span[data-severity='Warning'] {
+  @apply bg-warning/10 text-warning;
+}
+.recent-events article p {
+  @apply min-w-0 flex-1;
+}
+.recent-events article strong,
+.recent-events article small {
+  @apply block truncate;
+}
+.recent-events article strong {
+  @apply text-xs;
+}
+.recent-events article small,
+.empty {
+  @apply mt-0.5 text-[10px] text-muted dark:text-brand-300;
+}
+.empty {
+  @apply p-4;
+}
+.live-alerts {
+  @apply flex min-h-0 flex-col overflow-hidden;
+}
+.live-alerts > header {
+  @apply flex items-center gap-2 border-b border-line px-3 py-3 text-[10px] uppercase tracking-wide text-muted dark:border-dark-line dark:text-brand-300;
+}
+.live-alerts > header i {
+  @apply size-2 rounded-full bg-danger;
+}
+.live-alerts > header strong {
+  @apply flex-1;
+}
+.live-alerts > header span {
+  @apply rounded-full bg-danger/10 px-2 py-0.5 text-danger;
+}
+.live-alerts button {
+  @apply flex w-full cursor-pointer items-start gap-2 border-b border-line/60 bg-transparent px-3 py-3 text-left last:border-0 hover:bg-canvas dark:border-dark-line dark:hover:bg-dark-canvas;
+}
+.live-alerts button[data-severity='Critical'] {
+  @apply bg-danger/[.035];
+}
+.live-alerts button > i {
+  @apply mt-1 size-1.5 shrink-0 rounded-full bg-info;
+}
+.live-alerts button[data-severity='Critical'] > i {
+  @apply bg-danger;
+}
+.live-alerts button[data-severity='Warning'] > i {
+  @apply bg-warning;
+}
+.live-alerts button > span {
+  @apply min-w-0 flex-1;
+}
+.live-alerts button strong,
+.live-alerts button small,
+.live-alerts button time {
+  @apply block;
+}
+.live-alerts button strong {
+  @apply text-[10px];
+}
+.live-alerts button small,
+.live-alerts button time {
+  @apply mt-1 text-[9px] text-muted dark:text-brand-300;
+}
+.live-alerts button b {
+  @apply text-muted;
+}
+.live-alerts > div {
+  @apply min-h-0 flex-1 overflow-x-hidden overflow-y-auto;
+  overscroll-behavior: contain;
+}
+.camera-grid app-dashcam-video-tile {
+  @apply block min-h-0;
+}
+:host ::ng-deep .camera-grid .video-tile {
+  @apply h-full min-h-0;
+  aspect-ratio: auto;
+}
+@media (max-width: 1150px) {
+  .live-view {
+    @apply grid-cols-[13rem_minmax(0,1fr)];
+  }
+  .live-alerts {
+    @apply col-span-2;
+  }
+  .live-alerts > div {
+    @apply grid grid-cols-2;
+  }
+}
+@media (max-width: 800px) {
+  .live-view {
+    height: auto;
+    @apply grid-cols-1 overflow-visible;
+  }
+  .vehicle-list > div {
+    @apply max-h-56;
+  }
+  .live-alerts {
+    @apply col-span-1;
+  }
+  .live-alerts > div {
+    @apply grid-cols-1;
+  }
+}
+:host-context(.dark) .vehicle-list,
+:host-context(.dark) .live-content,
+:host-context(.dark) .live-alerts {
+  background: var(--color-dark-surface) !important;
+  border-color: var(--color-dark-line) !important;
+  color: white;
+}
+:host-context(.dark) .vehicle-list > header,
+:host-context(.dark) .live-alerts > header {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-line) !important;
+  color: var(--color-brand-300);
+}
+:host-context(.dark) .vehicle-list > header span {
+  background: var(--color-dark-canvas);
+  color: white;
+}
+:host-context(.dark) .vehicle-list button,
+:host-context(.dark) .live-alerts button {
+  background: transparent;
+  border-color: var(--color-dark-line) !important;
+  color: white;
+}
+:host-context(.dark) .vehicle-list button:hover,
+:host-context(.dark) .live-alerts button:hover {
+  background: var(--color-dark-canvas);
+}
+:host-context(.dark) .vehicle-list button.active {
+  background: var(--color-brand-600) !important;
+}
+:host-context(.dark) .vehicle-list button small,
+:host-context(.dark) .live-alerts button small,
+:host-context(.dark) .live-alerts button time {
+  color: var(--color-brand-300);
+}
+:host-context(.dark) .vehicle-list button.active small {
+  color: rgb(255 255 255 / 75%);
+}
+:host-context(.dark) .vehicle-icon {
+  background: color-mix(in srgb, var(--color-brand-500) 15%, var(--color-dark-canvas));
+  color: var(--color-brand-300);
+}
+:host-context(.dark) .live-toolbar {
+  background: var(--color-dark-canvas) !important;
+  border-color: var(--color-dark-line) !important;
+}
+:host-context(.dark) .layout-switch button {
+  background: var(--color-dark-surface);
+  color: var(--color-brand-300);
+}
+:host-context(.dark) .layout-switch button.active {
+  background: var(--color-brand-600) !important;
+  color: white !important;
+}
+:host-context(.dark) .live-alerts button[data-severity='Critical'] {
+  background: color-mix(in srgb, var(--color-danger) 7%, var(--color-dark-surface));
+}

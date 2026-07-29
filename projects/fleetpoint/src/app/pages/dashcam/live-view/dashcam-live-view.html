@@ -1,0 +1,74 @@
+<section class="live-view">
+  <aside class="vehicle-list">
+    <header>
+      <strong>Vehicles</strong><span>{{ vehicles.length }}</span>
+    </header>
+    <div>
+      @for (vehicle of vehicles; track vehicle.id) {
+        <button
+          type="button"
+          [class.active]="selected().id === vehicle.id"
+          [class.offline]="!vehicle.online"
+          (click)="vehicle.online && selected.set(vehicle)"
+        >
+          <span class="vehicle-icon"
+            ><svg viewBox="0 0 24 24">
+              <path d="M3 16V9h12v7M15 11h3l3 3v2M3 16h2M9 16h6" />
+              <circle cx="7" cy="17" r="2" />
+              <circle cx="17" cy="17" r="2" />
+            </svg>
+            @if (hasAlert(vehicle)) {
+              <i></i>
+            }
+          </span>
+          <span
+            ><strong>{{ vehicle.plate }}</strong
+            ><small>{{ vehicle.driver }}</small></span
+          ><em [class.online]="vehicle.online">{{ vehicle.online ? 'Live' : 'Offline' }}</em>
+        </button>
+      }
+    </div>
+  </aside>
+  <div class="live-content">
+    <header class="live-toolbar">
+      <p>
+        <i [class.offline]="!selected().online"></i
+        ><strong>{{ selected().plate }} — {{ selected().driver }}</strong
+        ><span>· {{ status().speed }}mph · {{ status().location }}</span>
+      </p>
+      <div class="layout-switch">
+        @for (option of layoutOptions; track option.id) {
+          <button
+            type="button"
+            [class.active]="layout() === option.id"
+            (click)="layout.set($any(option.id))"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+    </header>
+    <div class="camera-grid" [attr.data-columns]="layout()">
+      @for (camera of displayedCameras(); track camera) {
+        <app-dashcam-video-tile [src]="videoPath(camera)" [label]="camera + ' Camera'" />
+      }
+    </div>
+  </div>
+  <aside class="live-alerts">
+    <header>
+      <i></i><strong>Live Alerts</strong><span>{{ liveAlerts.length }}</span>
+    </header>
+    <div>
+      @for (event of liveAlerts; track event.id) {
+        <button type="button" [attr.data-severity]="event.severity">
+          <i></i
+          ><span
+            ><strong>{{ event.eventType }}</strong
+            ><small>{{ event.driver }} · {{ event.vehicle }}</small
+            ><time>{{ event.timestamp.replace('Today · ', '') }}</time></span
+          ><b>›</b>
+        </button>
+      }
+    </div>
+  </aside>
+</section>
