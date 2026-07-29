@@ -90,6 +90,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly playbackStepDuration = input(260);
   readonly eventSelected = output<TripReplayEvent>();
   readonly routeLoadingChange = output<boolean>();
+  readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
   private vehicleOverlay?: MapboxOverlay;
@@ -103,6 +104,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private roadDistances: number[] = [];
   private positionRoadIndexes: number[] = [];
   private routeRequest?: AbortController;
+  private readyFallback?: ReturnType<typeof setTimeout>;
+  private readyEmitted = false;
   private routeVersion = 0;
   private cameraFrame?: number;
   private lastCameraFrameTime?: number;
@@ -168,7 +171,18 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.map.addControl(this.vehicleOverlay as unknown as maplibregl.IControl);
     void this.loadVehicleModel();
     this.map.on('style.load', () => this.renderRouteLayers());
-    this.map.once('load', () => void this.renderRoute(this.positions(), this.events()));
+    this.map.once('load', () => {
+      void this.renderRoute(this.positions(), this.events());
+      this.map?.once('idle', () => this.emitReady());
+      this.readyFallback = setTimeout(() => this.emitReady(), 1200);
+    });
+  }
+
+  private emitReady(): void {
+    if (this.readyEmitted) return;
+    this.readyEmitted = true;
+    clearTimeout(this.readyFallback);
+    this.ready.emit();
   }
 
   private async renderRoute(positions: TripPosition[], events: TripReplayEvent[]): Promise<void> {
@@ -858,6 +872,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.readyFallback);
     this.cancelMovement();
     this.stopCameraLoop();
     this.routeRequest?.abort();

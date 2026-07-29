@@ -40,6 +40,9 @@
 .replay-filters > button {
   @apply h-9 cursor-pointer rounded-lg bg-brand-600 text-[10px] font-semibold text-white hover:bg-brand-700;
 }
+.replay-filters > button:disabled {
+  @apply cursor-not-allowed opacity-60;
+}
 .replay-error {
   @apply m-3 rounded-xl border border-danger/20 bg-danger/5 p-2 text-[10px] text-danger;
 }
@@ -50,8 +53,23 @@
 .trip-list {
   @apply min-h-0 flex-1 mt-2 overflow-y-auto;
 }
+.trip-row-skeleton {
+  @apply flex h-[4.625rem] w-full items-start gap-2 border-t border-line px-3 py-3 dark:border-dark-line;
+}
+.trip-copy-skeleton {
+  @apply min-w-0 flex-1;
+}
+.trip-title-line {
+  @apply flex h-4 items-center;
+}
+.trip-small-line {
+  @apply mt-0.5 flex h-[0.9375rem] items-center;
+}
 .trip-row {
   @apply flex w-full cursor-pointer items-start gap-2 border-t border-line px-3 py-3 text-left transition hover:bg-brand-50 dark:border-dark-line dark:hover:bg-dark-canvas;
+}
+.trip-row:disabled {
+  @apply cursor-wait;
 }
 .trip-row.selected {
   @apply bg-brand-600 text-white hover:bg-brand-600 dark:bg-brand-600;
@@ -88,6 +106,17 @@
 }
 .map-shell {
   @apply relative min-h-0 flex-1;
+  background: var(--color-brand-50);
+}
+:host-context(.dark) .map-shell {
+  background: var(--color-dark-canvas);
+}
+.map-shell app-trip-replay-map {
+  opacity: 0;
+  transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.map-shell app-trip-replay-map.map-loaded {
+  opacity: 1;
 }
 .route-progress {
   @apply absolute inset-x-0 top-0 z-[550] h-1 overflow-visible bg-brand-100 dark:bg-brand-600/20;
@@ -112,6 +141,9 @@
 .map-trip-status i {
   @apply size-2 animate-pulse rounded-full bg-success;
 }
+.trip-status-reveal {
+  @apply flex items-center gap-2;
+}
 .playback-panel {
   @apply grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-4 border-t border-line bg-white px-4 py-3 dark:border-dark-line dark:bg-dark-surface;
 }
@@ -129,6 +161,9 @@
 }
 .playback-buttons span {
   @apply ml-1 text-xs font-semibold text-ink dark:text-white;
+}
+.playback-time-skeleton {
+  @apply ml-1;
 }
 .timeline {
   @apply h-1.5 w-full cursor-pointer appearance-none rounded-full;
@@ -152,6 +187,9 @@
 }
 .trip-detail-panel > header {
   @apply flex items-center gap-3 border-b border-line p-4 dark:border-dark-line;
+}
+.detail-header-skeleton {
+  @apply flex min-w-0 flex-1 flex-col gap-1.5;
 }
 .vehicle-avatar img {
   @apply size-10 object-contain;
@@ -178,6 +216,9 @@
 .journey-card span {
   @apply flex items-center gap-2 text-xs text-ink dark:text-white;
 }
+.journey-line-skeleton {
+  @apply h-4;
+}
 .journey-card i {
   @apply size-2 rounded-full;
 }
@@ -198,6 +239,12 @@
 }
 .detail-content {
   @apply min-h-0 flex-1 overflow-y-auto;
+}
+.detail-row-skeleton {
+  @apply flex h-[3.5625rem] items-center gap-2 border-b border-line p-3 dark:border-dark-line;
+}
+.detail-row-skeleton > div {
+  @apply flex min-w-0 flex-1 flex-col gap-1.5;
 }
 .event-row {
   @apply flex w-full cursor-pointer items-center gap-2 border-b border-line p-3 text-left hover:bg-canvas dark:border-dark-line dark:hover:bg-dark-canvas;
@@ -251,6 +298,17 @@
 }
 .stat-vehicle-image {
   @apply h-12 w-20 rounded-lg object-contain;
+}
+.trip-row.smooth-reveal,
+.trip-status-reveal,
+.playback-data-reveal,
+.detail-data-reveal {
+  animation-duration: 0.8s;
+}
+.trip-status-reveal,
+.playback-data-reveal,
+.detail-data-reveal {
+  --reveal-delay: 80ms;
 }
 @media (max-width: 1000px) {
   .trip-list-panel {

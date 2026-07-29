@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { BlockingLoader, DateTimePicker } from '@iotility/shared-ui';
+import { DateTimePicker, Skeleton } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
 import {
@@ -61,7 +61,7 @@ const EMPTY_TRIP: ReplayTrip = {
 
 @Component({
   selector: 'app-trip-replay-page',
-  imports: [BlockingLoader, DateTimePicker, TripReplayMap],
+  imports: [DateTimePicker, Skeleton, TripReplayMap],
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
 })
@@ -78,7 +78,10 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly loading = signal(true);
   protected readonly trailLoading = signal(false);
   protected readonly routeLoading = signal(false);
+  protected readonly mapLoaded = signal(false);
   protected readonly error = signal('');
+  protected readonly vehicleSkeletons = Array.from({ length: 8 });
+  protected readonly detailSkeletons = Array.from({ length: 5 });
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
   private playbackTimer?: ReturnType<typeof setInterval>;
