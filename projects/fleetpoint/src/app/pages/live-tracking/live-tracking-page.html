@@ -1,11 +1,16 @@
 <div class="tracking-page">
-  <ui-blocking-loader [visible]="loading()" label="Loading live tracking" message="Connecting to your fleet and realtime telemetry..." />
   <aside class="vehicle-panel">
     <div class="panel-heading">
       <div>
         <h1>Live Tracking</h1>
       </div>
-      <p>{{ vehicles().length }} tracked vehicles</p>
+      <p>
+        @if (loading()) {
+          <span class="tracked-count-skeleton"><ui-skeleton width="5.25rem" height="0.6rem" radius="0.25rem" /></span>
+        } @else {
+          <span class="smooth-reveal tracking-count-reveal">{{ vehicles().length }} tracked vehicles</span>
+        }
+      </p>
     </div>
     <!-- <div class="location-filter">
       <shared-dropdown
@@ -45,43 +50,73 @@
         </button>
       }
     </div>
-    <div class="vehicle-list">
-      @for (vehicle of filteredVehicles(); track vehicle.id) {
-        <button
-          type="button"
-          class="vehicle-row"
-          [class.selected]="selectedVehicle()?.id === vehicle.id"
-          (click)="selectVehicle(vehicle)"
-        >
-          <span class="vehicle-symbol" aria-hidden="true"
-            ><img [src]="vehicleImage(vehicle.image)" (error)="useDefaultVehicleImage($event)" alt="" /></span
-          ><span class="vehicle-copy"
-            ><strong>{{ vehicle.id }}</strong
-            ><small>{{ vehicle.model }}</small
-            ><small>{{ vehicle.location }}</small></span
-          ><span class="vehicle-state" [class]="'state-' + vehicle.status.toLowerCase()">{{
-            vehicle.status === 'Moving' ? vehicle.speed + ' km/h' : vehicle.status
-          }}</span>
-        </button>
-      } @empty {
-        <p class="empty-list">No vehicles match your search.</p>
+    <div class="vehicle-list" [attr.aria-busy]="loading()">
+      @if (loading()) {
+        @for (_ of vehicleSkeletons; track $index) {
+          <div class="vehicle-row-skeleton" aria-hidden="true">
+            <ui-skeleton class="vehicle-image-skeleton" width="1.5rem" height="1.5rem" radius="0.4rem" />
+            <div class="vehicle-copy-skeleton">
+              <span class="vehicle-title-line"><ui-skeleton width="5.25rem" height="0.75rem" radius="0.25rem" /></span>
+              <span class="vehicle-small-line"><ui-skeleton width="4rem" height="0.6rem" radius="0.25rem" /></span>
+              <span class="vehicle-small-line"><ui-skeleton width="7.5rem" height="0.6rem" radius="0.25rem" /></span>
+            </div>
+            <span class="vehicle-state-skeleton"><ui-skeleton width="3rem" height="0.65rem" radius="0.3rem" /></span>
+          </div>
+        }
+      } @else {
+        @for (vehicle of filteredVehicles(); track vehicle.id) {
+          <button
+            type="button"
+            class="vehicle-row smooth-reveal"
+            [style.--reveal-delay]="(80 + $index * 35) + 'ms'"
+            [class.selected]="selectedVehicle()?.id === vehicle.id"
+            (click)="selectVehicle(vehicle)"
+          >
+            <span class="vehicle-symbol" aria-hidden="true"
+              ><img [src]="vehicleImage(vehicle.image)" (error)="useDefaultVehicleImage($event)" alt="" /></span
+            ><span class="vehicle-copy"
+              ><strong>{{ vehicle.id }}</strong
+              ><small>{{ vehicle.model }}</small
+              ><small>{{ vehicle.location }}</small></span
+            ><span class="vehicle-state" [class]="'state-' + vehicle.status.toLowerCase()">{{
+              vehicle.status === 'Moving' ? vehicle.speed + ' km/h' : vehicle.status
+            }}</span>
+          </button>
+        } @empty {
+          <p class="empty-list">No vehicles match your search.</p>
+        }
       }
     </div>
   </aside>
 
   <section class="map-area">
     <app-fleet-map
+      [class.map-loaded]="mapLoaded()"
       [vehicles]="mapVehicles()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
+      (ready)="mapLoaded.set(true)"
       (vehicleSelected)="selectVehicle($event)"
     />
     <div class="map-status">
-      <i class="live-dot"></i>Live · {{ mapVehicles().length }} vehicles on map
+      @if (loading()) {
+        <ui-skeleton width="8.5rem" height="0.65rem" radius="0.3rem" />
+      } @else {
+        <span class="smooth-reveal map-count-reveal">
+          <i class="live-dot"></i>Live · {{ mapVehicles().length }} vehicles on map
+        </span>
+      }
     </div>
     <div class="map-legend">
       <span><i class="bg-success"></i>Moving</span><span><i class="bg-warning"></i>Idling</span
       ><span><i class="bg-danger"></i>Alert</span><span><i class="bg-muted"></i>Offline</span>
     </div>
+    @if (error()) {
+      <div class="tracking-error tracking-map-error">
+        <strong>Live tracking is unavailable</strong>
+        <p>{{ error() }}</p>
+        <button type="button" (click)="loadVehicles()">Try again</button>
+      </div>
+    }
   </section>
 
   @if (selectedVehicle(); as vehicle) {

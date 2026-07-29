@@ -34,9 +34,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly fitZoomOffset = input(0);
   readonly selectedVehicleId = input<string | null>(null);
   readonly vehicleSelected = output<TrackedVehicle>();
+  readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
+  private readyFallback?: ReturnType<typeof setTimeout>;
+  private readyEmitted = false;
 
   constructor() {
     effect(() => {
@@ -61,7 +64,16 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.renderZones(this.zones());
       const selected = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
       if (selected) this.focusVehicle(selected);
+      this.map?.once('idle', () => this.emitReady());
+      this.readyFallback = setTimeout(() => this.emitReady(), 1200);
     });
+  }
+
+  private emitReady(): void {
+    if (this.readyEmitted) return;
+    this.readyEmitted = true;
+    clearTimeout(this.readyFallback);
+    this.ready.emit();
   }
 
   private renderMarkers(vehicles: TrackedVehicle[], fit = false, show = true): void {
@@ -127,12 +139,13 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   private focusVehicle(vehicle: TrackedVehicle): void {
-    this.map?.flyTo({
+    this.map?.easeTo({
       center: [vehicle.lng, vehicle.lat],
-      zoom: 13,
+      zoom: 16,
       pitch: 55,
       bearing: -18,
-      duration: 900,
+      duration: 650,
+      easing: (progress) => 1 - Math.pow(1 - progress, 3),
     });
     const marker = this.markers.get(vehicle.id);
     if (marker && !marker.getPopup()?.isOpen()) marker.togglePopup();
@@ -147,6 +160,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.readyFallback);
     this.map?.remove();
   }
 }

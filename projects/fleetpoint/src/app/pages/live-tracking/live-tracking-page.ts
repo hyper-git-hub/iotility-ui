@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BlockingLoader, DropdownOption } from '@iotility/shared-ui';
+import { DropdownOption, Skeleton } from '@iotility/shared-ui';
 import { EMPTY, Subscription, catchError, finalize, forkJoin, switchMap, timer } from 'rxjs';
 import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
 import {
@@ -27,12 +27,13 @@ interface LiveVehicle extends TrackedVehicle {
 
 @Component({
   selector: 'app-live-tracking-page',
-  imports: [BlockingLoader, FleetMap, AllocationForm],
+  imports: [Skeleton, FleetMap, AllocationForm],
   templateUrl: './live-tracking-page.html',
   styleUrl: './live-tracking-page.css',
 })
 export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly loading = signal(true);
+  protected readonly mapLoaded = signal(false);
   protected readonly error = signal('');
   protected readonly search = signal('');
   protected readonly statusFilter = signal<VehicleStatus | 'All'>('All');
@@ -41,6 +42,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly allocationOpen = signal(false);
   protected readonly vehicles = signal<LiveVehicle[]>([]);
   protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Offline'];
+  protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly locationOptions: DropdownOption[] = [
     { id: 'all', label: 'All locations', description: 'Every tracked vehicle' },
   ];

@@ -5,10 +5,24 @@
   @apply block h-full;
 }
 .tracking-page {
-  @apply flex h-full min-h-0 overflow-hidden bg-canvas dark:bg-dark-canvas;
+  @apply relative flex h-full min-h-0 overflow-hidden bg-canvas dark:bg-dark-canvas;
 }
 .vehicle-panel {
   @apply flex w-72 shrink-0 flex-col border-r border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.vehicle-row-skeleton {
+  @apply flex h-[4.625rem] w-full items-start gap-2 border-t border-line px-3 py-3 dark:border-dark-line;
+}
+.vehicle-image-skeleton { @apply mt-1 shrink-0; }
+.vehicle-copy-skeleton { @apply min-w-0 flex-1; }
+.vehicle-title-line {
+  @apply flex h-4 items-center;
+}
+.vehicle-small-line {
+  @apply mt-0.5 flex h-[0.9375rem] items-center;
+}
+.vehicle-state-skeleton {
+  @apply flex h-[0.9375rem] shrink-0 items-center;
 }
 .panel-heading {
   @apply border-b border-line p-4 dark:border-dark-line;
@@ -24,6 +38,21 @@
 }
 .panel-heading p {
   @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+.tracked-count-skeleton {
+  @apply flex h-[0.9375rem] items-center;
+}
+.tracking-count-reveal,
+.map-count-reveal,
+.vehicle-row.smooth-reveal {
+  animation-duration: 0.8s;
+}
+.tracking-count-reveal,
+.map-count-reveal {
+  --reveal-delay: 80ms;
+}
+.map-count-reveal {
+  @apply flex items-center gap-2;
 }
 .location-filter {
   @apply mx-3 mt-3;
@@ -97,8 +126,24 @@
 }
 .tracking-error { @apply m-3 rounded-xl border border-danger/20 bg-danger/5 p-3 text-center text-xs text-danger; }
 .tracking-error button { @apply mt-2 cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-[10px] font-semibold text-white; }
+.tracking-map-error {
+  @apply absolute left-1/2 top-1/2 z-[650] m-0 w-[min(22rem,calc(100%_-_2rem))] -translate-x-1/2 -translate-y-1/2 bg-white/95 shadow-xl backdrop-blur dark:bg-dark-surface/95;
+}
+.tracking-map-error strong { @apply text-sm; }
+.tracking-map-error p { @apply mt-1; }
 .map-area {
   @apply relative min-w-0 flex-1;
+  background: var(--color-brand-50);
+}
+:host-context(.dark) .map-area {
+  background: var(--color-dark-canvas);
+}
+.map-area app-fleet-map {
+  opacity: 0;
+  transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.map-area app-fleet-map.map-loaded {
+  opacity: 1;
 }
 .map-status,
 .map-legend {
