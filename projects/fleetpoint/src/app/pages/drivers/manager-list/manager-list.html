@@ -1,1 +1,21 @@
-<section class="driver-tab-content tab-enter"><ui-blocking-loader [visible]="loading()" label="Loading managers" message="Getting the latest manager records..."/><ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting manager..."/><div class="tab-action smooth-reveal tab-reveal-action"><button class="add-driver" (click)="openCreate()">+ Add Manager</button></div>@if(error()){<section class="drivers-error">{{error()}}</section>}<shared-data-table class="smooth-reveal tab-reveal-table" title="Manager List" [subtitle]="'Showing '+start()+'–'+end()+' of '+total()" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showPrimaryAction]="false" [showExport]="false" searchPlaceholder="Search managers or employee ID" (searchChange)="searchChanged($event)" (rowAction)="action($event)"/><nav class="driver-pagination smooth-reveal tab-reveal-pagination"><span>Showing {{start()}}–{{end()}} of {{total()}}</span><div><button [disabled]="offset()===0" (click)="previous()">Previous</button><button [disabled]="offset()+limit>=total()" (click)="next()">Next</button></div></nav><app-manager-form [open]="formOpen()" [manager]="selected()" (cancelled)="close()" (saved)="saved()"/></section>
+<section class="driver-tab-content tab-enter">
+  <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting manager..." />
+  <div class="tab-action"><button class="add-driver" (click)="openCreate()">+ Add Manager</button></div>
+  @if (error()) { <section class="drivers-error">{{ error() }}</section> }
+
+  @if (initialLoading()) {
+    <ui-data-table-skeleton title="Manager List" [columns]="columns.length" [columnLabels]="columnLabels" [rows]="5" [showToolbar]="true" [leadingVisual]="true" />
+  } @else {
+    <div class="driver-table-wrap" [class.refreshing]="refreshing()">
+      @if (refreshing()) { <div class="driver-refresh-progress"><i></i></div> }
+      <shared-data-table title="Manager List" [subtitle]="'Showing ' + start() + '–' + end() + ' of ' + total()" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showPrimaryAction]="false" [showExport]="false" searchPlaceholder="Search managers or employee ID" (searchChange)="searchChanged($event)" (rowAction)="action($event)" />
+    </div>
+  }
+
+  <nav class="driver-pagination">
+    @if (initialLoading()) { <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" /> }
+    @else { <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span> }
+    <div><button [disabled]="loading() || offset() === 0" (click)="previous()">Previous</button><button [disabled]="loading() || offset() + limit >= total()" (click)="next()">Next</button></div>
+  </nav>
+  <app-manager-form [open]="formOpen()" [manager]="selected()" (cancelled)="close()" (saved)="saved()" />
+</section>

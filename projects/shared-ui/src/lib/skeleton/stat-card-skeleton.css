@@ -1,0 +1,23 @@
+@reference "../../styles/theme.css";
+@reference "tailwindcss";
+
+:host { @apply block; }
+
+.stat-card-skeleton {
+  @apply flex min-h-32 flex-col rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+}
+.stat-card-skeleton-icon {
+  @apply mb-3 size-9;
+}
+.stat-card-skeleton-value {
+  @apply mt-auto;
+}
+.stat-card-skeleton-label {
+  @apply mt-1.5;
+}
+.stat-card-skeleton.compact {
+  @apply min-h-24 p-3;
+}
+.stat-card-skeleton.compact .stat-card-skeleton-icon {
+  @apply mb-2 size-8;
+}

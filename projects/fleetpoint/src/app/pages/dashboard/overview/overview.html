@@ -1,11 +1,11 @@
 <section class="metric-grid" aria-label="Fleet summary" [attr.aria-busy]="cardsLoading()">
   @if (cardsLoading()) {
     @for (_ of metricSkeletons; track $index) {
-      <article class="metric-skeleton" aria-hidden="true">
-        <ui-skeleton variant="block" width="2rem" height="2rem" radius="0.75rem" />
-        <ui-skeleton class="metric-skeleton-value" variant="text" [width]="28 + ($index % 3) * 7 + '%'" height="1.75rem" radius="0.35rem" />
-        <ui-skeleton class="metric-skeleton-label" variant="text" [width]="58 + ($index % 4) * 7 + '%'" height="1rem" radius="0.3rem" />
-      </article>
+      <ui-stat-card-skeleton
+        [compact]="true"
+        [valueWidth]="28 + ($index % 3) * 7 + '%'"
+        [labelWidth]="58 + ($index % 4) * 7 + '%'"
+      />
     }
   } @else if (cardsError()) {
     <section class="dashboard-inline-error">
@@ -14,7 +14,7 @@
     </section>
   } @else {
     @for (card of displayedCards(); track card.code) {
-      <app-stat-card class="smooth-reveal" [style.--reveal-delay]="(200 + $index * 60) + 'ms'" [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [accent]="cardAccent(card.code)" [animatedBorder]="true" [compact]="true">
+      <app-stat-card [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [accent]="cardAccent(card.code)" [animatedBorder]="true" [compact]="true">
         <svg stat-card-icon viewBox="0 0 24 24" aria-hidden="true">
           @switch (card.code) {
             @case ('DVC') { <path d="M12 3 3.5 6v5.5c0 4.8 3.6 8 8.5 9.5 4.9-1.5 8.5-4.7 8.5-9.5V6L12 3Z"/><path d="M12 7v5M12 16h.01"/> }
@@ -99,7 +99,7 @@
   } @else {
     <div class="analytics-grid">
       @for (graph of graphs(); track graph.code) {
-        <app-dashboard-graph class="smooth-reveal" [style.--reveal-delay]="(760 + $index * 60) + 'ms'" [graph]="graph" />
+        <app-dashboard-graph [graph]="graph" />
       }
     </div>
   }

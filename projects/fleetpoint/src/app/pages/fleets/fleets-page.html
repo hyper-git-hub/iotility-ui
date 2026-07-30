@@ -1,21 +1,26 @@
 <section class="fleets-page">
-  <ui-blocking-loader
-    [visible]="loading()"
-    label="Loading fleets"
-    message="Getting the latest fleet records..."
-  />
-
-  <header class="fleets-heading smooth-reveal">
+  <header class="fleets-heading">
     <div>
       <h1>Fleet Management</h1>
-      <p>{{ total() }} fleets · {{ totalVehicles() }} vehicles on this page</p>
+      <p>
+        @if (initialLoading()) {
+          <span class="fleet-heading-skeleton"><ui-skeleton width="11rem" height="0.75rem" radius="0.3rem" /></span>
+        } @else {
+          <span>{{ total() }} fleets · {{ totalVehicles() }} vehicles on this page</span>
+        }
+      </p>
     </div>
     <button type="button" class="create-fleet-button" (click)="openCreate()">
       <span>+</span>Create Fleet
     </button>
   </header>
 
-  <div class="fleet-kpis smooth-reveal">
+  <div class="fleet-kpis" [attr.aria-busy]="initialLoading()">
+    @if (initialLoading()) {
+      @for (_ of kpiSkeletons; track $index) {
+        <ui-stat-card-skeleton />
+      }
+    } @else {
     <app-stat-card label="Total Fleets" [value]="total()" tone="brand"
       ><svg stat-card-icon viewBox="0 0 24 24">
         <path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z" />
@@ -37,9 +42,10 @@
         <circle cx="12" cy="12" r="9" />
         <path d="M9 9l6 6M15 9l-6 6" /></svg
     ></app-stat-card>
+    }
   </div>
 
-  <section class="fleet-filters smooth-reveal fleet-filter-reveal">
+  <section class="fleet-filters">
     <label
       ><span>Search fleets</span
       ><input
@@ -63,21 +69,77 @@
         [matchTriggerWidth]="true"
         [selected]="[selectedFleetId()]"
         (optionSelected)="selectFleetFilter($event)"
-        ><button dropdown-trigger type="button">
-          <span>{{ selectedFleetLabel() }}</span>
+        ><button dropdown-trigger type="button" [disabled]="filterOptionsLoading() || loading()">
+          @if (filterOptionsLoading()) {
+            <ui-skeleton width="5.5rem" height="0.75rem" radius="0.3rem" />
+          } @else {
+            <span>{{ selectedFleetLabel() }}</span>
+          }
         </button></shared-dropdown
       ></label
     >
     <div class="fleet-filter-actions">
-      <button type="button" class="fleet-reset" (click)="resetFilters()">Reset</button
-      ><button type="button" class="fleet-apply" (click)="applyFilters()">Apply filters</button>
+      <button type="button" class="fleet-reset" [disabled]="loading()" (click)="resetFilters()">Reset</button
+      ><button type="button" class="fleet-apply" [disabled]="loading()" (click)="applyFilters()">Apply filters</button>
     </div>
   </section>
 
+  @if (error() && !initialLoading()) {
+    <div class="fleet-error">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="loadFleets()">Try again</button>
+    </div>
+  }
+  @if (refreshing()) {
+    <div class="fleet-refresh-progress" role="progressbar" aria-label="Refreshing fleets"><i></i></div>
+  }
 
-  <div class="fleet-grid">
+  <div class="fleet-grid" [class.refreshing]="refreshing()" [attr.aria-busy]="loading()">
+    @if (initialLoading()) {
+      @for (_ of fleetSkeletons; track $index) {
+        <article class="fleet-card fleet-card-skeleton" aria-hidden="true">
+          <header>
+            <ui-skeleton width="2.5rem" height="2.5rem" radius="0.75rem" />
+            <div class="fleet-card-heading-skeleton">
+              <ui-skeleton width="8rem" height="0.875rem" radius="0.3rem" />
+              <ui-skeleton width="6rem" height="0.75rem" radius="0.3rem" />
+            </div>
+            <ui-skeleton width="3.5rem" height="1.4rem" radius="9999px" />
+            <ui-skeleton width="1.75rem" height="1.5rem" radius="0.5rem" />
+          </header>
+          <section class="fleet-card-content">
+            <div class="fleet-stats">
+              @for (_ of [1, 2, 3, 4]; track $index) {
+                <div class="fleet-stat-skeleton">
+                  <ui-skeleton width="1rem" height="1rem" radius="0.3rem" />
+                  <span class="fleet-stat-value-line"><ui-skeleton width="2.75rem" height="0.875rem" radius="0.3rem" /></span>
+                  <span class="fleet-stat-label-line"><ui-skeleton width="3.5rem" height="0.625rem" radius="0.3rem" /></span>
+                </div>
+              }
+            </div>
+            <div class="fleet-meta">
+              @for (_ of [1, 2]; track $index) {
+                <div class="fleet-meta-skeleton">
+                  <ui-skeleton width="5.5rem" height="0.9375rem" radius="0.3rem" />
+                  <ui-skeleton width="8rem" height="1rem" radius="0.3rem" />
+                </div>
+              }
+            </div>
+            <div class="fleet-location fleet-location-skeleton">
+              <ui-skeleton width="9rem" height="1rem" radius="0.3rem" />
+              <ui-skeleton width="4.5rem" height="1rem" radius="0.3rem" />
+            </div>
+          </section>
+          <footer>
+            @for (_ of [1, 2, 3]; track $index) {
+              <ui-skeleton width="4rem" height="1.25rem" radius="9999px" />
+            }
+          </footer>
+        </article>
+      }
+    } @else {
     @for (fleet of fleets(); track fleet.id) {
-      <article class="fleet-card smooth-reveal">
+      <article class="fleet-card">
         <header>
           <span class="fleet-avatar" [style.background]="fleet.color">{{
             fleet.name.slice(0, 1)
@@ -162,13 +224,18 @@
         <p class="empty-fleets">No fleets match the selected filters.</p>
       }
     }
+    }
   </div>
 
   <nav class="fleet-pagination">
-    <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ total() }}</span>
+    @if (initialLoading()) {
+      <ui-skeleton width="8.5rem" height="0.75rem" radius="0.3rem" />
+    } @else {
+      <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ total() }}</span>
+    }
     <div>
-      <button [disabled]="offset() === 0" (click)="previousPage()">Previous</button
-      ><button [disabled]="offset() + limit >= total()" (click)="nextPage()">Next</button>
+      <button [disabled]="loading() || offset() === 0" (click)="previousPage()">Previous</button
+      ><button [disabled]="loading() || offset() + limit >= total()" (click)="nextPage()">Next</button>
     </div>
   </nav>
 </section>

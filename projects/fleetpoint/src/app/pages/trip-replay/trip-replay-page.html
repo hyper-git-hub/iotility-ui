@@ -56,8 +56,7 @@
           @for (vehicle of filteredVehicles(); track vehicle.id) {
             <button
               type="button"
-              class="trip-row smooth-reveal"
-              [style.--reveal-delay]="(80 + $index * 35) + 'ms'"
+              class="trip-row"
               [disabled]="trailLoading()"
               [class.selected]="selectedVehicleId() === vehicle.id"
               (click)="selectVehicle(vehicle)"
@@ -101,7 +100,7 @@
           @if (loading() || trailLoading()) {
             <ui-skeleton width="8.5rem" height="0.65rem" radius="0.3rem" />
           } @else {
-            <span class="smooth-reveal trip-status-reveal"><i></i> Replay · {{ selectedTrip().vehicle }}</span>
+            <span class="trip-status-reveal"><i></i> Replay · {{ selectedTrip().vehicle }}</span>
           }
         </div>
       </div>
@@ -113,14 +112,14 @@
           @if (loading() || trailLoading()) {
             <ui-skeleton class="playback-time-skeleton" width="5.5rem" height="0.75rem" radius="0.3rem" />
           } @else {
-            <span class="smooth-reveal playback-data-reveal">{{ currentPosition().time }}</span>
+            <span>{{ currentPosition().time }}</span>
           }
         </div>
         @if (loading() || trailLoading()) {
           <ui-skeleton class="timeline-skeleton" width="100%" height="0.375rem" radius="9999px" />
         } @else {
           <input
-            class="timeline smooth-reveal playback-data-reveal"
+            class="timeline"
             type="range"
             min="0"
             [max]="maxPosition()"
@@ -147,18 +146,18 @@
             <ui-skeleton width="4.5rem" height="0.6rem" radius="0.25rem" />
           </div>
         } @else {
-          <span class="vehicle-avatar smooth-reveal detail-data-reveal"
+          <span class="vehicle-avatar"
             ><img
               [src]="selectedTrip().vehicleImage"
               (error)="useDefaultVehicleImage($event)"
               alt="Vehicle"
           /></span>
-          <div class="smooth-reveal detail-data-reveal">
+          <div>
             <strong>{{ selectedTrip().vehicle }}</strong
             ><small>{{ selectedTrip().driver }}</small>
           </div>
           @if (selectedTrip().score) {
-            <b class="smooth-reveal detail-data-reveal">{{ selectedTrip().score }}/100</b>
+            <b>{{ selectedTrip().score }}/100</b>
           }
         }
       </header>
@@ -167,8 +166,8 @@
           <span class="journey-line-skeleton"><ui-skeleton variant="circle" width="0.5rem" height="0.5rem" /><ui-skeleton width="10.5rem" height="0.75rem" radius="0.3rem" /></span>
           <span class="journey-line-skeleton"><ui-skeleton variant="circle" width="0.5rem" height="0.5rem" /><ui-skeleton width="8.5rem" height="0.75rem" radius="0.3rem" /></span>
         } @else {
-          <span class="smooth-reveal detail-data-reveal"><i class="start-dot"></i>{{ selectedTrip().start }}</span
-          ><span class="smooth-reveal detail-data-reveal"><i class="end-dot"></i>{{ selectedTrip().end }}</span>
+          <span><i class="start-dot"></i>{{ selectedTrip().start }}</span
+          ><span><i class="end-dot"></i>{{ selectedTrip().end }}</span>
         }
       </section>
       <nav class="detail-tabs">

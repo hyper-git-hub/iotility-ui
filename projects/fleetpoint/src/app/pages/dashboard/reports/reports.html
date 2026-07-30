@@ -1,8 +1,8 @@
 <section class="reports-page">
   <ui-blocking-loader
-    [visible]="loading() || !!exporting()"
-    [label]="exporting() ? 'Exporting report' : 'Loading report'"
-    [message]="exporting() ? 'Preparing your download...' : 'Preparing fleet report data...'"
+    [visible]="!!exporting()"
+    label="Exporting report"
+    message="Preparing your download..."
   />
   <aside class="reports-panel">
     <header>
@@ -135,7 +135,13 @@
         <p>{{ startDate().replace('T', ' ') }} – {{ endDate().replace('T', ' ') }}</p>
       </div>
       <div class="report-actions">
-        <span>{{ total() }} records</span>
+        <span>
+          @if (initialLoading()) {
+            <ui-skeleton width="4.5rem" height="0.625rem" radius="0.25rem" />
+          } @else {
+            {{ total() }} records
+          }
+        </span>
         <button
           type="button"
           aria-label="Export Excel"
@@ -172,22 +178,44 @@
         ><button type="button" (click)="retry()">Try again</button>
       </div>
     }
-    <shared-data-table
-      class="reports-table"
-      [title]="selectedReport().name"
-      [subtitle]="'Showing ' + start() + '–' + end() + ' of ' + total()"
-      [columns]="selectedReport().columns"
-      [rows]="rows()"
-      [showToolbar]="false"
-      [showExport]="false"
-      [showPrimaryAction]="false"
-      [minTableWidth]="selectedReport().minTableWidth ?? 760"
-    />
+    @if (initialLoading()) {
+      <ui-data-table-skeleton
+        class="reports-table-skeleton"
+        [title]="selectedReport().name"
+        [columns]="selectedReport().columns.length"
+        [columnLabels]="columnLabels()"
+        [rows]="10"
+        [showToolbar]="false"
+        [compactRows]="true"
+        [minTableWidth]="selectedReport().minTableWidth ?? 760"
+      />
+    } @else {
+      <div class="reports-table-wrap" [class.refreshing]="refreshing()">
+        @if (refreshing()) {
+          <div class="report-refresh-progress"><i></i></div>
+        }
+        <shared-data-table
+          class="reports-table"
+          [title]="selectedReport().name"
+          [subtitle]="'Showing ' + start() + '–' + end() + ' of ' + total()"
+          [columns]="selectedReport().columns"
+          [rows]="rows()"
+          [showToolbar]="false"
+          [showExport]="false"
+          [showPrimaryAction]="false"
+          [minTableWidth]="selectedReport().minTableWidth ?? 760"
+        />
+      </div>
+    }
     <nav class="report-pagination">
-      <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span>
+      @if (initialLoading()) {
+        <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" />
+      } @else {
+        <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span>
+      }
       <div>
-        <button type="button" [disabled]="offset() === 0" (click)="previous()">Previous</button
-        ><button type="button" [disabled]="offset() + limit >= total()" (click)="next()">
+        <button type="button" [disabled]="loading() || offset() === 0" (click)="previous()">Previous</button
+        ><button type="button" [disabled]="loading() || offset() + limit >= total()" (click)="next()">
           Next
         </button>
       </div>

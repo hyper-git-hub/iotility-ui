@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { BlockingLoader, Dropdown, DropdownOption } from '@iotility/shared-ui';
+import { Dropdown, DropdownOption, Skeleton, StatCardSkeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import {
   FleetInventoryApiService,
@@ -26,7 +26,7 @@ interface FleetSummary {
 
 @Component({
   selector: 'app-fleets-page',
-  imports: [BlockingLoader, Dropdown, FleetForm, StatCard],
+  imports: [Dropdown, FleetForm, Skeleton, StatCard, StatCardSkeleton],
   templateUrl: './fleets-page.html',
   styleUrl: './fleets-page.css',
 })
@@ -36,7 +36,13 @@ export class FleetsPage implements OnInit {
     { id: 'edit', label: 'Edit Fleet', icon: 'edit' },
   ];
   protected readonly loading = signal(true);
+  protected readonly hasLoaded = signal(false);
+  protected readonly filterOptionsLoading = signal(true);
+  protected readonly initialLoading = computed(() => this.loading() && !this.hasLoaded());
+  protected readonly refreshing = computed(() => this.loading() && this.hasLoaded());
   protected readonly error = signal('');
+  protected readonly fleetSkeletons = Array.from({ length: 2 });
+  protected readonly kpiSkeletons = Array.from({ length: 4 });
   protected readonly formOpen = signal(false);
   protected readonly fleets = signal<FleetSummary[]>([]);
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
@@ -75,6 +81,7 @@ export class FleetsPage implements OnInit {
   ngOnInit(): void {
     this.api
       .getFleetOptions()
+      .pipe(finalize(() => this.filterOptionsLoading.set(false)))
       .subscribe({ next: (response) => this.fleetOptions.set(response.data?.data ?? []) });
     this.loadFleets();
   }
@@ -89,7 +96,10 @@ export class FleetsPage implements OnInit {
         id: this.selectedFleetId(),
         search: this.search().trim(),
       })
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => {
+        this.loading.set(false);
+        this.hasLoaded.set(true);
+      }))
       .subscribe({
         next: (response) => {
           const records = response.data?.data ?? [];

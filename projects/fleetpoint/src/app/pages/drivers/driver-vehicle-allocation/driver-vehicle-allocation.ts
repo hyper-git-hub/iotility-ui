@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { BlockingLoader } from '@iotility/shared-ui';
+import { BlockingLoader, Skeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import {
   DriverApiService,
@@ -10,12 +10,15 @@ import { AllocationForm } from '../allocation-form/allocation-form';
 
 @Component({
   selector: 'app-driver-vehicle-allocation',
-  imports: [AllocationForm, BlockingLoader],
+  imports: [AllocationForm, BlockingLoader, Skeleton],
   templateUrl: './driver-vehicle-allocation.html',
   styleUrl: '../drivers-page.css',
 })
 export class DriverVehicleAllocation implements OnInit {
   protected readonly loading = signal(true);
+  protected readonly hasLoaded = signal(false);
+  protected readonly initialLoading = computed(() => this.loading() && !this.hasLoaded());
+  protected readonly refreshing = computed(() => this.loading() && this.hasLoaded());
   protected readonly error = signal('');
   protected readonly allocations = signal<AllocationRecord[]>([]);
   protected readonly total = signal(0);
@@ -135,7 +138,12 @@ export class DriverVehicleAllocation implements OnInit {
     this.error.set('');
     this.api
       .getDriverVehicleAllocations(this.limit, this.offset())
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(
+        finalize(() => {
+          this.loading.set(false);
+          this.hasLoaded.set(true);
+        }),
+      )
       .subscribe({
         next: (response) => {
           this.allocations.set(response.data?.data ?? []);

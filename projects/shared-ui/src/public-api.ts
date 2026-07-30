@@ -5,3 +5,5 @@ export * from './lib/blocking-loader/blocking-loader';
 export * from './lib/smooth-height/smooth-height';
 export * from './lib/date-time-picker/date-time-picker';
 export * from './lib/skeleton/skeleton';
+export * from './lib/skeleton/stat-card-skeleton';
+export * from './lib/skeleton/data-table-skeleton';

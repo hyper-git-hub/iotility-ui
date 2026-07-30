@@ -1,14 +1,14 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BlockingLoader, SmoothHeight } from '@iotility/shared-ui';
+import { Skeleton, SmoothHeight } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 import { ProfileApiService, UserProfile } from '../../shared/services/profile-api.service';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [BlockingLoader, DatePipe, ReactiveFormsModule, SmoothHeight],
+  imports: [DatePipe, ReactiveFormsModule, Skeleton, SmoothHeight],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.css',
 })

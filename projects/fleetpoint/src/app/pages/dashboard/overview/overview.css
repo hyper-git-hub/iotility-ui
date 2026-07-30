@@ -4,23 +4,6 @@
   @apply contents;
 }
 
-.metric-skeleton {
-  @apply flex min-h-24 flex-col rounded-2xl border border-line bg-white p-3 dark:border-dark-line dark:bg-dark-surface;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
-}
-
-.metric-skeleton ui-skeleton:first-child {
-  @apply mb-2;
-}
-
-.metric-skeleton-value {
-  @apply mt-auto;
-}
-
-.metric-skeleton-label {
-  @apply mt-1.5;
-}
-
 .graph-skeleton {
   @apply flex h-[23.75rem] min-w-0 flex-col rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
@@ -181,17 +164,11 @@
   @apply overflow-hidden rounded-full;
 }
 
-.metric-grid app-stat-card.smooth-reveal,
-.analytics-grid app-dashboard-graph.smooth-reveal {
-  animation-duration: 0.8s;
-}
-
 @keyframes dashboard-chart-shimmer {
   to { transform: translateX(115%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .metric-skeleton,
   .graph-skeleton {
     transition: none;
   }

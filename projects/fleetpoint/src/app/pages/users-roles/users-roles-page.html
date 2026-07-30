@@ -1,8 +1,7 @@
 <section class="users-roles-page">
-  <ui-blocking-loader [visible]="loading()" label="Loading access management" message="Getting the latest users and roles..." />
   <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Saving changes..." />
 
-  <header class="page-heading smooth-reveal">
+  <header class="page-heading">
     <div><h1>Users &amp; Roles</h1><p>Manage FleetPoint users, access groups, and permissions</p></div>
     <div class="heading-actions">
       @if (activeTab() === 'users') {
@@ -15,16 +14,26 @@
   </header>
 
   <nav class="management-tabs" aria-label="User and role management">
-    <button type="button" [class.active]="activeTab() === 'users'" (click)="selectTab('users')">Users <span>{{ userTotal() }}</span></button>
-    <button type="button" [class.active]="activeTab() === 'roles'" (click)="selectTab('roles')">Roles &amp; Access <span>{{ roleTotal() }}</span></button>
+    <button type="button" [class.active]="activeTab() === 'users'" (click)="selectTab('users')">Users</button>
+    <button type="button" [class.active]="activeTab() === 'roles'" (click)="selectTab('roles')">Roles &amp; Access</button>
   </nav>
 
   @if (activeTab() === 'users') {
-    <section class="management-card smooth-reveal">
-      <header class="card-toolbar">
-        <div><h2>User directory</h2><p>Control account details, status, and write access</p></div>
-        <label class="status-filter"><span>Status</span><shared-dropdown class="management-dropdown" [options]="statusFilterOptions" mode="single" align="right" [showOptionIcons]="false" [selected]="[userStatus()]" (optionSelected)="selectStatusFilter($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(statusFilterOptions, userStatus(), 'All users') }}</span></button></shared-dropdown></label>
-      </header>
+    <section class="management-card">
+      @if (usersInitialLoading()) {
+        <ui-data-table-skeleton
+          title="Users"
+          [columns]="userColumns.length"
+          [columnLabels]="userColumnLabels"
+          [rows]="5"
+          [showToolbar]="true"
+          [showHeaderFilter]="true"
+          [twoLineFirstColumn]="true"
+          [minTableWidth]="1020"
+        />
+      } @else {
+      <div class="management-table-wrap" [class.refreshing]="usersRefreshing()">
+      @if (usersRefreshing()) { <div class="management-refresh-progress"><i></i></div> }
       <shared-data-table
         title="Users"
         [subtitle]="'Showing ' + userStart() + '–' + userEnd() + ' of ' + userTotal()"
@@ -35,20 +44,48 @@
         [showPrimaryAction]="false"
         [showExport]="false"
         [minTableWidth]="1020"
+        [headerFilterOptions]="statusFilterOptions"
+        [headerFilterSelected]="[userStatus()]"
+        headerFilterTitle="Status"
+        [headerFilterLabel]="optionLabel(statusFilterOptions, userStatus(), 'All users')"
         searchPlaceholder="Search users by name or email"
         (searchChange)="userSearchChanged($event)"
+        (headerFilterChange)="selectStatusFilter($event)"
         (rowAction)="handleUserAction($event)"
       />
-      <nav class="pagination"><span>Showing {{ userStart() }}–{{ userEnd() }} of {{ userTotal() }}</span><div><button [disabled]="userOffset() === 0" (click)="previousUsers()">Previous</button><button [disabled]="userOffset() + limit >= userTotal()" (click)="nextUsers()">Next</button></div></nav>
+      </div>
+      }
+      <nav class="pagination">
+        @if (usersInitialLoading()) { <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" /> }
+        @else { <span>Showing {{ userStart() }}–{{ userEnd() }} of {{ userTotal() }}</span> }
+        <div><button [disabled]="userLoading() || userOffset() === 0" (click)="previousUsers()">Previous</button><button [disabled]="userLoading() || userOffset() + limit >= userTotal()" (click)="nextUsers()">Next</button></div>
+      </nav>
     </section>
   } @else {
-    <section class="role-summary smooth-reveal">
+    <section class="role-summary">
+      @if (rolesInitialLoading()) {
+        @for (item of [1, 2, 3]; track item) {
+          <article class="role-summary-skeleton"><ui-skeleton width="6rem" height="0.625rem" /><ui-skeleton width="3rem" height="1.5rem" /><ui-skeleton width="7rem" height="0.625rem" /></article>
+        }
+      } @else {
       <article><span>Access groups</span><strong>{{ roleTotal() }}</strong><small>Configured groups</small></article>
       <article><span>Assigned users</span><strong>{{ assignedUserTotal() }}</strong><small>In loaded groups</small></article>
       <article><span>Available features</span><strong>{{ featureOptions().length }}</strong><small>Package permissions</small></article>
+      }
     </section>
-    <section class="management-card smooth-reveal">
-      <header class="card-toolbar"><div><h2>Access groups</h2><p>Bundle features and vehicles into reusable permission groups</p></div></header>
+    <section class="management-card">
+      @if (rolesInitialLoading()) {
+        <ui-data-table-skeleton
+          title="Roles & Access"
+          [columns]="roleColumns.length"
+          [columnLabels]="roleColumnLabels"
+          [rows]="5"
+          [showToolbar]="true"
+          [minTableWidth]="900"
+        />
+      } @else {
+      <div class="management-table-wrap" [class.refreshing]="rolesRefreshing()">
+      @if (rolesRefreshing()) { <div class="management-refresh-progress"><i></i></div> }
       <shared-data-table
         title="Roles & Access"
         [subtitle]="'Showing ' + roleStart() + '–' + roleEnd() + ' of ' + roleTotal()"
@@ -63,7 +100,13 @@
         (searchChange)="roleSearchChanged($event)"
         (rowAction)="handleRoleAction($event)"
       />
-      <nav class="pagination"><span>Showing {{ roleStart() }}–{{ roleEnd() }} of {{ roleTotal() }}</span><div><button [disabled]="roleOffset() === 0" (click)="previousRoles()">Previous</button><button [disabled]="roleOffset() + limit >= roleTotal()" (click)="nextRoles()">Next</button></div></nav>
+      </div>
+      }
+      <nav class="pagination">
+        @if (rolesInitialLoading()) { <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" /> }
+        @else { <span>Showing {{ roleStart() }}–{{ roleEnd() }} of {{ roleTotal() }}</span> }
+        <div><button [disabled]="roleLoading() || roleOffset() === 0" (click)="previousRoles()">Previous</button><button [disabled]="roleLoading() || roleOffset() + limit >= roleTotal()" (click)="nextRoles()">Next</button></div>
+      </nav>
     </section>
   }
 </section>

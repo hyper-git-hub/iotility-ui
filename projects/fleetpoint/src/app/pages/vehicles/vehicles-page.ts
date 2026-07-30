@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { BlockingLoader, DataTable, Dropdown, DropdownOption, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
+import { BlockingLoader, DataTable, DataTableSkeleton, Dropdown, DropdownOption, Skeleton, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import {
   InventoryOption,
@@ -13,13 +13,17 @@ import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dial
 
 @Component({
   selector: 'app-vehicles-page',
-  imports: [BlockingLoader, DataTable, Dropdown, VehicleForm],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, Skeleton, VehicleForm],
   templateUrl: './vehicles-page.html',
   styleUrl: './vehicles-page.css',
 })
 export class VehiclesPage implements OnInit {
   private searchTimer?: ReturnType<typeof setTimeout>;
   protected readonly loading = signal(true);
+  protected readonly hasLoaded = signal(false);
+  protected readonly optionsLoading = signal(true);
+  protected readonly initialLoading = computed(() => this.loading() && !this.hasLoaded());
+  protected readonly refreshing = computed(() => this.loading() && this.hasLoaded());
   protected readonly actionLoading = signal(false);
   protected readonly error = signal('');
   protected readonly formOpen = signal(false);
@@ -53,6 +57,7 @@ export class VehiclesPage implements OnInit {
     { key: 'expiry', label: 'Registration Expiry' },
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];
+  protected readonly columnLabels = this.columns.map((column) => column.label);
   protected readonly vehicles = computed<TableRow[]>(() => this.records().map((vehicle) => ({
     id: vehicle.id,
     image: this.vehicleImage(vehicle.image),
@@ -77,7 +82,7 @@ export class VehiclesPage implements OnInit {
   constructor(private readonly api: VehicleInventoryApiService, private readonly router: Router, private readonly feedback: FeedbackDialogBridgeService) {}
 
   ngOnInit(): void {
-    forkJoin({ fleets: this.api.getFleetOptions(), categories: this.api.getCategoryOptions(), vehicleTypes: this.api.getVehicleTypeOptions() }).subscribe({
+    forkJoin({ fleets: this.api.getFleetOptions(), categories: this.api.getCategoryOptions(), vehicleTypes: this.api.getVehicleTypeOptions() }).pipe(finalize(() => this.optionsLoading.set(false))).subscribe({
       next: ({ fleets, categories, vehicleTypes }) => {
         this.fleetOptions.set((fleets.data?.data ?? []).filter((item) => item.status === undefined || item.status === 1));
         this.categoryOptions.set(categories.data?.data ?? []);
@@ -90,7 +95,12 @@ export class VehiclesPage implements OnInit {
   protected loadVehicles(showLoader = true): void {
     if (showLoader) this.loading.set(true);
     this.error.set('');
-    this.api.getVehicles(this.filters()).pipe(finalize(() => { if (showLoader) this.loading.set(false); })).subscribe({
+    this.api.getVehicles(this.filters()).pipe(finalize(() => {
+      if (showLoader) {
+        this.loading.set(false);
+        this.hasLoaded.set(true);
+      }
+    })).subscribe({
       next: (response) => {
         this.records.set(response.data?.data ?? []);
         this.total.set(response.data?.count ?? 0);

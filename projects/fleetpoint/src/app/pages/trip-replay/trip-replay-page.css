@@ -299,17 +299,6 @@
 .stat-vehicle-image {
   @apply h-12 w-20 rounded-lg object-contain;
 }
-.trip-row.smooth-reveal,
-.trip-status-reveal,
-.playback-data-reveal,
-.detail-data-reveal {
-  animation-duration: 0.8s;
-}
-.trip-status-reveal,
-.playback-data-reveal,
-.detail-data-reveal {
-  --reveal-delay: 80ms;
-}
 @media (max-width: 1000px) {
   .trip-list-panel {
     @apply w-52;

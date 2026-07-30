@@ -42,15 +42,6 @@
 .tracked-count-skeleton {
   @apply flex h-[0.9375rem] items-center;
 }
-.tracking-count-reveal,
-.map-count-reveal,
-.vehicle-row.smooth-reveal {
-  animation-duration: 0.8s;
-}
-.tracking-count-reveal,
-.map-count-reveal {
-  --reveal-delay: 80ms;
-}
 .map-count-reveal {
   @apply flex items-center gap-2;
 }

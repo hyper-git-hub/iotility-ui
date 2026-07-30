@@ -4,7 +4,7 @@
 .users-roles-page { @apply grid min-h-full min-w-0 content-start gap-5 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white sm:p-6; }
 .page-heading { @apply flex flex-wrap items-center justify-between gap-4; }
 .page-heading h1 { @apply text-xl font-bold; }
-.page-heading p,.card-toolbar p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
+.page-heading p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
 .heading-actions,.modal-actions { @apply flex gap-2; }
 .primary-action,.secondary-action { @apply h-10 cursor-pointer rounded-xl px-4 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50; }
 .primary-action { @apply bg-brand-600 text-white hover:bg-brand-700; }
@@ -13,17 +13,25 @@
 .management-tabs button { @apply relative cursor-pointer px-4 py-3 text-xs font-medium text-muted dark:text-brand-300; }
 .management-tabs button.active { @apply text-brand-600; }
 .management-tabs button.active::after { content:''; @apply absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600; }
-.management-tabs span { @apply ml-1 rounded-full bg-brand-50 px-1.5 py-0.5 text-[9px] text-brand-700 dark:bg-brand-600/15 dark:text-brand-300; }
 .page-error { @apply rounded-xl border border-danger/20 bg-danger/5 p-3 text-xs text-danger; }
 .management-card { @apply min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
-.card-toolbar { @apply flex flex-wrap items-end justify-between gap-3 border-b border-line p-4 dark:border-dark-line; }
-.card-toolbar h2 { @apply text-sm font-bold; }
-.status-filter { @apply grid gap-1 text-[10px] text-muted; }
 .management-dropdown { @apply block; }
 .management-dropdown [dropdown-trigger] { @apply flex h-10 w-full min-w-36 cursor-pointer items-center justify-between rounded-xl border border-line bg-white px-3 text-left text-xs text-ink outline-none hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
 .management-dropdown [dropdown-trigger] span { @apply min-w-0 truncate; }
-.management-card shared-data-table { @apply block min-w-0; }
-:host ::ng-deep .management-card shared-data-table .table-card { @apply rounded-none border-0; }
+.management-card shared-data-table,
+.management-card ui-data-table-skeleton { @apply block min-w-0; }
+:host ::ng-deep .management-card shared-data-table .table-card,
+:host ::ng-deep .management-card ui-data-table-skeleton .table-card { @apply rounded-none border-0; }
+.management-table-wrap { @apply relative min-w-0 overflow-hidden; }
+.management-table-wrap.refreshing shared-data-table {
+  @apply pointer-events-none opacity-[0.65];
+  transition: opacity 160ms ease;
+}
+.management-refresh-progress { @apply absolute inset-x-0 top-0 z-20 h-0 overflow-visible; }
+.management-refresh-progress i {
+  @apply absolute inset-x-0 top-0 block h-[3px] origin-left bg-brand-500 shadow-[0_1px_5px_rgba(124,58,237,0.35)];
+  animation: management-refresh-progress 1.1s ease-in-out infinite;
+}
 .pagination { @apply flex items-center justify-between border-t border-line px-4 py-3 text-xs text-muted dark:border-dark-line dark:text-brand-300; }
 .pagination div { @apply flex gap-2; }
 .pagination button { @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line; }
@@ -31,6 +39,7 @@
 .role-summary article { @apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
 .role-summary article>span,.role-summary small { @apply block text-[10px] text-muted dark:text-brand-300; }
 .role-summary strong { @apply my-2 block text-2xl font-bold; }
+.role-summary-skeleton { @apply grid gap-2; }
 .management-form,.role-form,.assign-form { @apply grid gap-4; }
 .user-form-top { @apply grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_15rem]; }
 .user-core-fields,.user-extra-fields { @apply grid gap-4 sm:grid-cols-2; }
@@ -73,4 +82,12 @@
 .assigned-users span { @apply rounded-full bg-brand-50 px-2.5 py-1 text-[10px] text-brand-700 dark:bg-brand-600/15 dark:text-brand-300; }
 .user-choice-list { @apply grid max-h-72 gap-px overflow-y-auto bg-line dark:bg-dark-line; }
 .modal-actions { @apply w-full justify-end; }
+@keyframes management-refresh-progress {
+  0% { transform: scaleX(0.12); opacity: 0.55; }
+  50% { transform: scaleX(0.72); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .management-refresh-progress i { animation: none; }
+}
 @media(max-width:640px){ .users-roles-page{@apply p-3;} .page-heading{ @apply items-start;} .heading-actions{@apply w-full;} .heading-actions button{@apply flex-1;} .pagination{@apply items-start gap-3;} }
