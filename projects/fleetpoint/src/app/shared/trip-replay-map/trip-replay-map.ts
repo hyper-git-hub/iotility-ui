@@ -41,8 +41,6 @@ const CAMERA_FRAMING_DAMPING = 2.4;
 const SPEED_DAMPING = 2.5;
 const VEHICLE_HEADING_DAMPING = 10;
 const CAMERA_BEARING_DEAD_ZONE = 2.5;
-const CAMERA_FRAME_INTERVAL = 1000 / 30;
-const CONSTRAINED_CAMERA_FRAME_INTERVAL = 1000 / 24;
 const CAMERA_SETTLE_SECONDS = 1.25;
 const CAMERA_ZOOM_EPSILON = 0.008;
 const CAMERA_PITCH_EPSILON = 0.08;
@@ -54,6 +52,10 @@ const VEHICLE_LIGHTING = new LightingEffect({
     direction: [-3, -8, -5],
   }),
 });
+// Hoisted so the 60fps render loop doesn't allocate a fresh array literal for
+// every ScatterplotLayer/ScenegraphLayer prop on every single frame.
+const VEHICLE_SHADOW_FILL_COLOR: [number, number, number, number] = [12, 14, 22, 90];
+const VEHICLE_MODEL_SCALE: [number, number, number] = [0.335, 0.335, 0.335];
 interface VehicleModelState {
   position: [longitude: number, latitude: number, altitude: number];
   heading: number;
@@ -109,11 +111,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private routeVersion = 0;
   private cameraFrame?: number;
   private lastCameraFrameTime?: number;
-  private lastCameraRenderTime = 0;
   private cameraSettledFor = 0;
   private movementFinished = true;
   private lastRenderedRouteIndex = -1;
-  private readonly cameraFrameInterval: number;
   private readonly vehicleModelData: VehicleModelState[] = [
     {
       position: [0, 0, 0.4],
@@ -138,15 +138,20 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private displayedRoadProgress = 0;
   private displayedSpeedKph = 0;
   private targetSpeedKph = 0;
+  // Scratch buffers reused across animation frames instead of allocating new
+  // tuples ~5-6 times per rAF tick (bearing lookups + camera centering).
+  private readonly bearingFromScratch: LatLng = [0, 0];
+  private readonly bearingToScratch: LatLng = [0, 0];
+  private readonly cameraPointScratch: LatLng = [0, 0];
+  private readonly cameraCenterScratch: [number, number] = [0, 0];
+  private readonly vehicleOrientationScratch: [number, number, number] = [0, 0, 90];
+  private readonly getVehiclePosition = (vehicle: VehicleModelState) => vehicle.position;
+  private readonly getVehicleOrientation = (vehicle: VehicleModelState) => {
+    this.vehicleOrientationScratch[1] = -vehicle.heading + VEHICLE_MODEL_YAW_OFFSET;
+    return this.vehicleOrientationScratch;
+  };
 
   constructor(private readonly zone: NgZone) {
-    const device = navigator as Navigator & { deviceMemory?: number };
-    const constrainedDevice =
-      (device.hardwareConcurrency > 0 && device.hardwareConcurrency <= 4) ||
-      (device.deviceMemory !== undefined && device.deviceMemory <= 4);
-    this.cameraFrameInterval = constrainedDevice
-      ? CONSTRAINED_CAMERA_FRAME_INTERVAL
-      : CAMERA_FRAME_INTERVAL;
     effect(() => {
       const positions = this.positions(),
         events = this.events();
@@ -589,9 +594,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     }
     const model = this.vehicleModelData[0];
     const shadow = this.vehicleShadowData[0];
-    model.position = [position[1], position[0], 0.4];
+    model.position[0] = position[1];
+    model.position[1] = position[0];
+    model.position[2] = 0.4;
     model.heading = heading;
-    shadow.position = [position[1], position[0], 0];
+    shadow.position[0] = position[1];
+    shadow.position[1] = position[0];
+    shadow.position[2] = 0;
     shadow.heading = heading;
     this.vehicleOverlay?.setProps({
       layers: [
@@ -600,10 +609,10 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         new ScatterplotLayer<VehicleModelState>({
           id: 'trip-vehicle-shadow',
           data: this.vehicleShadowData,
-          getPosition: (vehicle) => vehicle.position,
+          getPosition: this.getVehiclePosition,
           getRadius: 3.6,
           radiusUnits: 'meters',
-          getFillColor: [12, 14, 22, 90],
+          getFillColor: VEHICLE_SHADOW_FILL_COLOR,
           stroked: false,
           pickable: false,
           updateTriggers: { getPosition: [position[0], position[1]] },
@@ -612,10 +621,10 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           id: 'trip-vehicle-model',
           data: this.vehicleModelData,
           scenegraph: this.vehicleModelUrl,
-          getPosition: (vehicle) => vehicle.position,
-          getOrientation: (vehicle) => [0, -vehicle.heading + VEHICLE_MODEL_YAW_OFFSET, 90],
+          getPosition: this.getVehiclePosition,
+          getOrientation: this.getVehicleOrientation,
           // The low-poly muscle car is approximately six authoring units long.
-          getScale: [0.335, 0.335, 0.335],
+          getScale: VEHICLE_MODEL_SCALE,
           sizeScale: 1,
           sizeMinPixels: 24,
           sizeMaxPixels: 44,
@@ -660,13 +669,20 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return this.vehicleModelRequest;
   }
 
-  private coordinateAt(progress: number): LatLng {
+  private coordinateAt(progress: number, out?: LatLng): LatLng {
     const lower = Math.max(0, Math.min(Math.floor(progress), this.roadCoordinates.length - 1));
     const upper = Math.min(lower + 1, this.roadCoordinates.length - 1),
       fraction = progress - lower;
     const start = this.roadCoordinates[lower],
       end = this.roadCoordinates[upper];
-    return [start[0] + (end[0] - start[0]) * fraction, start[1] + (end[1] - start[1]) * fraction];
+    const lat = start[0] + (end[0] - start[0]) * fraction;
+    const lng = start[1] + (end[1] - start[1]) * fraction;
+    if (out) {
+      out[0] = lat;
+      out[1] = lng;
+      return out;
+    }
+    return [lat, lng];
   }
 
   private progressAtDistance(distance: number): number {
@@ -684,13 +700,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return low + (segmentLength > 0 ? (clamped - this.roadDistances[low]) / segmentLength : 0);
   }
 
-  private coordinateAtDistance(distance: number): LatLng {
-    return this.coordinateAt(this.progressAtDistance(distance));
+  private coordinateAtDistance(distance: number, out?: LatLng): LatLng {
+    return this.coordinateAt(this.progressAtDistance(distance), out);
   }
 
   private rawHeadingAtDistance(distance: number): number {
-    const from = this.coordinateAtDistance(distance - 5);
-    const to = this.coordinateAtDistance(distance + 9);
+    const from = this.coordinateAtDistance(distance - 5, this.bearingFromScratch);
+    const to = this.coordinateAtDistance(distance + 9, this.bearingToScratch);
     if (this.distanceBetweenCoordinates(from, to) < 1 && this.displayedHeading !== undefined)
       return this.displayedHeading;
     return this.calculateBearing(from, to);
@@ -698,8 +714,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   private cameraHeadingAtDistance(distance: number, speedKph: number): number {
     const speedFactor = Math.max(0, Math.min(speedKph / 100, 1));
-    const from = this.coordinateAtDistance(distance - (18 + speedFactor * 18));
-    const to = this.coordinateAtDistance(distance + (55 + speedFactor * 75));
+    const from = this.coordinateAtDistance(distance - (18 + speedFactor * 18), this.bearingFromScratch);
+    const to = this.coordinateAtDistance(distance + (55 + speedFactor * 75), this.bearingToScratch);
     if (this.distanceBetweenCoordinates(from, to) < 2)
       return this.displayedHeading ?? this.displayedCameraBearing ?? 0;
     return this.calculateBearing(from, to);
@@ -741,8 +757,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   }
 
   private cameraCenterAhead(lookAheadMetres: number): [number, number] {
-    const point = this.coordinateAtDistance(this.displayedRoadDistance + lookAheadMetres);
-    return [point[1], point[0]];
+    const point = this.coordinateAtDistance(
+      this.displayedRoadDistance + lookAheadMetres,
+      this.cameraPointScratch,
+    );
+    this.cameraCenterScratch[0] = point[1];
+    this.cameraCenterScratch[1] = point[0];
+    return this.cameraCenterScratch;
   }
 
   private startCameraLoop(): void {
@@ -759,10 +780,10 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
             : 1 / 60;
         this.lastCameraFrameTime = now;
         this.applyMovementFrame(now, dt);
-        if (now - this.lastCameraRenderTime >= this.cameraFrameInterval) {
-          this.applyCameraFrame(Math.min((now - this.lastCameraRenderTime) / 1000, 0.1));
-          this.lastCameraRenderTime = now;
-        }
+        // Keep the map camera on the same display-synchronised frame as the
+        // vehicle. Throttling this independently makes the whole replay appear
+        // to run at 24/30 fps even though the model itself updates at 60 fps.
+        this.applyCameraFrame(dt);
         if (this.shouldContinueAnimation()) this.cameraFrame = requestAnimationFrame(step);
         else this.stopCameraLoop();
       };
@@ -775,7 +796,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     if (this.cameraFrame !== undefined) cancelAnimationFrame(this.cameraFrame);
     this.cameraFrame = undefined;
     this.lastCameraFrameTime = undefined;
-    this.lastCameraRenderTime = 0;
   }
 
   private applyCameraFrame(dt: number): void {
@@ -817,12 +837,20 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const cameraIsSettled = Math.abs(bearingCorrection) < 0.15 && !zoomChanged && !pitchChanged;
     this.cameraSettledFor = cameraIsSettled ? this.cameraSettledFor + dt : 0;
 
-    this.map.jumpTo({
+    const camera: maplibregl.JumpToOptions = {
       center: this.cameraCenterAhead(lookAhead),
-      bearing: this.displayedCameraBearing,
-      pitch: this.displayedCameraPitch,
-      zoom: this.displayedCameraZoom,
-    });
+    };
+    // MapLibre treats every supplied camera property as an update. Leave
+    // settled values out so high-refresh displays do less transform/event work
+    // while the centre continues to move on every animation frame.
+    const bearingDelta =
+      ((this.displayedCameraBearing - this.map.getBearing() + 540) % 360) - 180;
+    if (Math.abs(bearingDelta) >= 0.01) camera.bearing = this.displayedCameraBearing;
+    if (Math.abs(this.displayedCameraPitch - this.map.getPitch()) >= 0.01)
+      camera.pitch = this.displayedCameraPitch;
+    if (Math.abs(this.displayedCameraZoom - this.map.getZoom()) >= 0.0005)
+      camera.zoom = this.displayedCameraZoom;
+    this.map.jumpTo(camera);
   }
 
   private applyMovementFrame(now: number, dt: number): void {
@@ -837,7 +865,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.movementStartDistance +
       (this.targetRoadDistance - this.movementStartDistance) * progress;
     this.displayedRoadProgress = this.progressAtDistance(this.displayedRoadDistance);
-    const position = this.coordinateAtDistance(this.displayedRoadDistance);
+    const position = this.coordinateAtDistance(this.displayedRoadDistance, this.cameraPointScratch);
     const heading = this.smoothVehicleHeading(
       this.rawHeadingAtDistance(this.displayedRoadDistance),
       dt,

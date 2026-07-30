@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
@@ -84,7 +84,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly detailSkeletons = Array.from({ length: 5 });
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
-  private playbackTimer?: ReturnType<typeof setInterval>;
+  private playbackFrame?: number;
   private readonly requestedVehicleId: string;
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
@@ -114,6 +114,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   constructor(
     private readonly api: TripReplayApiService,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly zone: NgZone,
     router: Router,
   ) {
     const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
@@ -213,19 +214,35 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected play(): void {
     if (this.trip().positions.length < 2) return;
     if (this.positionIndex() >= this.trip().positions.length - 1) this.positionIndex.set(0);
-    this.clearTimer();
+    this.clearPlaybackFrame();
     this.playing.set(true);
-    this.playbackTimer = setInterval(() => {
-      const next = this.positionIndex() + 1;
-      if (next >= this.trip().positions.length) {
-        this.pause();
-        return;
-      }
-      this.positionIndex.set(next);
-    }, this.playbackStepDuration / this.speed());
+    const startedAt = performance.now();
+    const startIndex = this.positionIndex();
+    const stepDuration = this.playbackStepDuration / this.speed();
+    const lastIndex = this.trip().positions.length - 1;
+    this.zone.runOutsideAngular(() => {
+      const advance = (now: number) => {
+        if (!this.playing()) return;
+        // Derive progress from the animation clock instead of accumulating
+        // setInterval delays. A late frame can catch up without permanently
+        // shifting every following GPS transition.
+        const timelineIndex =
+          startIndex + Math.floor((now - startedAt) / stepDuration);
+        const nextIndex = Math.min(timelineIndex, lastIndex);
+        if (nextIndex !== this.positionIndex()) this.positionIndex.set(nextIndex);
+        // Keep playback active for the final segment's duration so the map
+        // interpolates into the last point instead of snapping to it.
+        if (timelineIndex > lastIndex) {
+          this.pause();
+          return;
+        }
+        this.playbackFrame = requestAnimationFrame(advance);
+      };
+      this.playbackFrame = requestAnimationFrame(advance);
+    });
   }
   protected pause(): void {
-    this.clearTimer();
+    this.clearPlaybackFrame();
     this.playing.set(false);
   }
   protected stop(): void {
@@ -432,11 +449,11 @@ export class TripReplayPage implements OnInit, OnDestroy {
   private apiDate(value: string): string {
     return `${value.replace('T', ' ')}:00`;
   }
-  private clearTimer(): void {
-    if (this.playbackTimer) clearInterval(this.playbackTimer);
-    this.playbackTimer = undefined;
+  private clearPlaybackFrame(): void {
+    if (this.playbackFrame !== undefined) cancelAnimationFrame(this.playbackFrame);
+    this.playbackFrame = undefined;
   }
   ngOnDestroy(): void {
-    this.clearTimer();
+    this.clearPlaybackFrame();
   }
 }
