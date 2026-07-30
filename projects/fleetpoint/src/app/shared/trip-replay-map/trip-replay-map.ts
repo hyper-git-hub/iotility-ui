@@ -36,11 +36,12 @@ const NAVIGATION_ZOOM = 16.5;
 const RECENT_TRAIL_POINTS = 32;
 // Damping factors are "per second" rates for exponential smoothing, so the
 // camera eases at the same speed regardless of the viewer's frame rate.
-const CAMERA_BEARING_DAMPING = 3.2;
+const CAMERA_BEARING_DAMPING = 4.2;
 const CAMERA_FRAMING_DAMPING = 2.4;
 const SPEED_DAMPING = 2.5;
 const VEHICLE_HEADING_DAMPING = 10;
-const CAMERA_BEARING_DEAD_ZONE = 2.5;
+const CAMERA_BEARING_DEAD_ZONE = 1.2;
+const CAMERA_MAX_ROTATION_SPEED = 100;
 const CAMERA_SETTLE_SECONDS = 1.25;
 const CAMERA_ZOOM_EPSILON = 0.008;
 const CAMERA_PITCH_EPSILON = 0.08;
@@ -714,11 +715,38 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   private cameraHeadingAtDistance(distance: number, speedKph: number): number {
     const speedFactor = Math.max(0, Math.min(speedKph / 100, 1));
-    const from = this.coordinateAtDistance(distance - (18 + speedFactor * 18), this.bearingFromScratch);
-    const to = this.coordinateAtDistance(distance + (55 + speedFactor * 75), this.bearingToScratch);
-    if (this.distanceBetweenCoordinates(from, to) < 2)
-      return this.displayedHeading ?? this.displayedCameraBearing ?? 0;
-    return this.calculateBearing(from, to);
+    const tangentHalfLength = 10 + speedFactor * 12;
+    const lookAhead = 35 + speedFactor * 75;
+    const samples = 6;
+    let vectorX = 0;
+    let vectorY = 0;
+    let totalWeight = 0;
+
+    // Blend several local road tangents instead of measuring one long chord
+    // through a corner. As each tangent enters the window, a large turn is
+    // introduced progressively rather than as one abrupt target-bearing jump.
+    for (let index = 0; index < samples; index++) {
+      const progress = index / (samples - 1);
+      const sampleDistance = distance + progress * lookAhead;
+      const from = this.coordinateAtDistance(
+        sampleDistance - tangentHalfLength,
+        this.bearingFromScratch,
+      );
+      const to = this.coordinateAtDistance(
+        sampleDistance + tangentHalfLength,
+        this.bearingToScratch,
+      );
+      if (this.distanceBetweenCoordinates(from, to) < 1) continue;
+      const radians = (this.calculateBearing(from, to) * Math.PI) / 180;
+      const weight = 1 - progress * 0.65;
+      vectorX += Math.cos(radians) * weight;
+      vectorY += Math.sin(radians) * weight;
+      totalWeight += weight;
+    }
+
+    if (totalWeight === 0)
+      return this.displayedCameraBearing ?? this.displayedHeading ?? 0;
+    return ((Math.atan2(vectorY, vectorX) * 180) / Math.PI + 360) % 360;
   }
 
   private calculateBearing(start: LatLng, end: LatLng): number {
@@ -752,7 +780,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return {
       zoom: NAVIGATION_ZOOM - t * 1.2,
       pitch: NAVIGATION_PITCH - t * 6,
-      lookAhead: 40 + t * 120,
+      lookAhead: 28 + t * 90,
     };
   }
 
@@ -822,11 +850,24 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const bearingT = 1 - Math.exp(-CAMERA_BEARING_DAMPING * dt);
     const current = ((this.displayedCameraBearing % 360) + 360) % 360;
     const delta = ((targetHeading - current + 540) % 360) - 180;
+    // On a real turn, remove the straight-road dead zone so rotation begins
+    // immediately. Cap angular velocity to prevent a sharp route tangent from
+    // ever producing a visual snap.
+    const deadZone = Math.abs(delta) > 15 ? 0 : CAMERA_BEARING_DEAD_ZONE;
     const bearingCorrection =
-      Math.abs(delta) <= CAMERA_BEARING_DEAD_ZONE
+      Math.abs(delta) <= deadZone
         ? 0
-        : delta - Math.sign(delta) * CAMERA_BEARING_DEAD_ZONE;
-    this.displayedCameraBearing += bearingCorrection * bearingT;
+        : delta - Math.sign(delta) * deadZone;
+    const desiredRotation = bearingCorrection * bearingT;
+    // Faster replay needs more angular headroom or the camera can fall behind
+    // the vehicle. Square-root scaling keeps 1x gentle without making 5x snap.
+    const maximumRotation =
+      CAMERA_MAX_ROTATION_SPEED * Math.sqrt(this.playbackSpeed()) * dt;
+    const appliedRotation = Math.max(
+      -maximumRotation,
+      Math.min(desiredRotation, maximumRotation),
+    );
+    this.displayedCameraBearing += appliedRotation;
 
     const framingT = 1 - Math.exp(-CAMERA_FRAMING_DAMPING * dt);
     this.displayedCameraZoom += (targetZoom - this.displayedCameraZoom) * framingT;
