@@ -102,38 +102,29 @@
             <ui-skeleton width="2.5rem" height="2.5rem" radius="0.75rem" />
             <div class="fleet-card-heading-skeleton">
               <ui-skeleton width="8rem" height="0.875rem" radius="0.3rem" />
-              <ui-skeleton width="6rem" height="0.75rem" radius="0.3rem" />
             </div>
-            <ui-skeleton width="3.5rem" height="1.4rem" radius="9999px" />
-            <ui-skeleton width="1.75rem" height="1.5rem" radius="0.5rem" />
           </header>
           <section class="fleet-card-content">
             <div class="fleet-stats">
               @for (_ of [1, 2, 3, 4]; track $index) {
                 <div class="fleet-stat-skeleton">
-                  <ui-skeleton width="1rem" height="1rem" radius="0.3rem" />
-                  <span class="fleet-stat-value-line"><ui-skeleton width="2.75rem" height="0.875rem" radius="0.3rem" /></span>
-                  <span class="fleet-stat-label-line"><ui-skeleton width="3.5rem" height="0.625rem" radius="0.3rem" /></span>
+                  <ui-skeleton width="2.75rem" height="0.875rem" radius="0.3rem" />
                 </div>
               }
             </div>
             <div class="fleet-meta">
               @for (_ of [1, 2]; track $index) {
                 <div class="fleet-meta-skeleton">
-                  <ui-skeleton width="5.5rem" height="0.9375rem" radius="0.3rem" />
-                  <ui-skeleton width="8rem" height="1rem" radius="0.3rem" />
+                  <ui-skeleton width="7rem" height="0.875rem" radius="0.3rem" />
                 </div>
               }
             </div>
             <div class="fleet-location fleet-location-skeleton">
               <ui-skeleton width="9rem" height="1rem" radius="0.3rem" />
-              <ui-skeleton width="4.5rem" height="1rem" radius="0.3rem" />
             </div>
           </section>
           <footer>
-            @for (_ of [1, 2, 3]; track $index) {
-              <ui-skeleton width="4rem" height="1.25rem" radius="9999px" />
-            }
+            <ui-skeleton width="5rem" height="1.25rem" radius="9999px" />
           </footer>
         </article>
       }
