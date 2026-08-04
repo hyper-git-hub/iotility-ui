@@ -3,8 +3,11 @@ import { Router } from '@angular/router';
 import {
   BlockingLoader,
   DataTable,
+  DataTableSkeleton,
   Dropdown,
   DropdownOption,
+  Skeleton,
+  StatCardSkeleton,
   TableAction,
   TableColumn,
   TableRow,
@@ -21,13 +24,16 @@ import { DriverForm } from '../driver-form/driver-form';
 
 @Component({
   selector: 'app-driver-list',
-  imports: [BlockingLoader, DataTable, DriverForm, Dropdown, StatCard],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, DriverForm, Dropdown, Skeleton, StatCard, StatCardSkeleton],
   templateUrl: './driver-list.html',
   styleUrl: '../drivers-page.css',
 })
 export class DriverList implements OnInit {
   private searchTimer?: ReturnType<typeof setTimeout>;
   protected readonly loading = signal(true);
+  protected readonly hasLoaded = signal(false);
+  protected readonly initialLoading = computed(() => this.loading() && !this.hasLoaded());
+  protected readonly refreshing = computed(() => this.loading() && this.hasLoaded());
   protected readonly actionLoading = signal(false);
   protected readonly formOpen = signal(false);
   protected readonly error = signal('');
@@ -53,6 +59,7 @@ export class DriverList implements OnInit {
     { key: 'status', label: 'Status', type: 'status' },
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];
+  protected readonly columnLabels = this.columns.map((column) => column.label);
   protected readonly groupOptions = computed<DropdownOption[]>(() => [
     { id: '', label: 'All groups' },
     ...this.groups().map((g) => ({ id: String(g.id), label: `${g.name} (${g.driver_count})` })),
@@ -191,7 +198,10 @@ export class DriverList implements OnInit {
         searchText: this.search().trim(),
         cardType: this.cardType(),
       })
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => {
+        this.loading.set(false);
+        this.hasLoaded.set(true);
+      }))
       .subscribe({
         next: (r) => {
           this.records.set(r.data?.data ?? []);

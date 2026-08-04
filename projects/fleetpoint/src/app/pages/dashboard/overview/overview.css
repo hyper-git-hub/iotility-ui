@@ -1,0 +1,176 @@
+@reference "../../../../styles.css";
+
+.dashboard-skeleton-region {
+  @apply contents;
+}
+
+.graph-skeleton {
+  @apply flex h-[23.75rem] min-w-0 flex-col rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
+}
+
+.graph-skeleton-header {
+  @apply mb-5;
+}
+
+.graph-skeleton-header ui-skeleton + ui-skeleton {
+  @apply mt-2;
+}
+
+.graph-skeleton-plot {
+  @apply relative flex flex-1 items-end gap-5 overflow-hidden border-b border-l border-line/70 px-4 pb-0 pt-5 dark:border-dark-line;
+}
+
+.graph-skeleton-plot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  transform: translateX(-115%);
+  background: linear-gradient(
+    100deg,
+    transparent 22%,
+    rgb(255 255 255 / 0.52) 47%,
+    rgb(255 255 255 / 0.18) 56%,
+    transparent 80%
+  );
+  animation: dashboard-chart-shimmer 1.85s ease-in-out infinite;
+}
+
+:host-context(.dark) .graph-skeleton-plot::after {
+  background: linear-gradient(
+    100deg,
+    transparent 22%,
+    rgb(255 255 255 / 0.07) 47%,
+    rgb(255 255 255 / 0.025) 56%,
+    transparent 80%
+  );
+}
+
+.graph-skeleton-bar {
+  @apply flex-1 rounded-t-md bg-slate-200/60 dark:bg-slate-700/40;
+  min-width: 0.75rem;
+}
+
+.graph-skeleton-bar:nth-child(1) { height: 42%; }
+.graph-skeleton-bar:nth-child(2) { height: 68%; }
+.graph-skeleton-bar:nth-child(3) { height: 53%; }
+.graph-skeleton-bar:nth-child(4) { height: 81%; }
+.graph-skeleton-bar:nth-child(5) { height: 62%; }
+.graph-skeleton-bar:nth-child(6) { height: 74%; }
+
+.horizontal-plot {
+  @apply flex-col items-start justify-center gap-2 border-b border-l px-0 py-4;
+}
+
+.horizontal-bar {
+  @apply h-3 rounded-r-md bg-slate-200/60 dark:bg-slate-700/40;
+}
+
+.horizontal-bar:nth-child(1) { width: 72%; }
+.horizontal-bar:nth-child(2) { width: 84%; }
+.horizontal-bar:nth-child(3) { width: 77%; }
+.horizontal-bar:nth-child(4) { width: 91%; }
+.horizontal-bar:nth-child(5) { width: 68%; }
+.horizontal-bar:nth-child(6) { width: 87%; }
+.horizontal-bar:nth-child(7) { width: 80%; }
+.horizontal-bar:nth-child(8) { width: 94%; }
+.horizontal-bar:nth-child(9) { width: 74%; }
+
+.doughnut-plot {
+  @apply grid place-items-center border-0 bg-none p-3;
+}
+
+.doughnut-ring {
+  @apply block rounded-full;
+  width: min(15.5rem, 72%);
+  aspect-ratio: 1;
+  background: conic-gradient(
+    rgb(226 232 240 / 0.78) 0 58%,
+    rgb(226 232 240 / 0.52) 58% 82%,
+    rgb(226 232 240 / 0.3) 82% 100%
+  );
+  mask: radial-gradient(circle, transparent 0 51%, black 52%);
+}
+
+:host-context(.dark) .doughnut-ring {
+  background: conic-gradient(
+    rgb(51 65 85 / 0.62) 0 58%,
+    rgb(51 65 85 / 0.42) 58% 82%,
+    rgb(51 65 85 / 0.24) 82% 100%
+  );
+}
+
+.line-plot {
+  @apply block px-3 pb-0 pt-5;
+}
+
+.line-plot svg {
+  @apply size-full overflow-visible;
+}
+
+.line-area {
+  fill: rgb(226 232 240 / 0.42);
+}
+
+.line-stroke {
+  fill: none;
+  stroke: rgb(203 213 225 / 0.78);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+:host-context(.dark) .line-area { fill: rgb(51 65 85 / 0.3); }
+:host-context(.dark) .line-stroke { stroke: rgb(71 85 105 / 0.65); }
+
+.graph-skeleton-legend {
+  @apply mt-5 flex justify-center gap-4;
+}
+
+.graph-skeleton-legend span {
+  @apply flex items-center gap-1.5;
+}
+
+.graph-skeleton-legend i {
+  @apply size-2 rounded-sm bg-slate-200/65 dark:bg-slate-700/45;
+}
+
+.graph-skeleton-legend b {
+  @apply h-2 w-12 rounded bg-slate-200/65 dark:bg-slate-700/45;
+}
+
+.dashboard-inline-error {
+  @apply flex min-h-24 items-center justify-between gap-4 rounded-2xl border border-danger/20 bg-danger/5 px-4 py-3 text-xs text-danger;
+}
+
+.dashboard-inline-error.analytics-error {
+  @apply min-h-48;
+}
+
+.dashboard-inline-error strong {
+  @apply block text-sm;
+}
+
+.dashboard-inline-error p {
+  @apply mt-1 text-xs opacity-80;
+}
+
+.dashboard-inline-error button {
+  @apply shrink-0 cursor-pointer rounded-lg border border-danger/25 bg-white px-3 py-2 text-xs font-medium transition hover:border-danger/50 dark:bg-dark-surface;
+}
+
+.skeleton-report-count {
+  @apply overflow-hidden rounded-full;
+}
+
+@keyframes dashboard-chart-shimmer {
+  to { transform: translateX(115%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-skeleton {
+    transition: none;
+  }
+  .graph-skeleton-plot::after { animation: none; }
+}

@@ -1,53 +1,25 @@
 import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  OnDestroy,
-  effect,
-  input,
-  output,
-  viewChild,
+  AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, viewChild,
 } from '@angular/core';
+import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
 import {
-  Layer,
-  LatLngExpression,
-  Map as LeafletMap,
-  Marker,
-  PathOptions,
-  circle as createCircle,
-  divIcon,
-  latLngBounds,
-  map as createMap,
-  marker as createMarker,
-  point as createPoint,
-  polygon as createPolygon,
-  polyline as createPolyline,
-  tileLayer,
-} from 'leaflet';
+  LatLng, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
+  polygonFeature, popup, removeGeoJson, upsertGeoJson,
+} from '../maps/maplibre';
 
 export type VehicleStatus = 'Moving' | 'Idling' | 'Alert' | 'Offline';
-
 export interface TrackedVehicle {
-  id: string;
-  model: string;
-  driver: string;
-  status: VehicleStatus;
-  speed: number;
-  fuel: number;
-  location: string;
-  updated: string;
-  lat: number;
-  lng: number;
+  id: string; model: string; driver: string; status: VehicleStatus; speed: number;
+  fuel: number; location: string; updated: string; lat: number; lng: number;
 }
-
 export interface MapZoneOverlay {
   id: string;
   label: string;
   geometry: 'circle' | 'polygon' | 'corridor';
   color: string;
-  center?: LatLngExpression;
+  center?: LatLng;
   radius?: number;
-  points?: LatLngExpression[];
+  points?: LatLng[];
 }
 
 @Component({
@@ -62,140 +34,133 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly fitZoomOffset = input(0);
   readonly selectedVehicleId = input<string | null>(null);
   readonly vehicleSelected = output<TrackedVehicle>();
+  readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
-  private map?: LeafletMap;
-  private readonly markers = new Map<string, Marker>();
-  private zoneLayers: Layer[] = [];
+  private map?: MapLibreMap;
+  private readonly markers = new Map<string, maplibregl.Marker>();
+  private readyFallback?: ReturnType<typeof setTimeout>;
+  private readyEmitted = false;
 
   constructor() {
     effect(() => {
-      const vehicles = this.vehicles();
-      const showMarkers = this.showMarkers();
+      const vehicles = this.vehicles(), showMarkers = this.showMarkers();
       if (this.map) this.renderMarkers(vehicles, false, showMarkers);
     });
     effect(() => {
       const zones = this.zones();
-      if (this.map) this.renderZones(zones);
+      if (this.map?.isStyleLoaded()) this.renderZones(zones);
     });
     effect(() => {
-      const id = this.selectedVehicleId();
-      const vehicle = this.vehicles().find((item) => item.id === id);
+      const vehicle = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
       if (vehicle && this.map) this.focusVehicle(vehicle);
     });
   }
 
   ngAfterViewInit(): void {
-    this.map = createMap(this.mapElement().nativeElement, { zoomControl: true }).setView(
-      [25.2854, 51.531],
-      11,
-    );
-    tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(this.map);
-    this.renderMarkers(this.vehicles(), true, this.showMarkers());
-    this.renderZones(this.zones());
-    const selectedVehicle = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
-    if (selectedVehicle) this.focusVehicle(selectedVehicle);
-    setTimeout(() => this.map?.invalidateSize(), 0);
+    this.map = createIotMap(this.mapElement().nativeElement, [25.2854, 51.531], 11);
+    this.map.on('style.load', () => this.renderZones(this.zones()));
+    this.map.once('load', () => {
+      this.renderMarkers(this.vehicles(), true, this.showMarkers());
+      this.renderZones(this.zones());
+      const selected = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
+      if (selected) this.focusVehicle(selected);
+      this.map?.once('idle', () => this.emitReady());
+      this.readyFallback = setTimeout(() => this.emitReady(), 1200);
+    });
   }
 
-  private renderMarkers(vehicles: TrackedVehicle[], fitToVehicles = false, showMarkers = true): void {
-    if (!this.map) return;
-    for (const marker of this.markers.values()) marker.removeFrom(this.map);
-    this.markers.clear();
+  private emitReady(): void {
+    if (this.readyEmitted) return;
+    this.readyEmitted = true;
+    clearTimeout(this.readyFallback);
+    this.ready.emit();
+  }
 
-    for (const vehicle of showMarkers ? vehicles : []) {
-      const color = this.statusColor(vehicle.status);
-      const icon = divIcon({
-        className: '',
-        html: `<div style="width:34px;height:34px;border:3px solid white;border-radius:50%;display:grid;place-items:center;background:${color};color:white;font:700 10px Inter,sans-serif;box-shadow:0 5px 16px rgb(0 0 0 / 28%)">${vehicle.id.slice(-2)}</div>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17],
-      });
-      const marker = createMarker([vehicle.lat, vehicle.lng], { icon }).addTo(this.map);
-      marker.bindTooltip(`${vehicle.id} · ${vehicle.status}`, {
-        direction: 'top',
-        offset: [0, -16],
-      });
-      marker.on('click', () => {
+  private renderMarkers(vehicles: TrackedVehicle[], fit = false, show = true): void {
+    if (!this.map) return;
+    this.markers.forEach((item) => item.remove());
+    this.markers.clear();
+    for (const vehicle of show ? vehicles : []) {
+      const element = markerElement(
+        `<div style="width:34px;height:34px;border:3px solid white;border-radius:50%;display:grid;place-items:center;background:${this.statusColor(vehicle.status)};color:white;font:700 10px Inter,sans-serif;box-shadow:0 5px 16px rgb(0 0 0 / 28%)">${vehicle.id.slice(-2)}</div>`,
+      );
+      element.addEventListener('click', () => {
         this.focusVehicle(vehicle);
         this.vehicleSelected.emit(vehicle);
       });
-      this.markers.set(vehicle.id, marker);
+      const item = new maplibregl.Marker({ element })
+        .setLngLat([vehicle.lng, vehicle.lat])
+        .setPopup(popup(`${vehicle.id} · ${vehicle.status}`))
+        .addTo(this.map);
+      this.markers.set(vehicle.id, item);
     }
-
-    if (fitToVehicles && vehicles.length) {
-      if (vehicles.length === 1) {
-        this.map.flyTo([vehicles[0].lat, vehicles[0].lng], 10, { animate: true, duration: 1.1 });
-      } else {
-        const bounds = latLngBounds(vehicles.map(({ lat, lng }) => [lat, lng]));
-        const zoom = Math.min(
-          19,
-          this.map.getBoundsZoom(bounds, false, createPoint(48, 48)) + this.fitZoomOffset(),
-        );
-        this.map.flyTo(bounds.getCenter(), zoom, {
-          animate: true,
-          duration: 1.1,
-        });
-      }
+    if (fit && vehicles.length) {
+      fitLatLngs(this.map, vehicles.map(({ lat, lng }) => [lat, lng]), 48, 15 + this.fitZoomOffset());
     }
   }
 
   private renderZones(zones: MapZoneOverlay[]): void {
-    if (!this.map) return;
-    for (const layer of this.zoneLayers) layer.removeFrom(this.map);
-    this.zoneLayers = [];
-
-    const orderedZones = [...zones].sort((a, b) => (b.radius ?? 0) - (a.radius ?? 0));
-    for (const zone of orderedZones) {
-      const style: PathOptions = {
-        color: zone.color,
-        fillColor: zone.color,
-        fillOpacity: zone.geometry === 'corridor' ? 0.16 : 0.2,
-        opacity: zone.geometry === 'corridor' ? 0.65 : 0.9,
-        weight: zone.geometry === 'corridor' ? 5 : 2,
-        dashArray: zone.geometry === 'corridor' ? '9 7' : undefined,
-        lineCap: 'round',
-        lineJoin: 'round',
-      };
-      let layer: Layer | null = null;
-      if (zone.geometry === 'circle' && zone.center) {
-        layer = createCircle(zone.center, { ...style, radius: zone.radius ?? 300 });
-      } else if (zone.geometry === 'polygon' && zone.points?.length) {
-        layer = createPolygon(zone.points, style);
-      } else if (zone.geometry === 'corridor' && zone.points?.length) {
-        layer = createPolyline(zone.points, style);
-      }
-      if (!layer) continue;
-
-      layer.addTo(this.map);
-      layer.bindTooltip(zone.label, { sticky: true });
-      layer.on('click', () => {
-        const item = this.vehicles().find((vehicle) => vehicle.id === zone.id);
+    if (!this.map?.isStyleLoaded()) return;
+    if (!zones.length) {
+      removeGeoJson(this.map, 'fleet-zones', ['zone-fill', 'zone-outline', 'zone-corridor']);
+      return;
+    }
+    const features = zones.flatMap((zone) => {
+      const properties = { id: zone.id, label: zone.label, color: zone.color, geometry: zone.geometry };
+      if (zone.geometry === 'circle' && zone.center)
+        return [polygonFeature(circlePolygon(zone.center, zone.radius ?? 300), properties)];
+      if (zone.geometry === 'polygon' && zone.points?.length)
+        return [polygonFeature(zone.points, properties)];
+      if (zone.geometry === 'corridor' && zone.points?.length)
+        return [lineFeature(zone.points, properties)];
+      return [];
+    });
+    upsertGeoJson(this.map, 'fleet-zones', { type: 'FeatureCollection', features }, [
+      {
+        id: 'zone-fill', type: 'fill', filter: ['!=', ['get', 'geometry'], 'corridor'],
+        paint: { 'fill-color': ['get', 'color'], 'fill-opacity': .2 },
+      },
+      {
+        id: 'zone-outline', type: 'line', filter: ['!=', ['get', 'geometry'], 'corridor'],
+        paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-opacity': .9 },
+      },
+      {
+        id: 'zone-corridor', type: 'line', filter: ['==', ['get', 'geometry'], 'corridor'],
+        paint: { 'line-color': ['get', 'color'], 'line-width': 5, 'line-opacity': .65, 'line-dasharray': [2, 1.5] },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+    ]);
+    for (const layer of ['zone-fill', 'zone-outline', 'zone-corridor']) {
+      this.map.on('click', layer, ({ features }) => {
+        const item = this.vehicles().find(({ id }) => id === features?.[0]?.properties?.['id']);
         if (item) this.vehicleSelected.emit(item);
       });
-      this.zoneLayers.push(layer);
     }
   }
 
   private focusVehicle(vehicle: TrackedVehicle): void {
-    this.map?.flyTo([vehicle.lat, vehicle.lng], 13, { animate: true, duration: 1.25 });
-    this.markers.get(vehicle.id)?.openTooltip();
+    this.map?.easeTo({
+      center: [vehicle.lng, vehicle.lat],
+      zoom: 16,
+      pitch: 55,
+      bearing: -18,
+      duration: 650,
+      easing: (progress) => 1 - Math.pow(1 - progress, 3),
+    });
+    const marker = this.markers.get(vehicle.id);
+    if (marker && !marker.getPopup()?.isOpen()) marker.togglePopup();
   }
 
   private statusColor(status: VehicleStatus): string {
-    return status === 'Moving'
-      ? 'var(--color-success)'
-      : status === 'Idling'
-        ? 'var(--color-warning)'
-        : status === 'Alert'
-          ? 'var(--color-danger)'
-          : 'var(--color-muted)';
+    const styles = getComputedStyle(document.documentElement);
+    const css = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+    return status === 'Moving' ? css('--color-success', '#10b981')
+      : status === 'Idling' ? css('--color-warning', '#f59e0b')
+        : status === 'Alert' ? css('--color-danger', '#ef4444') : css('--color-muted', '#64748b');
   }
 
   ngOnDestroy(): void {
-    this.zoneLayers = [];
+    clearTimeout(this.readyFallback);
     this.map?.remove();
   }
 }

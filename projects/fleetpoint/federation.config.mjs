@@ -31,7 +31,11 @@ export default withNativeFederation({
     'rxjs/fetch',
     'rxjs/testing',
     'rxjs/webSocket',
-    'leaflet',
+    'maplibre-gl',
+    '@deck.gl/core',
+    '@deck.gl/layers',
+    '@deck.gl/mapbox',
+    '@deck.gl/mesh-layers',
     // Add further packages you don't need at runtime
   ],
 

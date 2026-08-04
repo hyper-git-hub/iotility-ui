@@ -3,9 +3,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   BlockingLoader,
   DataTable,
+  DataTableSkeleton,
   DateTimePicker,
   Dropdown,
   DropdownOption,
+  Skeleton,
   TableRow,
 } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
@@ -29,7 +31,7 @@ interface MonthOption {
 
 @Component({
   selector: 'app-dashboard-reports',
-  imports: [BlockingLoader, DataTable, DateTimePicker, Dropdown],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, DateTimePicker, Dropdown, Skeleton],
   templateUrl: './reports.html',
   styleUrl: './reports.css',
 })
@@ -58,6 +60,13 @@ export class Reports implements OnInit {
   protected readonly offset = signal(0);
   protected readonly limit = 10;
   protected readonly loading = signal(true);
+  protected readonly loadedType = signal<ReportType | null>(null);
+  protected readonly initialLoading = computed(
+    () => this.loading() && this.loadedType() !== this.selectedType(),
+  );
+  protected readonly refreshing = computed(
+    () => this.loading() && this.loadedType() === this.selectedType(),
+  );
   protected readonly exporting = signal<ReportExportFormat | null>(null);
   protected readonly error = signal('');
   protected readonly interval = signal('today');
@@ -71,6 +80,9 @@ export class Reports implements OnInit {
   }));
   protected readonly start = computed(() => (this.total() ? this.offset() + 1 : 0));
   protected readonly end = computed(() => Math.min(this.offset() + this.limit, this.total()));
+  protected readonly columnLabels = computed(() =>
+    this.selectedReport().columns.map((column) => column.label),
+  );
 
   constructor(
     private readonly api: ReportsApiService,
@@ -212,7 +224,12 @@ export class Reports implements OnInit {
     this.error.set('');
     this.api
       .getReport(this.reportQuery(this.offset()))
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(
+        finalize(() => {
+          this.loading.set(false);
+          this.loadedType.set(this.selectedType());
+        }),
+      )
       .subscribe({
         next: (response) => {
           const payload = response.data;

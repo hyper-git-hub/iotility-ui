@@ -1,0 +1,76 @@
+<section class="review-heading">
+  <div>
+    <h2>Review Queue — {{ queue().length }} events pending</h2>
+    <p>Review oldest first · Acknowledge, raise a violation, or mark false positive</p>
+  </div>
+  <button type="button" (click)="resolveAll()" [disabled]="!queue().length">
+    Bulk Acknowledge All
+  </button>
+</section>
+
+<section class="review-list">
+  @for (event of queue(); track event.id) {
+    <article class="review-item" [class.critical]="event.severity === 'Critical'">
+      <div class="preview-pair">
+        <app-dashcam-video-tile [src]="footage(event, 'Front')" label="Front" [compact]="true" />
+        <app-dashcam-video-tile [src]="footage(event, 'Cabin')" label="Cabin" [compact]="true" />
+        <small>{{ event.id }} · {{ event.cameras.length }} cameras available</small>
+      </div>
+      <div class="review-main">
+        <header>
+          <div>
+            <h3>{{ event.eventType }}</h3>
+            <span class="category">{{ event.category }}</span
+            ><span class="severity" [attr.data-severity]="event.severity"
+              ><i></i>{{ event.severity }}</span
+            >
+          </div>
+          <strong>{{ event.scoreImpact }} pts</strong>
+        </header>
+        <p class="event-meta">
+          <span>♟ {{ event.driver }}</span
+          ><span>🚚 {{ event.vehicle }}</span
+          ><span>◷ {{ event.timestamp.replace('Today · ', '') }}</span
+          ><span>📍 {{ event.location }}</span
+          ><span>ϟ {{ event.speed }} km/h</span>
+        </p>
+        <textarea rows="1" placeholder="Add review note (optional)..."></textarea>
+        <footer>
+          <div>
+            <button type="button" class="acknowledge" (click)="resolve(event)">✓ Acknowledge</button
+            ><button type="button" class="raise" (click)="resolve(event)">⚑ Raise Violation</button
+            ><button type="button" class="false-positive" (click)="resolve(event)">
+              ⊗ False Positive
+            </button>
+          </div>
+          <button type="button" class="footage-toggle" (click)="toggle(event)">
+            <span [class.open]="expandedId() === event.id">›</span
+            >{{ expandedId() === event.id ? 'Hide Footage' : 'Full Footage' }}
+          </button>
+        </footer>
+        <shared-smooth-height>
+          @if (expandedId() === event.id) {
+            <section class="full-footage">
+              @for (camera of ['Front', 'Cabin', 'Rear', 'Side']; track camera) {
+                <app-dashcam-video-tile
+                  [src]="footage(event, camera)"
+                  [label]="camera"
+                  [compact]="true"
+                />
+              }
+            </section>
+          }
+        </shared-smooth-height>
+      </div>
+    </article>
+  } @empty {
+    <section class="queue-empty">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="m8 12 2.5 2.5L16 9" />
+      </svg>
+      <h2>Review queue is clear</h2>
+      <p>There are no DashCam events awaiting review.</p>
+    </section>
+  }
+</section>

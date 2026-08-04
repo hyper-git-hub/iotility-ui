@@ -1,0 +1,49 @@
+<section class="analytics-top">
+  <article class="category-card">
+    <h2>Events by Category</h2>
+    <app-fleet-doughnut-chart
+      title=""
+      [height]="190"
+      [data]="categoryData"
+      [options]="categoryOptions"
+    />
+    <div class="category-legend">
+      @for (item of categories; track item.id) {
+        <p>
+          <i [style.background]="item.color"></i><span>{{ item.label }}</span
+          ><strong>{{ item.value }}</strong>
+        </p>
+      }
+    </div>
+  </article>
+  <app-fleet-bar-chart
+    title="Events by Driver"
+    [height]="360"
+    [data]="driverData"
+    [options]="driverOptions"
+  />
+</section>
+<section class="trend-card">
+  <app-fleet-line-chart
+    title="Event Trend — Last 7 Days"
+    [height]="310"
+    [data]="trendData"
+    [options]="trendOptions"
+  />
+</section>
+<aside class="ai-note">
+  <svg viewBox="0 0 24 24">
+    <path d="M9 4h6l1 3h3v12H5V7h3l1-3Z" />
+    <circle cx="9" cy="12" r="1" />
+    <circle cx="15" cy="12" r="1" />
+    <path d="M9 16h6" />
+  </svg>
+  <div>
+    <h3>False Positive Rate: {{ falsePositiveRate }}%</h3>
+    <p>
+      BSJ IOT AI cameras occasionally over-trigger, especially Yawn Detection and Driver ID events.
+      Mark false positives during review to improve model accuracy and reduce unnecessary alerts
+      over time.
+    </p>
+  </div>
+</aside>

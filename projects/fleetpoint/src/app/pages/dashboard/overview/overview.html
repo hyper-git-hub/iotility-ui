@@ -1,9 +1,20 @@
-<ui-blocking-loader [visible]="loading()" label="Loading dashboard" message="Getting the latest fleet activity..." />
-
-@if (!loading()) {
-  <section class="metric-grid" aria-label="Fleet summary">
+<section class="metric-grid" aria-label="Fleet summary" [attr.aria-busy]="cardsLoading()">
+  @if (cardsLoading()) {
+    @for (_ of metricSkeletons; track $index) {
+      <ui-stat-card-skeleton
+        [compact]="true"
+        [valueWidth]="28 + ($index % 3) * 7 + '%'"
+        [labelWidth]="58 + ($index % 4) * 7 + '%'"
+      />
+    }
+  } @else if (cardsError()) {
+    <section class="dashboard-inline-error">
+      <div><strong>Fleet summary unavailable</strong><p>{{ cardsError() }}</p></div>
+      <button type="button" (click)="loadCards()">Try again</button>
+    </section>
+  } @else {
     @for (card of displayedCards(); track card.code) {
-      <app-stat-card class="smooth-reveal" [style.--reveal-delay]="(200 + $index * 60) + 'ms'" [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [accent]="cardAccent(card.code)" [animatedBorder]="true" [compact]="true">
+      <app-stat-card [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [accent]="cardAccent(card.code)" [animatedBorder]="true" [compact]="true">
         <svg stat-card-icon viewBox="0 0 24 24" aria-hidden="true">
           @switch (card.code) {
             @case ('DVC') { <path d="M12 3 3.5 6v5.5c0 4.8 3.6 8 8.5 9.5 4.9-1.5 8.5-4.7 8.5-9.5V6L12 3Z"/><path d="M12 7v5M12 16h.01"/> }
@@ -27,66 +38,69 @@
         </svg>
       </app-stat-card>
     }
-  </section>
+  }
+</section>
 
-  <section class="analytics-section">
-    <div class="section-heading smooth-reveal analytics-heading-reveal"><div><h2>Dashboard analytics</h2><p>Performance, safety, jobs and maintenance insights</p></div><span>{{ graphs().length }} reports</span></div>
+<section class="analytics-section" [attr.aria-busy]="graphsLoading()">
+  <div class="section-heading">
+    <div><h2>Dashboard analytics</h2><p>Performance, safety, jobs and maintenance insights</p></div>
+    @if (graphsLoading()) {
+      <ui-skeleton class="skeleton-report-count" width="4.5rem" height="1.45rem" radius="9999px" />
+    } @else if (!graphsError()) {
+      <span>{{ graphs().length }} reports</span>
+    }
+  </div>
+
+  @if (graphsLoading()) {
     <div class="analytics-grid">
-      @for (graph of graphs(); track graph.code) { <app-dashboard-graph class="smooth-reveal" [style.--reveal-delay]="(760 + $index * 60) + 'ms'" [graph]="graph" /> }
+      @for (skeleton of graphSkeletons; track $index) {
+        <article class="graph-skeleton" aria-hidden="true">
+          <header class="graph-skeleton-header">
+            <ui-skeleton variant="text" [width]="34 + ($index % 3) * 8 + '%'" height="0.85rem" radius="0.3rem" />
+            <ui-skeleton variant="text" width="28%" height="0.58rem" radius="0.25rem" />
+          </header>
+          @switch (skeleton.type) {
+            @case ('horizontal') {
+              <div class="graph-skeleton-plot horizontal-plot">
+                @for (_ of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track $index) { <span class="horizontal-bar"></span> }
+              </div>
+              <div class="graph-skeleton-legend"><span><i></i><b></b></span></div>
+            }
+            @case ('doughnut') {
+              <div class="graph-skeleton-plot doughnut-plot"><span class="doughnut-ring"></span></div>
+              <div class="graph-skeleton-legend">
+                @for (_ of [1, 2, 3]; track $index) { <span><i></i><b></b></span> }
+              </div>
+            }
+            @case ('line') {
+              <div class="graph-skeleton-plot line-plot">
+                <svg viewBox="0 0 500 220" preserveAspectRatio="none">
+                  <path class="line-area" d="M0,94 C45,84 72,110 112,98 S176,66 215,91 S285,111 330,105 S405,75 500,112 L500,220 L0,220 Z" />
+                  <path class="line-stroke" d="M0,94 C45,84 72,110 112,98 S176,66 215,91 S285,111 330,105 S405,75 500,112" />
+                </svg>
+              </div>
+              <div class="graph-skeleton-legend"><span><i></i><b></b></span></div>
+            }
+            @default {
+              <div class="graph-skeleton-plot">
+                @for (_ of [1, 2, 3, 4]; track $index) { <span class="graph-skeleton-bar"></span> }
+              </div>
+              <div class="graph-skeleton-legend"><span><i></i><b></b></span></div>
+            }
+          }
+        </article>
+      }
     </div>
-  </section>
-
-  <section class="overview-grid">
-    <!-- <shared-data-table
-      class="smooth-reveal fleet-panel-reveal"
-      title="Fleet overview"
-      [subtitle]="fleets().length + ' fleets · ' + vehicles().length + ' vehicles · ' + onlineVehicles() + ' online'"
-      [columns]="fleetColumns"
-      [rows]="fleetRows()"
-      [viewportHeight]="300"
-      [minTableWidth]="0"
-      [bodyBottomPadding]="12"
-      [showToolbar]="false"
-    />
-    <shared-data-table
-      class="smooth-reveal dashcam-panel-reveal"
-      title="Available dashcams"
-      [subtitle]="dashcams().length + ' connected devices'"
-      [columns]="dashcamColumns"
-      [rows]="dashcamRows()"
-      [viewportHeight]="300"
-      [minTableWidth]="0"
-      [showToolbar]="false"
-    /> -->
-    <!-- Previous custom dashboard lists retained temporarily for reference.
-    <article class="fleet-list-card smooth-reveal fleet-panel-reveal">
-      <div class="widget-title">
-        <div><h2>Fleet overview</h2><p>{{ fleets().length }} fleets · {{ vehicles().length }} vehicles</p></div>
-        <span><i class="live-dot"></i>{{ onlineVehicles() }} online</span>
-      </div>
-      <div class="vehicle-list">
-        @for (vehicle of visibleVehicles(); track vehicle.id) {
-          <div class="vehicle-row">
-            <span class="vehicle-avatar">
-              @if (vehicle.vehicle_type_image) { <img [src]="vehicle.vehicle_type_image" alt="" /> } @else { {{ vehicleInitial(vehicle) }} }
-            </span>
-            <div class="vehicle-name"><strong>{{ vehicle.name }}</strong><small>{{ vehicle.make }} {{ vehicle.model }} · {{ vehicle.vehicle_driver_name || 'No driver assigned' }}</small></div>
-            <div class="vehicle-location"><span>{{ vehicle.location || 'Location unavailable' }}</span><small>{{ vehicle.speed || 0 }} km/h</small></div>
-            <span [class]="vehicle.online_status ? 'state-online' : 'state-offline'">{{ vehicle.online_status ? 'Online' : 'Offline' }}</span>
-          </div>
-        } @empty { <p class="empty-copy">No vehicles are assigned to a fleet.</p> }
-      </div>
-    </article>
-
-    <article class="dashcam-card smooth-reveal dashcam-panel-reveal">
-      <div class="widget-title"><div><h2>Available dashcams</h2><p>{{ dashcams().length }} connected devices</p></div><span>{{ dashcams().length }} devices</span></div>
-      <div class="dashcam-list">
-        @for (camera of dashcams(); track camera.device_id) {
-          <div><span class="camera-icon"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="12" rx="2"/><path d="m17 10 4-2v8l-4-2"/><circle cx="10" cy="12" r="2.5"/></svg></span><p><strong>{{ camera.name }}</strong><small>{{ camera.device_type }} · {{ camera.device_id }}</small></p><em>{{ camera.notifications }} alerts</em></div>
-        } @empty { <p class="empty-copy">No dashcam devices are available.</p> }
-      </div>
-    </article>
-    -->
-  </section>
-
-}
+  } @else if (graphsError()) {
+    <section class="dashboard-inline-error analytics-error">
+      <div><strong>Analytics unavailable</strong><p>{{ graphsError() }}</p></div>
+      <button type="button" (click)="loadGraphs()">Try again</button>
+    </section>
+  } @else {
+    <div class="analytics-grid">
+      @for (graph of graphs(); track graph.code) {
+        <app-dashboard-graph [graph]="graph" />
+      }
+    </div>
+  }
+</section>

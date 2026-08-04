@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BlockingLoader, DataTable, Dropdown, DropdownOption, SmoothHeight, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
+import { BlockingLoader, DataTable, DataTableSkeleton, Dropdown, DropdownOption, Skeleton, SmoothHeight, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import { Modal } from '../../shared/modal/modal';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
@@ -21,13 +21,20 @@ interface FeatureOption {
 
 @Component({
   selector: 'app-users-roles-page',
-  imports: [BlockingLoader, DataTable, Dropdown, Modal, ReactiveFormsModule, SmoothHeight],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, Modal, ReactiveFormsModule, Skeleton, SmoothHeight],
   templateUrl: './users-roles-page.html',
   styleUrl: './users-roles-page.css',
 })
 export class UsersRolesPage implements OnInit {
   protected readonly activeTab = signal<'users' | 'roles'>('users');
-  protected readonly loading = signal(false);
+  protected readonly userLoading = signal(false);
+  protected readonly roleLoading = signal(false);
+  protected readonly usersLoaded = signal(false);
+  protected readonly rolesLoaded = signal(false);
+  protected readonly usersInitialLoading = computed(() => this.userLoading() && !this.usersLoaded());
+  protected readonly rolesInitialLoading = computed(() => this.roleLoading() && !this.rolesLoaded());
+  protected readonly usersRefreshing = computed(() => this.userLoading() && this.usersLoaded());
+  protected readonly rolesRefreshing = computed(() => this.roleLoading() && this.rolesLoaded());
   protected readonly actionLoading = signal(false);
   protected readonly assignmentOptionsLoading = signal(false);
   protected readonly featuresLoading = signal(false);
@@ -88,6 +95,8 @@ export class UsersRolesPage implements OnInit {
     { key: 'updated', label: 'Updated' },
     { key: 'actions', label: '', type: 'actions' },
   ];
+  protected readonly userColumnLabels = this.userColumns.map((column) => column.label);
+  protected readonly roleColumnLabels = this.roleColumns.map((column) => column.label);
   protected readonly actions: TableAction[] = ['edit', 'delete'];
   protected readonly userRows = computed<TableRow[]>(() =>
     this.users().map((user) => ({
@@ -162,8 +171,8 @@ export class UsersRolesPage implements OnInit {
   protected selectTab(tab: 'users' | 'roles'): void {
     this.activeTab.set(tab);
     this.error.set('');
-    if (tab === 'users' && !this.users().length) this.loadUsers();
-    if (tab === 'roles' && !this.roles().length) this.loadRoles();
+    if (tab === 'users' && !this.users().length && !this.userLoading()) this.loadUsers();
+    if (tab === 'roles' && !this.roles().length && !this.roleLoading()) this.loadRoles();
   }
 
   protected userSearchChanged(value: string): void {
@@ -353,10 +362,13 @@ export class UsersRolesPage implements OnInit {
   protected nextRoles(): void { if (this.roleOffset() + this.limit < this.roleTotal()) { this.roleOffset.update((value) => value + this.limit); this.loadRoles(); } }
 
   private loadUsers(): void {
-    this.loading.set(true);
+    this.userLoading.set(true);
     this.error.set('');
     this.api.getUsers(this.query(this.userOffset(), this.userSearch(), this.userStatus()))
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => {
+        this.userLoading.set(false);
+        this.usersLoaded.set(true);
+      }))
       .subscribe({
         next: (response) => {
           this.users.set(response.data?.data ?? []);
@@ -367,13 +379,14 @@ export class UsersRolesPage implements OnInit {
   }
 
   private loadRoles(showLoading = true): void {
+    this.roleLoading.set(true);
     if (showLoading) {
-      this.loading.set(true);
       this.error.set('');
     }
     this.api.getRoles(this.query(this.roleOffset(), this.roleSearch()))
       .pipe(finalize(() => {
-        if (showLoading) this.loading.set(false);
+        this.roleLoading.set(false);
+        this.rolesLoaded.set(true);
       }))
       .subscribe({
         next: (response) => {

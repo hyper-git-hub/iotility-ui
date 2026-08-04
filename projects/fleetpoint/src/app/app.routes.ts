@@ -66,9 +66,7 @@ export const routes: Routes = [
         path: 'users-roles',
         title: 'Users & Roles | FleetPoint',
         loadComponent: () =>
-          import('./pages/users-roles/users-roles-page').then(
-            (module) => module.UsersRolesPage,
-          ),
+          import('./pages/users-roles/users-roles-page').then((module) => module.UsersRolesPage),
       },
       {
         path: 'reports',
@@ -82,13 +80,49 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/settings/settings-page').then((module) => module.SettingsPage),
         children: [
-          { path:'',pathMatch:'full',redirectTo:'organisation' },
-          { path:'organisation',loadComponent:()=>import('./pages/settings/organisation/organisation-settings').then(module=>module.OrganisationSettings) },
-          { path:'notifications',loadComponent:()=>import('./pages/settings/notifications/notification-settings').then(module=>module.NotificationSettings) },
-          { path:'display',loadComponent:()=>import('./pages/settings/display/display-settings').then(module=>module.DisplaySettings) },
-          { path:'integrations',loadComponent:()=>import('./pages/settings/integrations/integration-settings').then(module=>module.IntegrationSettings) },
-          { path:'users',loadComponent:()=>import('./pages/settings/users/user-access-settings').then(module=>module.UserAccessSettings) },
-          { path:'mobile',loadComponent:()=>import('./pages/settings/mobile/mobile-settings').then(module=>module.MobileSettings) },
+          { path: '', pathMatch: 'full', redirectTo: 'organisation' },
+          {
+            path: 'organisation',
+            loadComponent: () =>
+              import('./pages/settings/organisation/organisation-settings').then(
+                (module) => module.OrganisationSettings,
+              ),
+          },
+          {
+            path: 'notifications',
+            loadComponent: () =>
+              import('./pages/settings/notifications/notification-settings').then(
+                (module) => module.NotificationSettings,
+              ),
+          },
+          {
+            path: 'display',
+            loadComponent: () =>
+              import('./pages/settings/display/display-settings').then(
+                (module) => module.DisplaySettings,
+              ),
+          },
+          {
+            path: 'integrations',
+            loadComponent: () =>
+              import('./pages/settings/integrations/integration-settings').then(
+                (module) => module.IntegrationSettings,
+              ),
+          },
+          {
+            path: 'users',
+            loadComponent: () =>
+              import('./pages/settings/users/user-access-settings').then(
+                (module) => module.UserAccessSettings,
+              ),
+          },
+          {
+            path: 'mobile',
+            loadComponent: () =>
+              import('./pages/settings/mobile/mobile-settings').then(
+                (module) => module.MobileSettings,
+              ),
+          },
         ],
       },
       {
@@ -97,24 +131,46 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/documents/documents-page').then((module) => module.DocumentsPage),
         children: [
-          { path:'',pathMatch:'full',redirectTo:'all' },
-          { path:'all',loadComponent:()=>import('./pages/documents/all-documents/all-documents').then((module)=>module.AllDocuments) },
-          { path:'vehicle',loadComponent:()=>import('./pages/documents/vehicle-documents/vehicle-documents').then((module)=>module.VehicleDocuments) },
-          { path:'driver',loadComponent:()=>import('./pages/documents/driver-documents/driver-documents').then((module)=>module.DriverDocuments) },
-          { path:'company',loadComponent:()=>import('./pages/documents/company-documents/company-documents').then((module)=>module.CompanyDocuments) },
+          { path: '', pathMatch: 'full', redirectTo: 'all' },
+          {
+            path: 'all',
+            loadComponent: () =>
+              import('./pages/documents/all-documents/all-documents').then(
+                (module) => module.AllDocuments,
+              ),
+          },
+          {
+            path: 'vehicle',
+            loadComponent: () =>
+              import('./pages/documents/vehicle-documents/vehicle-documents').then(
+                (module) => module.VehicleDocuments,
+              ),
+          },
+          {
+            path: 'driver',
+            loadComponent: () =>
+              import('./pages/documents/driver-documents/driver-documents').then(
+                (module) => module.DriverDocuments,
+              ),
+          },
+          {
+            path: 'company',
+            loadComponent: () =>
+              import('./pages/documents/company-documents/company-documents').then(
+                (module) => module.CompanyDocuments,
+              ),
+          },
         ],
       },
       {
         path: 'jobs',
         title: 'Jobs | FleetPoint',
-        loadComponent: () =>
-          import('./pages/jobs/jobs-page').then((module) => module.JobsPage),
+        loadComponent: () => import('./pages/jobs/jobs-page').then((module) => module.JobsPage),
       },
       {
         path: 'poi',
         title: 'Points of Interest | FleetPoint',
-        loadComponent: () =>
-          import('./pages/poi/poi-page').then((module) => module.PoiPage),
+        loadComponent: () => import('./pages/poi/poi-page').then((module) => module.PoiPage),
       },
       {
         path: 'routes',
@@ -123,10 +179,32 @@ export const routes: Routes = [
           import('./pages/routes/routes-page').then((module) => module.RoutesPage),
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'library' },
-          { path: 'library', loadComponent: () => import('./pages/routes/route-library/route-library').then((module) => module.RouteLibrary) },
-          { path: 'active-runs', loadComponent: () => import('./pages/routes/active-runs/active-runs').then((module) => module.ActiveRuns) },
-          { path: 'dispatch', loadComponent: () => import('./pages/routes/dispatch/route-dispatch').then((module) => module.RouteDispatch) },
-          { path: 'adherence', loadComponent: () => import('./pages/routes/adherence/route-adherence').then((module) => module.RouteAdherence) },
+          {
+            path: 'library',
+            loadComponent: () =>
+              import('./pages/routes/route-library/route-library').then(
+                (module) => module.RouteLibrary,
+              ),
+          },
+          {
+            path: 'active-runs',
+            loadComponent: () =>
+              import('./pages/routes/active-runs/active-runs').then((module) => module.ActiveRuns),
+          },
+          {
+            path: 'dispatch',
+            loadComponent: () =>
+              import('./pages/routes/dispatch/route-dispatch').then(
+                (module) => module.RouteDispatch,
+              ),
+          },
+          {
+            path: 'adherence',
+            loadComponent: () =>
+              import('./pages/routes/adherence/route-adherence').then(
+                (module) => module.RouteAdherence,
+              ),
+          },
         ],
       },
       {
@@ -136,11 +214,41 @@ export const routes: Routes = [
           import('./pages/maintenance/maintenance-page').then((module) => module.MaintenancePage),
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'overview' },
-          { path: 'overview', loadComponent: () => import('./pages/maintenance/overview/maintenance-overview').then((module) => module.MaintenanceOverview) },
-          { path: 'work-orders', loadComponent: () => import('./pages/maintenance/work-orders/maintenance-work-orders').then((module) => module.MaintenanceWorkOrders) },
-          { path: 'workshops', loadComponent: () => import('./pages/maintenance/workshops/maintenance-workshops').then((module) => module.MaintenanceWorkshops) },
-          { path: 'service-log', loadComponent: () => import('./pages/maintenance/service-log/maintenance-service-log').then((module) => module.MaintenanceServiceLog) },
-          { path: 'predictions', loadComponent: () => import('./pages/maintenance/predictions/maintenance-predictions').then((module) => module.MaintenancePredictions) },
+          {
+            path: 'overview',
+            loadComponent: () =>
+              import('./pages/maintenance/overview/maintenance-overview').then(
+                (module) => module.MaintenanceOverview,
+              ),
+          },
+          {
+            path: 'work-orders',
+            loadComponent: () =>
+              import('./pages/maintenance/work-orders/maintenance-work-orders').then(
+                (module) => module.MaintenanceWorkOrders,
+              ),
+          },
+          {
+            path: 'workshops',
+            loadComponent: () =>
+              import('./pages/maintenance/workshops/maintenance-workshops').then(
+                (module) => module.MaintenanceWorkshops,
+              ),
+          },
+          {
+            path: 'service-log',
+            loadComponent: () =>
+              import('./pages/maintenance/service-log/maintenance-service-log').then(
+                (module) => module.MaintenanceServiceLog,
+              ),
+          },
+          {
+            path: 'predictions',
+            loadComponent: () =>
+              import('./pages/maintenance/predictions/maintenance-predictions').then(
+                (module) => module.MaintenancePredictions,
+              ),
+          },
         ],
       },
       {
@@ -150,9 +258,27 @@ export const routes: Routes = [
           import('./pages/violations/violations-page').then((module) => module.ViolationsPage),
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'all' },
-          { path: 'all', loadComponent: () => import('./pages/violations/all-violations/all-violations').then((module) => module.AllViolations) },
-          { path: 'fines', loadComponent: () => import('./pages/violations/fines/violation-fines').then((module) => module.ViolationFines) },
-          { path: 'configuration', loadComponent: () => import('./pages/violations/configuration/violation-configuration').then((module) => module.ViolationConfiguration) },
+          {
+            path: 'all',
+            loadComponent: () =>
+              import('./pages/violations/all-violations/all-violations').then(
+                (module) => module.AllViolations,
+              ),
+          },
+          {
+            path: 'fines',
+            loadComponent: () =>
+              import('./pages/violations/fines/violation-fines').then(
+                (module) => module.ViolationFines,
+              ),
+          },
+          {
+            path: 'configuration',
+            loadComponent: () =>
+              import('./pages/violations/configuration/violation-configuration').then(
+                (module) => module.ViolationConfiguration,
+              ),
+          },
         ],
       },
       {
@@ -162,9 +288,23 @@ export const routes: Routes = [
           import('./pages/geozones/geozones-page').then((module) => module.GeozonesPage),
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'map' },
-          { path: 'map', loadComponent: () => import('./pages/geozones/zone-map/zone-map').then((module) => module.ZoneMap) },
-          { path: 'list', loadComponent: () => import('./pages/geozones/zone-list/zone-list').then((module) => module.ZoneList) },
-          { path: 'analytics', loadComponent: () => import('./pages/geozones/analytics/geozone-analytics').then((module) => module.GeozoneAnalytics) },
+          {
+            path: 'map',
+            loadComponent: () =>
+              import('./pages/geozones/zone-map/zone-map').then((module) => module.ZoneMap),
+          },
+          {
+            path: 'list',
+            loadComponent: () =>
+              import('./pages/geozones/zone-list/zone-list').then((module) => module.ZoneList),
+          },
+          {
+            path: 'analytics',
+            loadComponent: () =>
+              import('./pages/geozones/analytics/geozone-analytics').then(
+                (module) => module.GeozoneAnalytics,
+              ),
+          },
         ],
       },
       {
@@ -190,6 +330,43 @@ export const routes: Routes = [
         title: 'Devices | FleetPoint',
         loadComponent: () =>
           import('./pages/devices/devices-page').then((module) => module.DevicesPage),
+      },
+      {
+        path: 'dashcam',
+        title: 'DashCam | FleetPoint',
+        loadComponent: () =>
+          import('./pages/dashcam/dashcam-page').then((module) => module.DashcamPage),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'live' },
+          {
+            path: 'live',
+            loadComponent: () =>
+              import('./pages/dashcam/live-view/dashcam-live-view').then(
+                (module) => module.DashcamLiveView,
+              ),
+          },
+          {
+            path: 'events',
+            loadComponent: () =>
+              import('./pages/dashcam/events/dashcam-events').then(
+                (module) => module.DashcamEvents,
+              ),
+          },
+          {
+            path: 'review',
+            loadComponent: () =>
+              import('./pages/dashcam/review-queue/dashcam-review-queue').then(
+                (module) => module.DashcamReviewQueue,
+              ),
+          },
+          {
+            path: 'analytics',
+            loadComponent: () =>
+              import('./pages/dashcam/analytics/dashcam-analytics').then(
+                (module) => module.DashcamAnalytics,
+              ),
+          },
+        ],
       },
       {
         path: 'vehicles/:registration',
@@ -239,7 +416,9 @@ export const routes: Routes = [
         path: 'drivers/:id',
         title: 'Driver Details | FleetPoint',
         loadComponent: () =>
-          import('./pages/drivers/driver-detail/driver-detail').then((module) => module.DriverDetail),
+          import('./pages/drivers/driver-detail/driver-detail').then(
+            (module) => module.DriverDetail,
+          ),
       },
       { path: '**', redirectTo: 'dashboard' },
     ],

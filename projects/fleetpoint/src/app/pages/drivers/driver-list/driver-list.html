@@ -1,124 +1,83 @@
 <section class="driver-tab-content tab-enter">
-  <ui-blocking-loader
-    [visible]="loading()"
-    label="Loading drivers"
-    message="Getting the latest driver records..."
-  /><ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting driver..." />
-  <div class="tab-action smooth-reveal tab-reveal-action">
+  <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting driver..." />
+
+  <div class="tab-action">
     <button type="button" class="add-driver" (click)="openCreateForm()">+ Add Driver</button>
   </div>
-  <section class="driver-stats smooth-reveal tab-reveal-stats">
-    <app-stat-card label="Total Drivers" [value]="displayedTotal()" tone="brand"
-      ><svg stat-card-icon viewBox="0 0 24 24">
-        <circle cx="9" cy="8" r="3" />
-        <path
-          d="M3.5 19c.4-3.8 2.2-5.7 5.5-5.7s5.1 1.9 5.5 5.7M16 6.5a3 3 0 0 1 0 5.8M17 14c2.2.6 3.4 2.3 3.5 5"
-        /></svg
-    ></app-stat-card>
-    <app-stat-card label="Active" [value]="active()" tone="success"
-      ><svg stat-card-icon viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" />
-        <path d="m8 12 2.5 2.5L16.5 9" /></svg
-    ></app-stat-card>
-    <app-stat-card label="On Shift" [value]="onShift()" tone="info"
-      ><svg stat-card-icon viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" /></svg
-    ></app-stat-card>
-    <app-stat-card label="Unallocated" [value]="unallocated()" tone="warning"
-      ><svg stat-card-icon viewBox="0 0 24 24">
-        <circle cx="10" cy="8" r="3" />
-        <path d="M4 19c.4-3.8 2.4-5.7 6-5.7 1.5 0 2.7.3 3.7 1M17 8l4 4M21 8l-4 4" /></svg
-    ></app-stat-card>
-  </section>
-  <section class="driver-filters smooth-reveal tab-reveal-filters">
+
+  @if (initialLoading()) {
+    <section class="driver-stats">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <ui-stat-card-skeleton />
+      }
+    </section>
+  } @else {
+    <section class="driver-stats">
+      <app-stat-card label="Total Drivers" [value]="displayedTotal()" tone="brand">
+        <svg stat-card-icon viewBox="0 0 24 24">
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3.5 19c.4-3.8 2.2-5.7 5.5-5.7s5.1 1.9 5.5 5.7M16 6.5a3 3 0 0 1 0 5.8M17 14c2.2.6 3.4 2.3 3.5 5" />
+        </svg>
+      </app-stat-card>
+      <app-stat-card label="Active" [value]="active()" tone="success">
+        <svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16.5 9" /></svg>
+      </app-stat-card>
+      <app-stat-card label="On Shift" [value]="onShift()" tone="info">
+        <svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+      </app-stat-card>
+      <app-stat-card label="Unallocated" [value]="unallocated()" tone="warning">
+        <svg stat-card-icon viewBox="0 0 24 24"><circle cx="10" cy="8" r="3" /><path d="M4 19c.4-3.8 2.4-5.7 6-5.7 1.5 0 2.7.3 3.7 1M17 8l4 4M21 8l-4 4" /></svg>
+      </app-stat-card>
+    </section>
+  }
+
+  <section class="driver-filters">
     <div class="filter-controls">
-      <label
-        ><span>Group</span
-        ><shared-dropdown
-          class="filter-dropdown"
-          [options]="groupOptions()"
-          mode="single"
-          align="left"
-          [searchable]="true"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [selected]="[groupId()]"
-          (optionSelected)="selectGroup($event)"
-          ><button dropdown-trigger type="button">
-            <span>{{ optionLabel(groupOptions(), groupId(), 'All groups') }}</span>
-          </button></shared-dropdown
-        ></label
-      >
-      <label
-        ><span>Driver</span
-        ><shared-dropdown
-          class="filter-dropdown"
-          [options]="driverOptions()"
-          mode="single"
-          align="left"
-          [searchable]="true"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [selected]="[driverId()]"
-          (optionSelected)="selectDriver($event)"
-          ><button dropdown-trigger type="button">
-            <span>{{ optionLabel(driverOptions(), driverId(), 'All drivers') }}</span>
-          </button></shared-dropdown
-        ></label
-      >
-      <label
-        ><span>Type</span
-        ><shared-dropdown
-          class="filter-dropdown"
-          [options]="typeOptions"
-          mode="single"
-          align="left"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [selected]="[cardType()]"
-          (optionSelected)="selectType($event)"
-          ><button dropdown-trigger type="button">
-            <span>{{ optionLabel(typeOptions, cardType(), 'All types') }}</span>
-          </button></shared-dropdown
-        ></label
-      ><button type="button" class="reset-filter" (click)="resetFilters()">Reset</button>
+      <label>
+        <span>Group</span>
+        <shared-dropdown class="filter-dropdown" [options]="groupOptions()" mode="single" align="left" [searchable]="true" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[groupId()]" (optionSelected)="selectGroup($event)">
+          <button dropdown-trigger type="button" [disabled]="initialLoading()">
+            @if (initialLoading()) { <ui-skeleton width="5rem" height="0.75rem" radius="0.3rem" /> }
+            @else { <span>{{ optionLabel(groupOptions(), groupId(), 'All groups') }}</span> }
+          </button>
+        </shared-dropdown>
+      </label>
+      <label>
+        <span>Driver</span>
+        <shared-dropdown class="filter-dropdown" [options]="driverOptions()" mode="single" align="left" [searchable]="true" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[driverId()]" (optionSelected)="selectDriver($event)">
+          <button dropdown-trigger type="button" [disabled]="initialLoading()">
+            @if (initialLoading()) { <ui-skeleton width="5.5rem" height="0.75rem" radius="0.3rem" /> }
+            @else { <span>{{ optionLabel(driverOptions(), driverId(), 'All drivers') }}</span> }
+          </button>
+        </shared-dropdown>
+      </label>
+      <label>
+        <span>Type</span>
+        <shared-dropdown class="filter-dropdown" [options]="typeOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[cardType()]" (optionSelected)="selectType($event)">
+          <button dropdown-trigger type="button"><span>{{ optionLabel(typeOptions, cardType(), 'All types') }}</span></button>
+        </shared-dropdown>
+      </label>
+      <button type="button" class="reset-filter" [disabled]="loading()" (click)="resetFilters()">Reset</button>
     </div>
   </section>
-  <shared-data-table
-    class="smooth-reveal tab-reveal-table"
-    title="Driver List"
-    [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + displayedTotal()"
-    [columns]="columns"
-    [rows]="rows()"
-    [actions]="actions"
-    [clientSideSearch]="false"
-    [showPrimaryAction]="false"
-    [showExport]="true"
-    [minTableWidth]="1250"
-    searchPlaceholder="Search drivers or employee ID"
-    (searchChange)="tableSearchChanged($event)"
-    (rowAction)="handleRowAction($event)"
-    (cellSelected)="openDriver($event.row)"
-  />
-  <nav class="driver-pagination smooth-reveal tab-reveal-pagination">
-    <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ displayedTotal() }}</span>
+
+  @if (initialLoading()) {
+    <ui-data-table-skeleton title="Driver List" [columns]="columns.length" [columnLabels]="columnLabels" [rows]="3" [showToolbar]="true" [twoLineFirstColumn]="true" />
+  } @else {
+    <div class="driver-table-wrap" [class.refreshing]="refreshing()">
+      @if (refreshing()) { <div class="driver-refresh-progress"><i></i></div> }
+      <shared-data-table title="Driver List" [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + displayedTotal()" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showPrimaryAction]="false" [showExport]="true" [minTableWidth]="1250" searchPlaceholder="Search drivers or employee ID" (searchChange)="tableSearchChanged($event)" (rowAction)="handleRowAction($event)" (cellSelected)="openDriver($event.row)" />
+    </div>
+  }
+
+  <nav class="driver-pagination">
+    @if (initialLoading()) { <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" /> }
+    @else { <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ displayedTotal() }}</span> }
     <div>
-      <button [disabled]="offset() === 0 || !!groupId() || !!driverId()" (click)="previousPage()">
-        Previous</button
-      ><button
-        [disabled]="offset() + limit >= total() || !!groupId() || !!driverId()"
-        (click)="nextPage()"
-      >
-        Next
-      </button>
+      <button [disabled]="loading() || offset() === 0 || !!groupId() || !!driverId()" (click)="previousPage()">Previous</button>
+      <button [disabled]="loading() || offset() + limit >= total() || !!groupId() || !!driverId()" (click)="nextPage()">Next</button>
     </div>
   </nav>
-  <app-driver-form
-    [open]="formOpen()"
-    [driver]="selectedDriver()"
-    [groups]="groups()"
-    (cancelled)="closeForm()"
-    (created)="driverSaved()"
-  />
+
+  <app-driver-form [open]="formOpen()" [driver]="selectedDriver()" [groups]="groups()" (cancelled)="closeForm()" (created)="driverSaved()" />
 </section>

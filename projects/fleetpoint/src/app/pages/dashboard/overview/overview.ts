@@ -1,7 +1,6 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { BlockingLoader, TableColumn, TableRow } from '@iotility/shared-ui';
-import { finalize, forkJoin } from 'rxjs';
+import { Skeleton, StatCardSkeleton, TableColumn, TableRow } from '@iotility/shared-ui';
+import { finalize } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCard, StatCardTone } from '../../../shared/stat-card/stat-card';
 import {
@@ -12,17 +11,26 @@ import {
   FleetDashboardApiService,
   Vehicle,
 } from '../../../shared/services/fleet-dashboard-api.service';
-import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
-
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [BlockingLoader, DashboardGraphComponent, StatCard],
+  imports: [Skeleton, StatCardSkeleton, DashboardGraphComponent, StatCard],
   templateUrl: './overview.html',
-  styleUrl: '../dashboard-page.css',
+  styleUrls: ['../dashboard-page.css', './overview.css'],
 })
 export class Overview implements OnInit {
-  protected readonly loading = signal(true);
-  protected readonly error = signal('');
+  protected readonly cardsLoading = signal(true);
+  protected readonly graphsLoading = signal(true);
+  protected readonly cardsError = signal('');
+  protected readonly graphsError = signal('');
+  protected readonly metricSkeletons = Array.from({ length: 8 });
+  protected readonly graphSkeletons = [
+    { type: 'vertical' },
+    { type: 'horizontal' },
+    { type: 'horizontal' },
+    { type: 'doughnut' },
+    { type: 'doughnut' },
+    { type: 'line' },
+  ] as const;
   protected readonly cards = signal<DashboardCard[]>([]);
   protected readonly displayedCards = computed(() => {
     const order = ['QFU', 'QHB', 'QIT', 'QLC', 'QPT', 'QRH', 'QSF', 'QUL'];
@@ -65,32 +73,35 @@ export class Overview implements OnInit {
     alerts: camera.notifications ? `${camera.notifications} alerts` : 'Active',
   })));
 
-  constructor(
-    private readonly api: FleetDashboardApiService,
-    private readonly feedback: FeedbackDialogBridgeService,
-  ) {}
+  constructor(private readonly api: FleetDashboardApiService) {}
 
   ngOnInit(): void { this.loadDashboard(); }
 
   protected loadDashboard(): void {
-    this.loading.set(true);
-    this.error.set('');
     this.loadFleetData();
-    forkJoin({
-      cards: this.api.getCards(),
-      graphs: this.api.getGraphs(),
-      // fleets are loaded independently so they cannot block the dashboard loader
-      // dashcams: this.api.getDashcams(),
-    }).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: ({ cards, graphs }) => {
-        this.cards.set(cards.data ?? []);
-        this.graphs.set(graphs.data ?? []);
-        this.dashcams.set([]);
+    this.loadCards();
+    this.loadGraphs();
+    this.dashcams.set([]);
+  }
+
+  protected loadCards(): void {
+    this.cardsLoading.set(true);
+    this.cardsError.set('');
+    this.api.getCards().pipe(finalize(() => this.cardsLoading.set(false))).subscribe({
+      next: (cards) => this.cards.set(cards.data ?? []),
+      error: (response) => {
+        this.cardsError.set(response.error?.message || 'Fleet metrics could not be loaded.');
       },
-      error: (response: HttpErrorResponse) => {
-        const message = response.error?.message || 'Dashboard data could not be loaded. Please try again.';
-        this.error.set(message);
-        void this.feedback.open({ type: 'error', title: 'Unable to load dashboard', message, confirmText: 'Close', showCancel: false });
+    });
+  }
+
+  protected loadGraphs(): void {
+    this.graphsLoading.set(true);
+    this.graphsError.set('');
+    this.api.getGraphs().pipe(finalize(() => this.graphsLoading.set(false))).subscribe({
+      next: (graphs) => this.graphs.set(graphs.data ?? []),
+      error: (response) => {
+        this.graphsError.set(response.error?.message || 'Dashboard analytics could not be loaded.');
       },
     });
   }

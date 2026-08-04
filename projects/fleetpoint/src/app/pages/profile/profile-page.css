@@ -23,6 +23,10 @@
 .identity-meta { @apply mt-6 w-full border-t border-line pt-5 dark:border-dark-line; }
 .identity-meta span { @apply block text-[10px] text-muted dark:text-brand-300; }
 .identity-meta strong { @apply mt-1 block text-[11px] text-ink dark:text-white; }
+.identity-name-skeleton { @apply mt-4 flex h-4 items-center; }
+.identity-role-skeleton { @apply mt-1 flex h-[0.9375rem] items-center; }
+.identity-status-skeleton { @apply mt-4; }
+.profile-identity-skeleton .identity-meta strong { @apply flex h-[0.9375rem] items-center justify-center; }
 .profile-content { @apply grid gap-5; }
 .info-card { @apply overflow-hidden; }
 .info-card > header { @apply flex items-center gap-3 border-b border-line px-5 py-4 dark:border-dark-line; }
@@ -35,6 +39,7 @@
 .info-grid > div { @apply border-b border-line px-5 py-4 odd:sm:border-r dark:border-dark-line; }
 .info-grid dt { @apply text-[10px] text-muted dark:text-brand-300; }
 .info-grid dd { @apply mt-1 break-words text-xs font-semibold text-ink dark:text-white; }
+.profile-info-skeleton .info-grid dd { @apply flex h-4 items-center; }
 .edit-button { flex-shrink:0;border:1px solid var(--color-line);border-radius:.5rem;padding:.5rem .75rem;font-size:10px;font-weight:600;color:var(--color-brand-600); }
 .edit-form,.password-form { display:grid;gap:1rem;padding:1.25rem; }
 .edit-form label,.password-form label { font-size:10px;font-weight:500;color:var(--color-muted); }
@@ -68,6 +73,3 @@
 .profile-state { @apply grid min-h-80 place-items-center content-center gap-3 rounded-2xl border border-line bg-white text-xs text-muted dark:border-dark-line dark:bg-dark-canvas/40 dark:text-brand-300; }
 .profile-state.error { @apply text-danger; }
 .profile-state button { @apply cursor-pointer rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white; }
-.details-reveal { --reveal-delay: 120ms; }
-.account-reveal { --reveal-delay: 240ms; }
-.password-reveal { --reveal-delay: 360ms; }

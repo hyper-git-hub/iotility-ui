@@ -1,9 +1,4 @@
 <section class="replay-page">
-  <ui-blocking-loader
-    [visible]="loading() || trailLoading()"
-    [label]="loading() ? 'Loading vehicles' : 'Loading trip replay'"
-    message="Getting vehicle history and map trail..."
-  />
   <header class="replay-header">
     <div>
       <h1>Trip Replay</h1>
@@ -30,7 +25,7 @@
             (valueChange)="updateEnd($event)"
             ariaLabel="Choose trip end date and time"
         /></label>
-        <button type="button" (click)="loadTrip()">Load trip</button>
+        <button type="button" [disabled]="loading() || trailLoading()" (click)="loadTrip()">Load trip</button>
       </section>
       <label class="fleet-search-field"
         ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -45,25 +40,39 @@
       @if (error()) {
         <div class="replay-error">{{ error() }}</div>
       }
-      <div class="trip-list">
-        @for (vehicle of filteredVehicles(); track vehicle.id) {
-          <button
-            type="button"
-            class="trip-row"
-            [class.selected]="selectedVehicleId() === vehicle.id"
-            (click)="selectVehicle(vehicle)"
-          >
-            <span class="driver-avatar">{{
-              (vehicle.vehicle_driver_name || vehicle.registration).slice(0, 1)
-            }}</span
-            ><span class="trip-copy"
-              ><strong>{{ vehicle.registration }}</strong
-              ><small>{{ vehicle.vehicle_driver_name || 'Unassigned' }}</small
-              ><small>{{ vehicle.vehicle_type }}</small></span
+      <div class="trip-list" [attr.aria-busy]="loading()">
+        @if (loading()) {
+          @for (_ of vehicleSkeletons; track $index) {
+            <div class="trip-row-skeleton" aria-hidden="true">
+              <ui-skeleton variant="circle" width="2rem" height="2rem" />
+              <div class="trip-copy-skeleton">
+                <span class="trip-title-line"><ui-skeleton width="5.25rem" height="0.75rem" radius="0.25rem" /></span>
+                <span class="trip-small-line"><ui-skeleton width="4.75rem" height="0.6rem" radius="0.25rem" /></span>
+                <span class="trip-small-line"><ui-skeleton width="6.5rem" height="0.6rem" radius="0.25rem" /></span>
+              </div>
+            </div>
+          }
+        } @else {
+          @for (vehicle of filteredVehicles(); track vehicle.id) {
+            <button
+              type="button"
+              class="trip-row"
+              [disabled]="trailLoading()"
+              [class.selected]="selectedVehicleId() === vehicle.id"
+              (click)="selectVehicle(vehicle)"
             >
-          </button>
-        } @empty {
-          <p class="replay-empty">No vehicles match your search.</p>
+              <span class="driver-avatar">{{
+                (vehicle.vehicle_driver_name || vehicle.registration).slice(0, 1)
+              }}</span
+              ><span class="trip-copy"
+                ><strong>{{ vehicle.registration }}</strong
+                ><small>{{ vehicle.vehicle_driver_name || 'Unassigned' }}</small
+                ><small>{{ vehicle.vehicle_type }}</small></span
+              >
+            </button>
+          } @empty {
+            <p class="replay-empty">No vehicles match your search.</p>
+          }
         }
       </div>
     </aside>
@@ -76,33 +85,49 @@
           </div>
         }
         <app-trip-replay-map
+          [class.map-loaded]="mapLoaded()"
           [positions]="selectedTrip().positions"
           [events]="selectedTrip().events"
           [positionIndex]="positionIndex()"
           [playbackActive]="playing()"
           [playbackSpeed]="speed()"
           [playbackStepDuration]="playbackStepDuration"
+          (ready)="mapLoaded.set(true)"
           (eventSelected)="jumpToEvent($event)"
           (routeLoadingChange)="updateRouteLoading($event)"
         />
-        <div class="map-trip-status"><i></i> Replay · {{ selectedTrip().vehicle }}</div>
+        <div class="map-trip-status">
+          @if (loading() || trailLoading()) {
+            <ui-skeleton width="8.5rem" height="0.65rem" radius="0.3rem" />
+          } @else {
+            <span class="trip-status-reveal"><i></i> Replay · {{ selectedTrip().vehicle }}</span>
+          }
+        </div>
       </div>
       <section class="playback-panel">
         <div class="playback-buttons">
           <button type="button" aria-label="Restart trip" (click)="stop()">↶</button
           ><button type="button" class="play-button" (click)="togglePlayback()">
-            {{ playing() ? 'Ⅱ' : '▶' }}</button
-          ><span>{{ currentPosition().time }}</span>
+            {{ playing() ? 'Ⅱ' : '▶' }}</button>
+          @if (loading() || trailLoading()) {
+            <ui-skeleton class="playback-time-skeleton" width="5.5rem" height="0.75rem" radius="0.3rem" />
+          } @else {
+            <span>{{ currentPosition().time }}</span>
+          }
         </div>
-        <input
-          class="timeline"
-          type="range"
-          min="0"
-          [max]="maxPosition()"
-          [value]="positionIndex()"
-          [style.--trip-progress.%]="progress()"
-          (input)="scrub($event)"
-        />
+        @if (loading() || trailLoading()) {
+          <ui-skeleton class="timeline-skeleton" width="100%" height="0.375rem" radius="9999px" />
+        } @else {
+          <input
+            class="timeline"
+            type="range"
+            min="0"
+            [max]="maxPosition()"
+            [value]="positionIndex()"
+            [style.--trip-progress.%]="progress()"
+            (input)="scrub($event)"
+          />
+        }
         <div class="speed-controls">
           @for (value of [1, 2, 3, 4, 5]; track value) {
             <button type="button" [class.active]="speed() === value" (click)="setSpeed(value)">
@@ -114,23 +139,36 @@
     </div>
     <aside class="trip-detail-panel">
       <header>
-        <span class="vehicle-avatar"
-          ><img
-            [src]="selectedTrip().vehicleImage"
-            (error)="useDefaultVehicleImage($event)"
-            alt="Vehicle"
-        /></span>
-        <div>
-          <strong>{{ selectedTrip().vehicle }}</strong
-          ><small>{{ selectedTrip().driver }}</small>
-        </div>
-        @if (selectedTrip().score) {
-          <b>{{ selectedTrip().score }}/100</b>
+        @if (loading()) {
+          <ui-skeleton width="2.5rem" height="2.5rem" radius="0.65rem" />
+          <div class="detail-header-skeleton">
+            <ui-skeleton width="6.5rem" height="0.875rem" radius="0.3rem" />
+            <ui-skeleton width="4.5rem" height="0.6rem" radius="0.25rem" />
+          </div>
+        } @else {
+          <span class="vehicle-avatar"
+            ><img
+              [src]="selectedTrip().vehicleImage"
+              (error)="useDefaultVehicleImage($event)"
+              alt="Vehicle"
+          /></span>
+          <div>
+            <strong>{{ selectedTrip().vehicle }}</strong
+            ><small>{{ selectedTrip().driver }}</small>
+          </div>
+          @if (selectedTrip().score) {
+            <b>{{ selectedTrip().score }}/100</b>
+          }
         }
       </header>
       <section class="journey-card">
-        <span><i class="start-dot"></i>{{ selectedTrip().start }}</span
-        ><span><i class="end-dot"></i>{{ selectedTrip().end }}</span>
+        @if (loading() || trailLoading()) {
+          <span class="journey-line-skeleton"><ui-skeleton variant="circle" width="0.5rem" height="0.5rem" /><ui-skeleton width="10.5rem" height="0.75rem" radius="0.3rem" /></span>
+          <span class="journey-line-skeleton"><ui-skeleton variant="circle" width="0.5rem" height="0.5rem" /><ui-skeleton width="8.5rem" height="0.75rem" radius="0.3rem" /></span>
+        } @else {
+          <span><i class="start-dot"></i>{{ selectedTrip().start }}</span
+          ><span><i class="end-dot"></i>{{ selectedTrip().end }}</span>
+        }
       </section>
       <nav class="detail-tabs">
         <button
@@ -154,7 +192,17 @@
         </button>
       </nav>
       <div class="detail-content">
-        @if (activeTab() === 'events') {
+        @if (loading() || trailLoading()) {
+          @for (_ of detailSkeletons; track $index) {
+            <div class="detail-row-skeleton" aria-hidden="true">
+              <ui-skeleton width="1.75rem" height="1.75rem" radius="0.5rem" />
+              <div>
+                <ui-skeleton width="6.5rem" height="0.75rem" radius="0.25rem" />
+                <ui-skeleton width="9.5rem" height="0.6rem" radius="0.25rem" />
+              </div>
+            </div>
+          }
+        } @else if (activeTab() === 'events') {
           @for (event of selectedTrip().events; track event.id) {
             <button type="button" class="event-row" (click)="jumpToEvent(event)">
               <span [class]="'event-icon ' + event.type">{{

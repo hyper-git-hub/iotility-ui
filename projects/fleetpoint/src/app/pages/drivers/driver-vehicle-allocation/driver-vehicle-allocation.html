@@ -1,20 +1,40 @@
 <section class="driver-tab-content tab-enter">
-  <ui-blocking-loader
-    [visible]="loading()"
-    label="Loading driver allocations"
-    message="Getting the latest vehicle allocations..."
-  />
   <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting allocation..." />
-  <div class="tab-action smooth-reveal tab-reveal-action">
+  <div class="tab-action">
     <button type="button" class="add-driver" (click)="create()">+ Add Allocation</button>
   </div>
   <section class="allocation-board">
-    <div class="allocation-grid">
+    @if (initialLoading()) {
+      <div class="allocation-grid">
+        @for (item of [1, 2]; track item) {
+          <article class="allocation-group allocation-group-skeleton">
+            <header class="allocation-card-header">
+              <div class="allocation-vehicle">
+                <ui-skeleton width="2.5rem" height="2.5rem" radius="0.75rem" />
+                <span><ui-skeleton width="9rem" height="0.875rem" /><ui-skeleton width="6.5rem" height="0.625rem" /></span>
+              </div>
+              <ui-skeleton class="allocation-status-placeholder" width="3.5rem" height="1.25rem" radius="999px" />
+            </header>
+            <div class="allocation-details">
+              <div class="allocation-driver-skeleton">
+                <ui-skeleton width="2rem" height="2rem" radius="999px" />
+                <span><ui-skeleton width="5.5rem" height="0.625rem" /><ui-skeleton width="8rem" height="0.75rem" /><ui-skeleton width="5rem" height="0.625rem" /></span>
+              </div>
+              <div class="allocation-period-skeleton">
+                <span><ui-skeleton width="2.5rem" height="0.5625rem" /><ui-skeleton width="5rem" height="0.6875rem" /></span>
+                <ui-skeleton width="0.75rem" height="0.625rem" />
+                <span><ui-skeleton width="2rem" height="0.5625rem" /><ui-skeleton width="5rem" height="0.6875rem" /></span>
+              </div>
+            </div>
+            <footer><ui-skeleton width="5.5rem" height="0.625rem" /><ui-skeleton width="3.5rem" height="1.125rem" radius="999px" /></footer>
+          </article>
+        }
+      </div>
+    } @else {
+    <div class="allocation-grid" [class.refreshing]="refreshing()">
+      @if (refreshing()) { <div class="driver-refresh-progress allocation-progress"><i></i></div> }
       @for (allocation of allocations(); track allocation.id; let index = $index) {
-        <article
-          class="allocation-group smooth-reveal"
-          [style.--reveal-delay]="260 + index * 110 + 'ms'"
-        >
+        <article class="allocation-group">
           <header class="allocation-card-header">
             <div class="allocation-vehicle">
               <span class="vehicle-icon" aria-hidden="true"
@@ -84,8 +104,9 @@
         }
       }
     </div>
+    }
     @if (total() > limit) {
-      <nav class="driver-pagination smooth-reveal tab-reveal-pagination">
+      <nav class="driver-pagination">
         <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span>
         <div>
           <button [disabled]="offset() === 0" (click)="previous()">Previous</button

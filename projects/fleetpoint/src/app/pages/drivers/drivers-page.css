@@ -33,9 +33,6 @@
 .allocation-heading p {
   @apply mt-1 text-xs text-muted dark:text-brand-300;
 }
-.allocation-reveal-heading {
-  --reveal-delay: 140ms;
-}
 .allocation-grid {
   @apply grid gap-4 lg:grid-cols-2;
 }
@@ -214,26 +211,44 @@
 .reset-filter {
   @apply h-10 cursor-pointer rounded-xl border border-line px-4 text-xs font-semibold text-muted dark:border-dark-line dark:text-brand-300;
 }
-.drivers-table {
-  --reveal-delay: 180ms;
+.driver-table-wrap {
+  @apply relative min-w-0 overflow-hidden rounded-2xl;
 }
-.drivers-reveal-tabs {
-  --reveal-delay: 80ms;
+.driver-table-wrap.refreshing shared-data-table,
+.allocation-grid.refreshing {
+  @apply pointer-events-none opacity-[0.65];
+  transition: opacity 160ms ease;
 }
-.tab-reveal-action {
-  --reveal-delay: 120ms;
+.driver-refresh-progress {
+  @apply absolute inset-x-0 top-0 z-20 h-0 overflow-visible;
 }
-.tab-reveal-stats {
-  --reveal-delay: 200ms;
+.driver-refresh-progress i {
+  @apply absolute inset-x-0 top-0 block h-[3px] origin-left rounded-t-2xl bg-brand-500 shadow-[0_1px_5px_rgba(124,58,237,0.35)];
+  animation: driver-refresh-progress 1.1s ease-in-out infinite;
 }
-.tab-reveal-filters {
-  --reveal-delay: 280ms;
+.allocation-progress {
+  @apply absolute inset-x-0 top-0 lg:col-span-2;
 }
-.tab-reveal-table {
-  --reveal-delay: 360ms;
+.allocation-group-skeleton {
+  min-height: 13.125rem;
 }
-.tab-reveal-pagination {
-  --reveal-delay: 440ms;
+.allocation-group-skeleton ui-skeleton + ui-skeleton {
+  @apply mt-1.5;
+}
+.allocation-status-placeholder {
+  @apply ml-auto;
+}
+.allocation-driver-skeleton {
+  @apply flex min-w-0 items-center gap-3 rounded-xl border border-line px-3 py-2.5 dark:border-dark-line;
+}
+.allocation-driver-skeleton > span {
+  @apply grid min-w-0;
+}
+.allocation-period-skeleton {
+  @apply flex items-center gap-3 rounded-xl bg-canvas px-3 py-2.5 dark:bg-dark-canvas;
+}
+.allocation-period-skeleton > span {
+  @apply grid;
 }
 :host ::ng-deep .drivers-table .status-on-shift {
   @apply bg-success/10 text-success;
@@ -255,6 +270,14 @@
 }
 .driver-pagination button {
   @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line;
+}
+@keyframes driver-refresh-progress {
+  0% { transform: scaleX(0.12); opacity: 0.55; }
+  50% { transform: scaleX(0.72); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .driver-refresh-progress i { animation: none; }
 }
 
 @media (max-width: 640px) {
