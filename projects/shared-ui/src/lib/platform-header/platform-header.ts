@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, Inject, input, output } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
+const THEME_KEY = 'iotility-theme';
 @Component({
   selector: 'shared-platform-header',
   imports: [Dropdown],
@@ -18,11 +19,14 @@ export class PlatformHeader {
   ];
   protected isDark = false;
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
-    this.isDark = document.documentElement.classList.contains('dark');
+    const saved = localStorage.getItem(THEME_KEY);
+    this.isDark = saved === null ? true : saved === 'dark';
+    this.document.documentElement.classList.toggle('dark', this.isDark);
   }
   protected toggleTheme(): void {
     this.isDark = !this.isDark;
     this.document.documentElement.classList.toggle('dark', this.isDark);
+    localStorage.setItem(THEME_KEY, this.isDark ? 'dark' : 'light');
   }
   protected selectProfileOption(option: DropdownOption): void {
     this.profileAction.emit(option);
