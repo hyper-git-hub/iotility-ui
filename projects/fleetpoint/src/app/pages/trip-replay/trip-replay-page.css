@@ -277,12 +277,11 @@
 .stop-card {
   @apply m-3 block w-[calc(100%-1.5rem)] cursor-pointer rounded-xl bg-canvas p-4 text-left dark:bg-dark-canvas;
 }
-.stop-card strong,
-.stop-card small {
+.stop-card strong {
   @apply block text-xs text-ink dark:text-white;
 }
 .stop-card small {
-  @apply mt-1 text-muted dark:text-brand-300;
+  @apply mt-1 block text-xs text-muted dark:text-brand-300;
 }
 .statistics-list {
   @apply p-4;
