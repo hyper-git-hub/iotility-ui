@@ -31,6 +31,7 @@ const TOOLTIP_STYLES = `
       0 2px 4px rgba(0, 0, 0, 0.06),
       0 8px 24px rgba(0, 0, 0, 0.12);
     animation: shared-tooltip-in 0.16s ease-out;
+    will-change: transform;
     pointer-events: none;
     box-sizing: border-box;
   }
@@ -56,8 +57,9 @@ const TOOLTIP_STYLES = `
     width: 10px;
     height: 10px;
     background-color: inherit;
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    backdrop-filter: blur(8px) saturate(1.2);
     transform: rotate(45deg);
-    box-shadow: inherit;
     border-color: transparent;
     border-style: solid;
     border-width: 1px;
@@ -312,7 +314,7 @@ export class Tooltip implements OnDestroy {
 
   private show(): void {
     if (!this.tooltip() || this.tooltipEl) return;
-this.ensureStylesInjected();
+    this.ensureStylesInjected();
     this.createTooltip();
     this.positionTooltip();
   }
