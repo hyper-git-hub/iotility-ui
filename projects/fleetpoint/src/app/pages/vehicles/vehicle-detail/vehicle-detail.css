@@ -1,29 +1,42 @@
 @reference "../../../../styles.css";
 
 .vehicle-detail-page { @apply grid gap-5 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white; }
+.vehicle-detail-page .smooth-reveal { animation: none; }
+.vehicle-heading-line { @apply flex h-[0.9375rem] items-center gap-1.5; }
+.vehicle-title-skeleton { @apply flex h-7 items-center; }
+.vehicle-description-skeleton ui-skeleton { transform: translateY(2px); }
 .detail-heading { @apply flex flex-col justify-between gap-4 sm:flex-row sm:items-center; }
 .heading-copy { @apply flex items-center gap-3; }.heading-copy > button { @apply grid size-9 cursor-pointer place-items-center rounded-xl border border-line bg-white text-lg text-muted hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface; }.heading-copy p { @apply text-[10px] text-muted dark:text-brand-300; }.heading-copy h1 { @apply text-xl font-bold; }.heading-copy div > span { @apply text-xs text-muted dark:text-brand-300; }
 .heading-actions { @apply flex flex-wrap items-center gap-2; }.offline-status { @apply inline-flex items-center gap-1.5 rounded-full bg-muted/10 px-2.5 py-1 text-[10px] font-medium text-muted; }.offline-status i { @apply size-2 rounded-full bg-muted; }.secondary-action,.primary-action { @apply h-9 cursor-pointer rounded-lg px-3 text-xs font-medium; }.secondary-action { @apply border border-line bg-white text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }.primary-action { @apply bg-brand-600 text-white; }
-.metric-grid { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }.reveal-metrics { --reveal-delay: 100ms; }
+.metric-grid { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
 .overview-grid { @apply grid items-stretch gap-5 xl:grid-cols-[380px_1fr]; }
 .detail-card { @apply overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }.detail-card > header { @apply flex items-center justify-between gap-3 border-b border-line px-5 py-4 dark:border-dark-line; }.detail-card h2 { @apply text-sm font-bold; }.detail-card header p,.detail-card header > span { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }.signal-pill { @apply rounded-full bg-success/10 px-2 py-1 text-success; }
 .vehicle-identity { @apply flex items-center gap-4 p-5; }.vehicle-illustration { @apply grid size-20 place-items-center rounded-2xl bg-transparent text-brand-600; }.vehicle-illustration svg { @apply size-14; fill:none;stroke:currentColor;stroke-width:2.2; }.vehicle-identity h3 { @apply text-lg font-bold; }.vehicle-identity p { @apply mb-2 text-xs text-muted dark:text-brand-300; }
+.vehicle-overview-skeleton .vehicle-identity h3 { @apply flex h-7 items-center; }
+.vehicle-overview-skeleton .vehicle-identity p { @apply flex h-5 items-center; }
+.vehicle-overview-skeleton .details-list dd { @apply flex items-center justify-end; }
 .details-list,.compact-list { @apply px-5 pb-5; }.details-list > div,.compact-list > div { @apply grid grid-cols-2 gap-3 border-t border-line py-2.5 text-xs dark:border-dark-line; }.details-list dt,.compact-list dt { @apply text-muted dark:text-brand-300; }.details-list dd,.compact-list dd { @apply text-right font-medium; }
 .map-card { @apply flex min-h-[620px] flex-col; }.map-card > header { @apply shrink-0 items-start; }.map-card header div { @apply min-w-0; }.map-card header p { @apply truncate; }.vehicle-map { @apply min-h-[520px] flex-1; }.vehicle-map app-fleet-map { @apply block h-full; }
-.reveal-profile { --reveal-delay: 200ms; }.reveal-map { --reveal-delay: 300ms; }
+.vehicle-map-placeholder { @apply relative min-h-[520px] flex-1 overflow-hidden bg-brand-50/40 dark:bg-dark-canvas; }
+.vehicle-map-placeholder span { @apply absolute h-1.5 w-[75%] rounded-full bg-brand-100/70 dark:bg-dark-line; transform-origin:left center; }
+.vehicle-map-placeholder span:nth-child(1) { left:8%;top:25%;transform:rotate(15deg); }
+.vehicle-map-placeholder span:nth-child(2) { left:20%;top:65%;transform:rotate(-24deg); }
+.vehicle-map-placeholder span:nth-child(3) { left:55%;top:15%;transform:rotate(52deg); }
+.vehicle-map-placeholder i { @apply absolute size-5 rounded-full bg-brand-100 shadow-sm dark:bg-brand-600/25; }
+.vehicle-map-placeholder i:nth-of-type(1) { left:28%;top:35%; }.vehicle-map-placeholder i:nth-of-type(2) { left:64%;top:55%; }.vehicle-map-placeholder i:nth-of-type(3) { left:78%;top:24%; }
 .information-grid,.operations-grid { @apply grid items-stretch gap-5 lg:grid-cols-3; }
 .information-grid > .detail-card { @apply min-h-[330px]; }
 .operations-grid > .detail-card { @apply min-h-[300px]; }
-.info-one { --reveal-delay: 380ms; }.info-two { --reveal-delay: 460ms; }.info-three { --reveal-delay: 540ms; }
 .monitoring-list { @apply p-4; }.monitoring-list > div { @apply flex items-center justify-between border-b border-line py-3 text-xs last:border-0 dark:border-dark-line; }.monitoring-list em { @apply rounded-full bg-muted/10 px-2 py-1 text-[10px] not-italic text-muted; }.monitoring-list em.enabled { @apply bg-success/10 text-success; }
 .snapshot { @apply grid grid-cols-2 gap-3 p-4; }.snapshot > div { @apply rounded-xl border border-transparent bg-canvas p-3 transition hover:border-brand-400 dark:bg-dark-canvas; }.snapshot span { @apply block text-[10px] text-muted dark:text-brand-300; }.snapshot strong { @apply mt-1 block text-xs; }
 .speed-panel { @apply flex flex-col items-center p-5 text-center; }.speed-gauge { @apply relative mb-3 h-20 w-40 overflow-hidden; }.speed-gauge::before { content:''; @apply absolute inset-x-0 top-0 aspect-[2/1] rounded-t-full border-[14px] border-b-0 border-success; border-right-color:var(--color-warning); border-top-color:var(--color-danger); }.speed-gauge > span { @apply absolute inset-x-0 bottom-0 text-xl font-bold; }.speed-panel > strong { @apply text-xs; }.speed-panel p { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }.speed-panel button { @apply mt-4 cursor-pointer text-xs font-medium text-brand-600; }
+.speed-gauge-skeleton ui-skeleton { @apply absolute bottom-0 left-1/2 -translate-x-1/2; }
+.trip-link-skeleton { @apply mt-4; }
 .sensor-list { @apply grid gap-2 p-4; }.sensor-list > div { @apply flex items-center gap-3 rounded-xl bg-canvas p-3 dark:bg-dark-canvas; }.sensor-icon { @apply grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-dark-surface; }.sensor-list small { @apply block text-[10px] text-muted dark:text-brand-300; }.sensor-list strong { @apply mt-1 block text-xs; }
 .sensor-icon svg { @apply size-[18px]; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
 .live-sensor { @apply inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-1 text-success!; }.live-sensor i { @apply size-1.5 rounded-full bg-success; animation: live-sensor-pulse 1.8s ease-in-out infinite; }
 .live-sensor.offline { @apply bg-muted/10 text-muted!; }
 .live-sensor.offline i { @apply bg-muted; animation: none; }
-.operation-one { --reveal-delay: 620ms; }.operation-two { --reveal-delay: 700ms; }.operation-three { --reveal-delay: 780ms; }
 .activity-columns { @apply grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2; }.activity-columns section { @apply rounded-xl bg-canvas p-3 dark:bg-dark-canvas; }.activity-columns h3 { @apply mb-2 text-xs font-semibold; }.activity-row { @apply flex items-center justify-between gap-3 border-t border-line py-2 text-[10px] first:border-0 dark:border-dark-line; }.activity-row span { @apply text-muted dark:text-brand-300; }.activity-row strong { @apply text-right; }
 @keyframes live-sensor-pulse { 50% { opacity:.3;transform:scale(.7); } }
 @media (max-width: 640px) { .vehicle-detail-page { @apply p-3; }.vehicle-map { @apply min-h-[360px]; }.map-card { @apply min-h-[440px]; } }
