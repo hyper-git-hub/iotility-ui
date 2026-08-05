@@ -1,10 +1,11 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, Inject, input, output } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
+import { Tooltip } from '../tooltip/tooltip';
 const THEME_KEY = 'iotility-theme';
 @Component({
   selector: 'shared-platform-header',
-  imports: [Dropdown],
+  imports: [Dropdown, Tooltip],
   templateUrl: './platform-header.html',
   styleUrl: './platform-header.css',
 })

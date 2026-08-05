@@ -4,7 +4,7 @@
       <h1>Trip Replay</h1>
       <p>Animated trip playback with events, stops and journey insights</p>
     </div>
-    <button type="button">⇩ Export Report</button>
+    <button type="button" tooltip="Export report">⇩ Export Report</button>
   </header>
   <div class="replay-workspace">
     <aside class="trip-list-panel">
@@ -106,8 +106,8 @@
       </div>
       <section class="playback-panel">
         <div class="playback-buttons">
-          <button type="button" aria-label="Restart trip" (click)="stop()">↶</button
-          ><button type="button" class="play-button" (click)="togglePlayback()">
+<button type="button" aria-label="Restart trip" tooltip="Restart" (click)="stop()">↶</button>
+        <button type="button" class="play-button" tooltip="{{ playing() ? 'Pause' : 'Play' }}" (click)="togglePlayback()">
             {{ playing() ? 'Ⅱ' : '▶' }}</button>
           @if (loading() || trailLoading()) {
             <ui-skeleton class="playback-time-skeleton" width="5.5rem" height="0.75rem" radius="0.3rem" />
@@ -119,6 +119,7 @@
           <ui-skeleton class="timeline-skeleton" width="100%" height="0.375rem" radius="9999px" />
         } @else {
           <input
+          tooltip="drag to forward or backward"
             class="timeline"
             type="range"
             min="0"
@@ -130,7 +131,7 @@
         }
         <div class="speed-controls">
           @for (value of [1, 2, 3, 4, 5]; track value) {
-            <button type="button" [class.active]="speed() === value" (click)="setSpeed(value)">
+            <button type="button" [class.active]="speed() === value" tooltip="{{ value }}x speed" (click)="setSpeed(value)">
               {{ value }}×
             </button>
           }

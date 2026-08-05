@@ -7,3 +7,4 @@ export * from './lib/date-time-picker/date-time-picker';
 export * from './lib/skeleton/skeleton';
 export * from './lib/skeleton/stat-card-skeleton';
 export * from './lib/skeleton/data-table-skeleton';
+export * from './lib/tooltip/tooltip';

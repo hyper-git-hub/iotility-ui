@@ -1,6 +1,6 @@
 import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { DateTimePicker, Skeleton } from '@iotility/shared-ui';
+import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
 import {
@@ -61,7 +61,7 @@ const EMPTY_TRIP: ReplayTrip = {
 
 @Component({
   selector: 'app-trip-replay-page',
-  imports: [DateTimePicker, Skeleton, TripReplayMap],
+  imports: [DateTimePicker, Skeleton, Tooltip, TripReplayMap],
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
 })
