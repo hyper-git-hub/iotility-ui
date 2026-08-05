@@ -24,6 +24,7 @@ import {
   removeGeoJson,
   upsertGeoJson,
 } from '../maps/maplibre';
+import { attachTooltip } from '@iotility/shared-ui';
 
 const OSRM_BASE_URL = 'https://fms.backend.iot.vodafone.com.qa:5000';
 const VEHICLE_MODEL_PATHS = [
@@ -251,9 +252,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         `<span aria-hidden="true" style="display:grid;place-items:center;width:18px;height:18px;border:2px solid #fff;border-radius:50%;background:${color};color:#fff;font:700 10px/1 sans-serif;box-shadow:0 2px 7px #18223855">${glyph}</span>`,
       );
       element.setAttribute('aria-label', `${event.label}: ${event.detail}`);
-      element.setAttribute('title', `${event.label} · ${event.detail}`);
       element.setAttribute('role', 'button');
       element.tabIndex = 0;
+      attachTooltip(element, `${event.label} · ${event.detail}`, 'top');
       element.addEventListener('click', () => this.eventSelected.emit(event));
       element.addEventListener('keydown', (keyboardEvent) => {
         if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ')
@@ -358,7 +359,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       `<span aria-hidden="true" style="display:block;width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:${color};box-shadow:0 2px 7px #18223855"></span>`,
     );
     element.setAttribute('aria-label', label);
-    element.setAttribute('title', label);
+    attachTooltip(element, label, 'top');
     return new maplibregl.Marker({ element })
       .setLngLat([point[1], point[0]])
       .setPopup(popup(label))

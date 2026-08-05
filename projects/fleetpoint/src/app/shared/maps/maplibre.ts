@@ -5,6 +5,7 @@ import maplibregl, {
   Map,
   MapOptions,
 } from 'maplibre-gl';
+import { attachTooltip } from '@iotility/shared-ui';
 
 export type LatLng = [number, number];
 type LayerWithoutSource<T = maplibregl.LayerSpecification> =
@@ -34,6 +35,7 @@ export function createIotMap(
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
   map.addControl(new ThreeDimensionalControl(), 'top-right');
+  replaceNativeTitles(map.getContainer());
   let darkTheme = isDark();
 
   const applyThreeDimensionalBuildings = () => addThreeDimensionalBuildings(map);
@@ -133,6 +135,14 @@ function isDark(): boolean {
   return document.documentElement.classList.contains('dark');
 }
 
+function replaceNativeTitles(root: HTMLElement): void {
+  root.querySelectorAll<HTMLButtonElement>('button[title]').forEach((button) => {
+    const label = button.title;
+    button.removeAttribute('title');
+    attachTooltip(button, label, 'left');
+  });
+}
+
 function addThreeDimensionalBuildings(map: Map): void {
   if (map.getLayer(BUILDINGS_LAYER) || !map.getSource('openmaptiles')) return;
   const labelLayer = map
@@ -176,10 +186,10 @@ class ThreeDimensionalControl implements IControl {
     container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
     const button = document.createElement('button');
     button.type = 'button';
-    button.title = 'Toggle 3D view';
     button.setAttribute('aria-label', 'Toggle 3D view');
     button.textContent = '3D';
     button.style.cssText = 'font:700 10px Inter,sans-serif;width:29px';
+    attachTooltip(button, 'Toggle 3D view', 'left');
     button.addEventListener('click', () => {
       const enabled = map.getPitch() > 10;
       map.easeTo({ pitch: enabled ? 0 : 55, bearing: enabled ? 0 : -18, duration: 600 });
