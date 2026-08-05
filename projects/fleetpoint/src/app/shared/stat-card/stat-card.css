@@ -6,7 +6,6 @@
   --stat-card-accent: var(--color-brand-500);
   --stat-card-border: var(--stat-card-accent);
   @apply relative isolate flex min-h-32 flex-col overflow-hidden rounded-2xl border border-line/60 bg-white/70 p-4 backdrop-blur-xl dark:border-dark-line/40 dark:bg-dark-surface/60;
-  background: color-mix(in srgb, var(--stat-card-accent) 13%, white);
 }
 .stat-card-icon {
   @apply mb-3 grid size-9 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-600/15 dark:text-brand-300;
@@ -71,9 +70,6 @@
   border-radius: calc(1rem - 1px);
   background: inherit;
   backdrop-filter: blur(16px);
-}
-:host-context(.dark) .stat-card {
-  background: color-mix(in srgb, var(--stat-card-accent) 12%, var(--color-dark-surface));
 }
 :host-context(.dark) .stat-card.animated-border {
   background: transparent;

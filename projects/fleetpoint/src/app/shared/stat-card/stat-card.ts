@@ -11,7 +11,7 @@ export class StatCard {
   readonly label = input.required<string>();
   readonly value = input.required<string | number>();
   readonly tone = input<StatCardTone>('brand');
-  readonly animatedBorder = input(true);
+  readonly animatedBorder = input(false);
   readonly compact = input(false);
   readonly showIcon = input(true);
   readonly accent = input('');
