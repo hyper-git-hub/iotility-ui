@@ -1,7 +1,29 @@
-<aside class="fleet-sidebar">
+<aside class="fleet-sidebar" [class.collapsed]="collapsed()">
   <div class="brand">
-    <span>FP</span>
-    <div><strong>Fleetpoint</strong><small>LogisticsPro</small></div>
+    <span class="brand-mark">FP</span>
+    <div class="brand-text">
+      <strong>Fleetpoint</strong>
+      <small>LogisticsPro</small>
+    </div>
+    <button
+      type="button"
+      class="brand-toggle"
+      (click)="toggleCollapsed()"
+      [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+      [attr.aria-expanded]="!collapsed()"
+      [tooltip]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+      [position]="collapsed() ? 'right' : 'bottom'"
+    >
+      @if (collapsed()) {
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 17 5-5-5-5M13 17l5-5-5-5" />
+        </svg>
+      } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m11 17-5-5 5-5M18 17l-5-5 5-5" />
+        </svg>
+      }
+    </button>
   </div>
 
   <nav aria-label="Primary navigation">
@@ -9,7 +31,13 @@
       <section>
         <p>{{ group.title }}</p>
         @for (item of group.items; track item.route) {
-          <a [routerLink]="routeFor(item.route)" routerLinkActive="active">
+          <a
+            [routerLink]="routeFor(item.route)"
+            routerLinkActive="active"
+            [tooltip]="item.label"
+            [position]="'right'"
+            [disabled]="!collapsed()"
+          >
             <span class="nav-icon" [class.vehicle-nav-icon]="item.route === '/vehicles'">
               <img [src]="item.icon" alt="" aria-hidden="true" />
             </span>
@@ -27,6 +55,9 @@
   </nav>
 
   <div class="sidebar-footer">
-    <button type="button" (click)="confirmReturnToIotility()">‹ Back to IoTility</button>
+    <button type="button" class="footer-return" (click)="confirmReturnToIotility()" [tooltip]="'Back to IoTility'" [position]="'right'" [disabled]="!collapsed()">
+      <span class="footer-return-icon" aria-hidden="true">‹</span>
+      <span class="footer-return-label">Back to IoTility</span>
+    </button>
   </div>
 </aside>

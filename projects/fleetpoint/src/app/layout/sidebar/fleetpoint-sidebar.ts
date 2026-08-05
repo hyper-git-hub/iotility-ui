@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, computed, Inject, Input, isDevMode } from '@angular/core';
+import { Component, computed, Inject, Input, isDevMode, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Tooltip } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
 import { MenuGroup, SIDEBAR_MENU } from './menu.config';
 
@@ -18,13 +19,16 @@ interface HostDialogRequest {
 
 @Component({
   selector: 'app-fleetpoint-sidebar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, Tooltip],
   templateUrl: './fleetpoint-sidebar.html',
   styleUrl: './fleetpoint-sidebar.css',
 })
 export class FleetpointSidebar {
   @Input() badgeCounts: Record<string, number> = {};
   private readonly showAllDevelopmentItems = isDevMode();
+  private static readonly COLLAPSED_KEY = 'fleetpoint:sidebar-collapsed';
+
+  readonly collapsed = signal(this.restoreCollapsed());
 
   constructor(
     @Inject(DOCUMENT) private readonly document: Document,
@@ -43,6 +47,23 @@ export class FleetpointSidebar {
 
   protected routeFor(route: string): string {
     return this.router.url.startsWith('/fleetpoint') ? `/fleetpoint${route}` : route;
+  }
+
+  protected toggleCollapsed(): void {
+    this.collapsed.update((value) => !value);
+    try {
+      localStorage.setItem(FleetpointSidebar.COLLAPSED_KEY, this.collapsed() ? '1' : '0');
+    } catch {
+      /* ignore storage errors */
+    }
+  }
+
+  private restoreCollapsed(): boolean {
+    try {
+      return localStorage.getItem(FleetpointSidebar.COLLAPSED_KEY) === '1';
+    } catch {
+      return false;
+    }
   }
 
   protected async confirmReturnToIotility(): Promise<void> {

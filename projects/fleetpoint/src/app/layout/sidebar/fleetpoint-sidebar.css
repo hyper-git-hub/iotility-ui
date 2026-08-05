@@ -8,18 +8,45 @@
     var(--color-brand-950) 48%,
     var(--color-brand-800)
   );
+  transition: width 0.2s ease;
+}
+.fleet-sidebar.collapsed {
+  @apply w-16;
 }
 .brand {
   @apply flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4;
 }
-.brand > span {
-  @apply grid size-9 place-items-center rounded-lg bg-brand-500 text-xs font-bold;
+.brand-mark {
+  @apply grid size-9 shrink-0 place-items-center rounded-lg bg-linear-to-br from-purple-500 to-blue-500 text-xs font-bold;
 }
-.brand strong {
-  @apply block text-sm;
+.brand-text {
+  @apply min-w-0;
 }
-.brand small {
-  @apply block text-[10px] text-brand-300;
+.brand-text strong {
+  @apply block truncate text-sm;
+}
+.brand-text small {
+  @apply block truncate text-[10px] text-brand-300;
+}
+.brand-toggle {
+  @apply ml-auto grid shrink-0 cursor-pointer place-items-center rounded-lg text-brand-300 transition hover:text-white;
+}
+.brand-toggle svg {
+  @apply size-4;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+.fleet-sidebar.collapsed .brand {
+  @apply h-20 flex-col justify-center gap-1.5 px-1;
+}
+.fleet-sidebar.collapsed .brand-text {
+  display: none;
+}
+.fleet-sidebar.collapsed .brand-toggle {
+  @apply ml-0;
 }
 nav {
   @apply flex-1 overflow-y-auto px-2 py-3;
@@ -30,15 +57,21 @@ nav section {
 nav section > p {
   @apply mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-brand-400;
 }
+.fleet-sidebar.collapsed nav section > p {
+  display: none;
+}
 nav a,
 nav button {
   @apply relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-brand-300 transition hover:bg-brand-800/50 hover:text-white;
+}
+.fleet-sidebar.collapsed nav a {
+  @apply justify-center gap-0 px-0;
 }
 nav .active {
   @apply bg-brand-600 text-white;
 }
 .nav-icon {
-  @apply grid w-5 place-items-center text-base;
+  @apply grid w-5 shrink-0 place-items-center text-base;
 }
 .nav-icon img {
   @apply size-[18px];
@@ -49,6 +82,11 @@ nav .active {
 }
 .nav-label {
   @apply min-w-0 truncate;
+}
+.fleet-sidebar.collapsed .nav-label,
+.fleet-sidebar.collapsed .live-status-dot,
+.fleet-sidebar.collapsed nav em {
+  display: none;
 }
 .live-status-dot {
   @apply relative ml-auto size-2 shrink-0 rounded-full bg-success;
@@ -75,7 +113,18 @@ nav em {
 .sidebar-footer {
   @apply shrink-0 border-t border-white/10 p-2;
 }
-.sidebar-footer button,
-.sidebar-footer a {
-  @apply flex w-full rounded-lg px-3 py-2 text-xs text-brand-300 hover:bg-white/5 hover:text-white;
+.footer-return {
+  @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-brand-300 transition hover:bg-white/5 hover:text-white;
+}
+.footer-return-icon {
+  @apply text-base leading-none;
+}
+.footer-return-label {
+  @apply min-w-0 truncate;
+}
+.fleet-sidebar.collapsed .footer-return {
+  @apply justify-center gap-0 px-0;
+}
+.fleet-sidebar.collapsed .footer-return-label {
+  display: none;
 }
