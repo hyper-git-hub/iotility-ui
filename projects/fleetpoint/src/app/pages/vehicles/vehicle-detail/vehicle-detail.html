@@ -1,6 +1,30 @@
 <main class="vehicle-detail-page">
-  <ui-blocking-loader [visible]="loading()" label="Loading vehicle" message="Getting vehicle telemetry and activity..." />
-  @if (record(); as vehicle) {
+  @if (loading()) {
+    <header class="detail-heading">
+      <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p class="vehicle-heading-line">Vehicles / <ui-skeleton width="6rem" height="0.625rem" /></p><h1 class="vehicle-title-skeleton"><ui-skeleton width="9rem" height="1.125rem" /></h1><span class="vehicle-heading-line vehicle-description-skeleton"><ui-skeleton width="15rem" height="0.75rem" /></span></div></div>
+      <div class="heading-actions"><ui-skeleton width="4rem" height="1.5rem" radius="999px" /><button type="button" class="secondary-action" disabled>Trip Replay</button><button type="button" class="primary-action" disabled>Edit Vehicle</button></div>
+    </header>
+    <section class="metric-grid">@for (item of [1, 2, 3, 4, 5, 6]; track item) { <ui-stat-card-skeleton /> }</section>
+    <section class="overview-grid">
+      <article class="detail-card identity-card vehicle-overview-skeleton">
+        <header><h2>Vehicle Overview</h2><ui-skeleton width="6rem" height="1.25rem" radius="999px" /></header>
+        <div class="vehicle-identity"><span class="vehicle-illustration"><ui-skeleton width="4rem" height="4rem" radius="1rem" /></span><div><h3><ui-skeleton width="8rem" height="1.125rem" /></h3><p><ui-skeleton width="10rem" height="0.75rem" /></p><ui-skeleton width="4rem" height="1.5rem" radius="999px" /></div></div>
+        <dl class="details-list">@for (label of ['Vehicle Name / ID','Record Status','Fleet','Make','Model','Year','Colour','Engine Number','Chassis Number','Engine Capacity','Fuel Tank Capacity','Odometer Reading','Owner','Date Commissioned','Registration Expiry','Customer']; track label) { <div><dt>{{ label }}</dt><dd><ui-skeleton [width]="$index % 3 === 0 ? '7rem' : '5.5rem'" height="0.75rem" /></dd></div> }</dl>
+      </article>
+      <article class="detail-card map-card vehicle-map-skeleton"><header><div><h2>Current Location</h2><p><ui-skeleton width="10rem" height="0.625rem" /></p></div><ui-skeleton width="7rem" height="0.625rem" /></header><div class="vehicle-map-placeholder"><span></span><span></span><span></span><i></i><i></i><i></i></div></article>
+    </section>
+    <section class="heavy-equipment-card detail-card"><header><div><h2>Heavy Equipment Telemetry</h2><p>Engine, operating state and equipment sensor values</p></div><ui-skeleton width="4.5rem" height="1.25rem" radius="999px" /></header><div class="equipment-grid">@for (label of ['Engine RPM','Engine Load','Coolant Temperature','Intake Air Temperature','Throttle Position','Fuel Level','Operating State','Eye Movement']; track label) { <div><span>{{ label }}</span><strong><ui-skeleton width="4.5rem" height="0.875rem" /></strong></div> }</div></section>
+    <section class="information-grid">
+      <article class="detail-card"><header><h2>Device &amp; Connectivity</h2></header><dl class="compact-list">@for (label of ['Device ID','SIM Number','Vehicle Type','RFID Tag','Immobilizer','Ignition']; track label) { <div><dt>{{ label }}</dt><dd><ui-skeleton width="5.5rem" height="0.75rem" /></dd></div> }</dl></article>
+      <article class="detail-card"><header><h2>Monitoring &amp; Safety</h2></header><div class="monitoring-list">@for (label of ['Harsh acceleration','Harsh braking','Geo zone','Sharp turning','Seat belt monitoring','Immobilization']; track label) { <div><span>{{ label }}</span><ui-skeleton width="3.75rem" height="1.25rem" radius="999px" /></div> }</div></article>
+      <article class="detail-card"><header><h2>Live Sensor Readings</h2><ui-skeleton width="4.5rem" height="1.25rem" radius="999px" /></header><div class="sensor-list">@for (label of ['Last updated','Location','Vehicle status','Current speed']; track label) { <div><ui-skeleton width="2.25rem" height="2.25rem" radius="0.5rem" /><span><small>{{ label }}</small><strong><ui-skeleton width="8rem" height="0.75rem" /></strong></span></div> }</div></article>
+    </section>
+    <section class="operations-grid">
+      <article class="detail-card"><header><h2>Route &amp; Speed</h2><span>Latest telemetry</span></header><div class="speed-panel"><div class="speed-gauge speed-gauge-skeleton"><ui-skeleton width="2rem" height="1.25rem" /></div><strong><ui-skeleton width="8rem" height="0.75rem" /></strong><p><ui-skeleton width="11rem" height="0.625rem" /></p><ui-skeleton class="trip-link-skeleton" width="7rem" height="0.75rem" /></div></article>
+      <article class="detail-card"><header><h2>Operational Snapshot</h2><span>Overall</span></header><div class="snapshot">@for (label of ['Last fuel volume','Distance per day','Assigned driver','Last job','Total distance','Total violations']; track label) { <div><span>{{ label }}</span><strong><ui-skeleton width="5rem" height="0.75rem" /></strong></div> }</div></article>
+      <article class="detail-card"><header><h2>Activity &amp; Service</h2><span>Latest records</span></header><div class="activity-columns">@for (group of [{title:'Violations', rows:['Returned records','Violation alerts']},{title:'Maintenance',rows:['Recent records','Next maintenance']}]; track group.title) { <section><h3>{{ group.title }}</h3>@for (label of group.rows; track label) { <div class="activity-row"><span>{{ label }}</span><strong><ui-skeleton width="3.5rem" height="0.625rem" /></strong></div> }</section> }</div></article>
+    </section>
+  } @else if (record(); as vehicle) {
     <header class="detail-heading smooth-reveal">
       <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p>Vehicles / {{ registration() }}</p><h1>{{ registration() }}</h1><span>{{ text(vehicle.year) }} {{ text(vehicle.make) }} {{ text(vehicle.model) }} · {{ text(vehicle.fleet_name, 'Unassigned fleet') }}</span></div></div>
       <div class="heading-actions"><span class="offline-status" [class.online]="vehicle.online_status"><i></i>{{ vehicle.online_status ? 'Online' : 'Offline' }}</span><button type="button" class="secondary-action" (click)="tripReplay()">Trip Replay</button><button type="button" class="primary-action">Edit Vehicle</button></div>

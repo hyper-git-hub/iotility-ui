@@ -1,11 +1,13 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
-  BlockingLoader,
   DataTable,
+  DataTableSkeleton,
   DateTimePicker,
   Dropdown,
   DropdownOption,
+  Skeleton,
+  StatCardSkeleton,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
@@ -24,7 +26,7 @@ import { StatCard } from '../../../shared/stat-card/stat-card';
 
 @Component({
   selector: 'app-driver-detail',
-  imports: [BlockingLoader, DataTable, DateTimePicker, Dropdown, StatCard],
+  imports: [DataTable, DataTableSkeleton, DateTimePicker, Dropdown, Skeleton, StatCard, StatCardSkeleton],
   templateUrl: './driver-detail.html',
   styleUrl: './driver-detail.css',
 })
@@ -75,6 +77,7 @@ export class DriverDetail implements OnInit {
     { key: 'location', label: 'Location' },
     { key: 'date', label: 'Date and time' },
   ];
+  protected readonly alertColumnLabels = this.alertColumns.map((column) => column.label);
   protected readonly alertRows = computed<TableRow[]>(() =>
     this.violations().map((row, index) => ({
       id: Number(row.id ?? index),

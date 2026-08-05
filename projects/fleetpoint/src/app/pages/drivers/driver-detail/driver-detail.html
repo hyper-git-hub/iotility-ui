@@ -1,21 +1,70 @@
 <main class="driver-detail-page">
-  <ui-blocking-loader
-    [visible]="loading()"
-    label="Loading driver details"
-    message="Getting the latest driver profile and activity..."
-  />
-  <ui-blocking-loader
-    [visible]="dataLoading()"
-    [compact]="true"
-    label="Updating driver activity..."
-  />
+  @if (dataLoading()) {
+    <div class="driver-detail-progress" role="progressbar" aria-label="Updating driver details"><i></i></div>
+  }
 
   @if (error()) {
     <section class="detail-error" role="alert">{{ error() }}</section>
   }
 
-  @if (driver(); as item) {
-    <section class="summary-heading smooth-reveal reveal-cards-heading">
+  @if (loading()) {
+    <section class="summary-heading">
+      <div class="summary-copy">
+        <button type="button" (click)="back()" aria-label="Back to drivers">&larr;</button>
+        <div>
+          <p class="driver-breadcrumb-skeleton">Drivers / <ui-skeleton width="6rem" height="0.625rem" radius="0.25rem" /></p>
+          <h2>Driver overview</h2>
+          <span>High-level driver metrics for the selected preset</span>
+        </div>
+      </div>
+      <label class="cards-filter"><span>Cards period</span><shared-dropdown class="card-period-dropdown" [options]="cardPeriodOptions" mode="single" align="right" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[cardPeriod()]" (optionSelected)="updateCardPeriod($event)"><button dropdown-trigger type="button" disabled><span>{{ cardPeriodLabel() }}</span></button></shared-dropdown></label>
+    </section>
+
+    <section class="driver-overview-grid">
+      <article class="detail-card profile-panel profile-panel-skeleton" aria-hidden="true">
+        <header><h2>Driver profile</h2><ui-skeleton width="6rem" height="0.625rem" radius="0.25rem" /></header>
+        <div class="driver-identity">
+          <ui-skeleton width="9.375rem" height="9.375rem" radius="1rem" />
+          <div><h3><ui-skeleton width="8rem" height="1.125rem" /></h3><p class="email-badge-skeleton"><ui-skeleton width="10rem" height="0.625rem" /></p></div>
+        </div>
+        <dl class="details-list">
+          @for (label of ['Phone', 'Driver group', 'Licence number', 'Licence expiry', 'Date joined', 'Shift status']; track label) {
+            <div><dt>{{ label }}</dt><dd><ui-skeleton [width]="$index % 2 ? '7rem' : '6rem'" height="0.75rem" /></dd></div>
+          }
+        </dl>
+      </article>
+      <section class="cards-column"><div class="metric-grid" aria-label="Driver summary loading">@for (item of [1, 2, 3, 4]; track item) { <ui-stat-card-skeleton /> }</div></section>
+    </section>
+
+    <section class="detail-card filter-panel">
+      <header><div><h2>Performance filters</h2><p>Updates the period summary, violation breakdown, idle history and driver alerts below</p></div><span>Custom range</span></header>
+      <div class="period-controls">
+        <label><span>From</span><shared-date-time-picker [value]="startDate()" (valueChange)="updateStart($event)" ariaLabel="Choose performance start date and time" /></label>
+        <label><span>To</span><shared-date-time-picker [value]="endDate()" (valueChange)="updateEnd($event)" ariaLabel="Choose performance end date and time" /></label>
+        <button type="button" disabled>Apply filters</button>
+      </div>
+    </section>
+
+    <section class="performance-summary" aria-label="Selected-period summary loading">
+      @for (label of ['Distance', 'Violations', 'Idle time', 'Alerts']; track label) { <div><span>{{ label }}</span><strong><ui-skeleton width="4.5rem" height="1.125rem" /></strong></div> }
+    </section>
+
+    <section class="analytics-grid">
+      @for (chart of [{title: 'Violation breakdown', subtitle: 'Events grouped by safety category', suffix: 'total'}, {title: 'Idle history', subtitle: 'Idle duration recorded over the selected period', suffix: 'Minutes'}]; track chart.title) {
+        <article class="detail-card analytics-card analytics-card-skeleton">
+          <header><div><h2>{{ chart.title }}</h2><p>{{ chart.subtitle }}</p></div>@if (chart.suffix === 'total') { <ui-skeleton width="3.5rem" height="0.625rem" /> } @else { <span>{{ chart.suffix }}</span> }</header>
+          <div class="analytics-list-skeleton">@for (row of [1, 2, 3, 4]; track row) { <div><ui-skeleton width="6rem" height="0.6875rem" /><ui-skeleton width="100%" height="0.5rem" radius="999px" /><ui-skeleton width="2.5rem" height="0.6875rem" /></div> }</div>
+        </article>
+      }
+    </section>
+
+    <section class="alerts-section">
+      <ui-data-table-skeleton title="Driver alerts" [columns]="alertColumns.length" [columnLabels]="alertColumnLabels" [rows]="10" [showToolbar]="false" [minTableWidth]="760" />
+      <nav class="alerts-pagination"><ui-skeleton width="8rem" height="0.75rem" /><div><button disabled>Previous</button><button disabled>Next</button></div></nav>
+    </section>
+  } @else if (driver(); as item) {
+    <div class="driver-detail-content" [class.refreshing]="dataLoading()">
+    <section class="summary-heading">
       <div class="summary-copy">
         <button type="button" (click)="back()" aria-label="Back to drivers">&larr;</button>
         <div>
@@ -43,7 +92,7 @@
     </section>
 
     <section class="driver-overview-grid">
-      <article class="detail-card profile-panel smooth-reveal reveal-profile">
+      <article class="detail-card profile-panel">
         <header>
           <h2>Driver profile</h2>
           <span>{{ item.employee_id || 'No employee ID' }}</span>
@@ -83,7 +132,7 @@
         </dl>
       </article>
 
-      <section class="cards-column smooth-reveal reveal-metrics">
+      <section class="cards-column">
         <div class="metric-grid" aria-label="Driver summary">
           @for (card of cards(); track card.code || $index) {
             <app-stat-card
@@ -138,7 +187,7 @@
       </section>
     </section>
 
-    <section class="detail-card filter-panel smooth-reveal reveal-filters">
+    <section class="detail-card filter-panel">
       <header>
         <div>
           <h2>Performance filters</h2>
@@ -168,7 +217,7 @@
     </section>
 
     <section
-      class="performance-summary smooth-reveal reveal-summary"
+      class="performance-summary"
       aria-label="Selected-period summary"
     >
       <div>
@@ -186,7 +235,7 @@
     </section>
 
     <section class="analytics-grid">
-      <article class="detail-card analytics-card smooth-reveal reveal-violations">
+      <article class="detail-card analytics-card">
         <header>
           <div>
             <h2>Violation breakdown</h2>
@@ -205,7 +254,7 @@
           }
         </div>
       </article>
-      <article class="detail-card analytics-card smooth-reveal reveal-idle">
+      <article class="detail-card analytics-card">
         <header>
           <div>
             <h2>Idle history</h2>
@@ -227,7 +276,7 @@
       </article>
     </section>
 
-    <section class="alerts-section smooth-reveal reveal-alerts">
+    <section class="alerts-section">
       <shared-data-table
         title="Driver alerts"
         [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + violationCount()"
@@ -239,12 +288,13 @@
       <nav class="alerts-pagination" aria-label="Driver alert pages">
         <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ violationCount() }}</span>
         <div>
-          <button type="button" [disabled]="offset() === 0" (click)="previous()">Previous</button
-          ><button type="button" [disabled]="offset() + limit >= violationCount()" (click)="next()">
+          <button type="button" [disabled]="dataLoading() || offset() === 0" (click)="previous()">Previous</button
+          ><button type="button" [disabled]="dataLoading() || offset() + limit >= violationCount()" (click)="next()">
             Next
           </button>
         </div>
       </nav>
     </section>
+    </div>
   }
 </main>
