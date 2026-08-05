@@ -21,7 +21,7 @@ const TOOLTIP_STYLES = `
     line-height: 1.5;
     font-weight: 500;
     letter-spacing: 0.01em;
-    border-radius: 10px;
+    border-radius: 8px;
     text-align: center;
     background-color: rgba(255, 255, 255, 0.95);
     -webkit-backdrop-filter: blur(8px) saturate(1.2);
