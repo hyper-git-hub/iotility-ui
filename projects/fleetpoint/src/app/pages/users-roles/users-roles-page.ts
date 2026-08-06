@@ -335,8 +335,10 @@ export class UsersRolesPage implements OnInit {
       });
   }
 
-  protected toggleAssignUser(guid: string, checked: boolean): void {
-    this.selectedAssignUsers.update((ids) => checked ? [...new Set([...ids, guid])] : ids.filter((id) => id !== guid));
+  protected toggleAssignUser(email: string, checked: boolean): void {
+    this.selectedAssignUsers.update((users) =>
+      checked ? [...new Set([...users, email])] : users.filter((user) => user !== email),
+    );
   }
 
   protected assignUsers(): void {

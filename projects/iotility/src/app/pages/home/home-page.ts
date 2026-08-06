@@ -9,6 +9,7 @@ interface IotilityModule {
   rating: number;
   available: boolean;
   accentClass: string;
+  icon: string;
 }
 
 interface OnboardingStep {
@@ -37,6 +38,7 @@ export class HomePage {
       rating: 4.9,
       available: true,
       accentClass: 'bg-fp-brand-gradient',
+      icon: 'assets/fleetpoint.svg',
     },
     {
       id: 'assetrack',
@@ -46,6 +48,7 @@ export class HomePage {
       rating: 4.8,
       available: false,
       accentClass: 'bg-info',
+      icon: 'assets/assetrack.svg',
     },
     {
       id: 'sustainex',
@@ -55,6 +58,7 @@ export class HomePage {
       rating: 4.7,
       available: false,
       accentClass: 'bg-success',
+      icon: 'assets/sustainex.svg',
     },
     {
       id: 'twinscape',
@@ -64,6 +68,7 @@ export class HomePage {
       rating: 4.8,
       available: false,
       accentClass: 'bg-warning',
+      icon: 'assets/twinscape.svg',
     },
     {
       id: 'wasterack',
@@ -73,6 +78,7 @@ export class HomePage {
       rating: 4.6,
       available: false,
       accentClass: 'bg-brand-400',
+      icon: 'assets/wasterack.svg',
     },
   ];
 
