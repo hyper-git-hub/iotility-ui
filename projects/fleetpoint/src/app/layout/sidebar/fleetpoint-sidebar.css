@@ -17,7 +17,7 @@
   @apply flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4;
 }
 .brand-mark {
-  @apply grid size-9 shrink-0 place-items-center rounded-lg bg-linear-to-br from-purple-500 to-blue-500 text-xs font-bold;
+  @apply grid size-9 shrink-0 place-items-center rounded-lg bg-fp-brand-gradient text-xs font-bold;
 }
 .brand-text {
   @apply min-w-0;

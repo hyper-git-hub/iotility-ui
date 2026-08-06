@@ -1,13 +1,22 @@
+@import "tailwindcss";
+
 @theme {
-  --color-brand-50: #f7f3ff;
-  --color-brand-100: #ede5ff;
-  --color-brand-300: #cbb5ff;
-  --color-brand-400: #a678ff;
-  --color-brand-500: #8347f5;
-  --color-brand-600: #7133dc;
-  --color-brand-700: #5c25b8;
-  --color-brand-800: #35136b;
-  --color-brand-950: #19082f;
+  /* This creates the 'bg-brand-gradient' utility */
+  --background-image-fp-brand-gradient: linear-gradient(to bottom right,
+      var(--color-purple-500),
+      var(--color-blue-500));
+
+  --color-brand-50: var(--color-purple-50);
+  --color-brand-100: var(--color-purple-100);
+  --color-brand-200: var(--color-purple-200);
+  --color-brand-300: var(--color-purple-300);
+  --color-brand-400: var(--color-purple-400);
+  --color-brand-500: var(--color-purple-500);
+  --color-brand-600: var(--color-purple-600);
+  --color-brand-700: var(--color-purple-700);
+  --color-brand-800: var(--color-purple-800);
+  --color-brand-900: var(--color-purple-900);
+  --color-brand-950: var(--color-purple-950);
   --color-ink: #18151f;
   --color-muted: #716b7d;
   --color-line: #e7e2ed;
@@ -23,7 +32,7 @@
   --color-dialog-surface: #17131f;
   --color-dialog-line: #3a3443;
   --color-dialog-muted: #aaa1b5;
-  --color-dialog-question: #8347f5;
+  --color-dialog-question: #a855f7;
   --color-dialog-success: #21a179;
   --color-dialog-warning: #e7a92d;
   --color-dialog-error: #d9435f;
@@ -34,12 +43,15 @@
   --color-dialog-light-muted: #716b7d;
   --color-dialog-on-accent: #fff;
 }
-@custom-variant dark (&:where(.dark,.dark *));
+
+@custom-variant dark (&:where(.dark, .dark *));
+
 html,
 body {
   min-width: 320px;
   min-height: 100%;
 }
+
 body {
   margin: 0;
   font-family:
@@ -51,16 +63,20 @@ body {
     'Segoe UI',
     sans-serif;
 }
+
 button,
 input {
   font: inherit;
 }
+
 button:not(:disabled) {
   cursor: pointer;
 }
+
 button:disabled {
   cursor: not-allowed;
 }
+
 .live-dot {
   display: inline-block;
   width: 0.375rem;
@@ -69,17 +85,21 @@ button:disabled {
   background: var(--color-online);
   animation: live-dot-pulse 1.8s ease-in-out infinite;
 }
+
 @keyframes live-dot-pulse {
+
   0%,
   100% {
     opacity: 1;
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-online) 45%, transparent);
   }
+
   50% {
     opacity: 0.65;
     box-shadow: 0 0 0 5px transparent;
   }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .live-dot {
     animation: none;

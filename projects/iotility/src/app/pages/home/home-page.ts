@@ -36,7 +36,7 @@ export class HomePage {
       initials: 'FP',
       rating: 4.9,
       available: true,
-      accentClass: 'bg-brand-600',
+      accentClass: 'bg-fp-brand-gradient',
     },
     {
       id: 'assetrack',

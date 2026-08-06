@@ -4,7 +4,7 @@
   @apply flex min-w-0 items-center gap-2;
 }
 .brand-mark {
-  @apply grid size-6 shrink-0 place-items-center rounded bg-linear-to-br from-purple-500 to-blue-500 text-[9px] font-black text-white;
+  @apply grid size-6 shrink-0 place-items-center rounded bg-fp-brand-gradient text-[9px] font-black text-white;
 }
 .brand-name {
   @apply whitespace-nowrap text-lg font-bold text-ink dark:text-white;
