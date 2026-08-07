@@ -57,8 +57,6 @@ const TOOLTIP_STYLES = `
     width: 10px;
     height: 10px;
     background-color: inherit;
-    -webkit-backdrop-filter: blur(8px) saturate(1.2);
-    backdrop-filter: blur(8px) saturate(1.2);
     transform: rotate(45deg);
     border-color: transparent;
     border-style: solid;
