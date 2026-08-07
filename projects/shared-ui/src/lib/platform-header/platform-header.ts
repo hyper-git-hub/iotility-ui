@@ -19,15 +19,25 @@ export class PlatformHeader {
     { id: 'logout', label: 'Logout', description: 'Return to login', icon: 'logout' },
   ];
   protected isDark = false;
+  private themeTransitionTimer: number | undefined;
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
     const saved = localStorage.getItem(THEME_KEY);
     this.isDark = saved === null ? true : saved === 'dark';
     this.document.documentElement.classList.toggle('dark', this.isDark);
   }
   protected toggleTheme(): void {
+    const root = this.document.documentElement;
+    root.classList.add('theme-transition');
     this.isDark = !this.isDark;
-    this.document.documentElement.classList.toggle('dark', this.isDark);
+    root.classList.toggle('dark', this.isDark);
     localStorage.setItem(THEME_KEY, this.isDark ? 'dark' : 'light');
+    if (this.themeTransitionTimer) {
+      window.clearTimeout(this.themeTransitionTimer);
+    }
+    this.themeTransitionTimer = window.setTimeout(() => {
+      root.classList.remove('theme-transition');
+      this.themeTransitionTimer = undefined;
+    }, 400);
   }
   protected selectProfileOption(option: DropdownOption): void {
     this.profileAction.emit(option);
