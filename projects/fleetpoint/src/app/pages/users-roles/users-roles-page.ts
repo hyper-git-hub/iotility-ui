@@ -93,7 +93,7 @@ export class UsersRolesPage implements OnInit {
     { key: 'users', label: 'Users' },
     { key: 'features', label: 'Features' },
     { key: 'updated', label: 'Updated' },
-    { key: 'actions', label: '', type: 'actions' },
+    { key: 'actions', label: 'Actions', type: 'actions' },
   ];
   protected readonly userColumnLabels = this.userColumns.map((column) => column.label);
   protected readonly roleColumnLabels = this.roleColumns.map((column) => column.label);

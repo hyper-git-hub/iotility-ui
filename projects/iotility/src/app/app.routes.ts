@@ -6,6 +6,11 @@ const fleetpointDashboard = 'fleetpoint/dashboard';
 
 export const routes: Routes = [
   {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: 'home',
+  },
+  {
     path: 'auth',
     canMatch: [guestGuard],
     loadChildren: () => import('./auth/auth.routes').then((module) => module.AUTH_ROUTES),
@@ -58,11 +63,6 @@ export const routes: Routes = [
     ],
   },
 
-  {
-    path: '',
-    pathMatch: 'full',
-    redirectTo: 'home',
-  },
   {
     path: 'fleetpoint',
     canMatch: [authGuard],
