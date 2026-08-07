@@ -8,10 +8,11 @@
     var(--color-brand-950) 48%,
     var(--color-brand-800)
   );
-  transition: width 0.2s ease;
+  transition: width 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+  will-change: width;
 }
 .fleet-sidebar.collapsed {
-  @apply w-16;
+  @apply w-20;
 }
 .brand {
   @apply flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4;
@@ -21,6 +22,17 @@
 }
 .brand-text {
   @apply min-w-0;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 8rem;
+  max-height: 3rem;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    max-width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.25s ease,
+    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .brand-text strong {
   @apply block truncate text-sm;
@@ -40,13 +52,23 @@
   stroke-width: 2;
 }
 .fleet-sidebar.collapsed .brand {
-  @apply h-20 flex-col justify-center gap-1.5 px-1;
+  @apply h-20;
+  position: relative;
+}
+.fleet-sidebar.collapsed .brand-mark {
+  position: absolute;
+  top: 13px;
+  left: 16px;
 }
 .fleet-sidebar.collapsed .brand-text {
   display: none;
 }
 .fleet-sidebar.collapsed .brand-toggle {
-  @apply ml-0;
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  margin-left: 0;
 }
 nav {
   @apply flex-1 overflow-y-auto px-2 py-3;
@@ -56,9 +78,19 @@ nav section {
 }
 nav section > p {
   @apply mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-brand-400;
+  overflow: hidden;
+  white-space: nowrap;
+  max-height: 2rem;
+  opacity: 1;
+  transition:
+    max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    margin-bottom 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.25s ease;
 }
 .fleet-sidebar.collapsed nav section > p {
-  display: none;
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
 }
 nav a,
 nav button {
@@ -82,14 +114,41 @@ nav .active {
 }
 .nav-label {
   @apply min-w-0 truncate;
+  max-width: 8rem;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    max-width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.25s ease,
+    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
 }
-.fleet-sidebar.collapsed .nav-label,
-.fleet-sidebar.collapsed .live-status-dot,
+.fleet-sidebar.collapsed .nav-label {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-10px);
+}
+.fleet-sidebar.collapsed .live-status-dot {
+  margin-left: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  transform: scale(0);
+}
 .fleet-sidebar.collapsed nav em {
-  display: none;
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
 }
 .live-status-dot {
   @apply relative ml-auto size-2 shrink-0 rounded-full bg-success;
+  opacity: 1;
+  transition:
+    width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    margin-left 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.25s ease,
+    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .live-status-dot::after {
   content: '';
@@ -109,6 +168,14 @@ nav .active {
 }
 nav em {
   @apply ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[9px] not-italic text-white;
+  overflow: hidden;
+  max-width: 4rem;
+  opacity: 1;
+  transition:
+    max-width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    padding-left 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    padding-right 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.25s ease;
 }
 .sidebar-footer {
   @apply shrink-0 border-t border-white/10 p-2;
@@ -121,10 +188,19 @@ nav em {
 }
 .footer-return-label {
   @apply min-w-0 truncate;
+  max-width: 8rem;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    max-width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.25s ease,
+    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .fleet-sidebar.collapsed .footer-return {
   @apply justify-center gap-0 px-0;
 }
 .fleet-sidebar.collapsed .footer-return-label {
-  display: none;
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-10px);
 }
