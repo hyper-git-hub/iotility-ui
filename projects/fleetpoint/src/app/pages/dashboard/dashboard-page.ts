@@ -8,6 +8,12 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './dashboard-shell.css',
 })
 export class DashboardPage {
+  protected readonly todayLabel = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+
   protected readonly tabs = [
     { label: 'Overview', path: 'overview', exact: false },
     // { label: 'Safety', path: 'safety', exact: false },
