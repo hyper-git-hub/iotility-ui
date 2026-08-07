@@ -31,20 +31,26 @@
         text-align: center;
       }
 
-      .bootstrap-loading__product-logo {
-        display: block;
-        width: auto;
-        max-width: 16rem;
-        height: 4rem;
+.bootstrap-loading__logos {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         margin: 0 auto 2rem;
       }
 
+      .bootstrap-loading__product-logo,
       .bootstrap-loading__label-logo {
         display: block;
         width: auto;
-        max-width: 10rem;
-        height: 1.75rem;
-        margin: 0 auto;
+        max-width: 8rem;
+        height: 2.5rem;
+      }
+
+      .bootstrap-loading__separator {
+        width: 1px;
+        height: 2.5rem;
+        margin: 0 1.25rem;
+        background: rgb(255 255 255 / 25%);
       }
 
       .bootstrap-loading__title {
@@ -52,7 +58,7 @@
         font-size: 1.875rem;
         font-weight: 700;
         line-height: 2.25rem;
-        letter-spacing: -0.025em;
+        letter-spacing: 0.03em
       }
 
       .bootstrap-loading__message {
@@ -95,17 +101,21 @@
         aria-live="polite"
         aria-busy="true"
       >
-        <img
-          src="assets/iotility-light.svg"
-          alt="IoTility"
-          class="bootstrap-loading__product-logo"
-        />
-        <img
-          src="assets/hypernym-full.svg"
-          alt="Hypernym"
-          class="bootstrap-loading__label-logo"
-        />
+<div class="bootstrap-loading__logos">
+          <img
+            src="assets/iotility-light.svg"
+            alt="IoTility"
+            class="bootstrap-loading__product-logo"
+          />
+          <div class="bootstrap-loading__separator" aria-hidden="true"></div>
+          <img
+            src="assets/hypernym-full.svg"
+            alt="Hypernym"
+            class="bootstrap-loading__label-logo"
+          />
+        </div>
         <h1 class="bootstrap-loading__title">Loading IoTility</h1>
+
         <p class="bootstrap-loading__message">
           Preparing your connected operations platform&hellip;
         </p>
