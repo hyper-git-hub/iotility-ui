@@ -14,7 +14,8 @@
             Choose a solution built for your operation.
           </p>
         </div>
-        <button type="button" class="text-sm font-medium text-brand-600 hover:text-brand-700">
+        <button type="button" (click)="browseAll()"
+          class="text-sm font-medium text-brand-600 hover:text-brand-700">
           Browse all
         </button>
       </div>
@@ -46,14 +47,14 @@
             <!-- Action Button (Left) -->
             <div class="relative z-10">
               @if (module.available) {
-              <button type="button" class="module-action">
+              <button type="button" class="module-action" (click)="module.action()">
                 Try for Free
                 <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                   <path d="m9 18 6-6-6-6" />
                 </svg>
               </button>
               } @else {
-              <button type="button" class="module-action">
+              <button type="button" class="module-action" (click)="module.action()">
                 <!-- Cart Icon for 'Buy' from Mock -->
                 <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
@@ -80,7 +81,7 @@
           </div>
         </article>
         }
-        <div
+        <div (click)="browseAll()"
           class="flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-100 p-4 transition-colors hover:bg-slate-100/50">
           <span class="flex items-center gap-2 text-sm font-bold text-gray-500">
             Browse All
@@ -148,7 +149,7 @@
       <p class="mt-2 text-sm leading-5 text-muted dark:text-brand-300">
         Subscribe to unlock onboarding and all product features.
       </p>
-      <button type="button"
+      <button type="button" (click)="activeModule.action()"
         class="mt-4 rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700">
         Buy now
       </button>

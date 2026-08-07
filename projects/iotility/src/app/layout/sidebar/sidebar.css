@@ -1,7 +1,7 @@
 @reference "../../../styles.css";
 
 .sidebar-shell {
-  @apply flex h-full w-20 shrink-0 flex-col items-center gap-6 py-6;
+  @apply flex h-full w-[104px] shrink-0 flex-col items-center gap-6 py-6;
   background: linear-gradient(
     180deg,
     var(--color-dark-canvas) 0%,
@@ -29,4 +29,52 @@
 
 .sidebar-nav-active {
   @apply bg-brand-600 text-white hover:bg-brand-600;
+}
+
+.app-close-button {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--color-brand-950);
+  color: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.app-close-button:hover {
+  background: var(--color-brand-700);
+}
+
+.app-close-button svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.fleetpoint-button {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  --3x2: 0px;
+  --3y2: 4px;
+  --3b2: 8px;
+  --3x: 0px;
+  --3y: 8px;
+  --3b: 16px;
+  box-shadow:
+    var(--3x2) var(--3y2) var(--3b2) 0px rgba(0, 0, 0, 0.12),
+    var(--3x) var(--3y) var(--3b) 0px rgba(0, 0, 0, 0.1);
 }

@@ -61,12 +61,30 @@
     </a>
   </nav>
 
-  <button
-    type="button"
-    (click)="openFleetPoint()"
-    class="grid size-12 shrink-0 place-items-center rounded-xl bg-fp-brand-gradient text-xs font-bold text-white shadow-lg shadow-brand-950/40"
-    aria-label="Open FleetPoint"
-  >
-    FP
-  </button>
+  @if (recentApps.apps().length > 0) {
+    <div class="flex flex-col items-center gap-3">
+      @for (app of recentApps.apps(); track app.id) {
+        <div class="relative">
+          <button
+            type="button"
+            (click)="openApp(app)"
+            class="fleetpoint-button"
+            [attr.aria-label]="'Open ' + app.label"
+          >
+            <img [src]="app.logoSrc" [alt]="app.label" class="h-10 w-auto" />
+          </button>
+          <button
+            type="button"
+            (click)="removeApp(app.id)"
+            class="app-close-button"
+            [attr.aria-label]="'Remove ' + app.label"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+      }
+    </div>
+  }
 </aside>
