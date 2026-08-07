@@ -9,13 +9,23 @@ export interface FleetChartColors {
 
 export function getFleetChartColors(): FleetChartColors {
   const styles = getComputedStyle(document.documentElement);
-  const color = (name: string) => styles.getPropertyValue(name).trim();
-  return {
-    brand: color('--color-brand-500'),
-    info: color('--color-info'),
-    success: color('--color-success'),
-    warning: color('--color-warning'),
-    danger: color('--color-danger'),
-    grid: color('--color-line'),
+  const probe = document.createElement('span');
+  probe.style.display = 'none';
+  document.body.appendChild(probe);
+  const resolve = (name: string): string => {
+    const value = styles.getPropertyValue(name).trim();
+    if (!value) return '';
+    probe.style.color = value;
+    return getComputedStyle(probe).color;
   };
+  const colors: FleetChartColors = {
+    brand: resolve('--color-brand-500'),
+    info: resolve('--color-info'),
+    success: resolve('--color-success'),
+    warning: resolve('--color-warning'),
+    danger: resolve('--color-danger'),
+    grid: resolve('--color-line'),
+  };
+  probe.remove();
+  return colors;
 }

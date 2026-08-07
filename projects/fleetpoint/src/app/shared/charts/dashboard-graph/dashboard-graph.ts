@@ -78,14 +78,19 @@ export class DashboardGraphComponent {
     if (Array.isArray(data)) return { labels: [], datasets: [] };
     return {
       labels: data.categories ?? [],
-      datasets: this.namedSeries(data.series).map((series, index) => ({
-        label: this.readableLabel(series.name),
-        data: series.data,
-        borderColor: this.palette[index % this.palette.length],
-        backgroundColor: `${this.palette[index % this.palette.length]}22`,
-        fill: true,
-        tension: 0.35,
-      })),
+      datasets: this.namedSeries(data.series).map((series, index) => {
+        const color = this.palette[index % this.palette.length];
+        return {
+          label: this.readableLabel(series.name),
+          data: series.data,
+          borderColor: color,
+          tension: 0.35,
+          pointBackgroundColor: color,
+          pointBorderColor: color,
+          pointBorderWidth: 1,
+          pointRadius: 3,
+        };
+      }),
     };
   }
 
