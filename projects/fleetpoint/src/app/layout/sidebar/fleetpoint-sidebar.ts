@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, Inject, Input, isDevMode, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { Tooltip } from '@iotility/shared-ui';
+import { Logo, Tooltip } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
 import { MenuGroup, SIDEBAR_MENU } from './menu.config';
 
@@ -19,7 +19,7 @@ interface HostDialogRequest {
 
 @Component({
   selector: 'app-fleetpoint-sidebar',
-  imports: [RouterLink, RouterLinkActive, Tooltip],
+  imports: [RouterLink, RouterLinkActive, Logo, Tooltip],
   templateUrl: './fleetpoint-sidebar.html',
   styleUrl: './fleetpoint-sidebar.css',
 })
