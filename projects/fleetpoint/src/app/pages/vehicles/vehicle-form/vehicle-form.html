@@ -229,6 +229,32 @@
                 <small class="field-error">An attached device is required.</small>
               }
             </label>
+            @if (canShowSecondaryDevice()) {
+              <label class="shared-form-field"
+                ><span>Secondary Device</span
+                ><shared-dropdown
+                  class="form-dropdown"
+                  [options]="cameraDeviceDropdownOptions()"
+                  mode="single"
+                  align="left"
+                  [showOptionIcons]="false"
+                  [matchTriggerWidth]="true"
+                  [searchable]="true"
+                  searchPlaceholder="Search secondary devices"
+                  [selected]="[form.controls.camera_device.value]"
+                  (optionSelected)="selectCameraDevice($event)"
+                  ><button dropdown-trigger type="button">
+                    <span>{{
+                      optionLabel(
+                        cameraDeviceDropdownOptions(),
+                        form.controls.camera_device.value,
+                        'Select secondary device'
+                      )
+                    }}</span>
+                  </button></shared-dropdown
+                ></label
+              >
+            }
             <label class="shared-form-field"
               ><span>Date Commissioned *</span
               ><shared-date-time-picker
@@ -238,49 +264,6 @@
               />
               @if (submitted() && form.controls.date_commissioned.invalid) {
                 <small class="field-error">Commissioned date is required.</small>
-              }
-            </label>
-            <label class="shared-form-field"
-              ><span>Owner Name *</span
-              ><input class="shared-form-control" formControlName="owner" />
-              @if (submitted() && form.controls.owner.invalid) {
-                <small class="field-error">Owner name is required.</small>
-              }
-            </label>
-            <label class="shared-form-field"
-              ><span>Owner ID *</span
-              ><input class="shared-form-control" formControlName="owner_id" />
-              @if (submitted() && form.controls.owner_id.invalid) {
-                <small class="field-error">Owner ID is required.</small>
-              }
-            </label>
-            <label class="shared-form-field"
-              ><span>Nationality *</span
-              ><input class="shared-form-control" formControlName="nationality" />
-              @if (submitted() && form.controls.nationality.invalid) {
-                <small class="field-error">Nationality is required.</small>
-              }
-            </label>
-            <label class="shared-form-field"
-              ><span>Registration Date *</span
-              ><shared-date-time-picker
-                mode="date"
-                formControlName="registration_date"
-                ariaLabel="Choose registration date"
-              />
-              @if (submitted() && form.controls.registration_date.invalid) {
-                <small class="field-error">Registration date is required.</small>
-              }
-            </label>
-            <label class="shared-form-field"
-              ><span>Expiry Date *</span
-              ><shared-date-time-picker
-                mode="date"
-                formControlName="expiry_date"
-                ariaLabel="Choose registration expiry date"
-              />
-              @if (submitted() && form.controls.expiry_date.invalid) {
-                <small class="field-error">Expiry date is required.</small>
               }
             </label>
             <label class="shared-form-field"
@@ -334,9 +317,6 @@
                 <label
                   ><input type="checkbox" formControlName="status" /><span></span
                   ><strong>Active vehicle</strong></label
-                ><label
-                  ><input type="checkbox" formControlName="is_immobilization_enabled" /><span></span
-                  ><strong>RFID authentication</strong></label
                 >
               </section>
             }
@@ -384,10 +364,25 @@
                   <path d="m16 5 3 3-3 3" /></svg
                 ><strong>Sharp Turning</strong></label
               >
+              <label
+                ><input type="checkbox" formControlName="geo_zone" /><span class="monitor-check"
+                  >✓</span
+                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 21s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z" />
+                  <circle cx="12" cy="9" r="2.5" /></svg
+                ><strong>Geo Zone</strong></label
+              >
+              <label
+                ><input type="checkbox" formControlName="fuel_sensor" /><span class="monitor-check"
+                  >✓</span
+                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 21V4h10v17M5 9h10M15 7h2l2 3v8a2 2 0 0 1-4 0" /></svg
+                ><strong>Fuel Sensor</strong></label
+              >
             </fieldset>
             @if (form.controls.speed.value) {
               <label class="shared-form-field speed-threshold"
-                ><span>Speed Threshold (km/h) *</span
+                ><span>Speed Threshold ({{ isUkCustomer ? 'mph' : 'km/h' }}) *</span
                 ><input
                   type="number"
                   class="shared-form-control"

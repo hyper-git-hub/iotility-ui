@@ -52,7 +52,7 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>Salary *</span
+      ><span>Salary</span
       ><input
         type="number"
         min="0"
@@ -65,7 +65,7 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>Marital Status *</span
+      ><span>Marital Status</span
       ><shared-dropdown
         class="form-dropdown"
         [options]="maritalOptions"
@@ -109,29 +109,6 @@
       ><input type="tel" class="shared-form-control" formControlName="phone" />
       @if (submitted() && form.controls.phone.invalid) {
         <small class="field-error">Enter a valid contact number.</small>
-      }
-    </label>
-    <label class="shared-form-field"
-      ><span>Licence Number *</span
-      ><input
-        class="shared-form-control"
-        formControlName="licence_number"
-        maxlength="20"
-        placeholder="Enter licence number"
-      />
-      @if (submitted() && form.controls.licence_number.invalid) {
-        <small class="field-error">Licence number must be 9–20 characters.</small>
-      }
-    </label>
-    <label class="shared-form-field"
-      ><span>Licence Expiry Date *</span
-      ><shared-date-time-picker
-        mode="date"
-        formControlName="licence_expiry_date"
-        ariaLabel="Choose licence expiry date"
-      />
-      @if (submitted() && form.controls.licence_expiry_date.invalid) {
-        <small class="field-error">Licence expiry date is required.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -189,6 +166,26 @@
         </button></shared-dropdown
       ></label
     >
+    <label class="shared-form-field"
+      ><span>RFID Device</span
+      ><shared-dropdown
+        class="form-dropdown"
+        [options]="rfidOptions()"
+        mode="single"
+        align="left"
+        [searchable]="true"
+        searchPlaceholder="Search RFID devices"
+        [showOptionIcons]="false"
+        [matchTriggerWidth]="true"
+        [selected]="[form.controls.rfid_tag.value]"
+        (optionSelected)="selectRfid($event)"
+        ><button dropdown-trigger type="button">
+          <span>{{
+            optionLabel(rfidOptions(), form.controls.rfid_tag.value, 'No RFID device')
+          }}</span>
+        </button></shared-dropdown
+      ></label
+    >
     @if (editing()) {
       <label class="shared-form-field"
         ><span>Status *</span
@@ -209,9 +206,25 @@
         ></label
       >
     }
-    <label class="poi-field"
-      ><input type="checkbox" formControlName="poi" /><span></span><strong>P.O.I</strong></label
-    >
+    @if (hasFeature(4021)) {
+      <label class="shared-form-field"
+        ><span>Beacon ID</span
+        ><input
+          class="shared-form-control"
+          formControlName="beacon_id"
+          maxlength="300"
+          placeholder="Enter beacon ID"
+        />
+        @if (submitted() && form.controls.beacon_id.invalid) {
+          <small class="field-error">Maximum 300 characters are allowed.</small>
+        }
+      </label>
+    }
+    @if (hasFeature(10)) {
+      <label class="poi-field"
+        ><input type="checkbox" formControlName="poi" /><span></span><strong>P.O.I</strong></label
+      >
+    }
     <section class="driver-picture wide">
       <div class="picture-preview">
         @if (imagePreview()) {
@@ -225,7 +238,7 @@
       </div>
       <div>
         <strong>Driver Picture</strong>
-        <p>PNG or JPG, up to 5 MB</p>
+        <p>PNG or JPG, up to 1 MB</p>
         <label
           ><input
             type="file"
@@ -233,6 +246,11 @@
             (change)="chooseImage($event)"
           />Choose picture</label
         >
+        @if (imagePreview()) {
+          <button type="button" class="remove-picture" (click)="removeImage()">
+            Remove picture
+          </button>
+        }
       </div>
     </section>
   </form>

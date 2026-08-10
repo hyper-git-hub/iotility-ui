@@ -6,7 +6,9 @@
       </div>
       <p>
         @if (loading()) {
-          <span class="tracked-count-skeleton"><ui-skeleton width="5.25rem" height="0.6rem" radius="0.25rem" /></span>
+          <span class="tracked-count-skeleton"
+            ><ui-skeleton width="5.25rem" height="0.6rem" radius="0.25rem"
+          /></span>
         } @else {
           <span>{{ vehicles().length }} tracked vehicles</span>
         }
@@ -54,13 +56,26 @@
       @if (loading()) {
         @for (_ of vehicleSkeletons; track $index) {
           <div class="vehicle-row-skeleton" aria-hidden="true">
-            <ui-skeleton class="vehicle-image-skeleton" width="1.5rem" height="1.5rem" radius="0.4rem" />
+            <ui-skeleton
+              class="vehicle-image-skeleton"
+              width="1.5rem"
+              height="1.5rem"
+              radius="0.4rem"
+            />
             <div class="vehicle-copy-skeleton">
-              <span class="vehicle-title-line"><ui-skeleton width="5.25rem" height="0.75rem" radius="0.25rem" /></span>
-              <span class="vehicle-small-line"><ui-skeleton width="4rem" height="0.6rem" radius="0.25rem" /></span>
-              <span class="vehicle-small-line"><ui-skeleton width="7.5rem" height="0.6rem" radius="0.25rem" /></span>
+              <span class="vehicle-title-line"
+                ><ui-skeleton width="5.25rem" height="0.75rem" radius="0.25rem"
+              /></span>
+              <span class="vehicle-small-line"
+                ><ui-skeleton width="4rem" height="0.6rem" radius="0.25rem"
+              /></span>
+              <span class="vehicle-small-line"
+                ><ui-skeleton width="7.5rem" height="0.6rem" radius="0.25rem"
+              /></span>
             </div>
-            <span class="vehicle-state-skeleton"><ui-skeleton width="3rem" height="0.65rem" radius="0.3rem" /></span>
+            <span class="vehicle-state-skeleton"
+              ><ui-skeleton width="3rem" height="0.65rem" radius="0.3rem"
+            /></span>
           </div>
         }
       } @else {
@@ -72,7 +87,10 @@
             (click)="selectVehicle(vehicle)"
           >
             <span class="vehicle-symbol" aria-hidden="true"
-              ><img [src]="vehicleImage(vehicle.image)" (error)="useDefaultVehicleImage($event)" alt="" /></span
+              ><img
+                [src]="vehicleImage(vehicle.image)"
+                (error)="useDefaultVehicleImage($event)"
+                alt="" /></span
             ><span class="vehicle-copy"
               ><strong>{{ vehicle.id }}</strong
               ><small>{{ vehicle.model }}</small
@@ -127,16 +145,11 @@
           ><span [class]="'state-' + vehicle.status.toLowerCase()">{{ vehicle.status }}</span
           ><small>{{ vehicle.model }}</small>
         </div>
-        <button
-          type="button"
-          (click)="clearSelectedVehicle()"
-          aria-label="Close vehicle details"
-        >
+        <button type="button" (click)="clearSelectedVehicle()" aria-label="Close vehicle details">
           ×
         </button>
       </header>
       <div class="live-tracking-notice" role="status">
-        <span class="live-tracking-pulse" aria-hidden="true"></span>
         <div>
           <strong>Live tracking enabled</strong>
           <small>Receiving realtime updates for this vehicle</small>
@@ -158,7 +171,8 @@
             <span>Updated</span><strong>{{ vehicle.updated }}</strong>
           </article>
           <article>
-            <span>Seat belt</span><strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
+            <span>Seat belt</span
+            ><strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
           </article>
         </div>
       </section>

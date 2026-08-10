@@ -7,7 +7,13 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import {
   BlockingLoader,
   DateTimePicker,
@@ -25,6 +31,18 @@ import {
 } from '../../../shared/services/vehicle-inventory-api.service';
 import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FeatureAccessService } from '../../../shared/services/feature-access.service';
+
+const DASHCAM_DEVICE_TYPES = new Set(['ConcoxDC', 'Howen DC', 'BSJ Single Channel']);
+
+function evenWheelCount(control: AbstractControl): ValidationErrors | null {
+  const value = Number(control.value);
+  return Number.isFinite(value) && value % 2 === 0 ? null : { evenWheelCount: true };
+}
+
+function maximumTwoDecimals(control: AbstractControl): ValidationErrors | null {
+  return /^\d+(\.\d{1,2})?$/.test(String(control.value)) ? null : { maximumTwoDecimals: true };
+}
 
 export interface VehicleFormValue {
   registration: string;
@@ -61,6 +79,9 @@ export class VehicleForm implements OnChanges {
   protected readonly categories = signal<InventoryOption[]>([]);
   protected readonly vehicleTypes = signal<InventoryOption[]>([]);
   protected readonly devices = signal<DeviceOption[]>([]);
+  protected readonly cameraDevices = signal<DeviceOption[]>([]);
+  protected readonly customerType = this.getCustomerType();
+  protected readonly isUkCustomer = this.getCustomerGroup() === 'UK';
   protected readonly purchaseOptions: DropdownOption[] = [
     { id: '1', label: 'Leased' },
     { id: '2', label: 'Owned' },
@@ -94,6 +115,10 @@ export class VehicleForm implements OnChanges {
     { id: '', label: 'Select device' },
     ...this.devices().map((item) => ({ id: String(item.id), label: item.device_id })),
   ]);
+  protected readonly cameraDeviceDropdownOptions = computed<DropdownOption[]>(() => [
+    { id: '', label: 'Select secondary device' },
+    ...this.cameraDevices().map((item) => ({ id: String(item.id), label: item.device_id })),
+  ]);
   protected readonly steps: StepperStep[] = [
     { id: 'identity', label: 'Vehicle Details' },
     { id: 'allocation', label: 'Ownership & Allocation' },
@@ -108,6 +133,7 @@ export class VehicleForm implements OnChanges {
     private readonly formBuilder: FormBuilder,
     private readonly api: VehicleInventoryApiService,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly features: FeatureAccessService,
   ) {
     const required = Validators.required;
     this.form = this.formBuilder.nonNullable.group({
@@ -118,23 +144,19 @@ export class VehicleForm implements OnChanges {
       model: ['', required],
       year: [
         new Date().getFullYear(),
-        [required, Validators.min(1900), Validators.max(new Date().getFullYear() + 1)],
+        [required, Validators.min(1990), Validators.max(new Date().getFullYear())],
       ],
       color: ['', required],
       odo_reading: [0, [required, Validators.min(0)]],
       engine_capacity: [0, [required, Validators.min(0)]],
-      wheels: [4, [required, Validators.min(2)]],
-      fuel_tank_capacity: [0, [required, Validators.min(0)]],
+      wheels: [4, [required, Validators.min(2), evenWheelCount]],
+      fuel_tank_capacity: [0, [required, Validators.min(0), maximumTwoDecimals]],
       purchase_type: ['2', required],
       engine_type: ['', required],
       type: ['', required],
       device: ['', required],
+      camera_device: [''],
       date_commissioned: ['', required],
-      owner: ['', required],
-      owner_id: ['', required],
-      nationality: ['', required],
-      registration_date: ['', required],
-      expiry_date: ['', required],
       fleet: [''],
       category: [''],
       speed: [false],
@@ -142,8 +164,9 @@ export class VehicleForm implements OnChanges {
       harsh_acceleration: [false],
       harsh_braking: [false],
       sharp_turning: [false],
+      geo_zone: [false],
+      fuel_sensor: [false],
       status: [true],
-      is_immobilization_enabled: [true],
     });
   }
 
@@ -176,6 +199,16 @@ export class VehicleForm implements OnChanges {
   }
   protected selectDevice(option: DropdownOption): void {
     this.form.controls.device.setValue(option.id);
+    const selected = this.devices().find((device) => String(device.id) === option.id);
+    if (selected && this.isRestrictedPrimaryDevice(selected)) {
+      this.form.controls.camera_device.setValue('');
+    }
+  }
+  protected selectCameraDevice(option: DropdownOption): void {
+    this.form.controls.camera_device.setValue(option.id);
+  }
+  protected canShowSecondaryDevice(): boolean {
+    return this.features.has(151) && this.customerType === '2';
   }
   protected selectFleet(option: DropdownOption): void {
     this.form.controls.fleet.setValue(option.id);
@@ -218,13 +251,16 @@ export class VehicleForm implements OnChanges {
       name: raw.registration,
       fleet_category: raw.category,
       status: raw.status ? 1 : 2,
-      speed_threshold: raw.speed ? raw.speed_threshold : 0,
-      geo_zone: false,
-      fuel_sensor: false,
+      speed_threshold: raw.speed
+        ? this.isUkCustomer
+          ? Math.round(Number(raw.speed_threshold) * 1.60934)
+          : raw.speed_threshold
+        : 0,
       time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
     delete values['category'];
     delete values['speed'];
+    if (!this.canShowSecondaryDevice()) delete values['camera_device'];
     Object.entries(values).forEach(([key, value]) => payload.append(key, String(value ?? '')));
     const image = this.imageFile();
     if (image) payload.append('image', image, image.name);
@@ -275,22 +311,56 @@ export class VehicleForm implements OnChanges {
       devices: this.api.getAvailableDevices(),
     }).subscribe({
       next: ({ fleets, categories, types, devices }) => {
-        this.fleets.set(fleets.data?.data ?? []);
+        const availableFleets = fleets.data?.data ?? [];
+        const vehicle = this.vehicle();
+        this.fleets.set(
+          vehicle?.fleet &&
+            !availableFleets.some((fleet) => String(fleet.id) === String(vehicle.fleet))
+            ? [
+                {
+                  id: Number(vehicle.fleet),
+                  name: vehicle.fleet_name || `Fleet ${vehicle.fleet}`,
+                },
+                ...availableFleets,
+              ]
+            : availableFleets,
+        );
         this.categories.set(categories.data?.data ?? []);
         this.vehicleTypes.set(types.data?.data ?? []);
         const available = devices.data?.data ?? [];
-        const vehicle = this.vehicle();
+        const primaryDevices =
+          this.customerType === '1'
+            ? available
+            : available.filter((device) => !DASHCAM_DEVICE_TYPES.has(device.type || ''));
+        const secondaryDevices = available.filter((device) =>
+          DASHCAM_DEVICE_TYPES.has(device.type || ''),
+        );
         this.devices.set(
           vehicle?.device &&
-            !available.some((device) => String(device.id) === String(vehicle.device))
+            !primaryDevices.some((device) => String(device.id) === String(vehicle.device))
             ? [
                 {
                   id: Number(vehicle.device),
                   device_id: vehicle.device_id || String(vehicle.device),
                 },
-                ...available,
+                ...primaryDevices,
               ]
-            : available,
+            : primaryDevices,
+        );
+        this.cameraDevices.set(
+          vehicle?.camera_device_id &&
+            !secondaryDevices.some(
+              (device) => String(device.id) === String(vehicle.camera_device_id),
+            )
+            ? [
+                {
+                  id: Number(vehicle.camera_device_id),
+                  device_id: String(vehicle.camera_device || vehicle.camera_device_id),
+                  type: vehicle.camera_device_type || undefined,
+                },
+                ...secondaryDevices,
+              ]
+            : secondaryDevices,
         );
       },
       error: (response) =>
@@ -315,16 +385,7 @@ export class VehicleForm implements OnChanges {
             'purchase_type',
             'engine_type',
           ]
-        : [
-            'type',
-            'device',
-            'date_commissioned',
-            'owner',
-            'owner_id',
-            'nationality',
-            'registration_date',
-            'expiry_date',
-          ];
+        : ['type', 'device', 'date_commissioned'];
     const controls = names.map((name) => this.form.get(name)!);
     controls.forEach((control) => control.markAsTouched());
     return controls.some((control) => control.invalid);
@@ -346,8 +407,9 @@ export class VehicleForm implements OnChanges {
       harsh_acceleration: false,
       harsh_braking: false,
       sharp_turning: false,
+      geo_zone: false,
+      fuel_sensor: false,
       status: true,
-      is_immobilization_enabled: true,
     });
     this.activeStep.set(0);
     this.submitted.set(false);
@@ -378,21 +440,40 @@ export class VehicleForm implements OnChanges {
       type: String(vehicle.type || ''),
       device: String(vehicle.device || ''),
       date_commissioned: vehicle.date_commissioned?.slice(0, 10) || '',
-      owner: vehicle.owner || '',
-      owner_id: vehicle.owner_id,
-      nationality: vehicle.nationality,
-      registration_date: vehicle.registration_date?.slice(0, 10) || '',
-      expiry_date: vehicle.expiry_date?.slice(0, 10) || '',
       fleet: String(vehicle.fleet ?? ''),
       category: String(vehicle.fleet_category ?? ''),
       speed: threshold > 0,
-      speed_threshold: threshold,
+      speed_threshold:
+        this.isUkCustomer && threshold > 0 ? Math.round(threshold / 1.60934) : threshold,
       harsh_acceleration: !!vehicle.harsh_acceleration,
       harsh_braking: !!vehicle.harsh_braking,
       sharp_turning: !!vehicle.sharp_turning,
+      geo_zone: !!vehicle.geo_zone,
+      fuel_sensor: !!vehicle.fuel_sensor,
+      camera_device: String(vehicle.camera_device_id ?? ''),
       status: vehicle.status === 1,
-      is_immobilization_enabled: vehicle.is_immobilization_enabled !== false,
     });
     this.imagePreview.set(vehicle.image || 'assets/fleetpoint/vehicle.svg');
+  }
+
+  private isRestrictedPrimaryDevice(device: DeviceOption): boolean {
+    return device.type === 'ConcoxDC' || device.type === 'Howen DC';
+  }
+
+  private storedUser(): any {
+    try {
+      return JSON.parse(localStorage.getItem('user') ?? 'null');
+    } catch {
+      return null;
+    }
+  }
+
+  private getCustomerType(): string {
+    const customer = this.storedUser()?.customer;
+    return String(customer?.customer_type ?? customer?.device_support ?? '');
+  }
+
+  private getCustomerGroup(): string {
+    return String(this.storedUser()?.customer?.groups?.[0]?.name ?? '');
   }
 }

@@ -5,6 +5,7 @@ import { ApiResponse } from './fleet-dashboard-api.service';
 import { environment } from '../../../environments/environment';
 
 const DRIVER_API = `${environment.driverBaseUrl}/driver`;
+const FLEET_API = `${environment.fleetBaseUrl}/api/fleet`;
 
 export interface DriverRecord {
   id: number;
@@ -23,8 +24,10 @@ export interface DriverRecord {
   status: string | number;
   driver_shift_status: boolean | null;
   data_joined: string;
-  shift_allocated: unknown | null;
+  shift_allocated: Array<{ shift__name: string; shift__status: string | number }> | null;
   group: string;
+  rfid_tag?: string | null;
+  eye_beacon?: string | null;
 }
 
 export interface DriverGroup {
@@ -95,6 +98,10 @@ export interface AllocationVehicle {
   id: number;
   vehicle_id: string;
   registration: string;
+}
+export interface DriverRfidDevice {
+  id: number;
+  device_id: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -197,9 +204,22 @@ export class DriverApiService {
     return this.http.post<ApiResponse<unknown>>(`${DRIVER_API}/`, payload);
   }
 
-  updateDriver(id: string | number, payload: FormData): Observable<ApiResponse<unknown>> {
+  getAvailableRfidDevices(): Observable<ApiResponse<{ count: number; data: DriverRfidDevice[] }>> {
+    return this.http.get<ApiResponse<{ count: number; data: DriverRfidDevice[] }>>(
+      `${FLEET_API}/available-devices`,
+      { params: { device_type: 'rfid' } },
+    );
+  }
+
+  updateDriver(
+    id: string | number,
+    payload: FormData,
+    removeImage = false,
+  ): Observable<ApiResponse<unknown>> {
     return this.http.patch<ApiResponse<unknown>>(`${DRIVER_API}/`, payload, {
-      params: { driver_id: String(id) },
+      params: removeImage
+        ? { driver_id: String(id), remove_image: 'true' }
+        : { driver_id: String(id) },
     });
   }
 

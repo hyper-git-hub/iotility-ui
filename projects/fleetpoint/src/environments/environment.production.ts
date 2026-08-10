@@ -7,5 +7,5 @@ export const environment = {
   userMsBaseUrl: 'https://devgateway.hypernymbiz.com/user-ms',
   cobPackagesBaseUrl: 'https://devgateway.hypernymbiz.com/cob-packages',
   useCaseId: 6,
-  signalRUrl: 'https://func-vfq-dev.azurewebsites.net',
+  signalRUrl: 'https://func-stag-all.azurewebsites.net',
 } as const;

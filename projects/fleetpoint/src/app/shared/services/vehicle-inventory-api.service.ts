@@ -18,8 +18,8 @@ export interface VehicleInventoryRecord {
   year: number | string;
   status: number;
   date_commissioned: string | null;
-  expiry_date: string | null;
-  owner: string | null;
+  owner?: string | null;
+  expiry_date?: string | null;
   image: string | null;
   engine_number: string;
   chassis_number: string;
@@ -31,16 +31,17 @@ export interface VehicleInventoryRecord {
   engine_type?: string | number;
   type: string | number;
   device: string | number;
+  camera_device?: string | number | null;
+  camera_device_id?: string | number | null;
+  camera_device_type?: string | null;
   fleet: string | number | null;
   fleet_category: string | number | null;
-  owner_id: string;
-  nationality: string;
-  registration_date: string;
   speed_threshold: string | number;
   harsh_acceleration: boolean;
   harsh_braking: boolean;
   sharp_turning: boolean;
-  is_immobilization_enabled: boolean;
+  geo_zone?: boolean;
+  fuel_sensor?: boolean;
 }
 
 export interface InventoryOption {
@@ -52,6 +53,7 @@ export interface InventoryOption {
 export interface DeviceOption {
   id: number;
   device_id: string;
+  type?: string;
 }
 export interface VehicleInventoryFilters {
   limit: number;
@@ -71,7 +73,7 @@ export class VehicleInventoryApiService {
   ): Observable<ApiResponse<{ count: number; data: VehicleInventoryRecord[] }>> {
     const user = this.currentUser();
     const groupName = user?.customer?.groups?.[0]?.name;
-    const customerType = user?.customer?.device_support ?? '';
+    const customerType = user?.customer?.customer_type ?? user?.customer?.device_support ?? '';
     const params = new HttpParams()
       .set('limit', filters.limit)
       .set('offset', filters.offset)
@@ -149,7 +151,11 @@ export class VehicleInventoryApiService {
   }
 
   private currentUser(): {
-    customer?: { groups?: Array<{ name?: string }>; device_support?: string | number };
+    customer?: {
+      groups?: Array<{ name?: string }>;
+      customer_type?: string | number;
+      device_support?: string | number;
+    };
   } | null {
     try {
       return JSON.parse(localStorage.getItem('user') ?? 'null');

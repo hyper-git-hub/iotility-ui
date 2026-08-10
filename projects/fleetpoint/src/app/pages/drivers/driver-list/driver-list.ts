@@ -61,7 +61,7 @@ export class DriverList implements OnInit {
     { key: 'name', label: 'Driver', type: 'user', secondaryKey: 'details', clickable: true },
     { key: 'employeeId', label: 'Employee ID' },
     { key: 'group', label: 'Group' },
-    { key: 'shift', label: 'Shift', type: 'status' },
+    { key: 'shift', label: 'Shift Status', type: 'status' },
     { key: 'phone', label: 'Phone' },
     { key: 'email', label: 'Email' },
     { key: 'salary', label: 'Salary' },
@@ -96,12 +96,7 @@ export class DriverList implements OnInit {
       details: d.email || 'No email',
       employeeId: d.employee_id || 'Not available',
       group: d.group || 'Unallocated',
-      shift:
-        d.driver_shift_status === null
-          ? 'Not available'
-          : d.driver_shift_status
-            ? 'On Shift'
-            : 'Off Shift',
+      shift: this.shiftStatus(d),
       phone: d.phone || 'Not available',
       email: d.email || 'Not available',
       salary: d.salary || 'Not available',
@@ -111,7 +106,7 @@ export class DriverList implements OnInit {
     })),
   );
   protected readonly onShift = computed(
-    () => this.visibleRecords().filter((d) => d.driver_shift_status).length,
+    () => this.visibleRecords().filter((d) => this.hasActiveShift(d)).length,
   );
   protected readonly active = computed(
     () => this.visibleRecords().filter((d) => d.status === 1 || d.status === '1').length,
@@ -245,6 +240,22 @@ export class DriverList implements OnInit {
   }
   private date(v: string | null | undefined): string {
     return v ? v.slice(0, 10) : 'Not available';
+  }
+  private shiftStatus(driver: DriverRecord): string {
+    const shifts = Array.isArray(driver.shift_allocated) ? driver.shift_allocated : [];
+    if (!shifts.length) return 'Not available';
+    if (shifts.some((shift) => shift.shift__status === 1 || shift.shift__status === '1')) {
+      return 'Active';
+    }
+    return 'Inactive';
+  }
+  private hasActiveShift(driver: DriverRecord): boolean {
+    return (
+      Array.isArray(driver.shift_allocated) &&
+      driver.shift_allocated.some(
+        (shift) => shift.shift__status === 1 || shift.shift__status === '1',
+      )
+    );
   }
   private async deleteDriver(row: TableRow): Promise<void> {
     const name = String(row['name'] || 'this driver');

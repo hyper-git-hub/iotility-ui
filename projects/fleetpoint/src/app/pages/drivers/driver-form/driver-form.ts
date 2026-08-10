@@ -14,9 +14,11 @@ import { Modal } from '../../../shared/modal/modal';
 import {
   DriverApiService,
   DriverGroup,
+  DriverRfidDevice,
   DriverRecord,
 } from '../../../shared/services/driver-api.service';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FeatureAccessService } from '../../../shared/services/feature-access.service';
 
 @Component({
   selector: 'app-driver-form',
@@ -36,6 +38,8 @@ export class DriverForm implements OnChanges {
   protected readonly showPassword = signal(false);
   protected readonly imageFile = signal<File | null>(null);
   protected readonly imagePreview = signal('');
+  protected readonly imageRemoved = signal(false);
+  protected readonly rfidDevices = signal<DriverRfidDevice[]>([]);
   protected readonly editing = computed(() => !!this.driver());
   protected readonly genderOptions: DropdownOption[] = [
     { id: '1', label: 'Male' },
@@ -55,12 +59,17 @@ export class DriverForm implements OnChanges {
     { id: '', label: 'No group' },
     ...this.groups().map((group) => ({ id: String(group.id), label: group.name })),
   ]);
+  protected readonly rfidOptions = computed<DropdownOption[]>(() => [
+    { id: '', label: 'No RFID device' },
+    ...this.rfidDevices().map((device) => ({ id: device.device_id, label: device.device_id })),
+  ]);
   protected readonly form;
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly api: DriverApiService,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly features: FeatureAccessService,
   ) {
     const required = Validators.required;
     this.form = this.fb.nonNullable.group({
@@ -68,26 +77,28 @@ export class DriverForm implements OnChanges {
       employee_id: ['', required],
       dob: ['', required],
       data_joined: ['', required],
-      salary: ['', [required, Validators.min(0)]],
-      marital_status: ['', required],
+      salary: ['', Validators.min(0)],
+      marital_status: [''],
       gender: ['', required],
       phone: ['+974', [required, Validators.pattern(/^\+?[0-9]{7,15}$/)]],
-      licence_number: ['', [required, Validators.minLength(9), Validators.maxLength(20)]],
-      licence_expiry_date: ['', required],
       email: ['', [required, Validators.email]],
       password: [
         '',
         [required, Validators.pattern(/^(?=[^A-Z]*[A-Z])(?=[^a-z]*[a-z])(?=[^0-9]*[0-9]).{8,15}$/)],
       ],
       group: [''],
+      rfid_tag: [''],
+      beacon_id: ['', Validators.maxLength(300)],
       poi: [false],
       status: ['1', required],
     });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['open']?.currentValue) this.prepareForm();
-    else if (changes['groups'] && this.open() && this.driver()) this.patchGroup();
+    if (changes['open']?.currentValue) {
+      this.prepareForm();
+      this.loadRfidDevices();
+    } else if (changes['groups'] && this.open() && this.driver()) this.patchGroup();
   }
 
   protected selectGender(option: DropdownOption): void {
@@ -102,6 +113,12 @@ export class DriverForm implements OnChanges {
   protected selectStatus(option: DropdownOption): void {
     this.form.controls.status.setValue(option.id);
   }
+  protected selectRfid(option: DropdownOption): void {
+    this.form.controls.rfid_tag.setValue(option.id);
+  }
+  protected hasFeature(featureId: number): boolean {
+    return this.features.has(featureId);
+  }
   protected togglePassword(): void {
     this.showPassword.update((value) => !value);
   }
@@ -110,8 +127,22 @@ export class DriverForm implements OnChanges {
   }
   protected chooseImage(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    if (file && file.size > 1_000_000) {
+      this.error.set('Driver picture must be 1 MB or smaller.');
+      (event.target as HTMLInputElement).value = '';
+      return;
+    }
     this.imageFile.set(file);
-    if (file) this.imagePreview.set(URL.createObjectURL(file));
+    if (file) {
+      this.imagePreview.set(URL.createObjectURL(file));
+      this.imageRemoved.set(false);
+      this.error.set('');
+    }
+  }
+  protected removeImage(): void {
+    this.imageFile.set(null);
+    this.imagePreview.set('');
+    this.imageRemoved.set(true);
   }
 
   protected submit(): void {
@@ -119,17 +150,39 @@ export class DriverForm implements OnChanges {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
     const raw = this.form.getRawValue();
+    const birthDate = new Date(`${raw.dob}T00:00:00`);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const birthdayPending =
+      today.getMonth() < birthDate.getMonth() ||
+      (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate());
+    if (birthdayPending) age--;
+    if (!Number.isFinite(age) || age < 18) {
+      this.error.set('Driver must be 18 years or older.');
+      return;
+    }
     const payload = new FormData();
     Object.entries(raw).forEach(([key, value]) => {
-      if (key !== 'password' || !this.editing()) payload.append(key, String(value ?? ''));
+      if (key === 'password' && this.editing()) return;
+      if (key === 'beacon_id') {
+        if (this.hasFeature(4021) && value) payload.append('eye_beacon', String(value));
+        return;
+      }
+      if (key === 'poi' && !this.hasFeature(10)) return;
+      payload.append(key, String(value ?? ''));
     });
-    if (!this.editing()) payload.append('rfid_tag', '');
+    if (this.hasFeature(4021)) {
+      payload.append('feature_id', '4021');
+      payload.append('param_id', '1600');
+    } else if (this.hasFeature(121)) {
+      payload.append('param_id', '30000');
+    }
     const image = this.imageFile();
     if (image) payload.append('image', image, image.name);
     this.loading.set(true);
     this.error.set('');
     const request = this.editing()
-      ? this.api.updateDriver(this.driver()!.id, payload)
+      ? this.api.updateDriver(this.driver()!.id, payload, this.imageRemoved())
       : this.api.createDriver(payload);
     request.pipe(finalize(() => this.loading.set(false))).subscribe({
       next: async () => {
@@ -172,6 +225,7 @@ export class DriverForm implements OnChanges {
     this.showPassword.set(false);
     this.imageFile.set(null);
     this.imagePreview.set('');
+    this.imageRemoved.set(false);
   }
 
   private prepareForm(): void {
@@ -190,9 +244,9 @@ export class DriverForm implements OnChanges {
         marital_status: driver.marital_status || '',
         gender: driver.gender || '',
         phone: driver.phone || '+974',
-        licence_number: driver.licence_number || '',
-        licence_expiry_date: driver.licence_expiry_date?.slice(0, 10) || '',
         email: driver.email || '',
+        rfid_tag: driver.rfid_tag || '',
+        beacon_id: driver.eye_beacon || '',
         poi: !!driver.poi,
         status: String(driver.status || '1'),
       });
@@ -212,5 +266,20 @@ export class DriverForm implements OnChanges {
     this.form.controls.group.setValue(
       groupName ? String(this.groups().find((group) => group.name === groupName)?.id ?? '') : '',
     );
+  }
+
+  private loadRfidDevices(): void {
+    this.api.getAvailableRfidDevices().subscribe({
+      next: (response) => {
+        const available = response.data?.data ?? [];
+        const assigned = this.driver()?.rfid_tag;
+        this.rfidDevices.set(
+          assigned && !available.some((device) => device.device_id === assigned)
+            ? [{ id: 0, device_id: assigned }, ...available]
+            : available,
+        );
+      },
+      error: () => this.rfidDevices.set([]),
+    });
   }
 }

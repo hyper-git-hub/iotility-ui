@@ -1,30 +1,91 @@
 @reference "../../../../styles.css";
-@import "../../../shared/styles/fields.css";
+@import '../../../shared/styles/fields.css';
 
-.driver-form { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3; }
-.wide { @apply md:col-span-2 xl:col-span-3; }
-.form-error { @apply rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger; }
-.field-error { @apply mt-1.5 block text-[10px] font-medium text-danger; }
+.driver-form {
+  @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3;
+}
+.wide {
+  @apply md:col-span-2 xl:col-span-3;
+}
+.form-error {
+  @apply rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger;
+}
+.field-error {
+  @apply mt-1.5 block text-[10px] font-medium text-danger;
+}
 .shared-form-field:has(.field-error) .shared-form-control,
-.shared-form-field:has(.field-error) .form-dropdown [dropdown-trigger] { @apply border-danger; }
-.form-dropdown { @apply block; }
-.form-dropdown [dropdown-trigger] { @apply flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-line bg-white px-3 text-left text-xs text-ink outline-none transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
-.form-dropdown [dropdown-trigger] span { @apply min-w-0 truncate; }
-.form-dropdown [dropdown-trigger] svg { @apply size-4 shrink-0 text-muted; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
-.password-field { @apply relative block; }
-.password-field input { @apply pr-14; }
-.password-field button { @apply absolute inset-y-0 right-3 cursor-pointer text-[10px] font-semibold text-brand-600; }
-.poi-field { @apply flex h-10 cursor-pointer items-center gap-2 self-end text-xs text-ink dark:text-white; }
-.poi-field input { @apply sr-only; }
-.poi-field > span { @apply grid size-5 place-items-center rounded-md border border-line dark:border-dark-line; }
-.poi-field:has(input:checked) > span { @apply border-brand-600 bg-brand-600; }
-.poi-field:has(input:checked) > span::after { content: '✓'; @apply text-[10px] font-bold text-white; }
-.driver-picture { @apply flex items-center gap-5 rounded-2xl border border-dashed border-line bg-canvas p-4 dark:border-dark-line dark:bg-dark-canvas; }
-.picture-preview { @apply grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
-.picture-preview img { @apply size-full object-cover; }
-.picture-preview svg { @apply size-20 fill-muted/60; }
-.driver-picture strong { @apply text-xs text-ink dark:text-white; }
-.driver-picture p { @apply mb-3 mt-1 text-[10px] text-muted dark:text-brand-300; }
-.driver-picture label { @apply inline-flex cursor-pointer rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white; }
-.driver-picture input { @apply sr-only; }
-.form-footer { @apply ml-auto flex justify-end gap-3; }
+.shared-form-field:has(.field-error) .form-dropdown [dropdown-trigger] {
+  @apply border-danger;
+}
+.form-dropdown {
+  @apply block;
+}
+.form-dropdown [dropdown-trigger] {
+  @apply flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-line bg-white px-3 text-left text-xs text-ink outline-none transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
+}
+.form-dropdown [dropdown-trigger] span {
+  @apply min-w-0 truncate;
+}
+.form-dropdown [dropdown-trigger] svg {
+  @apply size-4 shrink-0 text-muted;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.password-field {
+  @apply relative block;
+}
+.password-field input {
+  @apply pr-14;
+}
+.password-field button {
+  @apply absolute inset-y-0 right-3 cursor-pointer text-[10px] font-semibold text-brand-600;
+}
+.poi-field {
+  @apply flex h-10 cursor-pointer items-center gap-2 self-end text-xs text-ink dark:text-white;
+}
+.poi-field input {
+  @apply sr-only;
+}
+.poi-field > span {
+  @apply grid size-5 place-items-center rounded-md border border-line dark:border-dark-line;
+}
+.poi-field:has(input:checked) > span {
+  @apply border-brand-600 bg-brand-600;
+}
+.poi-field:has(input:checked) > span::after {
+  content: '✓';
+  @apply text-[10px] font-bold text-white;
+}
+.driver-picture {
+  @apply flex items-center gap-5 rounded-2xl border border-dashed border-line bg-canvas p-4 dark:border-dark-line dark:bg-dark-canvas;
+}
+.picture-preview {
+  @apply grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.picture-preview img {
+  @apply size-full object-cover;
+}
+.picture-preview svg {
+  @apply size-20 fill-muted/60;
+}
+.driver-picture strong {
+  @apply text-xs text-ink dark:text-white;
+}
+.driver-picture p {
+  @apply mb-3 mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+.driver-picture label {
+  @apply inline-flex cursor-pointer rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white;
+}
+.driver-picture input {
+  @apply sr-only;
+}
+.remove-picture {
+  @apply ml-2 cursor-pointer rounded-lg border border-danger/30 px-3 py-2 text-xs font-semibold text-danger;
+}
+.form-footer {
+  @apply ml-auto flex justify-end gap-3;
+}
