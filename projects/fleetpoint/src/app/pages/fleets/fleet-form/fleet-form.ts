@@ -111,10 +111,19 @@ export class FleetForm implements OnChanges {
       .subscribe({
         next: (response) =>
           this.vehicleOptions.set(
-            (response.data?.data ?? []).map((vehicle) => ({
-              id: String(vehicle.id),
-              label: vehicle.registration || vehicle.name || `Vehicle ${vehicle.id}`,
-            })),
+            (response.data?.data ?? [])
+              .filter((vehicle) => {
+                const assignedIds = new Set(
+                  (this.fleet()?.assigned_vehicles ?? []).map((assigned) => assigned.id),
+                );
+                return (
+                  vehicle.status === 1 || vehicle.status === '1' || assignedIds.has(vehicle.id)
+                );
+              })
+              .map((vehicle) => ({
+                id: String(vehicle.id),
+                label: vehicle.name || vehicle.registration || `Vehicle ${vehicle.id}`,
+              })),
           ),
         error: (response) => {
           const message = response.error?.message || 'Vehicles could not be loaded.';

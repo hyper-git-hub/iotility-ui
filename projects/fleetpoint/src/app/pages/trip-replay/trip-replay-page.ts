@@ -146,7 +146,13 @@ export class TripReplayPage implements OnInit, OnDestroy {
         },
         error: (response) => {
           const message = response.error?.message || 'Vehicles could not be loaded.';
-          void this.feedback.open({ type: 'error', title: 'Unable to load vehicles', message, confirmText: 'Close', showCancel: false });
+          void this.feedback.open({
+            type: 'error',
+            title: 'Unable to load vehicles',
+            message,
+            confirmText: 'Close',
+            showCancel: false,
+          });
         },
       });
   }
@@ -204,7 +210,13 @@ export class TripReplayPage implements OnInit, OnDestroy {
         error: (response) => {
           this.trip.set(EMPTY_TRIP);
           const message = response.error?.message || 'Trip replay data could not be loaded.';
-          void this.feedback.open({ type: 'error', title: 'Unable to load trip replay', message, confirmText: 'Close', showCancel: false });
+          void this.feedback.open({
+            type: 'error',
+            title: 'Unable to load trip replay',
+            message,
+            confirmText: 'Close',
+            showCancel: false,
+          });
         },
       });
   }
@@ -226,8 +238,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
         // Derive progress from the animation clock instead of accumulating
         // setInterval delays. A late frame can catch up without permanently
         // shifting every following GPS transition.
-        const timelineIndex =
-          startIndex + Math.floor((now - startedAt) / stepDuration);
+        const timelineIndex = startIndex + Math.floor((now - startedAt) / stepDuration);
         const nextIndex = Math.min(timelineIndex, lastIndex);
         if (nextIndex !== this.positionIndex()) this.positionIndex.set(nextIndex);
         // Keep playback active for the final segment's duration so the map
@@ -342,8 +353,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
         : [],
     );
     const replayStops = stops.map((stop, index) => {
-      const lat = Number(stop['latitude']);
-      const lng = Number(stop['longitude']);
+      const lat = Number(stop['lat'] ?? stop['latitude']);
+      const lng = Number(stop['lng'] ?? stop['long'] ?? stop['longitude']);
       return {
         location: String(stop['location'] ?? 'Unknown location'),
         duration: String(stop['duration'] ?? '—'),
@@ -447,7 +458,10 @@ export class TripReplayPage implements OnInit, OnDestroy {
     return `${format(this.startDate())} to ${format(this.endDate())}`;
   }
   private apiDate(value: string): string {
-    return `${value.replace('T', ' ')}:00`;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return `${value.replace('T', ' ')}:00`;
+    const pad = (part: number) => String(part).padStart(2, '0');
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
   }
   private clearPlaybackFrame(): void {
     if (this.playbackFrame !== undefined) cancelAnimationFrame(this.playbackFrame);

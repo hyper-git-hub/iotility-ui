@@ -24,7 +24,16 @@ import { DriverForm } from '../driver-form/driver-form';
 
 @Component({
   selector: 'app-driver-list',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, DriverForm, Dropdown, Skeleton, StatCard, StatCardSkeleton],
+  imports: [
+    BlockingLoader,
+    DataTable,
+    DataTableSkeleton,
+    DriverForm,
+    Dropdown,
+    Skeleton,
+    StatCard,
+    StatCardSkeleton,
+  ],
   templateUrl: './driver-list.html',
   styleUrl: '../drivers-page.css',
 })
@@ -50,11 +59,12 @@ export class DriverList implements OnInit {
   protected readonly actions: TableAction[] = ['map', 'edit', 'delete'];
   protected readonly columns: TableColumn[] = [
     { key: 'name', label: 'Driver', type: 'user', secondaryKey: 'details', clickable: true },
+    { key: 'employeeId', label: 'Employee ID' },
     { key: 'group', label: 'Group' },
     { key: 'shift', label: 'Shift', type: 'status' },
     { key: 'phone', label: 'Phone' },
-    { key: 'licence', label: 'Licence Number' },
-    { key: 'expiry', label: 'Licence Expiry', type: 'date' },
+    { key: 'email', label: 'Email' },
+    { key: 'salary', label: 'Salary' },
     { key: 'joined', label: 'Date Joined', type: 'date' },
     { key: 'status', label: 'Status', type: 'status' },
     { key: 'actions', label: 'Actions', type: 'actions' },
@@ -83,14 +93,20 @@ export class DriverList implements OnInit {
     this.visibleRecords().map((d) => ({
       id: d.id,
       name: d.name || 'Unnamed driver',
-      details: `${d.employee_id || 'No employee ID'} · ${d.email || 'No email'}`,
+      details: d.email || 'No email',
+      employeeId: d.employee_id || 'Not available',
       group: d.group || 'Unallocated',
-      shift: d.driver_shift_status ? 'On Shift' : 'Off Shift',
+      shift:
+        d.driver_shift_status === null
+          ? 'Not available'
+          : d.driver_shift_status
+            ? 'On Shift'
+            : 'Off Shift',
       phone: d.phone || 'Not available',
-      licence: d.licence_number || 'Not available',
-      expiry: this.date(d.licence_expiry_date),
+      email: d.email || 'Not available',
+      salary: d.salary || 'Not available',
       joined: this.date(d.data_joined),
-      status: d.status === '1' ? 'Active' : 'Inactive',
+      status: d.status === 1 || d.status === '1' ? 'Active' : 'Inactive',
       actions: '',
     })),
   );
@@ -98,7 +114,7 @@ export class DriverList implements OnInit {
     () => this.visibleRecords().filter((d) => d.driver_shift_status).length,
   );
   protected readonly active = computed(
-    () => this.visibleRecords().filter((d) => d.status === '1').length,
+    () => this.visibleRecords().filter((d) => d.status === 1 || d.status === '1').length,
   );
   protected readonly unallocated = computed(
     () => this.visibleRecords().filter((d) => !d.group && !d.shift_allocated).length,
@@ -177,7 +193,9 @@ export class DriverList implements OnInit {
       }
     }
   }
-  protected openDriver(row: TableRow): void { void this.router.navigate(['/fleetpoint/drivers', row['id']]); }
+  protected openDriver(row: TableRow): void {
+    void this.router.navigate(['/fleetpoint/drivers', row['id']]);
+  }
   protected previousPage(): void {
     this.offset.update((v) => Math.max(0, v - this.limit));
     this.loadDrivers();
@@ -198,10 +216,12 @@ export class DriverList implements OnInit {
         searchText: this.search().trim(),
         cardType: this.cardType(),
       })
-      .pipe(finalize(() => {
-        this.loading.set(false);
-        this.hasLoaded.set(true);
-      }))
+      .pipe(
+        finalize(() => {
+          this.loading.set(false);
+          this.hasLoaded.set(true);
+        }),
+      )
       .subscribe({
         next: (r) => {
           this.records.set(r.data?.data ?? []);
@@ -210,14 +230,20 @@ export class DriverList implements OnInit {
         error: (r) => {
           const message = r.error?.message || 'Drivers could not be loaded.';
           this.error.set(message);
-          void this.feedback.open({ type: 'error', title: 'Unable to load drivers', message, confirmText: 'Close', showCancel: false });
+          void this.feedback.open({
+            type: 'error',
+            title: 'Unable to load drivers',
+            message,
+            confirmText: 'Close',
+            showCancel: false,
+          });
         },
       });
   }
   private refreshGroups(): void {
     this.api.getGroups().subscribe({ next: (r) => this.groups.set(r.data?.data ?? []) });
   }
-  private date(v: string): string {
+  private date(v: string | null | undefined): string {
     return v ? v.slice(0, 10) : 'Not available';
   }
   private async deleteDriver(row: TableRow): Promise<void> {

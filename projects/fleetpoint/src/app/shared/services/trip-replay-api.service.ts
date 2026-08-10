@@ -3,8 +3,9 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { RealtimeVehicleRecord } from './live-tracking-api.service';
+import { environment } from '../../../environments/environment';
 
-const FLEET_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet/api';
+const FLEET_API = `${environment.fleetBaseUrl}/api`;
 export type PlaybackRecord = Record<string, unknown>;
 export interface PlaybackTrailRecord {
   lat: number | string;
@@ -53,7 +54,15 @@ export class TripReplayApiService {
   ): Observable<ApiResponse<{ count: number; data: PlaybackRecord[] }>> {
     return this.http.get<ApiResponse<{ count: number; data: PlaybackRecord[] }>>(
       `${FLEET_API}/playback/stops`,
-      { params: this.params(range).set('duration', '4').set('order', '').set('order_by', '') },
+      {
+        params: this.params(range)
+          .set('duration', '4')
+          .set('order', '')
+          .set('order_by', '')
+          .set('limit', '10')
+          .set('offset', '0')
+          .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone),
+      },
     );
   }
   getStatistics(

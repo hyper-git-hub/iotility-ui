@@ -2,8 +2,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
+import { environment } from '../../../environments/environment';
 
-const FLEET_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet/api';
+const FLEET_API = `${environment.fleetBaseUrl}/api`;
 
 export interface RealtimeVehicleRecord {
   id: number;
@@ -35,14 +36,29 @@ export interface DetailReportRecord {
   last_swipe_driver_name: string | null;
 }
 
+export interface GeoZoneRecord {
+  id: number;
+  name: string;
+  territory?: unknown;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LiveTrackingApiService {
   constructor(private readonly http: HttpClient) {}
 
   getVehicles(): Observable<ApiResponse<{ count: number; data: RealtimeVehicleRecord[] }>> {
+    const user = this.currentUser();
+    const groupName = user?.customer?.groups?.[0]?.name;
     return this.http.get<ApiResponse<{ count: number; data: RealtimeVehicleRecord[] }>>(`${FLEET_API}/fleet/vehicle`, {
-      params: new HttpParams().set('status', '1').set('page_category', 'vehicle_real_time_tracking'),
+      params: new HttpParams()
+        .set('rtt', '1')
+        .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone)
+        .set('group', groupName === 'UK' ? '1' : '0'),
     });
+  }
+
+  getGeoZones(): Observable<ApiResponse<{ count: number; data: GeoZoneRecord[] }>> {
+    return this.http.get<ApiResponse<{ count: number; data: GeoZoneRecord[] }>>(`${FLEET_API}/geo-zone`);
   }
 
   getDetailReport(): Observable<ApiResponse<{ count: number; data: DetailReportRecord[] }>> {
@@ -52,5 +68,13 @@ export class LiveTrackingApiService {
         .set('search', '').set('start_datetime', '').set('end_datetime', '')
         .set('time_zone', 'Asia/Karachi'),
     });
+  }
+
+  private currentUser(): { customer?: { groups?: Array<{ name?: string }> } } | null {
+    try {
+      return JSON.parse(localStorage.getItem('user') ?? 'null');
+    } catch {
+      return null;
+    }
   }
 }

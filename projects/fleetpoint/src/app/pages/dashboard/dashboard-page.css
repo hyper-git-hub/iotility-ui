@@ -24,6 +24,9 @@
 .fleet-status-item.stopped { @apply bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300; }
 .fleet-status-item.alert { @apply bg-danger/8 text-danger; }
 .fleet-status-item.offline { @apply bg-slate-200/60 text-slate-700 dark:bg-slate-800 dark:text-slate-300; }
+.fleet-status-skeleton header { @apply mb-3 flex items-center justify-between gap-3; }
+.fleet-status-skeleton-grid { @apply mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5; }
+.fleet-status-skeleton-grid article { @apply flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl bg-slate-50 p-3 dark:bg-dark-canvas/60; }
 .section-heading { @apply mb-3 flex items-end justify-between gap-3; }
 .section-heading h2 { @apply text-sm font-semibold; }
 .section-heading p { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }

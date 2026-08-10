@@ -92,6 +92,7 @@
     <app-fleet-map
       [class.map-loaded]="mapLoaded()"
       [vehicles]="mapVehicles()"
+      [zones]="zones()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
       (ready)="mapLoaded.set(true)"
       (vehicleSelected)="selectVehicle($event)"

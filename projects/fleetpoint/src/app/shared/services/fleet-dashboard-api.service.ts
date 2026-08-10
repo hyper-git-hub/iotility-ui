@@ -1,9 +1,9 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
-const FLEET_API = 'https://devgateway.hypernymbiz.com/fms-fleet/api';
-const PROD_FLEET_API = 'https://devgateway.hypernymbiz.com/fms-fleet/api';
+const FLEET_API = `${environment.fleetBaseUrl}/api`;
 const DASHBOARD_ID = 'MD';
 
 export interface ApiResponse<T> {
@@ -104,7 +104,7 @@ export class FleetDashboardApiService {
   }
 
   getFleets(): Observable<ApiResponse<{ count: number; data: Fleet[] }>> {
-    return this.http.get<ApiResponse<{ count: number; data: Fleet[] }>>(`${PROD_FLEET_API}/fleet`, {
+    return this.http.get<ApiResponse<{ count: number; data: Fleet[] }>>(`${FLEET_API}/fleet`, {
       params: new HttpParams().set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone),
     });
   }

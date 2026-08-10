@@ -2,10 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownOption, Skeleton } from '@iotility/shared-ui';
-import { EMPTY, Subscription, catchError, finalize, forkJoin, switchMap, timer } from 'rxjs';
-import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
+import { EMPTY, Subscription, catchError, finalize, switchMap, timer } from 'rxjs';
+import { FleetMap, MapZoneOverlay, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
 import {
-  DetailReportRecord,
+  GeoZoneRecord,
   LiveTrackingApiService,
   RealtimeVehicleRecord,
 } from '../../shared/services/live-tracking-api.service';
@@ -41,6 +41,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly selectedVehicle = signal<LiveVehicle | null>(null);
   protected readonly allocationOpen = signal(false);
   protected readonly vehicles = signal<LiveVehicle[]>([]);
+  protected readonly zones = signal<MapZoneOverlay[]>([]);
   protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Offline'];
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly locationOptions: DropdownOption[] = [
@@ -57,7 +58,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.filteredVehicles().filter((vehicle) => Number.isFinite(vehicle.lat) && Number.isFinite(vehicle.lng)),
   );
   private readonly subscription = new Subscription();
-  private detailReports = new Map<number, DetailReportRecord>();
   private selectionRequest = 0;
   private requestedVehicleId = '';
 
@@ -87,12 +87,19 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected loadVehicles(): void {
     this.loading.set(true);
     this.error.set('');
-    forkJoin({ vehicles: this.api.getVehicles(), report: this.api.getDetailReport() })
-      .pipe(finalize(() => this.loading.set(false)))
+    this.subscription.add(this.api.getGeoZones().subscribe({
+      next: (response) => this.zones.set((response.data?.data ?? []).flatMap((zone) => this.toMapZone(zone))),
+      error: () => this.zones.set([]),
+    }));
+    this.api.getVehicles().pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: ({ vehicles, report }) => {
-          this.detailReports = new Map((report.data?.data ?? []).map((row) => [row.vehicle_id, row]));
-          this.updateVehicleSnapshot(vehicles.data?.data ?? []);
+        next: (response) => {
+          if (response.status !== 1000) {
+            this.error.set(response.message || 'Live vehicle data could not be loaded.');
+            this.vehicles.set([]);
+            return;
+          }
+          this.updateVehicleSnapshot(response.data?.data ?? []);
           this.selectRequestedVehicle();
         },
         error: (response: HttpErrorResponse) => {
@@ -105,7 +112,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   private startVehiclePolling(): void {
     this.subscription.add(
-      timer(60_000, 60_000).pipe(
+      timer(30_000, 30_000).pipe(
         switchMap(() => this.api.getVehicles().pipe(catchError(() => EMPTY))),
       ).subscribe((response) => this.updateVehicleSnapshot(response.data?.data ?? [])),
     );
@@ -113,7 +120,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   private updateVehicleSnapshot(records: RealtimeVehicleRecord[]): void {
     const selectedId = this.selectedVehicle()?.numericId;
-    const vehicles = records.map((vehicle) => this.toTrackedVehicle(vehicle, this.detailReports.get(vehicle.id)));
+    const vehicles = records.map((vehicle) => this.toTrackedVehicle(vehicle));
     this.vehicles.set(vehicles);
     if (selectedId !== undefined) {
       this.selectedVehicle.set(vehicles.find((vehicle) => vehicle.numericId === selectedId) ?? null);
@@ -165,26 +172,59 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     image.src = 'assets/fleetpoint/vehicle.svg';
   }
 
-  private toTrackedVehicle(vehicle: RealtimeVehicleRecord, detail?: DetailReportRecord): LiveVehicle {
-    const speed = this.numberValue(vehicle.speed ?? detail?.last_known_speed);
+  private toTrackedVehicle(vehicle: RealtimeVehicleRecord): LiveVehicle {
+    const speed = this.numberValue(vehicle.speed);
     const online = Boolean(vehicle.online_status);
     return {
       numericId: vehicle.id,
       deviceId: String(vehicle.device_id ?? '').trim(),
       id: vehicle.registration || String(vehicle.id),
       model: vehicle.vehicle_type || 'Vehicle',
-      driver: vehicle.vehicle_driver_name || detail?.last_swipe_driver_name || 'Unassigned',
-      status: online ? (speed > 5 ? 'Moving' : 'Idling') : 'Offline',
+      driver: vehicle.vehicle_driver_name || 'Unassigned',
+      status: online ? (speed > 8 ? 'Moving' : 'Idling') : 'Offline',
       speed,
       fuel: 0,
-      location: vehicle.location || detail?.last_updated_location || 'Location unavailable',
-      updated: vehicle.updated_time || detail?.last_updated_time || 'No recent update',
+      location: vehicle.location || 'Location unavailable',
+      updated: vehicle.updated_time || 'No recent update',
       lat: this.coordinate(vehicle.latitude),
       lng: this.coordinate(vehicle.longitude),
-      image: detail?.vehicle_image || vehicle.vehicle_type_image,
+      image: vehicle.vehicle_type_image,
       seatBelt: vehicle.seat_belt,
       kmPerDay: vehicle.km_per_day || 0,
     };
+  }
+
+  private toMapZone(zone: GeoZoneRecord): MapZoneOverlay[] {
+    const territory = zone.territory;
+    if (!territory) return [];
+    const color = '#7c3aed';
+    if (Array.isArray(territory)) {
+      const points = territory
+        .map((point) => this.zonePoint(point))
+        .filter((point): point is [number, number] => Boolean(point));
+      return points.length > 2 ? [{ id: String(zone.id), label: zone.name, geometry: 'polygon', color, points }] : [];
+    }
+    if (typeof territory !== 'object') return [];
+    const record = territory as Record<string, unknown>;
+    const center = this.zonePoint(record);
+    const radius = this.numberValue(record['radius'], Number.NaN);
+    if (center && Number.isFinite(radius)) {
+      return [{ id: String(zone.id), label: zone.name, geometry: 'circle', color, center, radius: radius * 1000 }];
+    }
+    const rawPoints = record['coordinates'] ?? record['points'] ?? record['paths'];
+    if (!Array.isArray(rawPoints)) return [];
+    const points = rawPoints
+      .map((point) => this.zonePoint(point))
+      .filter((point): point is [number, number] => Boolean(point));
+    return points.length > 2 ? [{ id: String(zone.id), label: zone.name, geometry: 'polygon', color, points }] : [];
+  }
+
+  private zonePoint(value: unknown): [number, number] | null {
+    if (!value || typeof value !== 'object') return null;
+    const point = value as Record<string, unknown>;
+    const lat = this.numberValue(point['lat'] ?? point['latitude'], Number.NaN);
+    const lng = this.numberValue(point['lng'] ?? point['longitude'], Number.NaN);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
   }
 
   private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {
@@ -211,7 +251,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
         speed,
         lat,
         lng,
-        status: speed > 5 ? 'Moving' : ignition ? 'Idling' : 'Offline',
+        status: speed > 8 ? 'Moving' : ignition ? 'Idling' : 'Offline',
         updated: this.updateTime(update.updated_time ?? update.t),
       };
       if (this.selectedVehicle()?.numericId === vehicle.numericId) selected = changed;

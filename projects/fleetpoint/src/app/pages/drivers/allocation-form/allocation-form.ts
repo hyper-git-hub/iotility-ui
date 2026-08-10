@@ -155,7 +155,7 @@ export class AllocationForm implements OnChanges {
           this.vehicleOptions.set(options);
           this.driverOptions.set(
             (drivers.data?.data ?? [])
-              .filter((driver) => driver.status === '1')
+              .filter((driver) => driver.status === 1 || driver.status === '1')
               .map((driver) => ({
                 id: String(driver.id),
                 label: driver.name,

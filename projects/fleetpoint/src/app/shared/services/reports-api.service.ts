@@ -1,76 +1,83 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { ApiResponse } from './fleet-dashboard-api.service';
 
-const REPORT_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet/api/report';
-
 export type ReportType =
-  | 'journey_report'
-  | 'quick_overview_report'
-  | 'geo_fence_report'
-  | 'trip_report'
-  | 'over_speeding_report'
-  | 'vehicle_utilisation_extended_report'
-  | 'events_report'
-  | 'driver_score_card_report'
-  | 'excessive_idling_report'
-  | 'qpmc_yard_utilization_report'
-  | 'qpmc_loading_activity_report'
-  | 'qpmc_engine_health_report'
-  | 'qpmc_device_health_report'
-  | 'qpmc_network_coverage_report'
-  | 'qpmc_eye_sensor_health_report'
-  | 'qpmc_after_hours_usage_report'
-  | 'qpmc_fleet_right_sizing_report';
-export type ReportClass = 'fleet' | 'driver';
-
+  | 'fuel'
+  | 'immobilizer'
+  | 'job_anomaly'
+  | 'vehicle_usage'
+  | 'job_report'
+  | 'fleet_usage'
+  | 'incident_report'
+  | 'trip_report';
+export type ReportDateFilter = 'week' | 'month' | 'year';
+export type ReportExportFormat = 'xls' | 'pdf';
 export type ReportRecord = Record<string, string | number | boolean | null>;
 
 export interface ReportQuery {
   limit: number;
   offset: number;
   reportType: ReportType;
-  reportClass: ReportClass;
-  startDate: string;
-  endDate: string;
+  dateFilter: ReportDateFilter;
+  search?: string;
+  order?: string;
+  orderBy?: string;
 }
 
-export type ReportExportFormat = 'xls' | 'pdf';
+interface ReportPayload {
+  count?: number;
+  data?: ReportRecord[];
+  token?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ReportsApiService {
   constructor(private readonly http: HttpClient) {}
 
-  getReport(
-    query: ReportQuery,
-  ): Observable<ApiResponse<{ count: number; data: ReportRecord[] } | ReportRecord[]>> {
-    return this.http.get<ApiResponse<{ count: number; data: ReportRecord[] } | ReportRecord[]>>(
-      REPORT_API,
-      { params: this.reportParams(query) },
+  getReport(query: ReportQuery): Observable<ApiResponse<ReportPayload | ReportRecord[]>> {
+    return this.http.get<ApiResponse<ReportPayload | ReportRecord[]>>(
+      this.endpoint(query.reportType),
+      {
+        params: this.reportParams(query),
+      },
     );
   }
 
   exportReport(query: ReportQuery, format: ReportExportFormat): Observable<Blob> {
-    return this.http.get(REPORT_API, {
-      params: this.reportParams(query).set('export', format),
-      responseType: 'blob',
-    });
+    const params = this.reportParams(query).delete('limit').delete('offset').set('export', format);
+    return this.http.get(this.endpoint(query.reportType), { params, responseType: 'blob' });
+  }
+
+  private endpoint(type: ReportType): string {
+    return type === 'trip_report'
+      ? `${environment.reportsBaseUrl}/reports/trip-history`
+      : `${environment.fleetBaseUrl}/api/report`;
   }
 
   private reportParams(query: ReportQuery): HttpParams {
-    return new HttpParams()
+    const tripReport = query.reportType === 'trip_report';
+    let params = new HttpParams()
       .set('limit', query.limit)
       .set('offset', query.offset)
-      .set('order_by', 'created_at')
-      .set('order', 'desc')
-      .set('report_class', query.reportClass)
       .set('report_type', query.reportType)
-      .set('report_id', '')
-      .set('start_date', query.startDate)
-      .set('end_date', query.endDate)
-      .set('device_id', '')
-      .set('vehicle_id', '')
-      .set('speed_threshold', '');
+      .set('date_filter', query.dateFilter)
+      .set('group', this.groupFlag())
+      .set(tripReport ? 'timezone' : 'time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+    if (query.order) params = params.set('order', query.order);
+    if (query.orderBy) params = params.set('order_by', query.orderBy);
+    if (tripReport && query.search?.trim()) params = params.set('s', query.search.trim());
+    return params;
+  }
+
+  private groupFlag(): number {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') ?? '{}');
+      return user?.customer?.groups?.[0]?.name === 'UK' ? 1 : 0;
+    } catch {
+      return 0;
+    }
   }
 }

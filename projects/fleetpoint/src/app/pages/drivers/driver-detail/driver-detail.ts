@@ -7,7 +7,6 @@ import {
   Dropdown,
   DropdownOption,
   Skeleton,
-  StatCardSkeleton,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
@@ -26,7 +25,14 @@ import { StatCard } from '../../../shared/stat-card/stat-card';
 
 @Component({
   selector: 'app-driver-detail',
-  imports: [DataTable, DataTableSkeleton, DateTimePicker, Dropdown, Skeleton, StatCard, StatCardSkeleton],
+  imports: [
+    DataTable,
+    DataTableSkeleton,
+    DateTimePicker,
+    Dropdown,
+    Skeleton,
+    StatCard,
+  ],
   templateUrl: './driver-detail.html',
   styleUrl: './driver-detail.css',
 })
@@ -55,6 +61,9 @@ export class DriverDetail implements OnInit {
   protected readonly limit = 10;
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
+  protected readonly reportPeriod = signal<'today' | 'yesterday' | 'week' | 'month' | 'custom'>(
+    'month',
+  );
   protected readonly totalViolations = computed(() =>
     this.graphs().violation_graph.reduce((total, item) => total + Number(item.value || 0), 0),
   );
@@ -97,7 +106,7 @@ export class DriverDetail implements OnInit {
     this.driverId = Number(route.snapshot.paramMap.get('id'));
     const end = new Date();
     const start = new Date(end);
-    start.setDate(start.getDate() - 30);
+    start.setDate(1);
     start.setHours(0, 0, 0, 0);
     this.startDate.set(this.inputDate(start));
     this.endDate.set(this.inputDate(end));
@@ -187,9 +196,30 @@ export class DriverDetail implements OnInit {
   }
   protected updateStart(value: string): void {
     this.startDate.set(value);
+    this.reportPeriod.set('custom');
   }
   protected updateEnd(value: string): void {
     this.endDate.set(value);
+    this.reportPeriod.set('custom');
+  }
+  protected applyPreset(period: 'today' | 'yesterday' | 'week' | 'month'): void {
+    const end = new Date();
+    const start = new Date(end);
+    if (period === 'yesterday') {
+      start.setDate(start.getDate() - 1);
+      end.setDate(end.getDate() - 1);
+    } else if (period === 'week') {
+      const day = start.getDay();
+      start.setDate(start.getDate() - day);
+    } else if (period === 'month') {
+      start.setDate(1);
+    }
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    this.startDate.set(this.inputDate(start));
+    this.endDate.set(this.inputDate(end));
+    this.reportPeriod.set(period);
+    this.applyPeriod();
   }
   protected updateCardPeriod(option: DropdownOption): void {
     const period = option.id;
@@ -234,6 +264,18 @@ export class DriverDetail implements OnInit {
   }
   protected text(value: unknown): string {
     return value === null || value === undefined || value === '' ? 'Not available' : String(value);
+  }
+  protected gender(value: string): string {
+    return (
+      ({ '1': 'Male', '2': 'Female', '3': 'Other' } as Record<string, string>)[value] ??
+      this.text(value)
+    );
+  }
+  protected maritalStatus(value: string): string {
+    return (
+      ({ '1': 'Single', '2': 'Married', '3': 'Divorced' } as Record<string, string>)[value] ??
+      this.text(value)
+    );
   }
   protected violationLabel(row: DriverViolationRecord): string {
     return this.text(row['violation_name'] ?? row['violation_type'] ?? row['name'] ?? row['type']);

@@ -3,8 +3,9 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { InventoryOption } from './vehicle-inventory-api.service';
+import { environment } from '../../../environments/environment';
 
-const FLEET_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet/api/fleet';
+const FLEET_API = `${environment.fleetBaseUrl}/api/fleet`;
 
 export interface FleetInventoryRecord {
   id: number;
@@ -20,7 +21,7 @@ export interface FleetInventoryRecord {
 
 export interface FleetVehicleOption {
   id: number;
-  registration: string;
+  registration?: string;
   name?: string;
   status?: number | string;
 }
@@ -39,23 +40,24 @@ export class FleetInventoryApiService {
       .set('limit', filters.limit)
       .set('offset', filters.offset)
       .set('order', '')
-      .set('order_by', '');
-    if (filters.id) params = params.set('id', filters.id);
-    if (filters.search) params = params.set('search', filters.search);
+      .set('order_by', '')
+      .set('id', filters.id)
+      .set('search', filters.search)
+      .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone);
     return this.http.get<ApiResponse<{ count: number; data: FleetInventoryRecord[] }>>(FLEET_API, {
       params,
     });
   }
 
   getFleetOptions(): Observable<ApiResponse<{ count: number; data: InventoryOption[] }>> {
-    return this.http.get<ApiResponse<{ count: number; data: InventoryOption[] }>>(
-      `${FLEET_API}/fleet-listing`,
-    );
+    return this.http.get<ApiResponse<{ count: number; data: InventoryOption[] }>>(FLEET_API, {
+      params: { assigned_vehicles: 'false' },
+    });
   }
 
   getVehicleOptions(): Observable<ApiResponse<{ count: number; data: FleetVehicleOption[] }>> {
     return this.http.get<ApiResponse<{ count: number; data: FleetVehicleOption[] }>>(
-      `${FLEET_API}/vehicle-listing`,
+      `${FLEET_API}/get_vehicles`,
     );
   }
 

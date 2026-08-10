@@ -2,20 +2,31 @@
   <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Saving changes..." />
 
   <header class="page-heading">
-    <div><h1>Users &amp; Roles</h1><p>Manage FleetPoint users, access groups, and permissions</p></div>
+    <div>
+      <h1>Users &amp; Roles</h1>
+      <p>Manage FleetPoint users, access groups, and permissions</p>
+    </div>
     <div class="heading-actions">
       @if (activeTab() === 'users') {
         <button type="button" class="primary-action" (click)="openCreateUser()">+ Add user</button>
       } @else {
-        <button type="button" class="secondary-action" (click)="openAssignUsers()">Assign users to a group</button>
-        <button type="button" class="primary-action" (click)="openCreateRole()">+ Add access group</button>
+        <button type="button" class="secondary-action" (click)="openAssignUsers()">
+          Assign users to a group
+        </button>
+        <button type="button" class="primary-action" (click)="openCreateRole()">
+          + Add access group
+        </button>
       }
     </div>
   </header>
 
   <nav class="management-tabs" aria-label="User and role management">
-    <button type="button" [class.active]="activeTab() === 'users'" (click)="selectTab('users')">Users</button>
-    <button type="button" [class.active]="activeTab() === 'roles'" (click)="selectTab('roles')">Roles &amp; Access</button>
+    <button type="button" [class.active]="activeTab() === 'users'" (click)="selectTab('users')">
+      Users
+    </button>
+    <button type="button" [class.active]="activeTab() === 'roles'" (click)="selectTab('roles')">
+      Roles &amp; Access
+    </button>
   </nav>
 
   @if (activeTab() === 'users') {
@@ -32,45 +43,73 @@
           [minTableWidth]="1020"
         />
       } @else {
-      <div class="management-table-wrap" [class.refreshing]="usersRefreshing()">
-      @if (usersRefreshing()) { <div class="management-refresh-progress"><i></i></div> }
-      <shared-data-table
-        title="Users"
-        [subtitle]="'Showing ' + userStart() + '–' + userEnd() + ' of ' + userTotal()"
-        [columns]="userColumns"
-        [rows]="userRows()"
-        [actions]="actions"
-        [clientSideSearch]="false"
-        [showPrimaryAction]="false"
-        [showExport]="false"
-        [minTableWidth]="1020"
-        [headerFilterOptions]="statusFilterOptions"
-        [headerFilterSelected]="[userStatus()]"
-        headerFilterTitle="Status"
-        [headerFilterLabel]="optionLabel(statusFilterOptions, userStatus(), 'All users')"
-        searchPlaceholder="Search users by name or email"
-        (searchChange)="userSearchChanged($event)"
-        (headerFilterChange)="selectStatusFilter($event)"
-        (rowAction)="handleUserAction($event)"
-      />
-      </div>
+        <div class="management-table-wrap" [class.refreshing]="usersRefreshing()">
+          @if (usersRefreshing()) {
+            <div class="management-refresh-progress"><i></i></div>
+          }
+          <shared-data-table
+            title="Users"
+            [subtitle]="'Showing ' + userStart() + '–' + userEnd() + ' of ' + userTotal()"
+            [columns]="userColumns"
+            [rows]="userRows()"
+            [actions]="userActions"
+            [clientSideSearch]="false"
+            [showPrimaryAction]="false"
+            [showExport]="false"
+            [minTableWidth]="1020"
+            [headerFilterOptions]="statusFilterOptions"
+            [headerFilterSelected]="[userStatus()]"
+            headerFilterTitle="Status"
+            [headerFilterLabel]="optionLabel(statusFilterOptions, userStatus(), 'All users')"
+            searchPlaceholder="Search users by name or email"
+            (searchChange)="userSearchChanged($event)"
+            (headerFilterChange)="selectStatusFilter($event)"
+            (rowAction)="handleUserAction($event)"
+          />
+        </div>
       }
       <nav class="pagination">
-        @if (usersInitialLoading()) { <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" /> }
-        @else { <span>Showing {{ userStart() }}–{{ userEnd() }} of {{ userTotal() }}</span> }
-        <div><button [disabled]="userLoading() || userOffset() === 0" (click)="previousUsers()">Previous</button><button [disabled]="userLoading() || userOffset() + limit >= userTotal()" (click)="nextUsers()">Next</button></div>
+        @if (usersInitialLoading()) {
+          <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" />
+        } @else {
+          <span>Showing {{ userStart() }}–{{ userEnd() }} of {{ userTotal() }}</span>
+        }
+        <div>
+          <button [disabled]="userLoading() || userOffset() === 0" (click)="previousUsers()">
+            Previous</button
+          ><button
+            [disabled]="userLoading() || userOffset() + limit >= userTotal()"
+            (click)="nextUsers()"
+          >
+            Next
+          </button>
+        </div>
       </nav>
     </section>
   } @else {
     <section class="role-summary">
       @if (rolesInitialLoading()) {
         @for (item of [1, 2, 3]; track item) {
-          <article class="role-summary-skeleton"><ui-skeleton width="6rem" height="0.625rem" /><ui-skeleton width="3rem" height="1.5rem" /><ui-skeleton width="7rem" height="0.625rem" /></article>
+          <article class="role-summary-skeleton">
+            <ui-skeleton width="6rem" height="0.625rem" /><ui-skeleton
+              width="3rem"
+              height="1.5rem"
+            /><ui-skeleton width="7rem" height="0.625rem" />
+          </article>
         }
       } @else {
-      <article><span>Access groups</span><strong>{{ roleTotal() }}</strong><small>Configured groups</small></article>
-      <article><span>Assigned users</span><strong>{{ assignedUserTotal() }}</strong><small>In loaded groups</small></article>
-      <article><span>Available features</span><strong>{{ featureOptions().length }}</strong><small>Package permissions</small></article>
+        <article>
+          <span>Access groups</span><strong>{{ roleTotal() }}</strong
+          ><small>Configured groups</small>
+        </article>
+        <article>
+          <span>Assigned users</span><strong>{{ assignedUserTotal() }}</strong
+          ><small>In loaded groups</small>
+        </article>
+        <article>
+          <span>Available features</span><strong>{{ featureOptions().length }}</strong
+          ><small>Package permissions</small>
+        </article>
       }
     </section>
     <section class="management-card">
@@ -84,76 +123,421 @@
           [minTableWidth]="900"
         />
       } @else {
-      <div class="management-table-wrap" [class.refreshing]="rolesRefreshing()">
-      @if (rolesRefreshing()) { <div class="management-refresh-progress"><i></i></div> }
-      <shared-data-table
-        title="Roles & Access"
-        [subtitle]="'Showing ' + roleStart() + '–' + roleEnd() + ' of ' + roleTotal()"
-        [columns]="roleColumns"
-        [rows]="roleRows()"
-        [actions]="actions"
-        [clientSideSearch]="false"
-        [showPrimaryAction]="false"
-        [showExport]="false"
-        [minTableWidth]="900"
-        searchPlaceholder="Search access groups"
-        (searchChange)="roleSearchChanged($event)"
-        (rowAction)="handleRoleAction($event)"
-      />
-      </div>
+        <div class="management-table-wrap" [class.refreshing]="rolesRefreshing()">
+          @if (rolesRefreshing()) {
+            <div class="management-refresh-progress"><i></i></div>
+          }
+          <shared-data-table
+            title="Roles & Access"
+            [subtitle]="'Showing ' + roleStart() + '–' + roleEnd() + ' of ' + roleTotal()"
+            [columns]="roleColumns"
+            [rows]="roleRows()"
+            [actions]="roleActions"
+            [clientSideSearch]="false"
+            [showPrimaryAction]="false"
+            [showExport]="false"
+            [minTableWidth]="900"
+            searchPlaceholder="Search access groups"
+            (searchChange)="roleSearchChanged($event)"
+            (rowAction)="handleRoleAction($event)"
+          />
+        </div>
       }
       <nav class="pagination">
-        @if (rolesInitialLoading()) { <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" /> }
-        @else { <span>Showing {{ roleStart() }}–{{ roleEnd() }} of {{ roleTotal() }}</span> }
-        <div><button [disabled]="roleLoading() || roleOffset() === 0" (click)="previousRoles()">Previous</button><button [disabled]="roleLoading() || roleOffset() + limit >= roleTotal()" (click)="nextRoles()">Next</button></div>
+        @if (rolesInitialLoading()) {
+          <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" />
+        } @else {
+          <span>Showing {{ roleStart() }}–{{ roleEnd() }} of {{ roleTotal() }}</span>
+        }
+        <div>
+          <button [disabled]="roleLoading() || roleOffset() === 0" (click)="previousRoles()">
+            Previous</button
+          ><button
+            [disabled]="roleLoading() || roleOffset() + limit >= roleTotal()"
+            (click)="nextRoles()"
+          >
+            Next
+          </button>
+        </div>
       </nav>
     </section>
   }
 </section>
 
-<app-modal [open]="userModalOpen()" size="lg" labelledBy="user-form-title" (closed)="userModalOpen.set(false)">
+<app-modal
+  [open]="userModalOpen()"
+  size="lg"
+  labelledBy="user-form-title"
+  (closed)="userModalOpen.set(false)"
+>
   <h2 modal-header id="user-form-title">{{ selectedUser() ? 'Edit user' : 'Add user' }}</h2>
-  <form id="user-management-form" class="management-form" [formGroup]="userForm" (ngSubmit)="saveUser()">
+  <form
+    id="user-management-form"
+    class="management-form"
+    [formGroup]="userForm"
+    (ngSubmit)="saveUser()"
+  >
     <div class="user-form-top">
       <div class="user-core-fields">
-        <label><span>First name <b>*</b></span><input class="shared-form-control" formControlName="firstName" placeholder="Enter first name" />@if (submitted() && userForm.controls.firstName.invalid) { <small>Enter a valid first name.</small> }</label>
-        <label><span>Last name <b>*</b></span><input class="shared-form-control" formControlName="lastName" placeholder="Enter last name" />@if (submitted() && userForm.controls.lastName.invalid) { <small>Enter a valid last name.</small> }</label>
-        <label><span>Email <b>*</b></span><input class="shared-form-control" type="email" formControlName="email" [readonly]="!!selectedUser()" placeholder="name@example.com" />@if (submitted() && userForm.controls.email.invalid) { <small>Enter a valid email address.</small> }</label>
-        <label><span>Phone <b>*</b></span><input class="shared-form-control" formControlName="phone" placeholder="+974 0000 0000" />@if (submitted() && userForm.controls.phone.invalid) { <small>Enter a phone number.</small> }</label>
+        <label
+          ><span>First name <b>*</b></span
+          ><input
+            class="shared-form-control"
+            formControlName="firstName"
+            placeholder="Enter first name"
+          />
+          @if (submitted() && userForm.controls.firstName.invalid) {
+            <small>Enter a valid first name.</small>
+          }
+        </label>
+        <label
+          ><span>Last name <b>*</b></span
+          ><input
+            class="shared-form-control"
+            formControlName="lastName"
+            placeholder="Enter last name"
+          />
+          @if (submitted() && userForm.controls.lastName.invalid) {
+            <small>Enter a valid last name.</small>
+          }
+        </label>
+        <label
+          ><span>Email <b>*</b></span
+          ><input
+            class="shared-form-control"
+            type="email"
+            formControlName="email"
+            [readonly]="!!selectedUser()"
+            placeholder="name@example.com"
+          />
+          @if (submitted() && userForm.controls.email.invalid) {
+            <small>Enter a valid email address.</small>
+          }
+        </label>
+        <label
+          ><span>Phone <b>*</b></span
+          ><input
+            class="shared-form-control"
+            formControlName="phone"
+            placeholder="+974 0000 0000"
+          />
+          @if (submitted() && userForm.controls.phone.invalid) {
+            <small>Enter a phone number.</small>
+          }
+        </label>
       </div>
       <div class="user-picture">
-        <div class="user-picture-preview">@if (userImagePreview()) { <img [src]="userImagePreview()" alt="User preview" /> } @else { <span>{{ userInitials() }}</span> }</div>
-        <div><strong>Profile picture</strong><p>PNG or JPG, up to 5 MB</p><label><input type="file" accept="image/png,image/jpeg" (change)="chooseImage($event)" />Choose picture</label></div>
+        <div class="user-picture-preview">
+          @if (userImagePreview()) {
+            <img [src]="userImagePreview()" alt="User preview" />
+          } @else {
+            <span>{{ userInitials() }}</span>
+          }
+        </div>
+        <div>
+          <strong>Profile picture</strong>
+          <p>PNG or JPG, up to 5 MB</p>
+          <label
+            ><input
+              type="file"
+              accept="image/png,image/jpeg"
+              (change)="chooseImage($event)"
+            />Choose picture</label
+          >
+        </div>
       </div>
     </div>
     <div class="user-extra-fields">
-      <label><span>Department</span><input class="shared-form-control" formControlName="department" placeholder="Department" /></label>
-      <label><span>Designation</span><input class="shared-form-control" formControlName="designation" placeholder="Designation" /></label>
-      <label><span>Work location</span><input class="shared-form-control" formControlName="workLocation" placeholder="Work location" /></label>
-      <label><span>Internal role</span><input class="shared-form-control" formControlName="internalRole" placeholder="Internal role" /></label>
-      @if (selectedUser()) { <label><span>Status</span><shared-dropdown class="management-dropdown" [options]="userStatusOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[stringValue(userForm.controls.status.value)]" (optionSelected)="selectUserStatus($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(userStatusOptions, stringValue(userForm.controls.status.value), 'Select status') }}</span></button></shared-dropdown></label> }
-      <label class="check-field"><input type="checkbox" formControlName="write" /><span>Allow write access</span></label>
+      <label
+        ><span>Department</span
+        ><input class="shared-form-control" formControlName="department" placeholder="Department"
+      /></label>
+      <label
+        ><span>Designation</span
+        ><input class="shared-form-control" formControlName="designation" placeholder="Designation"
+      /></label>
+      <label
+        ><span>Work location</span
+        ><input
+          class="shared-form-control"
+          formControlName="workLocation"
+          placeholder="Work location"
+      /></label>
+      <label
+        ><span>Internal role</span
+        ><input
+          class="shared-form-control"
+          formControlName="internalRole"
+          placeholder="Internal role"
+      /></label>
+      <label
+        ><span>Date joined <b>*</b></span
+        ><input class="shared-form-control" type="date" formControlName="dateJoined" />
+        @if (submitted() && userForm.controls.dateJoined.invalid) {
+          <small>Select the joining date.</small>
+        }
+      </label>
+      @if (selectedUser()) {
+        <label
+          ><span>Status</span
+          ><shared-dropdown
+            class="management-dropdown"
+            [options]="userStatusOptions"
+            mode="single"
+            align="left"
+            [showOptionIcons]="false"
+            [matchTriggerWidth]="true"
+            [selected]="[stringValue(userForm.controls.status.value)]"
+            (optionSelected)="selectUserStatus($event)"
+            ><button dropdown-trigger type="button">
+              <span>{{
+                optionLabel(
+                  userStatusOptions,
+                  stringValue(userForm.controls.status.value),
+                  'Select status'
+                )
+              }}</span>
+            </button></shared-dropdown
+          ></label
+        >
+      }
+      <label class="check-field"
+        ><input type="checkbox" formControlName="write" /><span>Allow write access</span></label
+      >
     </div>
   </form>
-  <div modal-footer class="modal-actions"><button type="button" class="secondary-action" (click)="userModalOpen.set(false)">Cancel</button><button type="submit" form="user-management-form" class="primary-action" [disabled]="userForm.invalid || actionLoading()">{{ selectedUser() ? 'Save changes' : 'Create user' }}</button></div>
+  <div modal-footer class="modal-actions">
+    <button type="button" class="secondary-action" (click)="userModalOpen.set(false)">Cancel</button
+    ><button
+      type="submit"
+      form="user-management-form"
+      class="primary-action"
+      [disabled]="userForm.invalid || actionLoading()"
+    >
+      {{ selectedUser() ? 'Save changes' : 'Create user' }}
+    </button>
+  </div>
 </app-modal>
 
-<app-modal [open]="roleModalOpen()" size="xl" labelledBy="role-form-title" (closed)="roleModalOpen.set(false)">
-  <h2 modal-header id="role-form-title">{{ selectedRole() ? 'Edit access group' : 'Create access group' }}</h2>
+<app-modal
+  [open]="roleModalOpen()"
+  size="xl"
+  labelledBy="role-form-title"
+  (closed)="roleModalOpen.set(false)"
+>
+  <h2 modal-header id="role-form-title">
+    {{ selectedRole() ? 'Edit access group' : 'Create access group' }}
+  </h2>
   <form id="role-management-form" class="role-form" [formGroup]="roleForm" (ngSubmit)="saveRole()">
-    <div class="role-basics"><label><span>Group name <b>*</b></span><input class="shared-form-control" formControlName="name" placeholder="e.g. Fleet supervisors" />@if (submitted() && roleForm.controls.name.invalid) { <small>Enter a group name.</small> }</label><label><span>Description <b>*</b></span><textarea class="shared-form-control shared-form-control--single-line" formControlName="description" rows="1" placeholder="Describe what this group can access"></textarea>@if (submitted() && roleForm.controls.description.invalid) { <small>Enter a description.</small> }</label></div>
-    <section class="selection-panel"><button type="button" class="selection-toggle" [attr.aria-expanded]="featuresExpanded()" (click)="featuresExpanded.set(!featuresExpanded())"><div><h3>FleetPoint features</h3><p>Features enabled by the customer's package</p></div><span class="selection-count">{{ selectedFeatures().length }} selected</span><svg [class.collapsed]="!featuresExpanded()" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button><shared-smooth-height><div>@if (featuresExpanded()) { @if (featuresLoading()) { <p class="inline-loading">Loading features...</p> } @else { <div class="selection-grid">@for (feature of featureOptions(); track feature.id) { <label class="selection-item"><input type="checkbox" [checked]="selectedFeatures().includes(feature.id)" (change)="toggleFeature(feature.id, $any($event.target).checked)" /><span><strong>{{ feature.label }}</strong><small>{{ feature.section }}</small></span></label> } @empty { <p class="empty-selection">No package features are available.</p> }</div> } } @if (submitted() && !selectedFeatures().length) { <small class="selection-error">Select at least one feature.</small> }</div></shared-smooth-height></section>
-    <section class="selection-panel"><button type="button" class="selection-toggle" [attr.aria-expanded]="vehiclesExpanded()" (click)="vehiclesExpanded.set(!vehiclesExpanded())"><div><h3>Vehicle access</h3><p>Optionally restrict this group to selected vehicles</p></div><span class="selection-count">{{ selectedVehicles().length }} selected</span><svg [class.collapsed]="!vehiclesExpanded()" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button><shared-smooth-height><div>@if (vehiclesExpanded()) { <div class="selection-grid vehicle-grid">@for (vehicle of vehicles(); track vehicle.id) { <label class="selection-item"><input type="checkbox" [checked]="selectedVehicles().includes(vehicle.id)" (change)="toggleVehicle(vehicle.id, $any($event.target).checked)" /><span><strong>{{ vehicle.registration || vehicle.name || 'Vehicle ' + vehicle.id }}</strong><small>Vehicle</small></span></label> } @empty { <p class="empty-selection">No vehicles available.</p> }</div> }</div></shared-smooth-height></section>
-    @if (selectedRole()?.group_user?.length) { <section class="assigned-users"><h3>Assigned users</h3><div>@for (user of selectedRole()!.group_user; track user.guid) { <span>{{ user.email || user.first_name + ' ' + user.last_name }}</span> }</div></section> }
+    <div class="role-basics">
+      <label
+        ><span>Group name <b>*</b></span
+        ><input
+          class="shared-form-control"
+          formControlName="name"
+          placeholder="e.g. Fleet supervisors"
+        />
+        @if (submitted() && roleForm.controls.name.invalid) {
+          <small>Enter a group name.</small>
+        }</label
+      ><label
+        ><span>Description <b>*</b></span
+        ><textarea
+          class="shared-form-control shared-form-control--single-line"
+          formControlName="description"
+          rows="1"
+          placeholder="Describe what this group can access"
+        ></textarea>
+        @if (submitted() && roleForm.controls.description.invalid) {
+          <small>Enter a description.</small>
+        }
+      </label>
+    </div>
+    <section class="selection-panel">
+      <button
+        type="button"
+        class="selection-toggle"
+        [attr.aria-expanded]="featuresExpanded()"
+        (click)="featuresExpanded.set(!featuresExpanded())"
+      >
+        <div>
+          <h3>FleetPoint features</h3>
+          <p>Features enabled by the customer's package</p>
+        </div>
+        <span class="selection-count">{{ selectedFeatures().length }} selected</span
+        ><svg [class.collapsed]="!featuresExpanded()" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" />
+        </svg></button
+      ><shared-smooth-height
+        ><div>
+          @if (featuresExpanded()) {
+            @if (featuresLoading()) {
+              <p class="inline-loading">Loading features...</p>
+            } @else {
+              @if (featureOptions().length) {
+                <label class="select-all-features">
+                  <input
+                    type="checkbox"
+                    [checked]="allFeaturesSelected()"
+                    [indeterminate]="someFeaturesSelected()"
+                    (change)="toggleAllFeatures($any($event.target).checked)"
+                  />
+                  <span>
+                    <strong>Select all features</strong>
+                    <small>{{ featureOptions().length }} package features available</small>
+                  </span>
+                </label>
+              }
+              <div class="selection-grid">
+                @for (feature of featureOptions(); track feature.id) {
+                  <label class="selection-item"
+                    ><input
+                      type="checkbox"
+                      [checked]="selectedFeatures().includes(feature.id)"
+                      (change)="toggleFeature(feature.id, $any($event.target).checked)"
+                    /><span
+                      ><strong>{{ feature.label }}</strong
+                      ><small>{{ feature.section }}</small></span
+                    ></label
+                  >
+                } @empty {
+                  <p class="empty-selection">No package features are available.</p>
+                }
+              </div>
+            }
+          }
+          @if (submitted() && !selectedFeatures().length) {
+            <small class="selection-error">Select at least one feature.</small>
+          }
+        </div></shared-smooth-height
+      >
+    </section>
+    @if (selectedRole()?.group_user?.length) {
+      <section class="assigned-users">
+        <h3>Assigned users</h3>
+        <p>Clear a user to remove them from this group when you save.</p>
+        <div>
+          @for (user of selectedRole()!.group_user; track user.guid) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="!selectedUnassignUsers().includes(user.guid)"
+                (change)="toggleAssignedUser(user.guid, $any($event.target).checked)"
+              />
+              <span>{{ user.email || user.first_name + ' ' + user.last_name }}</span>
+            </label>
+          }
+        </div>
+      </section>
+    }
   </form>
-  <div modal-footer class="modal-actions"><button type="button" class="secondary-action" (click)="roleModalOpen.set(false)">Cancel</button><button type="submit" form="role-management-form" class="primary-action" [disabled]="roleForm.invalid || !selectedFeatures().length || actionLoading() || featuresLoading()">{{ selectedRole() ? 'Update group' : 'Create group' }}</button></div>
+  <div modal-footer class="modal-actions">
+    <button type="button" class="secondary-action" (click)="roleModalOpen.set(false)">Cancel</button
+    ><button
+      type="submit"
+      form="role-management-form"
+      class="primary-action"
+      [disabled]="
+        roleForm.invalid || !selectedFeatures().length || actionLoading() || featuresLoading()
+      "
+    >
+      {{ selectedRole() ? 'Update group' : 'Create group' }}
+    </button>
+  </div>
 </app-modal>
 
-<app-modal [open]="assignModalOpen()" size="lg" labelledBy="assign-form-title" (closed)="assignModalOpen.set(false)">
+<app-modal
+  [open]="assignModalOpen()"
+  size="lg"
+  labelledBy="assign-form-title"
+  (closed)="assignModalOpen.set(false)"
+>
   <h2 modal-header id="assign-form-title">Assign users to an access group</h2>
-  <form id="assign-users-form" class="assign-form" [formGroup]="assignForm" (ngSubmit)="assignUsers()">
-    <label><span>Access group <b>*</b></span><shared-dropdown class="management-dropdown" [options]="roleOptions()" mode="single" align="left" [searchable]="true" searchPlaceholder="Search groups" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="assignForm.controls.groupId.value ? [stringValue(assignForm.controls.groupId.value)] : []" (optionSelected)="selectAssignGroup($event)"><button dropdown-trigger type="button" [disabled]="assignmentOptionsLoading()"><span>{{ assignmentOptionsLoading() ? 'Loading groups...' : optionLabel(roleOptions(), stringValue(assignForm.controls.groupId.value), 'Select a group') }}</span></button></shared-dropdown>@if (submitted() && assignForm.controls.groupId.invalid) { <small>Select an access group.</small> }</label>
-    <section class="selection-panel"><header><div><h3>Unassigned users</h3><p>Choose one or more users to add</p></div><span>{{ selectedAssignUsers().length }} selected</span></header>@if (assignmentOptionsLoading()) { <p class="inline-loading">Loading users...</p> } @else { <div class="user-choice-list">@for (user of unassignedUsers(); track user.guid) { <label class="selection-item"><input type="checkbox" [checked]="selectedAssignUsers().includes(user.email)" (change)="toggleAssignUser(user.email, $any($event.target).checked)" /><span><strong>{{ user.email }}</strong><small>{{ user.first_name }} {{ user.last_name }}</small></span></label> } @empty { <p class="empty-selection">All users are already assigned.</p> }</div> } @if (submitted() && !selectedAssignUsers().length) { <small class="selection-error">Select at least one user.</small> }</section>
+  <form
+    id="assign-users-form"
+    class="assign-form"
+    [formGroup]="assignForm"
+    (ngSubmit)="assignUsers()"
+  >
+    <label
+      ><span>Access group <b>*</b></span
+      ><shared-dropdown
+        class="management-dropdown"
+        [options]="roleOptions()"
+        mode="single"
+        align="left"
+        [searchable]="true"
+        searchPlaceholder="Search groups"
+        [showOptionIcons]="false"
+        [matchTriggerWidth]="true"
+        [selected]="
+          assignForm.controls.groupId.value ? [stringValue(assignForm.controls.groupId.value)] : []
+        "
+        (optionSelected)="selectAssignGroup($event)"
+        ><button dropdown-trigger type="button" [disabled]="assignmentOptionsLoading()">
+          <span>{{
+            assignmentOptionsLoading()
+              ? 'Loading groups...'
+              : optionLabel(
+                  roleOptions(),
+                  stringValue(assignForm.controls.groupId.value),
+                  'Select a group'
+                )
+          }}</span>
+        </button></shared-dropdown
+      >
+      @if (submitted() && assignForm.controls.groupId.invalid) {
+        <small>Select an access group.</small>
+      }
+    </label>
+    <section class="selection-panel">
+      <header>
+        <div>
+          <h3>Unassigned users</h3>
+          <p>Choose one or more users to add</p>
+        </div>
+        <span>{{ selectedAssignUsers().length }} selected</span>
+      </header>
+      @if (assignmentOptionsLoading()) {
+        <p class="inline-loading">Loading users...</p>
+      } @else {
+        <div class="user-choice-list">
+          @for (user of unassignedUsers(); track user.guid) {
+            <label class="selection-item"
+              ><input
+                type="checkbox"
+                [checked]="selectedAssignUsers().includes(user.email)"
+                (change)="toggleAssignUser(user.email, $any($event.target).checked)"
+              /><span
+                ><strong>{{ user.email }}</strong
+                ><small>{{ user.first_name }} {{ user.last_name }}</small></span
+              ></label
+            >
+          } @empty {
+            <p class="empty-selection">All users are already assigned.</p>
+          }
+        </div>
+      }
+      @if (submitted() && !selectedAssignUsers().length) {
+        <small class="selection-error">Select at least one user.</small>
+      }
+    </section>
   </form>
-  <div modal-footer class="modal-actions"><button type="button" class="secondary-action" (click)="assignModalOpen.set(false)">Cancel</button><button type="submit" form="assign-users-form" class="primary-action" [disabled]="assignForm.invalid || !selectedAssignUsers().length || actionLoading() || assignmentOptionsLoading()">Assign users</button></div>
+  <div modal-footer class="modal-actions">
+    <button type="button" class="secondary-action" (click)="assignModalOpen.set(false)">
+      Cancel</button
+    ><button
+      type="submit"
+      form="assign-users-form"
+      class="primary-action"
+      [disabled]="
+        assignForm.invalid ||
+        !selectedAssignUsers().length ||
+        actionLoading() ||
+        assignmentOptionsLoading()
+      "
+    >
+      Assign users
+    </button>
+  </div>
 </app-modal>

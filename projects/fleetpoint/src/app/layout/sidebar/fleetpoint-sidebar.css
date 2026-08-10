@@ -19,39 +19,24 @@
   @apply w-20;
 }
 .brand {
-  @apply flex h-20 shrink-0 items-center gap-3 border-b border-white/10 px-4;
-  position: relative;
-  display: block;
-  transition:
-    height var(--sidebar-motion),
-    padding var(--sidebar-motion),
-    gap var(--sidebar-motion);
+  @apply flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4;
+  transition: height var(--sidebar-motion);
 }
 .brand-mark {
-  @apply block size-9 shrink-0;
-  position: absolute;
-  top: 22px;
-  left: 16px;
-  transition:
-    top var(--sidebar-motion),
-    left var(--sidebar-motion);
-  will-change: top, left;
+  @apply shrink-0;
 }
 .brand-text {
   @apply min-w-0;
-  position: absolute;
-  top: 22px;
-  left: 64px;
-  width: 120px;
   overflow: hidden;
+  max-width: 8rem;
   opacity: 1;
   transform: translateX(0);
   white-space: nowrap;
   transition:
-    width var(--sidebar-motion),
+    max-width var(--sidebar-motion),
     opacity 160ms ease 90ms,
     transform var(--sidebar-motion);
-  will-change: width, opacity, transform;
+  will-change: max-width, opacity, transform;
 }
 .brand-text strong {
   @apply block truncate text-sm;
@@ -61,12 +46,7 @@
 }
 .brand-toggle {
   @apply ml-auto grid shrink-0 cursor-pointer place-items-center rounded-lg text-brand-300 transition hover:text-white;
-  position: absolute;
-  top: 32px;
-  left: calc(100% - 32px);
   transition:
-    top var(--sidebar-motion),
-    left var(--sidebar-motion),
     transform var(--sidebar-motion),
     color 160ms ease;
 }
@@ -80,26 +60,31 @@
   transition: transform var(--sidebar-motion);
 }
 .fleet-sidebar.collapsed .brand {
-  @apply h-20 flex-col justify-center gap-1.5 px-1;
+  @apply h-20;
+  position: relative;
 }
 .fleet-sidebar.collapsed .brand-text {
-  width: 0;
+  max-width: 0;
   opacity: 0;
   transform: translateX(-8px);
   visibility: hidden;
   transition:
-    width var(--sidebar-motion),
+    max-width var(--sidebar-motion),
     opacity 100ms ease,
     transform var(--sidebar-motion),
     visibility 0s linear 280ms;
 }
 .fleet-sidebar.collapsed .brand-mark {
-  top: 9px;
-  left: 22px;
+  position: absolute;
+  top: 13px;
+  left: 16px;
 }
 .fleet-sidebar.collapsed .brand-toggle {
-  top: 58px;
-  left: 32px;
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  margin-left: 0;
+  transform: translateX(-50%);
 }
 .fleet-sidebar.collapsed .brand-toggle svg {
   transform: rotate(180deg);

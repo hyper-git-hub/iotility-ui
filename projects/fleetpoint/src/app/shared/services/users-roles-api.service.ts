@@ -1,10 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../../iotility/src/environments/environment';
+import { environment } from '../../../environments/environment';
 
 export interface ManagementApiResponse<T = unknown> {
-  status?: number;
+  status?: number | string;
   error?: boolean;
   message?: string;
   data?: T;
@@ -50,17 +50,10 @@ export interface RoleGroup {
   description: string;
   status?: number;
   user_count?: number;
-  group_features: number[];
-  group_vehicles: number[];
+  features_?: Array<number | string>;
   group_user: RoleGroupUser[];
   created_at?: string;
   updated_at?: string;
-}
-
-export interface VehicleOptionRecord {
-  id: number;
-  registration?: string;
-  name?: string;
 }
 
 export interface PackageFeature {
@@ -98,6 +91,7 @@ export interface UserPayload {
   designation: string;
   work_location: string;
   internal_role: string;
+  date_joined: string;
   write: boolean;
   status?: number;
   image?: File | null;
@@ -107,7 +101,6 @@ export interface RolePayload {
   name: string;
   description: string;
   features: number[];
-  vehicles: number[];
   id?: number;
 }
 
@@ -134,7 +127,7 @@ export class UsersRolesApiService {
 
   updateUser(payload: UserPayload): Observable<ManagementApiResponse> {
     const formData = this.userFormData(payload);
-    formData.set('usecase_id', String(environment.useCaseId));
+    formData.set('usecase', String(environment.useCaseId));
     return this.http.patch<ManagementApiResponse>(`${this.usersUrl}/user-profile/info`, formData);
   }
 
@@ -146,7 +139,13 @@ export class UsersRolesApiService {
 
   getRoles(query: ListingQuery): Observable<ManagementApiResponse<PagedResult<RoleGroup>>> {
     return this.http.get<ManagementApiResponse<PagedResult<RoleGroup>>>(`${this.roleUrl}/`, {
-      params: this.listingParams(query),
+      params: new HttpParams()
+        .set('limit', query.limit)
+        .set('offset', query.offset)
+        .set('order', query.order ?? '')
+        .set('order_by', query.orderBy ?? '')
+        .set('search', query.search)
+        .set('export', ''),
     });
   }
 
@@ -165,9 +164,7 @@ export class UsersRolesApiService {
   }
 
   getUnassignedUsers(): Observable<ManagementApiResponse<ManagedUser[]>> {
-    return this.http.get<ManagementApiResponse<ManagedUser[]>>(
-      `${this.roleUrl}/un-assigned-user`,
-    );
+    return this.http.get<ManagementApiResponse<ManagedUser[]>>(`${this.roleUrl}/un-assigned-user`);
   }
 
   assignUsers(groupId: number, users: string[]): Observable<ManagementApiResponse> {
@@ -184,15 +181,7 @@ export class UsersRolesApiService {
     });
   }
 
-  getVehicles(): Observable<ManagementApiResponse<PagedResult<VehicleOptionRecord>>> {
-    return this.http.get<ManagementApiResponse<PagedResult<VehicleOptionRecord>>>(
-      `${environment.fleetBaseUrl}/api/fleet/vehicle-listing`,
-    );
-  }
-
-  getPackageFeatures(
-    customerId: number,
-  ): Observable<ManagementApiResponse<PackageFeaturesData>> {
+  getPackageFeatures(customerId: number): Observable<ManagementApiResponse<PackageFeaturesData>> {
     return this.http.get<ManagementApiResponse<PackageFeaturesData>>(
       `${environment.cobPackagesBaseUrl}/packages/get-usecase-modules-package-features`,
       {
@@ -224,6 +213,7 @@ export class UsersRolesApiService {
     formData.set('designation', payload.designation.trim());
     formData.set('work_location', payload.work_location.trim());
     formData.set('internal_role', payload.internal_role.trim());
+    formData.set('date_joined', payload.date_joined);
     formData.set('write', String(payload.write));
     if (payload.status) formData.set('status', String(payload.status));
     if (payload.image) formData.set('image', payload.image);

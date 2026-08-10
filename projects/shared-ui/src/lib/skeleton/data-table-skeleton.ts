@@ -17,8 +17,15 @@ export class DataTableSkeleton {
   readonly leadingVisual = input(false);
   readonly twoLineFirstColumn = input(false);
   readonly compactRows = input(false);
+  readonly rowHeight = input(56);
   readonly minTableWidth = input(760);
-  protected columnItems(): undefined[] { return Array.from({ length: this.columns() }); }
-  protected rowItems(): undefined[] { return Array.from({ length: this.rows() }); }
-  protected columnLabel(index: number): string { return this.columnLabels()[index] ?? ''; }
+  protected columnItems(): undefined[] {
+    return Array.from({ length: this.columns() });
+  }
+  protected rowItems(): undefined[] {
+    return Array.from({ length: this.rows() });
+  }
+  protected columnLabel(index: number): string {
+    return this.columnLabels()[index] ?? '';
+  }
 }

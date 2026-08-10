@@ -194,7 +194,7 @@ export class DriverForm implements OnChanges {
         licence_expiry_date: driver.licence_expiry_date?.slice(0, 10) || '',
         email: driver.email || '',
         poi: !!driver.poi,
-        status: driver.status || '1',
+        status: String(driver.status || '1'),
       });
       this.imagePreview.set(driver.image || '');
       this.patchGroup();

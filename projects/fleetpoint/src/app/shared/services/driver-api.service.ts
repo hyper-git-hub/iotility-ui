@@ -2,9 +2,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
-import { environment } from '../../../../../iotility/src/environments/environment';
+import { environment } from '../../../environments/environment';
 
-const DRIVER_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsdrivers/driver';
+const DRIVER_API = `${environment.driverBaseUrl}/driver`;
 
 export interface DriverRecord {
   id: number;
@@ -18,10 +18,10 @@ export interface DriverRecord {
   gender: string;
   poi: boolean;
   image: string | null;
-  licence_number: string;
-  licence_expiry_date: string;
-  status: string;
-  driver_shift_status: boolean;
+  licence_number?: string | null;
+  licence_expiry_date?: string | null;
+  status: string | number;
+  driver_shift_status: boolean | null;
   data_joined: string;
   shift_allocated: unknown | null;
   group: string;
@@ -31,7 +31,7 @@ export interface DriverGroup {
   id: number;
   name: string;
   status: string;
-  drivers_list: number[];
+  drivers_list: string[];
   drivers: DriverRecord[];
   driver_count: number;
   created_at?: string;
@@ -104,7 +104,10 @@ export class DriverApiService {
   getDrivers(
     filters: DriverFilters,
   ): Observable<ApiResponse<{ count: number; data: DriverRecord[] }>> {
-    let params = new HttpParams().set('limit', filters.limit).set('offset', filters.offset);
+    let params = new HttpParams()
+      .set('limit', filters.limit)
+      .set('offset', filters.offset)
+      .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone);
     if (filters.searchText) params = params.set('search_text', filters.searchText);
     if (filters.cardType) params = params.set('card_type', filters.cardType);
     return this.http.get<ApiResponse<{ count: number; data: DriverRecord[] }>>(`${DRIVER_API}/`, {
@@ -115,6 +118,7 @@ export class DriverApiService {
   getGroups(): Observable<ApiResponse<{ count: number; data: DriverGroup[] }>> {
     return this.http.get<ApiResponse<{ count: number; data: DriverGroup[] }>>(
       `${DRIVER_API}/groups`,
+      { params: { time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone } },
     );
   }
 
@@ -123,7 +127,10 @@ export class DriverApiService {
     offset: number,
     searchText: string,
   ): Observable<ApiResponse<{ count: number; data: DriverGroup[] }>> {
-    let params = new HttpParams().set('limit', limit).set('offset', offset);
+    let params = new HttpParams()
+      .set('limit', limit)
+      .set('offset', offset)
+      .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone);
     if (searchText) params = params.set('search_text', searchText);
     return this.http.get<ApiResponse<{ count: number; data: DriverGroup[] }>>(
       `${DRIVER_API}/groups`,
@@ -145,7 +152,9 @@ export class DriverApiService {
   }
 
   getActiveDrivers(): Observable<ApiResponse<{ count: number; data: DriverRecord[] }>> {
-    return this.http.get<ApiResponse<{ count: number; data: DriverRecord[] }>>(`${DRIVER_API}/`);
+    return this.http.get<ApiResponse<{ count: number; data: DriverRecord[] }>>(`${DRIVER_API}/`, {
+      params: { time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    });
   }
 
   createDriverGroup(payload: {

@@ -9,94 +9,38 @@
       <div><h1>Reports</h1></div>
       <p>Fleet operations and vehicle insights</p>
     </header>
-    @if (hasReports()) {
     <section class="interval-filter">
       <h2>Time interval</h2>
       <div class="interval-presets">
         <button
           type="button"
-          [class.active]="interval() === 'today'"
-          (click)="chooseInterval('today')"
-        >
-          Current Day
-        </button>
-        <button
-          type="button"
           [class.active]="interval() === 'week'"
           (click)="chooseInterval('week')"
         >
-          Previous Week
+          This Week
         </button>
         <button
           type="button"
           [class.active]="interval() === 'month'"
           (click)="chooseInterval('month')"
         >
-          Previous Month
+          This Month
         </button>
         <button
           type="button"
-          [class.active]="interval() === 'threeMonths'"
-          (click)="chooseInterval('threeMonths')"
+          [class.active]="interval() === 'year'"
+          (click)="chooseInterval('year')"
         >
-          Previous 3 Months
-        </button>
-        <button
-          type="button"
-          [class.active]="interval() === 'monthSelect'"
-          (click)="chooseInterval('monthSelect')"
-        >
-          Select a Month
-        </button>
-        <button
-          type="button"
-          [class.active]="interval() === 'custom'"
-          (click)="chooseInterval('custom')"
-        >
-          Select a Period
+          This Year
         </button>
       </div>
-      @if (interval() === 'monthSelect') {
-        <label>
-          <span>Month</span>
-          <shared-dropdown
-            class="month-dropdown"
-            [options]="monthDropdownOptions"
-            mode="single"
-            density="compact"
-            align="left"
-            [showOptionIcons]="false"
-            [matchTriggerWidth]="true"
-            [selected]="selectedMonth() ? [selectedMonth()] : []"
-            (optionSelected)="selectMonth($event)"
-          >
-            <button dropdown-trigger type="button">{{ monthLabel() }}</button>
-          </shared-dropdown>
-        </label>
-      }
-      @if (interval() === 'custom') {
-        <label
-          ><span>From</span
-          ><shared-date-time-picker
-            density="compact"
-            [value]="startDate()"
-            (valueChange)="updateStart($event)"
-            ariaLabel="Choose report start date and time"
-        /></label>
-        <label
-          ><span>To</span
-          ><shared-date-time-picker
-            density="compact"
-            [value]="endDate()"
-            (valueChange)="updateEnd($event)"
-            ariaLabel="Choose report end date and time"
-        /></label>
-        <button type="button" class="apply-filter" (click)="applyInterval()">Apply period</button>
-      }
     </section>
     <div class="report-list">
       <label class="report-search">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m16 16 4 4" />
+        </svg>
         <input
           type="search"
           placeholder="Search reports"
@@ -107,34 +51,42 @@
       </label>
       <p>Available reports</p>
       <div class="report-options">
-      @for (report of filteredReports(); track report.type) {
-        <button
-          type="button"
-          class="report-option"
-          [class.selected]="selectedType() === report.type"
-          (click)="selectReport(report.type)"
-        >
-          <span>{{ report.icon }}</span
-          ><span
-            ><strong>{{ report.name }}</strong
-            ><small>{{ report.description }}</small></span
-          ><i>›</i>
-        </button>
-      } @empty {
-        <p class="no-report-results">No matching reports</p>
-      }
+        @for (report of filteredReports(); track report.type) {
+          <button
+            type="button"
+            class="report-option"
+            [class.selected]="selectedType() === report.type"
+            (click)="selectReport(report.type)"
+          >
+            <span>{{ report.icon }}</span
+            ><span
+              ><strong>{{ report.name }}</strong
+              ><small>{{ report.description }}</small></span
+            ><i>›</i>
+          </button>
+        } @empty {
+          <p class="no-report-results">No matching reports</p>
+        }
       </div>
     </div>
-    }
   </aside>
-  @if (hasReports()) {
   <main class="report-content">
     <header>
       <div>
         <h2>{{ selectedReport().name }} Report</h2>
-        <p>{{ startDate().replace('T', ' ') }} – {{ endDate().replace('T', ' ') }}</p>
+        <p>Showing data for this {{ interval() }}</p>
       </div>
       <div class="report-actions">
+        @if (selectedType() === 'trip_report') {
+          <label class="trip-search"
+            ><input
+              type="search"
+              placeholder="Search by vehicle"
+              aria-label="Search trips by vehicle"
+              [value]="tripSearch()"
+              (input)="updateTripSearch($any($event.target).value)"
+          /></label>
+        }
         <span>
           @if (initialLoading()) {
             <ui-skeleton width="4.5rem" height="0.625rem" radius="0.25rem" />
@@ -187,6 +139,7 @@
         [rows]="10"
         [showToolbar]="false"
         [compactRows]="true"
+        [rowHeight]="41"
         [minTableWidth]="selectedReport().minTableWidth ?? 760"
       />
     } @else {
@@ -214,20 +167,16 @@
         <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span>
       }
       <div>
-        <button type="button" [disabled]="loading() || offset() === 0" (click)="previous()">Previous</button
-        ><button type="button" [disabled]="loading() || offset() + limit >= total()" (click)="next()">
+        <button type="button" [disabled]="loading() || offset() === 0" (click)="previous()">
+          Previous</button
+        ><button
+          type="button"
+          [disabled]="loading() || offset() + limit >= total()"
+          (click)="next()"
+        >
           Next
         </button>
       </div>
     </nav>
   </main>
-  } @else {
-    <main class="report-content no-report-access">
-      <span class="no-report-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-      </span>
-      <h2>No reports available</h2>
-      <p>Your role does not include access to QPMC reports.</p>
-    </main>
-  }
 </section>

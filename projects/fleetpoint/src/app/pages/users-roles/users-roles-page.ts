@@ -1,7 +1,18 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BlockingLoader, DataTable, DataTableSkeleton, Dropdown, DropdownOption, Skeleton, SmoothHeight, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
-import { finalize, forkJoin } from 'rxjs';
+import {
+  BlockingLoader,
+  DataTable,
+  DataTableSkeleton,
+  Dropdown,
+  DropdownOption,
+  Skeleton,
+  SmoothHeight,
+  TableAction,
+  TableColumn,
+  TableRow,
+} from '@iotility/shared-ui';
+import { finalize, forkJoin, switchMap } from 'rxjs';
 import { Modal } from '../../shared/modal/modal';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 import {
@@ -10,7 +21,6 @@ import {
   RoleGroup,
   UserPayload,
   UsersRolesApiService,
-  VehicleOptionRecord,
 } from '../../shared/services/users-roles-api.service';
 
 interface FeatureOption {
@@ -21,7 +31,16 @@ interface FeatureOption {
 
 @Component({
   selector: 'app-users-roles-page',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, Modal, ReactiveFormsModule, Skeleton, SmoothHeight],
+  imports: [
+    BlockingLoader,
+    DataTable,
+    DataTableSkeleton,
+    Dropdown,
+    Modal,
+    ReactiveFormsModule,
+    Skeleton,
+    SmoothHeight,
+  ],
   templateUrl: './users-roles-page.html',
   styleUrl: './users-roles-page.css',
 })
@@ -31,8 +50,12 @@ export class UsersRolesPage implements OnInit {
   protected readonly roleLoading = signal(false);
   protected readonly usersLoaded = signal(false);
   protected readonly rolesLoaded = signal(false);
-  protected readonly usersInitialLoading = computed(() => this.userLoading() && !this.usersLoaded());
-  protected readonly rolesInitialLoading = computed(() => this.roleLoading() && !this.rolesLoaded());
+  protected readonly usersInitialLoading = computed(
+    () => this.userLoading() && !this.usersLoaded(),
+  );
+  protected readonly rolesInitialLoading = computed(
+    () => this.roleLoading() && !this.rolesLoaded(),
+  );
   protected readonly usersRefreshing = computed(() => this.userLoading() && this.usersLoaded());
   protected readonly rolesRefreshing = computed(() => this.roleLoading() && this.rolesLoaded());
   protected readonly actionLoading = signal(false);
@@ -41,7 +64,6 @@ export class UsersRolesPage implements OnInit {
   protected readonly error = signal('');
   protected readonly users = signal<ManagedUser[]>([]);
   protected readonly roles = signal<RoleGroup[]>([]);
-  protected readonly vehicles = signal<VehicleOptionRecord[]>([]);
   protected readonly unassignedUsers = signal<ManagedUser[]>([]);
   protected readonly userTotal = signal(0);
   protected readonly roleTotal = signal(0);
@@ -59,12 +81,24 @@ export class UsersRolesPage implements OnInit {
   protected readonly selectedImage = signal<File | null>(null);
   protected readonly userImagePreview = signal('');
   protected readonly selectedFeatures = signal<number[]>([]);
-  protected readonly selectedVehicles = signal<number[]>([]);
+  protected readonly selectedUnassignUsers = signal<string[]>([]);
   protected readonly selectedAssignUsers = signal<string[]>([]);
   protected readonly featuresExpanded = signal(true);
-  protected readonly vehiclesExpanded = signal(false);
   protected readonly submitted = signal(false);
   protected readonly featureOptions = signal<FeatureOption[]>([]);
+  protected readonly allFeaturesSelected = computed(() => {
+    const features = this.featureOptions();
+    return (
+      features.length > 0 &&
+      features.every((feature) => this.selectedFeatures().includes(feature.id))
+    );
+  });
+  protected readonly someFeaturesSelected = computed(() => {
+    const selectedCount = this.featureOptions().filter((feature) =>
+      this.selectedFeatures().includes(feature.id),
+    ).length;
+    return selectedCount > 0 && selectedCount < this.featureOptions().length;
+  });
   protected readonly statusFilterOptions: DropdownOption[] = [
     { id: '', label: 'All users' },
     { id: '1', label: 'Active' },
@@ -73,6 +107,7 @@ export class UsersRolesPage implements OnInit {
   protected readonly userStatusOptions: DropdownOption[] = [
     { id: '1', label: 'Active' },
     { id: '2', label: 'Inactive' },
+    { id: '3', label: 'Blocked' },
   ];
   protected readonly roleOptions = computed<DropdownOption[]>(() =>
     this.roles().map((role) => ({ id: String(role.id), label: role.name })),
@@ -97,7 +132,8 @@ export class UsersRolesPage implements OnInit {
   ];
   protected readonly userColumnLabels = this.userColumns.map((column) => column.label);
   protected readonly roleColumnLabels = this.roleColumns.map((column) => column.label);
-  protected readonly actions: TableAction[] = ['edit', 'delete'];
+  protected readonly userActions: TableAction[] = ['edit', 'delete'];
+  protected readonly roleActions: TableAction[] = ['edit'];
   protected readonly userRows = computed<TableRow[]>(() =>
     this.users().map((user) => ({
       guid: user.guid,
@@ -118,7 +154,7 @@ export class UsersRolesPage implements OnInit {
       name: role.name,
       description: role.description || '—',
       users: role.user_count ?? role.group_user?.length ?? 0,
-      features: role.group_features?.length ?? 0,
+      features: role.features_?.length ?? 0,
       updated: this.dateLabel(role.updated_at || role.created_at),
       actions: '',
     })),
@@ -130,9 +166,13 @@ export class UsersRolesPage implements OnInit {
     ),
   );
   protected readonly userStart = computed(() => (this.userTotal() ? this.userOffset() + 1 : 0));
-  protected readonly userEnd = computed(() => Math.min(this.userOffset() + this.limit, this.userTotal()));
+  protected readonly userEnd = computed(() =>
+    Math.min(this.userOffset() + this.limit, this.userTotal()),
+  );
   protected readonly roleStart = computed(() => (this.roleTotal() ? this.roleOffset() + 1 : 0));
-  protected readonly roleEnd = computed(() => Math.min(this.roleOffset() + this.limit, this.roleTotal()));
+  protected readonly roleEnd = computed(() =>
+    Math.min(this.roleOffset() + this.limit, this.roleTotal()),
+  );
   protected readonly userForm;
   protected readonly roleForm;
   protected readonly assignForm;
@@ -153,6 +193,7 @@ export class UsersRolesPage implements OnInit {
       designation: [''],
       workLocation: [''],
       internalRole: [''],
+      dateJoined: [this.today(), Validators.required],
       status: [1],
       write: [false],
     });
@@ -178,13 +219,19 @@ export class UsersRolesPage implements OnInit {
   protected userSearchChanged(value: string): void {
     this.userSearch.set(value);
     clearTimeout(this.userSearchTimer);
-    this.userSearchTimer = setTimeout(() => { this.userOffset.set(0); this.loadUsers(); }, 400);
+    this.userSearchTimer = setTimeout(() => {
+      this.userOffset.set(0);
+      this.loadUsers();
+    }, 400);
   }
 
   protected roleSearchChanged(value: string): void {
     this.roleSearch.set(value);
     clearTimeout(this.roleSearchTimer);
-    this.roleSearchTimer = setTimeout(() => { this.roleOffset.set(0); this.loadRoles(); }, 400);
+    this.roleSearchTimer = setTimeout(() => {
+      this.roleOffset.set(0);
+      this.loadRoles();
+    }, 400);
   }
 
   protected selectStatusFilter(option: DropdownOption): void {
@@ -212,7 +259,19 @@ export class UsersRolesPage implements OnInit {
 
   protected openCreateUser(): void {
     this.selectedUser.set(null);
-    this.userForm.reset({ firstName: '', lastName: '', email: '', phone: '+974', department: '', designation: '', workLocation: '', internalRole: '', status: 1, write: false });
+    this.userForm.reset({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '+974',
+      department: '',
+      designation: '',
+      workLocation: '',
+      internalRole: '',
+      dateJoined: this.today(),
+      status: 1,
+      write: false,
+    });
     this.selectedImage.set(null);
     this.userImagePreview.set('');
     this.submitted.set(false);
@@ -231,7 +290,13 @@ export class UsersRolesPage implements OnInit {
     const file = input.files?.[0] ?? null;
     if (file && (!file.type.startsWith('image/') || file.size > 5_000_000)) {
       input.value = '';
-      void this.feedback.open({ type: 'error', title: 'Invalid image', message: 'Choose a JPG or PNG image smaller than 5 MB.', confirmText: 'Close', showCancel: false });
+      void this.feedback.open({
+        type: 'error',
+        title: 'Invalid image',
+        message: 'Choose a JPG or PNG image smaller than 5 MB.',
+        confirmText: 'Close',
+        showCancel: false,
+      });
       return;
     }
     this.selectedImage.set(file);
@@ -252,6 +317,7 @@ export class UsersRolesPage implements OnInit {
       designation: value.designation,
       work_location: value.workLocation,
       internal_role: value.internalRole,
+      date_joined: value.dateJoined,
       status: value.status,
       write: value.write,
       image: this.selectedImage(),
@@ -274,13 +340,11 @@ export class UsersRolesPage implements OnInit {
     this.selectedRole.set(null);
     this.roleForm.reset({ name: '', description: '' });
     this.selectedFeatures.set([]);
-    this.selectedVehicles.set([]);
+    this.selectedUnassignUsers.set([]);
     this.featuresExpanded.set(true);
-    this.vehiclesExpanded.set(false);
     this.submitted.set(false);
     this.roleModalOpen.set(true);
     this.loadPackageFeatures();
-    this.loadVehicles();
   }
 
   protected handleRoleAction(event: { action: TableAction; row: TableRow }): void {
@@ -291,11 +355,19 @@ export class UsersRolesPage implements OnInit {
   }
 
   protected toggleFeature(id: number, checked: boolean): void {
-    this.selectedFeatures.update((ids) => checked ? [...new Set([...ids, id])] : ids.filter((value) => value !== id));
+    this.selectedFeatures.update((ids) =>
+      checked ? [...new Set([...ids, id])] : ids.filter((value) => value !== id),
+    );
   }
 
-  protected toggleVehicle(id: number, checked: boolean): void {
-    this.selectedVehicles.update((ids) => checked ? [...new Set([...ids, id])] : ids.filter((value) => value !== id));
+  protected toggleAllFeatures(checked: boolean): void {
+    this.selectedFeatures.set(checked ? this.featureOptions().map((feature) => feature.id) : []);
+  }
+
+  protected toggleAssignedUser(guid: string, keepAssigned: boolean): void {
+    this.selectedUnassignUsers.update((users) =>
+      keepAssigned ? users.filter((value) => value !== guid) : [...new Set([...users, guid])],
+    );
   }
 
   protected saveRole(): void {
@@ -304,14 +376,31 @@ export class UsersRolesPage implements OnInit {
     if (this.roleForm.invalid || !this.selectedFeatures().length) return;
     const value = this.roleForm.getRawValue();
     const role = this.selectedRole();
-    const payload = { id: role?.id, name: value.name.trim(), description: value.description.trim(), features: this.selectedFeatures(), vehicles: this.selectedVehicles() };
+    const payload = {
+      id: role?.id,
+      name: value.name.trim(),
+      description: value.description.trim(),
+      features: this.selectedFeatures(),
+    };
     this.actionLoading.set(true);
     (role ? this.api.updateRole(payload) : this.api.createRole(payload))
+      .pipe(
+        switchMap((response) =>
+          role && this.selectedUnassignUsers().length
+            ? this.api
+                .unassignUsers(role.id, this.selectedUnassignUsers())
+                .pipe(switchMap(() => [response]))
+            : [response],
+        ),
+      )
       .pipe(finalize(() => this.actionLoading.set(false)))
       .subscribe({
         next: (response) => {
           this.roleModalOpen.set(false);
-          void this.success(role ? 'Access group updated' : 'Access group created', response.message);
+          void this.success(
+            role ? 'Access group updated' : 'Access group created',
+            response.message,
+          );
           this.loadRoles();
         },
         error: (response) => this.apiError(response, 'The access group could not be saved.'),
@@ -323,15 +412,24 @@ export class UsersRolesPage implements OnInit {
     this.selectedAssignUsers.set([]);
     this.assignModalOpen.set(true);
     this.assignmentOptionsLoading.set(true);
-    forkJoin({ users: this.api.getUnassignedUsers(), roles: this.api.getRoles({ limit: 100, offset: 0, search: '' }) })
+    forkJoin({
+      users: this.api.getUnassignedUsers(),
+      roles: this.api.getRoles({ limit: 100, offset: 0, search: '' }),
+    })
       .pipe(finalize(() => this.assignmentOptionsLoading.set(false)))
       .subscribe({
         next: ({ users, roles }) => {
-          this.unassignedUsers.set(Array.isArray(users.data) ? users.data : []);
+          const currentGuid = this.currentUserGuid();
+          this.unassignedUsers.set(
+            (Array.isArray(users.data) ? users.data : []).filter(
+              (user) => user.guid !== currentGuid,
+            ),
+          );
           this.roles.set(roles.data?.data ?? []);
           this.roleTotal.set(roles.data?.count ?? 0);
         },
-        error: (response) => this.apiError(response, 'Users and access groups could not be loaded.'),
+        error: (response) =>
+          this.apiError(response, 'Users and access groups could not be loaded.'),
       });
   }
 
@@ -346,7 +444,8 @@ export class UsersRolesPage implements OnInit {
     this.assignForm.markAllAsTouched();
     if (this.assignForm.invalid || !this.selectedAssignUsers().length) return;
     this.actionLoading.set(true);
-    this.api.assignUsers(this.assignForm.getRawValue().groupId, this.selectedAssignUsers())
+    this.api
+      .assignUsers(this.assignForm.getRawValue().groupId, this.selectedAssignUsers())
       .pipe(finalize(() => this.actionLoading.set(false)))
       .subscribe({
         next: (response) => {
@@ -358,19 +457,38 @@ export class UsersRolesPage implements OnInit {
       });
   }
 
-  protected previousUsers(): void { this.userOffset.update((value) => Math.max(0, value - this.limit)); this.loadUsers(); }
-  protected nextUsers(): void { if (this.userOffset() + this.limit < this.userTotal()) { this.userOffset.update((value) => value + this.limit); this.loadUsers(); } }
-  protected previousRoles(): void { this.roleOffset.update((value) => Math.max(0, value - this.limit)); this.loadRoles(); }
-  protected nextRoles(): void { if (this.roleOffset() + this.limit < this.roleTotal()) { this.roleOffset.update((value) => value + this.limit); this.loadRoles(); } }
+  protected previousUsers(): void {
+    this.userOffset.update((value) => Math.max(0, value - this.limit));
+    this.loadUsers();
+  }
+  protected nextUsers(): void {
+    if (this.userOffset() + this.limit < this.userTotal()) {
+      this.userOffset.update((value) => value + this.limit);
+      this.loadUsers();
+    }
+  }
+  protected previousRoles(): void {
+    this.roleOffset.update((value) => Math.max(0, value - this.limit));
+    this.loadRoles();
+  }
+  protected nextRoles(): void {
+    if (this.roleOffset() + this.limit < this.roleTotal()) {
+      this.roleOffset.update((value) => value + this.limit);
+      this.loadRoles();
+    }
+  }
 
   private loadUsers(): void {
     this.userLoading.set(true);
     this.error.set('');
-    this.api.getUsers(this.query(this.userOffset(), this.userSearch(), this.userStatus()))
-      .pipe(finalize(() => {
-        this.userLoading.set(false);
-        this.usersLoaded.set(true);
-      }))
+    this.api
+      .getUsers(this.query(this.userOffset(), this.userSearch(), this.userStatus()))
+      .pipe(
+        finalize(() => {
+          this.userLoading.set(false);
+          this.usersLoaded.set(true);
+        }),
+      )
       .subscribe({
         next: (response) => {
           this.users.set(response.data?.data ?? []);
@@ -385,11 +503,14 @@ export class UsersRolesPage implements OnInit {
     if (showLoading) {
       this.error.set('');
     }
-    this.api.getRoles(this.query(this.roleOffset(), this.roleSearch()))
-      .pipe(finalize(() => {
-        this.roleLoading.set(false);
-        this.rolesLoaded.set(true);
-      }))
+    this.api
+      .getRoles(this.query(this.roleOffset(), this.roleSearch()))
+      .pipe(
+        finalize(() => {
+          this.roleLoading.set(false);
+          this.rolesLoaded.set(true);
+        }),
+      )
       .subscribe({
         next: (response) => {
           this.roles.set(response.data?.data ?? []);
@@ -405,7 +526,19 @@ export class UsersRolesPage implements OnInit {
 
   private openEditUser(user: ManagedUser): void {
     this.selectedUser.set(user);
-    this.userForm.reset({ firstName: user.first_name || '', lastName: user.last_name || '', email: user.email, phone: user.phone || '+974', department: user.department || '', designation: user.designation || '', workLocation: user.work_location || '', internalRole: user.internal_role || '', status: user.status ?? (user.is_active === false ? 2 : 1), write: !!user.write });
+    this.userForm.reset({
+      firstName: user.first_name || '',
+      lastName: user.last_name || '',
+      email: user.email,
+      phone: user.phone || '+974',
+      department: user.department || '',
+      designation: user.designation || '',
+      workLocation: user.work_location || '',
+      internalRole: user.internal_role || '',
+      dateJoined: (user.date_joined || '').slice(0, 10),
+      status: Number(user.status ?? (user.is_active === false ? 2 : 1)),
+      write: !!user.write,
+    });
     this.selectedImage.set(null);
     this.userImagePreview.set(user.user_image || user.image || '');
     this.submitted.set(false);
@@ -415,42 +548,66 @@ export class UsersRolesPage implements OnInit {
   private openEditRole(role: RoleGroup): void {
     this.selectedRole.set(role);
     this.roleForm.reset({ name: role.name, description: role.description || '' });
-    this.selectedFeatures.set((role.group_features ?? []).map(Number));
-    this.selectedVehicles.set((role.group_vehicles ?? []).map(Number));
+    this.selectedFeatures.set((role.features_ ?? []).map(Number));
+    this.selectedUnassignUsers.set([]);
     this.featuresExpanded.set(true);
-    this.vehiclesExpanded.set(false);
     this.submitted.set(false);
     this.roleModalOpen.set(true);
     this.loadPackageFeatures();
-    this.loadVehicles();
   }
 
-  private loadVehicles(): void {
-    if (this.vehicles().length) return;
-    this.api.getVehicles().subscribe({
-      next: (response) => this.vehicles.set(response.data?.data ?? []),
-      error: (response) => this.apiError(response, 'Vehicles could not be loaded.'),
-    });
+  private currentUserGuid(): string {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}')?.guid || '';
+    } catch {
+      return '';
+    }
   }
 
   private async deleteUser(user: ManagedUser): Promise<void> {
-    const confirmed = await this.feedback.open({ type: 'warning', title: 'Delete user?', message: `${user.email} will be permanently deleted.`, confirmText: 'Delete user', cancelText: 'Keep user', showCancel: true });
+    const confirmed = await this.feedback.open({
+      type: 'warning',
+      title: 'Delete user?',
+      message: `${user.email} will be permanently deleted.`,
+      confirmText: 'Delete user',
+      cancelText: 'Keep user',
+      showCancel: true,
+    });
     if (!confirmed) return;
     this.actionLoading.set(true);
-    this.api.deleteUser(user.email).pipe(finalize(() => this.actionLoading.set(false))).subscribe({
-      next: (response) => { void this.success('User deleted', response.message); this.loadUsers(); },
-      error: (response) => this.apiError(response, 'The user could not be deleted.'),
-    });
+    this.api
+      .deleteUser(user.email)
+      .pipe(finalize(() => this.actionLoading.set(false)))
+      .subscribe({
+        next: (response) => {
+          void this.success('User deleted', response.message);
+          this.loadUsers();
+        },
+        error: (response) => this.apiError(response, 'The user could not be deleted.'),
+      });
   }
 
   private async deleteRole(role: RoleGroup): Promise<void> {
-    const confirmed = await this.feedback.open({ type: 'warning', title: 'Delete access group?', message: `${role.name} will be permanently deleted.`, confirmText: 'Delete group', cancelText: 'Keep group', showCancel: true });
+    const confirmed = await this.feedback.open({
+      type: 'warning',
+      title: 'Delete access group?',
+      message: `${role.name} will be permanently deleted.`,
+      confirmText: 'Delete group',
+      cancelText: 'Keep group',
+      showCancel: true,
+    });
     if (!confirmed) return;
     this.actionLoading.set(true);
-    this.api.deleteRole(role.id).pipe(finalize(() => this.actionLoading.set(false))).subscribe({
-      next: (response) => { void this.success('Access group deleted', response.message); this.loadRoles(); },
-      error: (response) => this.apiError(response, 'The access group could not be deleted.'),
-    });
+    this.api
+      .deleteRole(role.id)
+      .pipe(finalize(() => this.actionLoading.set(false)))
+      .subscribe({
+        next: (response) => {
+          void this.success('Access group deleted', response.message);
+          this.loadRoles();
+        },
+        error: (response) => this.apiError(response, 'The access group could not be deleted.'),
+      });
   }
 
   private query(offset: number, search: string, status = ''): ListingQuery {
@@ -465,18 +622,20 @@ export class UsersRolesPage implements OnInit {
       return;
     }
     this.featuresLoading.set(true);
-    this.api.getPackageFeatures(context.customerId)
+    this.api
+      .getPackageFeatures(context.customerId)
       .pipe(finalize(() => this.featuresLoading.set(false)))
       .subscribe({
         next: (response) => {
           const features = response.data?.data?.features ?? [];
           this.featureOptions.set(
             features
-              .filter((feature) =>
-                Number(feature.id) !== 135 &&
-                feature.packages.some(
-                  (item) => Number(item.id) === context.packageId && item.is_selected,
-                ),
+              .filter(
+                (feature) =>
+                  Number(feature.id) !== 135 &&
+                  feature.packages.some(
+                    (item) => Number(item.id) === context.packageId && item.is_selected,
+                  ),
               )
               .map((feature) => ({
                 id: Number(feature.id),
@@ -517,7 +676,18 @@ export class UsersRolesPage implements OnInit {
   private dateLabel(value?: string): string {
     if (!value) return '—';
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+    return Number.isNaN(date.getTime())
+      ? value
+      : new Intl.DateTimeFormat('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }).format(date);
+  }
+
+  private today(): string {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   }
 
   protected userInitials(): string {
@@ -527,10 +697,22 @@ export class UsersRolesPage implements OnInit {
   }
 
   private success(title: string, message?: string): Promise<boolean> {
-    return this.feedback.open({ type: 'success', title, message: message || `${title} successfully.`, confirmText: 'Done', showCancel: false });
+    return this.feedback.open({
+      type: 'success',
+      title,
+      message: message || `${title} successfully.`,
+      confirmText: 'Done',
+      showCancel: false,
+    });
   }
 
   private apiError(response: { error?: { message?: string } }, fallback: string): void {
-    void this.feedback.open({ type: 'error', title: 'Request unsuccessful', message: response.error?.message || fallback, confirmText: 'Close', showCancel: false });
+    void this.feedback.open({
+      type: 'error',
+      title: 'Request unsuccessful',
+      message: response.error?.message || fallback,
+      confirmText: 'Close',
+      showCancel: false,
+    });
   }
 }

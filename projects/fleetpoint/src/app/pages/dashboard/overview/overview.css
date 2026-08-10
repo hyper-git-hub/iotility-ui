@@ -17,6 +17,14 @@
   @apply mt-2;
 }
 
+.allocation-skeleton {
+  @apply grid flex-1 grid-cols-2 gap-3 overflow-hidden;
+}
+
+.allocation-skeleton section {
+  @apply flex flex-col gap-3 rounded-xl bg-canvas p-3 dark:bg-dark-canvas;
+}
+
 .graph-skeleton-plot {
   @apply relative flex flex-1 items-end gap-5 overflow-hidden border-b border-l border-line/70 px-4 pb-0 pt-5 dark:border-dark-line;
 }

@@ -36,16 +36,14 @@ const EXPECTED_DASHBOARD_GRAPHS: DashboardGraph[] = [
 export class Overview implements OnInit {
   protected readonly cardsLoading = signal(true);
   protected readonly graphsLoading = signal(true);
+  protected readonly fleetLoading = signal(true);
   protected readonly cardsError = signal('');
   protected readonly graphsError = signal('');
   protected readonly metricSkeletons = Array.from({ length: 8 });
   protected readonly graphSkeletons = [
-    { type: 'vertical' },
-    { type: 'horizontal' },
-    { type: 'horizontal' },
-    { type: 'doughnut' },
-    { type: 'doughnut' },
-    { type: 'line' },
+    { code: 'DA', type: 'allocation' },
+    { code: 'RS', type: 'vertical' },
+    { code: 'VS', type: 'vertical' },
   ] as const;
   protected readonly cards = signal<DashboardCard[]>([]);
   protected readonly displayedCards = computed(() => {
@@ -177,7 +175,8 @@ export class Overview implements OnInit {
   }
 
   private loadFleetData(): void {
-    this.api.getFleets().subscribe({
+    this.fleetLoading.set(true);
+    this.api.getFleets().pipe(finalize(() => this.fleetLoading.set(false))).subscribe({
       next: (fleets) => this.fleets.set(fleets.data?.data ?? []),
       error: () => this.fleets.set([]),
     });

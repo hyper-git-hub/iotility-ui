@@ -2,19 +2,16 @@
   <header class="drivers-heading">
     <div>
       <h1>Drivers</h1>
-      <p>Manage drivers, allocations, groups and managers</p>
+      <p>Manage drivers, allocations and groups</p>
     </div>
   </header>
-  <nav
-    class="driver-tabs"
-    aria-label="Driver management sections"
-  >
+  <nav class="driver-tabs" aria-label="Driver management sections">
     <a routerLink="./" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
       >Drivers</a
     >
     <a routerLink="allocations" routerLinkActive="active">Allocations</a>
     <a routerLink="groups" routerLinkActive="active">Groups</a>
-    <a routerLink="managers" routerLinkActive="active">Managers</a>
+    <!-- Managers tab is intentionally hidden for the current release. -->
   </nav>
   <router-outlet />
 </section>

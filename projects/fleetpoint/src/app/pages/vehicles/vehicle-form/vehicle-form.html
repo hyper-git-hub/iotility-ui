@@ -133,6 +133,31 @@
                 <small class="field-error">Purchase type is required.</small>
               }
             </label>
+            <label class="shared-form-field"
+              ><span>Type of Engine *</span
+              ><shared-dropdown
+                class="form-dropdown"
+                [options]="engineOptions"
+                mode="single"
+                align="left"
+                [showOptionIcons]="false"
+                [matchTriggerWidth]="true"
+                [selected]="[form.controls.engine_type.value]"
+                (optionSelected)="selectEngineType($event)"
+                ><button dropdown-trigger type="button">
+                  <span>{{
+                    optionLabel(
+                      engineOptions,
+                      form.controls.engine_type.value,
+                      'Select engine type'
+                    )
+                  }}</span>
+                </button></shared-dropdown
+              >
+              @if (submitted() && form.controls.engine_type.invalid) {
+                <small class="field-error">Engine type is required.</small>
+              }
+            </label>
             <div class="vehicle-picture wide">
               <div>
                 <span>Vehicle Picture</span>

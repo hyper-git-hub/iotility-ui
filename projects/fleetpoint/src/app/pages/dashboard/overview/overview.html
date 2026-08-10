@@ -41,7 +41,25 @@
   }
 </section>
 
-<section class="fleet-status-card" aria-label="Live fleet status">
+<section class="fleet-status-card" aria-label="Live fleet status" [attr.aria-busy]="fleetLoading()">
+  @if (fleetLoading()) {
+    <div class="fleet-status-skeleton" aria-hidden="true">
+      <header>
+        <ui-skeleton variant="text" width="8.5rem" height="0.875rem" radius="0.3rem" />
+        <ui-skeleton width="6.5rem" height="1.5rem" radius="9999px" />
+      </header>
+      <ui-skeleton width="100%" height="0.5rem" radius="9999px" />
+      <div class="fleet-status-skeleton-grid">
+        @for (_ of [1, 2, 3, 4, 5]; track $index) {
+          <article>
+            <ui-skeleton variant="circle" width="1.25rem" height="1.25rem" />
+            <ui-skeleton variant="text" width="2.25rem" height="1.125rem" radius="0.3rem" />
+            <ui-skeleton variant="text" width="3.5rem" height="0.625rem" radius="0.25rem" />
+          </article>
+        }
+      </div>
+    </div>
+  } @else {
   <header class="fleet-status-heading">
     <h2>Live Fleet Status</h2>
     <span><i></i> Live · {{ vehicles().length }} vehicles</span>
@@ -68,6 +86,7 @@
       </article>
     }
   </div>
+  }
 </section>
 
 <section class="analytics-section" [attr.aria-busy]="graphsLoading()">
@@ -89,26 +108,17 @@
             <ui-skeleton variant="text" width="28%" height="0.58rem" radius="0.25rem" />
           </header>
           @switch (skeleton.type) {
-            @case ('horizontal') {
-              <div class="graph-skeleton-plot horizontal-plot">
-                @for (_ of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track $index) { <span class="horizontal-bar"></span> }
+            @case ('allocation') {
+              <div class="allocation-skeleton">
+                @for (_ of [1, 2, 3, 4]; track $index) {
+                  <section>
+                    <ui-skeleton variant="text" width="45%" height="0.7rem" radius="0.25rem" />
+                    <ui-skeleton variant="text" width="100%" height="0.55rem" radius="0.2rem" />
+                    <ui-skeleton variant="text" width="88%" height="0.55rem" radius="0.2rem" />
+                    <ui-skeleton variant="text" width="94%" height="0.55rem" radius="0.2rem" />
+                  </section>
+                }
               </div>
-              <div class="graph-skeleton-legend"><span><i></i><b></b></span></div>
-            }
-            @case ('doughnut') {
-              <div class="graph-skeleton-plot doughnut-plot"><span class="doughnut-ring"></span></div>
-              <div class="graph-skeleton-legend">
-                @for (_ of [1, 2, 3]; track $index) { <span><i></i><b></b></span> }
-              </div>
-            }
-            @case ('line') {
-              <div class="graph-skeleton-plot line-plot">
-                <svg viewBox="0 0 500 220" preserveAspectRatio="none">
-                  <path class="line-area" d="M0,94 C45,84 72,110 112,98 S176,66 215,91 S285,111 330,105 S405,75 500,112 L500,220 L0,220 Z" />
-                  <path class="line-stroke" d="M0,94 C45,84 72,110 112,98 S176,66 215,91 S285,111 330,105 S405,75 500,112" />
-                </svg>
-              </div>
-              <div class="graph-skeleton-legend"><span><i></i><b></b></span></div>
             }
             @default {
               <div class="graph-skeleton-plot">

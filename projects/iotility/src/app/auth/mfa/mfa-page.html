@@ -1,0 +1,78 @@
+<div class="mfa-content">
+  <ui-blocking-loader [visible]="submitting() || view() === 'loading'" label="Securing your account" message="Verifying your authentication settings..." />
+  <header class="mfa-heading">
+    <img src="assets/iotility-dark.svg" alt="IoTility" class="mobile-logo" />
+    <h2>Secure your account</h2>
+    <p>Use multi-factor authentication to protect your IoTility workspace.</p>
+  </header>
+
+  <section class="mfa-card">
+    <shared-smooth-height><div>
+      @if (view() === 'choose') {
+        <h3>Set up MFA</h3>
+        <p class="card-copy">Choose how you want to verify future sign-ins.</p>
+        <button class="method-button" type="button" (click)="selectMethod('2')"><span class="method-icon">&#64;</span><span><strong>Email verification</strong><small>Receive a 4-digit code in your inbox</small></span><b>›</b></button>
+        <button class="method-button" type="button" (click)="selectMethod('3')"><span class="method-icon">#</span><span><strong>Authenticator app</strong><small>Use a time-based 6-digit security code</small></span><b>›</b></button>
+        <button class="text-button" type="button" (click)="skipSetup()">Skip for now</button>
+      }
+
+      @if (view() === 'setup-code') {
+        <h3>Set up {{ methodName }}</h3>
+        @if (method() === '3' && qrCode()) {
+          <p class="card-copy">Scan this QR code with your authenticator app, then enter its code.</p>
+          <img class="qr-code" [src]="qrCode()" alt="Authenticator setup QR code" />
+        } @else {
+          <p class="card-copy">Enter the code sent to {{ email }}.</p>
+        }
+        <ng-container [ngTemplateOutlet]="otpField" />
+        <button class="submit-button" type="button" [disabled]="form.controls.otp.invalid || submitting()" (click)="verifySetupCode()">VERIFY AND CONTINUE</button>
+        @if (method() !== '3') { <ng-container [ngTemplateOutlet]="resend" /> }
+      }
+
+      @if (view() === 'setup-passkey') {
+        <h3>Create a passkey</h3>
+        <p class="card-copy">Choose a memorable 4-digit passkey as a backup sign-in method.</p>
+        <ng-container [ngTemplateOutlet]="passkeyField" />
+        <button class="submit-button" type="button" [disabled]="form.controls.passkey.invalid || submitting()" (click)="savePasskey()">SAVE PASSKEY</button>
+      }
+
+      @if (view() === 'verify') {
+        <h3>Verify your identity</h3>
+        @if (mode() === 'otp') {
+          <p class="card-copy">Enter the {{ otpLength }}-digit code from your {{ methodName.toLowerCase() }}.</p>
+          <ng-container [ngTemplateOutlet]="otpField" />
+          <button class="submit-button" type="button" [disabled]="form.controls.otp.invalid || submitting()" (click)="verify()">VERIFY</button>
+          @if (method() !== '3') { <ng-container [ngTemplateOutlet]="resend" /> }
+        } @else {
+          <p class="card-copy">Enter your configured 4-digit passkey.</p>
+          <ng-container [ngTemplateOutlet]="passkeyField" />
+          <button class="submit-button" type="button" [disabled]="form.controls.passkey.invalid || submitting()" (click)="verify()">VERIFY</button>
+        }
+        <button class="text-button" type="button" (click)="changeMode()">Login with {{ mode() === 'otp' ? 'your passkey' : methodName }}</button>
+      }
+
+      @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+      @if (message()) { <p class="form-message" role="status">{{ message() }}</p> }
+      @if (view() !== 'choose' && view() !== 'loading') { <button class="cancel-button" type="button" (click)="cancel()">Cancel sign in</button> }
+    </div></shared-smooth-height>
+  </section>
+</div>
+
+<ng-template #otpField>
+  <label class="form-label" for="otp">Security code <span>*</span></label>
+  <div class="form-control"><input id="otp" [formControl]="form.controls.otp" inputmode="numeric" autocomplete="one-time-code" [maxlength]="otpLength" placeholder="Enter security code" /></div>
+  @if (form.controls.otp.touched && form.controls.otp.invalid) { <small class="field-error">Enter a valid {{ otpLength }}-digit code.</small> }
+</ng-template>
+
+<ng-template #passkeyField>
+  <label class="form-label" for="passkey">Passkey <span>*</span></label>
+  <div class="form-control"><input id="passkey" [formControl]="form.controls.passkey" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Enter 4-digit passkey" /></div>
+  @if (form.controls.passkey.touched && form.controls.passkey.invalid) { <small class="field-error">Passkey must contain exactly 4 digits.</small> }
+</ng-template>
+
+<ng-template #resend>
+  <div class="resend-row">
+    @if (secondsLeft() > 0) { <span>Resend available in {{ secondsLeft() }}s</span> }
+    <button type="button" [disabled]="secondsLeft() > 0 || submitting()" (click)="sendOtp()">Resend code</button>
+  </div>
+</ng-template>

@@ -1,93 +1,307 @@
 @reference "../../../styles.css";
-@import "../../shared/styles/fields.css";
+@import '../../shared/styles/fields.css';
 
-.users-roles-page { @apply grid min-h-full min-w-0 content-start gap-5 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white sm:p-6; }
-.page-heading { @apply flex flex-wrap items-center justify-between gap-4; }
-.page-heading h1 { @apply text-xl font-bold; }
-.page-heading p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
-.heading-actions,.modal-actions { @apply flex gap-2; }
-.primary-action,.secondary-action { @apply h-10 cursor-pointer rounded-xl px-4 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50; }
-.primary-action { @apply bg-brand-600 text-white hover:bg-brand-700; }
-.secondary-action { @apply border border-line bg-white text-brand-700 hover:border-brand-500 dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }
-.management-tabs { @apply flex gap-1 border-b border-line dark:border-dark-line; }
-.management-tabs button { @apply relative cursor-pointer px-4 py-3 text-xs font-medium text-muted dark:text-brand-300; }
-.management-tabs button.active { @apply text-brand-600; }
-.management-tabs button.active::after { content:''; @apply absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600; }
-.page-error { @apply rounded-xl border border-danger/20 bg-danger/5 p-3 text-xs text-danger; }
-.management-card { @apply min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
-.management-dropdown { @apply block; }
-.management-dropdown [dropdown-trigger] { @apply flex h-10 w-full min-w-36 cursor-pointer items-center justify-between rounded-xl border border-line bg-white px-3 text-left text-xs text-ink outline-none hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
-.management-dropdown [dropdown-trigger] span { @apply min-w-0 truncate; }
+.users-roles-page {
+  @apply grid min-h-full min-w-0 content-start gap-5 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white sm:p-6;
+}
+.page-heading {
+  @apply flex flex-wrap items-center justify-between gap-4;
+}
+.page-heading h1 {
+  @apply text-xl font-bold;
+}
+.page-heading p {
+  @apply mt-1 text-xs text-muted dark:text-brand-300;
+}
+.heading-actions,
+.modal-actions {
+  @apply flex gap-2;
+}
+.primary-action,
+.secondary-action {
+  @apply h-10 cursor-pointer rounded-xl px-4 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+.primary-action {
+  @apply bg-brand-600 text-white hover:bg-brand-700;
+}
+.secondary-action {
+  @apply border border-line bg-white text-brand-700 hover:border-brand-500 dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
+}
+.management-tabs {
+  @apply flex gap-1 border-b border-line dark:border-dark-line;
+}
+.management-tabs button {
+  @apply relative cursor-pointer px-4 py-3 text-xs font-medium text-muted dark:text-brand-300;
+}
+.management-tabs button.active {
+  @apply text-brand-600;
+}
+.management-tabs button.active::after {
+  content: '';
+  @apply absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600;
+}
+.page-error {
+  @apply rounded-xl border border-danger/20 bg-danger/5 p-3 text-xs text-danger;
+}
+.management-card {
+  @apply min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.management-dropdown {
+  @apply block;
+}
+.management-dropdown [dropdown-trigger] {
+  @apply flex h-10 w-full min-w-36 cursor-pointer items-center justify-between rounded-xl border border-line bg-white px-3 text-left text-xs text-ink outline-none hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
+}
+.management-dropdown [dropdown-trigger] span {
+  @apply min-w-0 truncate;
+}
 .management-card shared-data-table,
-.management-card ui-data-table-skeleton { @apply block min-w-0; }
+.management-card ui-data-table-skeleton {
+  @apply block min-w-0;
+}
 :host ::ng-deep .management-card shared-data-table .table-card,
-:host ::ng-deep .management-card ui-data-table-skeleton .table-card { @apply rounded-none border-0; }
-.management-table-wrap { @apply relative min-w-0 overflow-hidden; }
+:host ::ng-deep .management-card ui-data-table-skeleton .table-card {
+  @apply rounded-none border-0;
+}
+.management-table-wrap {
+  @apply relative min-w-0 overflow-hidden;
+}
 .management-table-wrap.refreshing shared-data-table {
   @apply pointer-events-none opacity-[0.65];
   transition: opacity 160ms ease;
 }
-.management-refresh-progress { @apply absolute inset-x-0 top-0 z-20 h-0 overflow-visible; }
+.management-refresh-progress {
+  @apply absolute inset-x-0 top-0 z-20 h-0 overflow-visible;
+}
 .management-refresh-progress i {
   @apply absolute inset-x-0 top-0 block h-[3px] origin-left bg-brand-500 shadow-[0_1px_5px_rgba(124,58,237,0.35)];
   animation: management-refresh-progress 1.1s ease-in-out infinite;
 }
-.pagination { @apply flex items-center justify-between border-t border-line px-4 py-3 text-xs text-muted dark:border-dark-line dark:text-brand-300; }
-.pagination div { @apply flex gap-2; }
-.pagination button { @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line; }
-.role-summary { @apply grid gap-3 sm:grid-cols-3; }
-.role-summary article { @apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
-.role-summary article>span,.role-summary small { @apply block text-[10px] text-muted dark:text-brand-300; }
-.role-summary strong { @apply my-2 block text-2xl font-bold; }
-.role-summary-skeleton { @apply grid gap-2; }
-.management-form,.role-form,.assign-form { @apply grid gap-4; }
-.user-form-top { @apply grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_15rem]; }
-.user-core-fields,.user-extra-fields { @apply grid gap-4 sm:grid-cols-2; }
-.user-picture { @apply flex h-full items-center gap-3 rounded-2xl border border-dashed border-line bg-canvas p-3 dark:border-dark-line dark:bg-dark-canvas; }
-.user-picture-preview { @apply grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-white text-lg font-bold text-brand-700 dark:bg-dark-surface dark:text-brand-300; }
-.user-picture-preview img { @apply size-full object-cover; }
-.user-picture strong { @apply block text-xs font-semibold text-ink dark:text-white; }
-.user-picture p { @apply mb-2 mt-1 text-[9px] text-muted dark:text-brand-300; }
-.management-form .user-picture label { @apply inline-flex cursor-pointer whitespace-nowrap rounded-lg bg-brand-600 px-2.5 py-1.5 text-center text-[10px] font-semibold; color: #fff; }
-.user-picture input { @apply sr-only; }
-.management-form label,.role-form label,.assign-form>label { @apply grid gap-1.5 text-[10px] font-medium text-muted dark:text-brand-300; }
-.management-form label>span b,.role-form label>span b,.assign-form label>span b { @apply text-danger; }
-.management-form label>small,.role-form label>small,.assign-form label>small,.selection-error { @apply text-[9px] text-danger; }
-.check-field { @apply flex! items-center self-end rounded-xl border border-line px-3 py-2.5 dark:border-dark-line; }
-.check-field input { @apply size-4 accent-brand-600; }
-.role-basics { @apply grid gap-4 md:grid-cols-2; }
-.selection-panel { @apply overflow-hidden rounded-2xl border border-line dark:border-dark-line; }
-.selection-panel>header { @apply flex items-center justify-between gap-3 border-b border-line bg-canvas/60 px-4 py-3 dark:border-dark-line dark:bg-dark-canvas/60; }
-.selection-panel>header>div { @apply min-w-0 flex-1; }
-.selection-panel>header p { @apply mt-0.5 text-[9px] text-muted dark:text-brand-300; }
-.selection-panel>header>span { @apply shrink-0 rounded-full bg-brand-50 px-2 py-1 text-[9px] font-semibold text-brand-700 dark:bg-brand-600/15 dark:text-brand-300; }
-.selection-toggle { @apply flex w-full cursor-pointer items-center gap-3 border-b border-line bg-canvas/60 px-4 py-3 text-left transition hover:bg-brand-50 dark:border-dark-line dark:bg-dark-canvas/60 dark:hover:bg-dark-canvas; }
-.selection-toggle>div { @apply min-w-0 flex-1; }
-.selection-panel h3,.assigned-users h3 { @apply text-xs font-bold text-ink dark:text-white; }
-.selection-toggle p { @apply mt-0.5 text-[9px] text-muted dark:text-brand-300; }
-.selection-count { @apply shrink-0 rounded-full bg-brand-50 px-2 py-1 text-[9px] font-semibold text-brand-700 dark:bg-brand-600/15 dark:text-brand-300; }
-.selection-toggle svg { @apply size-4 shrink-0 text-muted transition-transform duration-200; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.8; }
-.selection-toggle svg.collapsed { @apply -rotate-90; }
-.selection-grid { @apply grid max-h-64 gap-px overflow-y-auto bg-line sm:grid-cols-2 lg:grid-cols-3 dark:bg-dark-line; }
-.selection-item { @apply flex! cursor-pointer items-center gap-3 bg-white p-3 transition hover:bg-brand-50 dark:bg-dark-surface dark:hover:bg-dark-canvas; }
-.selection-item input { @apply size-4 shrink-0 accent-brand-600; }
-.selection-item span { @apply grid min-w-0; }
-.selection-item strong { @apply truncate text-xs font-semibold text-ink dark:text-white; }
-.selection-item small { @apply truncate text-[9px] text-muted dark:text-brand-300; }
-.selection-error { @apply block px-4 py-2; }
-.empty-selection { @apply col-span-full bg-white p-6 text-center text-xs text-muted dark:bg-dark-surface dark:text-brand-300; }
-.inline-loading { @apply bg-white p-6 text-center text-xs text-muted dark:bg-dark-surface dark:text-brand-300; }
-.assigned-users { @apply rounded-2xl border border-line p-4 dark:border-dark-line; }
-.assigned-users>div { @apply mt-3 flex flex-wrap gap-2; }
-.assigned-users span { @apply rounded-full bg-brand-50 px-2.5 py-1 text-[10px] text-brand-700 dark:bg-brand-600/15 dark:text-brand-300; }
-.user-choice-list { @apply grid max-h-72 gap-px overflow-y-auto bg-line dark:bg-dark-line; }
-.modal-actions { @apply w-full justify-end; }
+.pagination {
+  @apply flex items-center justify-between border-t border-line px-4 py-3 text-xs text-muted dark:border-dark-line dark:text-brand-300;
+}
+.pagination div {
+  @apply flex gap-2;
+}
+.pagination button {
+  @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line;
+}
+.role-summary {
+  @apply grid gap-3 sm:grid-cols-3;
+}
+.role-summary article {
+  @apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+}
+.role-summary article > span,
+.role-summary small {
+  @apply block text-[10px] text-muted dark:text-brand-300;
+}
+.role-summary strong {
+  @apply my-2 block text-2xl font-bold;
+}
+.role-summary-skeleton {
+  @apply grid gap-2;
+}
+.management-form,
+.role-form,
+.assign-form {
+  @apply grid gap-4;
+}
+.user-form-top {
+  @apply grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_15rem];
+}
+.user-core-fields,
+.user-extra-fields {
+  @apply grid gap-4 sm:grid-cols-2;
+}
+.user-picture {
+  @apply flex h-full items-center gap-3 rounded-2xl border border-dashed border-line bg-canvas p-3 dark:border-dark-line dark:bg-dark-canvas;
+}
+.user-picture-preview {
+  @apply grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-white text-lg font-bold text-brand-700 dark:bg-dark-surface dark:text-brand-300;
+}
+.user-picture-preview img {
+  @apply size-full object-cover;
+}
+.user-picture strong {
+  @apply block text-xs font-semibold text-ink dark:text-white;
+}
+.user-picture p {
+  @apply mb-2 mt-1 text-[9px] text-muted dark:text-brand-300;
+}
+.management-form .user-picture label {
+  @apply inline-flex cursor-pointer whitespace-nowrap rounded-lg bg-brand-600 px-2.5 py-1.5 text-center text-[10px] font-semibold;
+  color: #fff;
+}
+.user-picture input {
+  @apply sr-only;
+}
+.management-form label,
+.role-form label,
+.assign-form > label {
+  @apply grid gap-1.5 text-[10px] font-medium text-muted dark:text-brand-300;
+}
+.management-form label > span b,
+.role-form label > span b,
+.assign-form label > span b {
+  @apply text-danger;
+}
+.management-form label > small,
+.role-form label > small,
+.assign-form label > small,
+.selection-error {
+  @apply text-[9px] text-danger;
+}
+.check-field {
+  @apply flex! items-center self-end rounded-xl border border-line px-3 py-2.5 dark:border-dark-line;
+}
+.check-field input {
+  @apply size-4 accent-brand-600;
+}
+.role-basics {
+  @apply grid gap-4 md:grid-cols-2;
+}
+.selection-panel {
+  @apply overflow-hidden rounded-2xl border border-line dark:border-dark-line;
+}
+.selection-panel > header {
+  @apply flex items-center justify-between gap-3 border-b border-line bg-canvas/60 px-4 py-3 dark:border-dark-line dark:bg-dark-canvas/60;
+}
+.selection-panel > header > div {
+  @apply min-w-0 flex-1;
+}
+.selection-panel > header p {
+  @apply mt-0.5 text-[9px] text-muted dark:text-brand-300;
+}
+.selection-panel > header > span {
+  @apply shrink-0 rounded-full bg-brand-50 px-2 py-1 text-[9px] font-semibold text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
+}
+.selection-toggle {
+  @apply flex w-full cursor-pointer items-center gap-3 border-b border-line bg-canvas/60 px-4 py-3 text-left transition hover:bg-brand-50 dark:border-dark-line dark:bg-dark-canvas/60 dark:hover:bg-dark-canvas;
+}
+.selection-toggle > div {
+  @apply min-w-0 flex-1;
+}
+.selection-panel h3,
+.assigned-users h3 {
+  @apply text-xs font-bold text-ink dark:text-white;
+}
+.selection-toggle p {
+  @apply mt-0.5 text-[9px] text-muted dark:text-brand-300;
+}
+.selection-count {
+  @apply shrink-0 rounded-full bg-brand-50 px-2 py-1 text-[9px] font-semibold text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
+}
+.selection-toggle svg {
+  @apply size-4 shrink-0 text-muted transition-transform duration-200;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.selection-toggle svg.collapsed {
+  @apply -rotate-90;
+}
+.selection-grid {
+  @apply grid max-h-64 gap-px overflow-y-auto bg-line sm:grid-cols-2 lg:grid-cols-3 dark:bg-dark-line;
+}
+.select-all-features {
+  @apply flex cursor-pointer items-center gap-3 border-b border-line bg-brand-50/60 px-4 py-3 dark:border-dark-line dark:bg-brand-600/10;
+}
+.select-all-features input {
+  @apply size-4 shrink-0 accent-brand-600;
+}
+.select-all-features span {
+  @apply flex min-w-0 flex-col;
+}
+.select-all-features strong {
+  @apply text-[10px] font-semibold text-ink dark:text-white;
+}
+.select-all-features small {
+  @apply text-[9px] text-muted dark:text-brand-300;
+}
+.selection-item {
+  @apply flex! cursor-pointer items-center gap-3 bg-white p-3 transition hover:bg-brand-50 dark:bg-dark-surface dark:hover:bg-dark-canvas;
+}
+.selection-item input {
+  @apply size-4 shrink-0 accent-brand-600;
+}
+.selection-item span {
+  @apply grid min-w-0;
+}
+.selection-item strong {
+  @apply truncate text-xs font-semibold text-ink dark:text-white;
+}
+.selection-item small {
+  @apply truncate text-[9px] text-muted dark:text-brand-300;
+}
+.selection-error {
+  @apply block px-4 py-2;
+}
+.empty-selection {
+  @apply col-span-full bg-white p-6 text-center text-xs text-muted dark:bg-dark-surface dark:text-brand-300;
+}
+.inline-loading {
+  @apply bg-white p-6 text-center text-xs text-muted dark:bg-dark-surface dark:text-brand-300;
+}
+.assigned-users {
+  @apply rounded-2xl border border-line p-4 dark:border-dark-line;
+}
+.assigned-users > p {
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+.assigned-users > div {
+  @apply mt-3 flex flex-wrap gap-2;
+}
+.assigned-users label {
+  @apply flex cursor-pointer items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-[10px] text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
+}
+.assigned-users input {
+  @apply accent-brand-600;
+}
+.assigned-users > div > span {
+  @apply rounded-full bg-brand-50 px-2.5 py-1 text-[10px] text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
+}
+.user-choice-list {
+  @apply grid max-h-72 gap-px overflow-y-auto bg-line dark:bg-dark-line;
+}
+.modal-actions {
+  @apply w-full justify-end;
+}
 @keyframes management-refresh-progress {
-  0% { transform: scaleX(0.12); opacity: 0.55; }
-  50% { transform: scaleX(0.72); opacity: 1; }
-  100% { transform: scaleX(1); opacity: 0; }
+  0% {
+    transform: scaleX(0.12);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleX(0.72);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .management-refresh-progress i { animation: none; }
+  .management-refresh-progress i {
+    animation: none;
+  }
 }
-@media(max-width:640px){ .users-roles-page{@apply p-3;} .page-heading{ @apply items-start;} .heading-actions{@apply w-full;} .heading-actions button{@apply flex-1;} .pagination{@apply items-start gap-3;} }
+@media (max-width: 640px) {
+  .users-roles-page {
+    @apply p-3;
+  }
+  .page-heading {
+    @apply items-start;
+  }
+  .heading-actions {
+    @apply w-full;
+  }
+  .heading-actions button {
+    @apply flex-1;
+  }
+  .pagination {
+    @apply items-start gap-3;
+  }
+}

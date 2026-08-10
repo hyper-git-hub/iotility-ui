@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../../iotility/src/environments/environment';
+import { environment } from '../../../environments/environment';
 import { ApiResponse } from './fleet-dashboard-api.service';
 
 export interface VehicleDetailRecord {

@@ -65,6 +65,10 @@ export class VehicleForm implements OnChanges {
     { id: '1', label: 'Leased' },
     { id: '2', label: 'Owned' },
   ];
+  protected readonly engineOptions: DropdownOption[] = [
+    { id: '1', label: 'Petrol' },
+    { id: '2', label: 'Diesel' },
+  ];
   protected readonly fleetDropdownOptions = computed<DropdownOption[]>(() => [
     { id: '', label: 'Select fleet' },
     ...this.fleets().map((item) => ({
@@ -122,6 +126,7 @@ export class VehicleForm implements OnChanges {
       wheels: [4, [required, Validators.min(2)]],
       fuel_tank_capacity: [0, [required, Validators.min(0)]],
       purchase_type: ['2', required],
+      engine_type: ['', required],
       type: ['', required],
       device: ['', required],
       date_commissioned: ['', required],
@@ -162,6 +167,9 @@ export class VehicleForm implements OnChanges {
   }
   protected selectPurchase(option: DropdownOption): void {
     this.form.controls.purchase_type.setValue(option.id);
+  }
+  protected selectEngineType(option: DropdownOption): void {
+    this.form.controls.engine_type.setValue(option.id);
   }
   protected selectVehicleType(option: DropdownOption): void {
     this.form.controls.type.setValue(option.id);
@@ -211,11 +219,13 @@ export class VehicleForm implements OnChanges {
       fleet_category: raw.category,
       status: raw.status ? 1 : 2,
       speed_threshold: raw.speed ? raw.speed_threshold : 0,
+      geo_zone: false,
+      fuel_sensor: false,
+      time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
     delete values['category'];
     delete values['speed'];
     Object.entries(values).forEach(([key, value]) => payload.append(key, String(value ?? '')));
-    payload.append('vehicle_devices', JSON.stringify([Number(raw.device)]));
     const image = this.imageFile();
     if (image) payload.append('image', image, image.name);
     this.loading.set(true);
@@ -303,6 +313,7 @@ export class VehicleForm implements OnChanges {
             'wheels',
             'fuel_tank_capacity',
             'purchase_type',
+            'engine_type',
           ]
         : [
             'type',
@@ -329,6 +340,7 @@ export class VehicleForm implements OnChanges {
       wheels: 4,
       fuel_tank_capacity: 0,
       purchase_type: '2',
+      engine_type: '',
       speed: false,
       speed_threshold: 0,
       harsh_acceleration: false,
@@ -362,6 +374,7 @@ export class VehicleForm implements OnChanges {
       wheels: Number(vehicle.wheels || 4),
       fuel_tank_capacity: Number(vehicle.fuel_tank_capacity || 0),
       purchase_type: String(vehicle.purchase_type || '2'),
+      engine_type: String(vehicle.engine_type || ''),
       type: String(vehicle.type || ''),
       device: String(vehicle.device || ''),
       date_commissioned: vehicle.date_commissioned?.slice(0, 10) || '',
