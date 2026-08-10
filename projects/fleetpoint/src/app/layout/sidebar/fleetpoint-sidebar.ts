@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, computed, Inject, Input, isDevMode, signal } from '@angular/core';
+import { Component, computed, Inject, Input, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Logo, Tooltip } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
@@ -25,7 +25,6 @@ interface HostDialogRequest {
 })
 export class FleetpointSidebar {
   @Input() badgeCounts: Record<string, number> = {};
-  private readonly showAllDevelopmentItems = isDevMode();
   private static readonly COLLAPSED_KEY = 'fleetpoint:sidebar-collapsed';
 
   readonly collapsed = signal(this.restoreCollapsed());
@@ -39,9 +38,7 @@ export class FleetpointSidebar {
   protected readonly visibleMenu = computed<MenuGroup[]>(() =>
     SIDEBAR_MENU.map((group) => ({
       ...group,
-      items: group.items.filter(
-        (item) => this.showAllDevelopmentItems || this.features.has(item.featureId),
-      ),
+      items: group.items.filter((item) => this.features.has(item.featureId)),
     })).filter((group) => group.items.length > 0),
   );
 
