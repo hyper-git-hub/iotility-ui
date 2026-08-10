@@ -2,6 +2,28 @@
 
 .metric-grid { @apply mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4; }
 .analytics-section { @apply mb-4; }
+.fleet-status-card { @apply mb-5 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
+.fleet-status-heading { @apply mb-3 flex items-center justify-between gap-3; }
+.fleet-status-heading h2 { @apply text-sm font-semibold; }
+.fleet-status-heading span { @apply inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-medium text-success; }
+.fleet-status-heading i { @apply size-1.5 rounded-full bg-success; box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 15%, transparent); }
+.fleet-status-bar { @apply mb-4 flex h-2 w-full overflow-hidden rounded-full bg-line/60 dark:bg-dark-canvas; }
+.status-segment { @apply block h-full border-r-2 border-white last:border-0 dark:border-dark-surface; }
+.status-segment.moving { @apply bg-success; }
+.status-segment.idling { @apply bg-warning; }
+.status-segment.stopped { @apply bg-slate-400; }
+.status-segment.alert { @apply bg-danger; }
+.status-segment.offline { @apply bg-slate-700; }
+.fleet-status-grid { @apply grid gap-2 sm:grid-cols-2 lg:grid-cols-5; }
+.fleet-status-item { @apply flex min-h-24 flex-col items-center justify-center rounded-xl p-3 text-center; }
+.fleet-status-item svg { @apply mb-1 size-5 fill-none stroke-current; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.fleet-status-item strong { @apply text-lg font-bold; }
+.fleet-status-item span { @apply mt-0.5 text-[10px] text-muted dark:text-brand-300; }
+.fleet-status-item.moving { @apply bg-success/8 text-success; }
+.fleet-status-item.idling { @apply bg-warning/10 text-warning; }
+.fleet-status-item.stopped { @apply bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300; }
+.fleet-status-item.alert { @apply bg-danger/8 text-danger; }
+.fleet-status-item.offline { @apply bg-slate-200/60 text-slate-700 dark:bg-slate-800 dark:text-slate-300; }
 .section-heading { @apply mb-3 flex items-end justify-between gap-3; }
 .section-heading h2 { @apply text-sm font-semibold; }
 .section-heading p { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }

@@ -1,7 +1,18 @@
 @reference "../../../../styles.css";
 
 .jobs-grid {
-  @apply grid gap-4 lg:grid-cols-2;
+  @apply grid gap-4;
+}
+
+@media (min-width: 64rem) {
+  .jobs-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+
+  .jobs-tasks { grid-column: 1 / span 3; grid-row: 1; }
+  .jobs-chart { grid-column: 4 / span 7; grid-row: 1; }
+  .staff-statistics { grid-column: 1 / span 7; grid-row: 2; }
+  .jobs-statistics { grid-column: 8 / span 3; grid-row: 2; }
 }
 
 .jobs-reveal-one {

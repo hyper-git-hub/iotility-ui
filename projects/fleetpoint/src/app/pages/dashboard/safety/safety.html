@@ -1,30 +1,10 @@
 <section class="safety-grid">
-  <app-fleet-bar-chart
-    class="smooth-reveal safety-reveal-one"
-    title="Driver Safety Scorecard"
-    subtitle="This month · violation points by type"
-    filterLabel="This Month"
-    [data]="scorecardData"
-    [options]="scorecardOptions"
-  /><app-fleet-line-chart
-    class="smooth-reveal safety-reveal-two"
-    title="Aggressively Driven Fleets"
-    subtitle="Events per fleet · last 6 weeks"
-    filterLabel="Last 6 Weeks"
-    [data]="aggressiveData"
-    [options]="aggressiveOptions"
-  /><app-fleet-bar-chart
-    class="smooth-reveal safety-reveal-three"
-    title="Driver Violations"
-    subtitle="This month · by depot"
-    filterLabel="Fleet"
-    [data]="violationsData"
-    [options]="violationsOptions"
-  /><app-fleet-doughnut-chart
-    class="smooth-reveal safety-reveal-four"
-    title="DashCam Events"
-    subtitle="This month · 47 total events"
-    [data]="dashcamData"
-    [options]="dashcamOptions"
-  />
+  @for (graph of safetyGraphs(); track graph.code) {
+    <app-dashboard-graph
+      [graph]="graph"
+      [class.aggressive-fleets]="graph.code === 'ADF'"
+      [class.driver-violations]="graph.code === 'DVG'"
+      [class.safety-scorecard]="graph.code === 'DSS'"
+    />
+  }
 </section>

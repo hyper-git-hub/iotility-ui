@@ -16,6 +16,12 @@ export interface LoginResponseData {
   is_first_time_login?: boolean;
 }
 
+export interface MfaConfiguration {
+  authentication_registration?: boolean;
+  passkey_flag?: boolean;
+  method?: string | number;
+}
+
 export interface UserProfile {
   guid?: string;
   email?: string;
@@ -88,6 +94,24 @@ export class AuthApiService {
   getRoleAccess(): Observable<AuthApiResponse> {
     return this.http.get<AuthApiResponse>(`${environment.fleetBaseUrl}/api/role-access/feature`, {
       params: { usecase_id: environment.useCaseId },
+    });
+  }
+
+  getMfaConfiguration(email: string): Observable<AuthApiResponse<MfaConfiguration>> {
+    return this.http.get<AuthApiResponse<MfaConfiguration>>(
+      `${this.authenticationUrl}/otp-authentication`,
+      { params: { email: email.toLowerCase() } },
+    );
+  }
+
+  updateMfa(payload: Record<string, unknown>): Observable<AuthApiResponse> {
+    return this.http.post<AuthApiResponse>(`${this.authenticationUrl}/otp-authentication`, payload);
+  }
+
+  setupPasskey(email: string, passkey: string): Observable<AuthApiResponse> {
+    return this.http.patch<AuthApiResponse>(`${this.authenticationUrl}/otp-authentication`, {
+      email: email.toLowerCase(),
+      passkey,
     });
   }
 

@@ -1,8 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 
-const FLEET_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet/api';
+const FLEET_API = 'https://devgateway.hypernymbiz.com/fms-fleet/api';
+const PROD_FLEET_API = 'https://devgateway.hypernymbiz.com/fms-fleet/api';
+const DASHBOARD_ID = 'MD';
 
 export interface ApiResponse<T> {
   status: number;
@@ -38,6 +40,8 @@ export interface Vehicle {
   make: string;
   model: string;
   online_status: boolean;
+  ignition_status?: boolean;
+  total_violations?: number;
   speed: number;
   location: string | null;
   vehicle_driver_name: string | null;
@@ -62,30 +66,53 @@ export interface DashcamDevice {
 
 @Injectable({ providedIn: 'root' })
 export class FleetDashboardApiService {
+  private readonly graphCache = signal<DashboardGraph[]>(this.readGraphCache());
+  readonly cachedGraphs = this.graphCache.asReadonly();
+
   constructor(private readonly http: HttpClient) {}
+
+  cacheGraphs(graphs: DashboardGraph[]): void {
+    this.graphCache.set(graphs);
+    sessionStorage.setItem('fleetpointDashboardGraphs', JSON.stringify(graphs));
+  }
+
+  private readGraphCache(): DashboardGraph[] {
+    try {
+      const graphs = JSON.parse(sessionStorage.getItem('fleetpointDashboardGraphs') ?? '[]');
+      return Array.isArray(graphs) ? graphs : [];
+    } catch {
+      return [];
+    }
+  }
 
   getCards(): Observable<ApiResponse<DashboardCard[]>> {
     return this.http.get<ApiResponse<DashboardCard[]>>(`${FLEET_API}/dashboard/cards`, {
-      params: new HttpParams().set('dashboard_id', 'HEM').set('date', 'all'),
+      params: new HttpParams().set('dashboard_id', DASHBOARD_ID).set('date', 'all'),
+    });
+  }
+
+  getFilteredCards(date: string): Observable<ApiResponse<DashboardCard[]>> {
+    return this.http.get<ApiResponse<DashboardCard[]>>(`${FLEET_API}/dashboard/cards`, {
+      params: new HttpParams().set('dashboard_id', DASHBOARD_ID).set('date', date),
     });
   }
 
   getGraphs(): Observable<ApiResponse<DashboardGraph[]>> {
     return this.http.get<ApiResponse<DashboardGraph[]>>(`${FLEET_API}/dashboard/graphs`, {
-      params: new HttpParams().set('dashboard_id', 'HEM'),
+      params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
     });
   }
 
   getFleets(): Observable<ApiResponse<{ count: number; data: Fleet[] }>> {
-    return this.http.get<ApiResponse<{ count: number; data: Fleet[] }>>(`${FLEET_API}/fleet`, {
-      params: new HttpParams().set('time_zone', 'Asia/Karachi'),
+    return this.http.get<ApiResponse<{ count: number; data: Fleet[] }>>(`${PROD_FLEET_API}/fleet`, {
+      params: new HttpParams().set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone),
     });
   }
 
   getDashcams(): Observable<ApiResponse<{ count: number; data: DashcamDevice[] }>> {
     return this.http.get<ApiResponse<{ count: number; data: DashcamDevice[] }>>(
       `${FLEET_API}/fleet/available_dashcam_devices`,
-      { params: new HttpParams().set('time_zone', 'Asia/Karachi') },
+      { params: new HttpParams().set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone) },
     );
   }
 }

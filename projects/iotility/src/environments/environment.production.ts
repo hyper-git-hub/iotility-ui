@@ -1,10 +1,10 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://staging.gateway.iot.vodafone.com.qa',
-  userMsBaseUrl: 'https://at.admin.staging.iot.vodafone.com.qa',
-  cobPackagesBaseUrl: 'https://staging.gateway.iot.vodafone.com.qa/cob3packages',
+  apiBaseUrl: 'https://devgateway.hypernymbiz.com',
+  userMsBaseUrl: 'https://devgateway.hypernymbiz.com/user-ms',
+  cobPackagesBaseUrl: 'https://devgateway.hypernymbiz.com/cob-packages',
   cobConsumerAppSecret: 'G;6{l?5]V@p5@2~<f%PFJ+W4k@-H?s',
-  fleetBaseUrl: 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet',
-  signalRUrl: 'https://func-stag-all.azurewebsites.net',
+  fleetBaseUrl: 'https://devgateway.hypernymbiz.com/fms-fleet',
+  signalRUrl: 'https://func-vfq-dev.azurewebsites.net',
   useCaseId: 6,
 } as const;

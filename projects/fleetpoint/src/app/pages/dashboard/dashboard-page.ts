@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-shell.css',
 })
@@ -15,10 +15,10 @@ export class DashboardPage {
   });
 
   protected readonly tabs = [
-    { label: 'Overview', path: 'overview', exact: false },
-    // { label: 'Safety', path: 'safety', exact: false },
-    // { label: 'Maintenance', path: 'maintenance', exact: false },
-    // { label: 'Jobs', path: 'jobs', exact: false },
-    // { label: 'Reports', path: 'reports', exact: false },
+    { label: 'Overview', path: 'overview', exact: true },
+    { label: 'Safety', path: 'safety', exact: true },
+    { label: 'Maintenance', path: 'maintenance', exact: true },
+    { label: 'Jobs', path: 'jobs', exact: true },
+    { label: 'Reports', path: 'reports', exact: true },
   ];
 }

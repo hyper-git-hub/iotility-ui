@@ -1,16 +1,15 @@
 @reference "../../../../styles.css";
+
 .safety-grid {
-  @apply grid gap-4 lg:grid-cols-2;
+  @apply grid gap-4;
 }
-.safety-reveal-one {
-  --reveal-delay: 160ms;
-}
-.safety-reveal-two {
-  --reveal-delay: 240ms;
-}
-.safety-reveal-three {
-  --reveal-delay: 320ms;
-}
-.safety-reveal-four {
-  --reveal-delay: 400ms;
+
+@media (min-width: 64rem) {
+  .safety-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+
+  .aggressive-fleets { grid-column: 1 / -1; grid-row: 1; }
+  .driver-violations { grid-column: 1 / span 7; grid-row: 2; }
+  .safety-scorecard { grid-column: 8 / span 3; grid-row: 2; }
 }

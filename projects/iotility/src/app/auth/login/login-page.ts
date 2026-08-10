@@ -3,7 +3,7 @@ import { Component, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BlockingLoader, SmoothHeight } from '@iotility/shared-ui';
-import { finalize, forkJoin, switchMap, tap } from 'rxjs';
+import { finalize, switchMap, tap } from 'rxjs';
 import { AuthApiResponse, AuthApiService } from '../../shared/services/auth-api.service';
 import { AuthSessionService } from '../../shared/services/auth-session.service';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
@@ -58,31 +58,19 @@ export class LoginPage {
             ? localStorage.setItem('rememberedEmail', email.trim().toLowerCase())
             : localStorage.removeItem('rememberedEmail');
         }),
-        switchMap(() =>
-          forkJoin({
-            profile: this.authApi.getUserProfile(),
-            roleAccess: this.authApi.getRoleAccess(),
-          }),
-        ),
+        switchMap(() => this.authApi.getUserProfile()),
         finalize(() => this.submitting.set(false)),
       )
       .subscribe({
-        next: ({ profile, roleAccess }) => {
+        next: (profile) => {
           if (profile.error) {
             this.clearSession();
             this.error.set(profile.message || 'Unable to load your profile.');
             return;
           }
-          if (roleAccess.error) {
-            this.clearSession();
-            this.error.set(roleAccess.message || 'Unable to load your access permissions.');
-            return;
-          }
-          localStorage.setItem('user', JSON.stringify(profile.data ?? {}));
-          localStorage.setItem('language', profile.data?.language || 'en');
-          localStorage.setItem('roleAccess', JSON.stringify(roleAccess.data ?? {}));
-          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-          void this.router.navigateByUrl(this.safeReturnUrl(returnUrl));
+          sessionStorage.setItem('pendingAuthProfile', JSON.stringify(profile.data ?? {}));
+          const returnUrl = this.safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
+          void this.router.navigate(['/auth/mfa'], { queryParams: { returnUrl } });
         },
         error: (response: HttpErrorResponse | Error) => {
           this.clearSession();

@@ -12,6 +12,11 @@ export const AUTH_ROUTES: Routes = [
         loadComponent: () => import('./login/login-page').then((module) => module.LoginPage),
       },
       {
+        path: 'mfa',
+        title: 'Secure Your Account | IoTility',
+        loadComponent: () => import('./mfa/mfa-page').then((module) => module.MfaPage),
+      },
+      {
         path: 'forgot-password',
         title: 'Forgot Password | IoTility',
         loadComponent: () =>

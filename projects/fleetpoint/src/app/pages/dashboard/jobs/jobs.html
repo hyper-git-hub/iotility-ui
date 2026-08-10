@@ -1,35 +1,11 @@
 <section class="jobs-grid">
-  <app-fleet-bar-chart
-    class="smooth-reveal jobs-reveal-one"
-    title="Jobs by Location"
-    subtitle="Today · ad-hoc vs scheduled"
-    [data]="jobsByLocationData"
-    [options]="jobsByLocationOptions"
-  />
-
-  <app-fleet-doughnut-chart
-    class="smooth-reveal jobs-reveal-two"
-    title="Job Statistics"
-    subtitle="Today · 67 total jobs · 51% complete"
-    filterLabel="Today"
-    [data]="jobStatisticsData"
-    [options]="doughnutOptions"
-  />
-
-  <app-fleet-doughnut-chart
-    class="smooth-reveal jobs-reveal-three"
-    title="Driver Tasks Status"
-    subtitle="Today · all fleets"
-    [data]="driverTaskData"
-    [options]="doughnutOptions"
-  />
-
-  <app-fleet-bar-chart
-    class="smooth-reveal jobs-reveal-four"
-    title="Staff Statistics"
-    subtitle="Today · by depot"
-    filterLabel="Today"
-    [data]="staffStatisticsData"
-    [options]="staffStatisticsOptions"
-  />
+  @for (graph of jobGraphs(); track graph.code) {
+    <app-dashboard-graph
+      [graph]="graph"
+      [class.jobs-tasks]="graph.code === 'DTS'"
+      [class.jobs-chart]="graph.code === 'JJ'"
+      [class.jobs-statistics]="graph.code === 'JSJ'"
+      [class.staff-statistics]="graph.code === 'JSS'"
+    />
+  }
 </section>

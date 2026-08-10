@@ -9,20 +9,8 @@
     headerActionLabel="View all"
   />
   <div class="maintenance-charts">
-    <app-fleet-bar-chart
-      class="smooth-reveal maintenance-chart-one"
-      title="Maintenance Status"
-      subtitle="By service type"
-      filterLabel="Service Type"
-      [data]="statusData"
-      [options]="statusOptions"
-    /><app-fleet-bar-chart
-      class="smooth-reveal maintenance-chart-two"
-      title="Maintenance Probability"
-      subtitle="Predictive · ML model · top 6 vehicles"
-      badge="AI Powered"
-      [data]="probabilityData"
-      [options]="probabilityOptions"
-    />
+    @for (graph of maintenanceGraphs(); track graph.code) {
+      <app-dashboard-graph [graph]="graph" />
+    }
   </div>
 </section>

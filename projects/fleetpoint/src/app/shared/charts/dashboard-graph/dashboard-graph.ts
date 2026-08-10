@@ -49,19 +49,39 @@ export class DashboardGraphComponent {
 
   protected isDoughnut(): boolean {
     const graph = this.graph();
-    return graph.code === 'DTS' ||
-      (graph.code !== 'JJ' && graph.chart_type === 'piechart') ||
-      Array.isArray(graph.data) ||
-      (!Array.isArray(graph.data) && Boolean(graph.data.values));
+    if (['DSS', 'DTS', 'JSJ', 'MS'].includes(graph.code)) return true;
+    if (['JJ', 'RS', 'VS'].includes(graph.code)) return false;
+    return graph.chart_type === 'piechart';
   }
 
   protected isLine(): boolean {
-    return this.graph().chart_type === 'line_area_chart';
+    return this.graph().code === 'ADF' || this.graph().chart_type === 'line_area_chart';
   }
 
   protected barData(): ChartData<'bar', number[], string> {
     const data = this.graph().data;
-    if (Array.isArray(data)) return { labels: [], datasets: [] };
+    if (Array.isArray(data)) {
+      return {
+        labels: data.map((row) => row.fleet_name),
+        datasets: [{
+          label: 'Vehicles',
+          data: data.map((row) => row.vehicle_count),
+          backgroundColor: this.colors.brand,
+          borderRadius: 5,
+        }],
+      };
+    }
+    if (data.values) {
+      return {
+        labels: data.categories ?? [],
+        datasets: [{
+          label: this.graph().name,
+          data: data.values,
+          backgroundColor: this.colors.brand,
+          borderRadius: 5,
+        }],
+      };
+    }
     return {
       labels: data.categories ?? [],
       datasets: this.namedSeries(data.series).map((series, index) => ({
@@ -78,19 +98,18 @@ export class DashboardGraphComponent {
     if (Array.isArray(data)) return { labels: [], datasets: [] };
     return {
       labels: data.categories ?? [],
-      datasets: this.namedSeries(data.series).map((series, index) => {
-        const color = this.palette[index % this.palette.length];
-        return {
-          label: this.readableLabel(series.name),
-          data: series.data,
-          borderColor: color,
-          tension: 0.35,
-          pointBackgroundColor: color,
-          pointBorderColor: color,
-          pointBorderWidth: 1,
-          pointRadius: 3,
-        };
-      }),
+      datasets: this.namedSeries(data.series).map((series, index) => ({
+        label: this.readableLabel(series.name),
+        data: series.data,
+        borderColor: this.palette[index % this.palette.length],
+        backgroundColor: `color-mix(in srgb, ${this.palette[index % this.palette.length]} 14%, transparent)`,
+        fill: true,
+        tension: 0.35,
+        pointBackgroundColor: this.palette[index % this.palette.length],
+        pointBorderColor: this.palette[index % this.palette.length],
+        pointBorderWidth: 1,
+        pointRadius: 3,
+      })),
     };
   }
 
@@ -140,9 +159,12 @@ export class DashboardGraphComponent {
   }
 
   protected barOptions(): ChartOptions<'bar'> {
-    const chartType = this.graph().chart_type;
-    const horizontal = chartType === 'horizontal_stackbar_chart' || chartType === 'horizontal_bar_chart';
-    const stacked = chartType === 'horizontal_stackbar_chart' || chartType === 'stackbar_chart';
+    const graph = this.graph();
+    const chartType = graph.chart_type;
+    const horizontal = ['DVG', 'JSS'].includes(graph.code) ||
+      chartType === 'horizontal_stackbar_chart' || chartType === 'horizontal_bar_chart';
+    const stacked = graph.code === 'JSS' ||
+      chartType === 'horizontal_stackbar_chart' || chartType === 'stackbar_chart';
     return {
       indexAxis: horizontal ? 'y' : 'x',
       interaction: { mode: 'index', intersect: false },

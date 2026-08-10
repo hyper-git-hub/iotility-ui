@@ -6,18 +6,15 @@
     </div>
     <!-- <button type="button" class="customise-button">Customise Dashboard</button> -->
   </header>
-  <!-- Dashboard tabs are temporarily hidden. Overview renders directly below. -->
-  <!--
-    <nav class="dashboard-tabs smooth-reveal dashboard-reveal-tabs" aria-label="Dashboard sections">
-      @for (tab of tabs; track tab.path) {
-        <a
-          [routerLink]="tab.path"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: tab.exact }"
-          >{{ tab.label }}</a
-        >
-      }
-    </nav>
-  -->
+  <nav class="dashboard-tabs smooth-reveal dashboard-reveal-tabs" aria-label="Dashboard sections">
+    @for (tab of tabs; track tab.path) {
+      <a
+        [routerLink]="tab.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: tab.exact }"
+        >{{ tab.label }}</a
+      >
+    }
+  </nav>
   <router-outlet />
 </div>

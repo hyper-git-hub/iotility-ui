@@ -31,6 +31,7 @@ export default withNativeFederation({
     '@deck.gl/core',
     '@deck.gl/mapbox',
     '@deck.gl/mesh-layers',
+    'qrcode',
     // Add further packages you don't need at runtime
   ],
 

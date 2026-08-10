@@ -41,13 +41,42 @@
   }
 </section>
 
+<section class="fleet-status-card" aria-label="Live fleet status">
+  <header class="fleet-status-heading">
+    <h2>Live Fleet Status</h2>
+    <span><i></i> Live · {{ vehicles().length }} vehicles</span>
+  </header>
+  <div class="fleet-status-bar" role="img" [attr.aria-label]="vehicles().length + ' vehicles by live status'">
+    @for (item of fleetStatusItems(); track item.key) {
+      <span [class]="'status-segment ' + item.tone" [style.width.%]="statusPercentage(item.value)"></span>
+    }
+  </div>
+  <div class="fleet-status-grid">
+    @for (item of fleetStatusItems(); track item.key) {
+      <article [class]="'fleet-status-item ' + item.tone">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          @switch (item.key) {
+            @case ('moving') { <path d="M3 7h11v9H3zM14 10h4l3 3v3h-2M5 16h2M11 16h5"/><circle cx="9" cy="17" r="2"/><circle cx="17" cy="17" r="2"/> }
+            @case ('idling') { <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/> }
+            @case ('stopped') { <circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/> }
+            @case ('alert') { <path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5M12 17h.01"/> }
+            @case ('offline') { <path d="M4 4l16 16M8.5 8.5A7 7 0 0 1 19 12M5 12a9.8 9.8 0 0 1 1.2-1.7M9 15a4.2 4.2 0 0 1 6 0M12 19h.01"/> }
+          }
+        </svg>
+        <strong>{{ item.value }}</strong>
+        <span>{{ item.label }}</span>
+      </article>
+    }
+  </div>
+</section>
+
 <section class="analytics-section" [attr.aria-busy]="graphsLoading()">
   <div class="section-heading">
     <div><h2>Dashboard analytics</h2><p>Performance, safety, jobs and maintenance insights</p></div>
     @if (graphsLoading()) {
       <ui-skeleton class="skeleton-report-count" width="4.5rem" height="1.45rem" radius="9999px" />
     } @else if (!graphsError()) {
-      <span>{{ graphs().length }} reports</span>
+      <span>{{ displayedGraphs().length }} reports</span>
     }
   </div>
 
@@ -98,7 +127,7 @@
     </section>
   } @else {
     <div class="analytics-grid">
-      @for (graph of graphs(); track graph.code) {
+      @for (graph of displayedGraphs(); track graph.code) {
         <app-dashboard-graph [graph]="graph" />
       }
     </div>
