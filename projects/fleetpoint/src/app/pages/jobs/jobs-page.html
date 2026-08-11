@@ -6,11 +6,11 @@
     </div>
     <div class="heading-actions">
       <div class="view-switch" aria-label="Job view">
-        <button type="button" [class.active]="activeView() === 'list'" (click)="selectView('list')"><img src="assets/fleetpoint/icons/list-dots.svg" alt="" aria-hidden="true" />List</button>
-        <button type="button" [class.active]="activeView() === 'dispatch'" (click)="selectView('dispatch')"><img src="assets/fleetpoint/icons/calendar.svg" alt="" aria-hidden="true" />Dispatch</button>
+        <button type="button" [class.active]="activeView() === 'list'" (click)="selectView('list')"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/list-dots.svg')" aria-hidden="true"></span>List</button>
+        <button type="button" [class.active]="activeView() === 'dispatch'" (click)="selectView('dispatch')"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/calendar.svg')" aria-hidden="true"></span>Dispatch</button>
       </div>
-      <button type="button" class="export-job"><img src="assets/fleetpoint/icons/export.svg" alt="" aria-hidden="true" />Export</button>
-      <button type="button" class="add-job" (click)="openJobForm()">+ Create Job</button>
+      <button type="button" class="export-job"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export</button>
+      <button type="button" class="add-job" (click)="openJobForm()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Create Job</button>
     </div>
   </header>
 

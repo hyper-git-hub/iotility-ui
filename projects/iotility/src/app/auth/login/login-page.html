@@ -39,9 +39,9 @@
         (click)="togglePasswordVisibility()"
       >
         @if (showPassword()) {
-          <img src="assets/icons/eye.svg" alt="" aria-hidden="true" />
+          <span class="color-icon size-4" style="--icon: url('/assets/icons/eye.svg')" aria-hidden="true"></span>
         } @else {
-          <img src="assets/icons/eye-off.svg" alt="" aria-hidden="true" />
+          <span class="color-icon size-4" style="--icon: url('/assets/icons/eye-off.svg')" aria-hidden="true"></span>
         }
       </button>
     </div>

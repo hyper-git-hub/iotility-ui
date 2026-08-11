@@ -5,10 +5,10 @@
     <div><h1>Users &amp; Roles</h1><p>Manage FleetPoint users, access groups, and permissions</p></div>
     <div class="heading-actions">
       @if (activeTab() === 'users') {
-        <button type="button" class="primary-action" (click)="openCreateUser()">+ Add user</button>
+        <button type="button" class="primary-action" (click)="openCreateUser()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add user</button>
       } @else {
         <button type="button" class="secondary-action" (click)="openAssignUsers()">Assign users to a group</button>
-        <button type="button" class="primary-action" (click)="openCreateRole()">+ Add access group</button>
+        <button type="button" class="primary-action" (click)="openCreateRole()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add access group</button>
       }
     </div>
   </header>
@@ -111,8 +111,8 @@
   }
 </section>
 
-<app-modal [open]="userModalOpen()" size="lg" labelledBy="user-form-title" (closed)="userModalOpen.set(false)">
-  <h2 modal-header id="user-form-title">{{ selectedUser() ? 'Edit user' : 'Add user' }}</h2>
+<app-modal [open]="userModalOpen()" [busy]="actionLoading()" size="lg" labelledBy="user-form-title" (closed)="userModalOpen.set(false)">
+  <div modal-header><h2 id="user-form-title">{{ selectedUser() ? 'Update User' : 'Create User' }}</h2><p class="form-subtitle">{{ selectedUser() ? 'Update user account details' : 'Add a new FleetPoint user' }}</p></div>
   <form id="user-management-form" class="management-form" [formGroup]="userForm" (ngSubmit)="saveUser()">
     <div class="user-form-top">
       <div class="user-core-fields">
@@ -122,7 +122,7 @@
         <label><span>Phone <b>*</b></span><input class="shared-form-control" formControlName="phone" placeholder="+974 0000 0000" />@if (submitted() && userForm.controls.phone.invalid) { <small>Enter a phone number.</small> }</label>
       </div>
       <div class="user-picture">
-        <div class="user-picture-preview">@if (userImagePreview()) { <img [src]="userImagePreview()" alt="User preview" /> } @else { <span>{{ userInitials() }}</span> }</div>
+        <div class="user-picture-preview">@if (userImagePreview()) { <img [src]="userImagePreview()" alt="User preview" /> } @else { <img class="picture-placeholder" src="assets/fleetpoint/icons/avatar-placeholder.svg" alt="" aria-hidden="true" /> }</div>
         <div><strong>Profile picture</strong><p>PNG or JPG, up to 5 MB</p><label><input type="file" accept="image/png,image/jpeg" (change)="chooseImage($event)" />Choose picture</label></div>
       </div>
     </div>
@@ -132,28 +132,36 @@
       <label><span>Work location</span><input class="shared-form-control" formControlName="workLocation" placeholder="Work location" /></label>
       <label><span>Internal role</span><input class="shared-form-control" formControlName="internalRole" placeholder="Internal role" /></label>
       @if (selectedUser()) { <label><span>Status</span><shared-dropdown class="management-dropdown" [options]="userStatusOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[stringValue(userForm.controls.status.value)]" (optionSelected)="selectUserStatus($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(userStatusOptions, stringValue(userForm.controls.status.value), 'Select status') }}</span></button></shared-dropdown></label> }
-      <label class="check-field"><input type="checkbox" formControlName="write" /><span>Allow write access</span></label>
+      <label class="check-field"><input class="fleet-checkbox" type="checkbox" formControlName="write" /><span>Allow write access</span></label>
     </div>
   </form>
-  <div modal-footer class="modal-actions"><button type="button" class="secondary-action" (click)="userModalOpen.set(false)">Cancel</button><button type="submit" form="user-management-form" class="primary-action" [disabled]="userForm.invalid || actionLoading()">{{ selectedUser() ? 'Save changes' : 'Create user' }}</button></div>
+  <div modal-footer class="modal-actions user-form-actions"><button type="button" class="secondary-action" [disabled]="actionLoading()" (click)="userModalOpen.set(false)">Cancel</button><button type="submit" form="user-management-form" class="primary-action" [disabled]="actionLoading()">{{ selectedUser() ? 'Update User' : 'Create User' }}</button></div>
 </app-modal>
 
-<app-modal [open]="roleModalOpen()" size="xl" labelledBy="role-form-title" (closed)="roleModalOpen.set(false)">
-  <h2 modal-header id="role-form-title">{{ selectedRole() ? 'Edit access group' : 'Create access group' }}</h2>
-  <form id="role-management-form" class="role-form" [formGroup]="roleForm" (ngSubmit)="saveRole()">
-    <div class="role-basics"><label><span>Group name <b>*</b></span><input class="shared-form-control" formControlName="name" placeholder="e.g. Fleet supervisors" />@if (submitted() && roleForm.controls.name.invalid) { <small>Enter a group name.</small> }</label><label><span>Description <b>*</b></span><textarea class="shared-form-control shared-form-control--single-line" formControlName="description" rows="1" placeholder="Describe what this group can access"></textarea>@if (submitted() && roleForm.controls.description.invalid) { <small>Enter a description.</small> }</label></div>
-    <section class="selection-panel"><button type="button" class="selection-toggle" [attr.aria-expanded]="featuresExpanded()" (click)="featuresExpanded.set(!featuresExpanded())"><div><h3>FleetPoint features</h3><p>Features enabled by the customer's package</p></div><span class="selection-count">{{ selectedFeatures().length }} selected</span><img src="assets/fleetpoint/icons/chevron-down-toggle.svg" [class.collapsed]="!featuresExpanded()" alt="" aria-hidden="true" /></button><shared-smooth-height><div>@if (featuresExpanded()) { @if (featuresLoading()) { <p class="inline-loading">Loading features...</p> } @else { <div class="selection-grid">@for (feature of featureOptions(); track feature.id) { <label class="selection-item"><input type="checkbox" [checked]="selectedFeatures().includes(feature.id)" (change)="toggleFeature(feature.id, $any($event.target).checked)" /><span><strong>{{ feature.label }}</strong><small>{{ feature.section }}</small></span></label> } @empty { <p class="empty-selection">No package features are available.</p> }</div> } } @if (submitted() && !selectedFeatures().length) { <small class="selection-error">Select at least one feature.</small> }</div></shared-smooth-height></section>
-    <section class="selection-panel"><button type="button" class="selection-toggle" [attr.aria-expanded]="vehiclesExpanded()" (click)="vehiclesExpanded.set(!vehiclesExpanded())"><div><h3>Vehicle access</h3><p>Optionally restrict this group to selected vehicles</p></div><span class="selection-count">{{ selectedVehicles().length }} selected</span><img src="assets/fleetpoint/icons/chevron-down-toggle.svg" [class.collapsed]="!vehiclesExpanded()" alt="" aria-hidden="true" /></button><shared-smooth-height><div>@if (vehiclesExpanded()) { <div class="selection-grid vehicle-grid">@for (vehicle of vehicles(); track vehicle.id) { <label class="selection-item"><input type="checkbox" [checked]="selectedVehicles().includes(vehicle.id)" (change)="toggleVehicle(vehicle.id, $any($event.target).checked)" /><span><strong>{{ vehicle.registration || vehicle.name || 'Vehicle ' + vehicle.id }}</strong><small>Vehicle</small></span></label> } @empty { <p class="empty-selection">No vehicles available.</p> }</div> }</div></shared-smooth-height></section>
-    @if (selectedRole()?.group_user?.length) { <section class="assigned-users"><h3>Assigned users</h3><div>@for (user of selectedRole()!.group_user; track user.guid) { <span>{{ user.email || user.first_name + ' ' + user.last_name }}</span> }</div></section> }
-  </form>
-  <div modal-footer class="modal-actions"><button type="button" class="secondary-action" (click)="roleModalOpen.set(false)">Cancel</button><button type="submit" form="role-management-form" class="primary-action" [disabled]="roleForm.invalid || !selectedFeatures().length || actionLoading() || featuresLoading()">{{ selectedRole() ? 'Update group' : 'Create group' }}</button></div>
+<app-modal [open]="roleModalOpen()" [busy]="actionLoading()" size="xl" labelledBy="role-form-title" (closed)="roleModalOpen.set(false)">
+  <div modal-header><h2 id="role-form-title">{{ selectedRole() ? 'Update Access Group' : 'Create Access Group' }}</h2><p class="form-subtitle">{{ selectedRole() ? 'Update group access and permissions' : 'Configure user access and permissions' }}</p></div>
+  <div class="role-form-layout">
+    <app-stepper [steps]="roleSteps" [activeIndex]="roleStep() - 1" (stepSelected)="roleStep.set($event === 0 ? 1 : 2)" />
+    <shared-smooth-height>
+    <form id="role-management-form" class="role-form" [formGroup]="roleForm" (ngSubmit)="saveRole()">
+    @if (roleStep() === 1) {
+      <div class="role-basics"><label><span>Group name <b>*</b></span><input class="shared-form-control" formControlName="name" placeholder="e.g. Fleet supervisors" />@if (submitted() && roleForm.controls.name.invalid) { <small>Enter a group name.</small> }</label><label><span>Description <b>*</b></span><textarea class="shared-form-control shared-form-control--single-line" formControlName="description" rows="1" placeholder="Describe what this group can access"></textarea>@if (submitted() && roleForm.controls.description.invalid) { <small>Enter a description.</small> }</label></div>
+      <section class="selection-panel"><header class="selection-header"><div><h3>FleetPoint features</h3><p>Choose the areas this group can access</p></div><div class="selection-tools"><span class="selection-count">{{ selectedFeatures().length }} selected</span><label class="select-all"><input class="fleet-checkbox" type="checkbox" [checked]="featureOptions().length > 0 && selectedFeatures().length === featureOptions().length" (change)="toggleAllFeatures($any($event.target).checked)" /><span>Select all</span></label></div></header>@if (featuresLoading()) { <p class="inline-loading">Loading features...</p> } @else { <div class="selection-grid">@for (feature of featureOptions(); track feature.id) { <label class="selection-item" [class.selected]="selectedFeatures().includes(feature.id)"><input class="fleet-checkbox" type="checkbox" [checked]="selectedFeatures().includes(feature.id)" (change)="toggleFeature(feature.id, $any($event.target).checked)" /><span><strong>{{ feature.label }}</strong><small>{{ feature.section }}</small></span></label> } @empty { <p class="empty-selection">No package features are available.</p> }</div> } @if (submitted() && !selectedFeatures().length) { <small class="selection-error">Select at least one feature.</small> }</section>
+    } @else {
+      <section class="selection-panel"><header class="selection-header"><div><h3>Vehicle access</h3><p>Choose which vehicles this group can access</p></div><div class="selection-tools"><span class="selection-count">{{ selectedVehicles().length }} selected</span><label class="select-all"><input class="fleet-checkbox" type="checkbox" [checked]="vehicles().length > 0 && selectedVehicles().length === vehicles().length" (change)="toggleAllVehicles($any($event.target).checked)" /><span>Select all</span></label></div></header><div class="selection-grid vehicle-grid">@for (vehicle of vehicles(); track vehicle.id) { <label class="selection-item" [class.selected]="selectedVehicles().includes(vehicle.id)"><input class="fleet-checkbox" type="checkbox" [checked]="selectedVehicles().includes(vehicle.id)" (change)="toggleVehicle(vehicle.id, $any($event.target).checked)" /><span><strong>{{ vehicle.registration || vehicle.name || 'Vehicle ' + vehicle.id }}</strong><small>Vehicle access</small></span></label> } @empty { <p class="empty-selection">No vehicles available.</p> }</div></section>
+      @if (selectedRole()?.group_user?.length) { <section class="assigned-users"><h3>Assigned users</h3><div>@for (user of selectedRole()!.group_user; track user.guid) { <span>{{ user.email || user.first_name + ' ' + user.last_name }}</span> }</div></section> }
+    }
+    </form>
+    </shared-smooth-height>
+  </div>
+  <div modal-footer class="modal-actions role-form-actions"><button type="button" class="secondary-action" [disabled]="actionLoading()" (click)="roleStep() === 1 ? roleModalOpen.set(false) : roleStep.set(1)">{{ roleStep() === 1 ? 'Cancel' : 'Back' }}</button>@if (roleStep() === 1) { <button type="button" class="primary-action" [disabled]="featuresLoading()" (click)="continueRoleForm()">Continue</button> } @else { <button type="submit" form="role-management-form" class="primary-action" [disabled]="actionLoading()">{{ selectedRole() ? 'Update Group' : 'Create Group' }}</button> }</div>
 </app-modal>
 
-<app-modal [open]="assignModalOpen()" size="lg" labelledBy="assign-form-title" (closed)="assignModalOpen.set(false)">
-  <h2 modal-header id="assign-form-title">Assign users to an access group</h2>
+<app-modal [open]="assignModalOpen()" [busy]="actionLoading()" size="lg" labelledBy="assign-form-title" (closed)="assignModalOpen.set(false)">
+  <div modal-header><h2 id="assign-form-title">Assign Users to a Group</h2><p class="form-subtitle">Choose a group and the users to add</p></div>
   <form id="assign-users-form" class="assign-form" [formGroup]="assignForm" (ngSubmit)="assignUsers()">
     <label><span>Access group <b>*</b></span><shared-dropdown class="management-dropdown" [options]="roleOptions()" mode="single" align="left" [searchable]="true" searchPlaceholder="Search groups" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="assignForm.controls.groupId.value ? [stringValue(assignForm.controls.groupId.value)] : []" (optionSelected)="selectAssignGroup($event)"><button dropdown-trigger type="button" [disabled]="assignmentOptionsLoading()"><span>{{ assignmentOptionsLoading() ? 'Loading groups...' : optionLabel(roleOptions(), stringValue(assignForm.controls.groupId.value), 'Select a group') }}</span></button></shared-dropdown>@if (submitted() && assignForm.controls.groupId.invalid) { <small>Select an access group.</small> }</label>
-    <section class="selection-panel"><header><div><h3>Unassigned users</h3><p>Choose one or more users to add</p></div><span>{{ selectedAssignUsers().length }} selected</span></header>@if (assignmentOptionsLoading()) { <p class="inline-loading">Loading users...</p> } @else { <div class="user-choice-list">@for (user of unassignedUsers(); track user.guid) { <label class="selection-item"><input type="checkbox" [checked]="selectedAssignUsers().includes(user.email)" (change)="toggleAssignUser(user.email, $any($event.target).checked)" /><span><strong>{{ user.email }}</strong><small>{{ user.first_name }} {{ user.last_name }}</small></span></label> } @empty { <p class="empty-selection">All users are already assigned.</p> }</div> } @if (submitted() && !selectedAssignUsers().length) { <small class="selection-error">Select at least one user.</small> }</section>
+    <section class="selection-panel"><header><div><h3>Unassigned users</h3><p>Choose one or more users to add</p></div><span>{{ selectedAssignUsers().length }} selected</span></header>@if (assignmentOptionsLoading()) { <p class="inline-loading">Loading users...</p> } @else { <div class="user-choice-list">@for (user of unassignedUsers(); track user.guid) { <label class="selection-item"><input class="fleet-checkbox" type="checkbox" [checked]="selectedAssignUsers().includes(user.email)" (change)="toggleAssignUser(user.email, $any($event.target).checked)" /><span><strong>{{ user.email }}</strong><small>{{ user.first_name }} {{ user.last_name }}</small></span></label> } @empty { <p class="empty-selection">All users are already assigned.</p> }</div> } @if (submitted() && !selectedAssignUsers().length) { <small class="selection-error">Select at least one user.</small> }</section>
   </form>
-  <div modal-footer class="modal-actions"><button type="button" class="secondary-action" (click)="assignModalOpen.set(false)">Cancel</button><button type="submit" form="assign-users-form" class="primary-action" [disabled]="assignForm.invalid || !selectedAssignUsers().length || actionLoading() || assignmentOptionsLoading()">Assign users</button></div>
+  <div modal-footer class="modal-actions assign-form-actions"><button type="button" class="secondary-action" [disabled]="actionLoading()" (click)="assignModalOpen.set(false)">Cancel</button><button type="submit" form="assign-users-form" class="primary-action" [disabled]="actionLoading() || assignmentOptionsLoading()">Assign Users</button></div>
 </app-modal>

@@ -281,7 +281,7 @@ strong {
   @apply block h-full rounded-full bg-brand-500;
 }
 .actions {
-  @apply flex gap-1.5;
+  @apply flex gap-0.5;
 }
 .actions button {
   @apply cursor-pointer rounded border border-line bg-transparent px-2 py-1 text-[10px] text-muted dark:border-dark-line dark:text-brand-300;
@@ -361,7 +361,8 @@ strong {
 .icon-actions button:first-child {
   @apply grid size-7 place-items-center rounded-lg border-0 bg-transparent p-0 text-muted transition hover:bg-brand-50 hover:text-brand-600 dark:text-brand-300 dark:hover:bg-dark-canvas;
 }
-.icon-actions img {
+.icon-actions img,
+.icon-actions .color-icon {
   @apply size-4;
 }
 .icon-actions button.delete-action {

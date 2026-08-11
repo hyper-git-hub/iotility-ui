@@ -1,10 +1,14 @@
 @reference "../../../../styles.css";
 @import "../../../shared/styles/fields.css";
 
-.step-form-shell { @apply flex flex-col items-start gap-5 lg:flex-row; }
+.vehicle-form-layout { @apply flex flex-col gap-4 lg:flex-row; }
 .step-content { @apply min-w-0 flex-1; }
-.details-step { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3; }
-.wide { @apply md:col-span-2 xl:col-span-3; }
+.details-step { @apply grid gap-3 sm:grid-cols-2; }
+.wide { @apply sm:col-span-2; }
+.details-step > header h3,
+.monitoring-step > header h3 { @apply text-base font-bold text-ink dark:text-white; }
+.details-step > header p,
+.monitoring-step > header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
 .purchase-field,.violations { @apply border-0 p-0; }
 .purchase-field legend,.violations legend { @apply mb-2 text-xs font-medium text-ink dark:text-brand-300; }
 .purchase-field > div { @apply grid grid-cols-2 overflow-hidden rounded-xl border border-line dark:border-dark-line; }
@@ -17,7 +21,7 @@
 .violations input { @apply sr-only; }
 .violations img { @apply size-9 shrink-0; }
 .violations strong { @apply text-sm font-semibold; }
-.monitor-check { @apply absolute left-3 top-3 hidden size-5 place-items-center rounded-full border border-white text-[10px] text-white; }
+.monitor-check { @apply absolute right-3 top-3 hidden size-5 place-items-center rounded-full border border-brand-600 bg-brand-600 text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(124,58,237,0.3)]; }
 .violations label:has(input:checked) { @apply border-brand-600 bg-brand-600 text-white shadow-md; }
 .violations label:has(input:checked) .monitor-check { @apply grid; }
 .device-fields { @apply grid gap-4 md:grid-cols-2; }
@@ -30,12 +34,8 @@
 .driver-search { @apply flex h-10 w-full items-center gap-2 rounded-xl border border-line px-3 sm:w-64 dark:border-dark-line; }.driver-search svg { @apply size-4 text-muted; fill:none;stroke:currentColor;stroke-width:1.8; }.driver-search input { @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none dark:text-white; }
 .driver-grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-3; }
 .driver-card { @apply grid cursor-pointer grid-cols-[auto_1fr] items-center gap-x-3 rounded-2xl border border-line bg-white p-3 text-left transition hover:border-brand-400 dark:border-dark-line dark:bg-dark-canvas; }.driver-card.selected { @apply border-brand-600 ring-2 ring-brand-500/15; }.driver-avatar { @apply row-span-2 grid size-11 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700; }.driver-card strong { @apply block text-xs text-ink dark:text-white; }.driver-card small { @apply mt-1 block text-[10px] text-muted; }.driver-card em { @apply col-span-2 mt-3 rounded-lg border border-line py-1.5 text-center text-[10px] not-italic text-muted dark:border-dark-line; }.driver-card.selected em { @apply border-brand-600 bg-brand-600 text-white; }
-.step-footer { @apply flex w-full items-center justify-between gap-3; }
-.step-footer > button { @apply min-w-24; }
-.step-progress { @apply flex items-center gap-2; }
-.step-progress > span { @apply grid size-11 place-items-center rounded-full text-[10px] font-bold text-ink dark:text-white; background: radial-gradient(circle, white 57%, transparent 59%), conic-gradient(var(--color-brand-500) var(--step-progress), var(--color-line) 0); }
-.step-progress p { @apply hidden text-xs text-muted sm:block dark:text-brand-300; }
-:host-context(.dark) .step-progress > span { background: radial-gradient(circle, var(--color-dark-surface) 57%, transparent 59%), conic-gradient(var(--color-brand-500) var(--step-progress), var(--color-dark-line) 0); }
+.vehicle-form-actions { @apply ml-auto flex w-full gap-2; }
+.vehicle-form-actions button { @apply flex-1; }
 .step-enter { animation: step-enter 260ms ease-out both; } @keyframes step-enter { from { opacity:0;transform:translateX(10px); } to { opacity:1;transform:none; } }
 .vehicle-picture { @apply flex items-center justify-between gap-5 rounded-2xl border border-dashed border-line bg-canvas p-4 dark:border-dark-line dark:bg-dark-canvas; }
 .vehicle-picture > div > span { @apply text-xs font-semibold text-ink dark:text-white; }
@@ -44,14 +44,12 @@
 .vehicle-picture input { @apply sr-only; }
 .vehicle-picture img { @apply size-24 rounded-xl bg-white object-contain p-2 dark:bg-dark-surface; }
 .monitoring-step > header { @apply mb-5; }
-.monitoring-step > header h3 { @apply text-base font-bold text-ink dark:text-white; }
-.monitoring-step > header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
 .speed-threshold { @apply mt-5 max-w-sm; }
 .edit-settings { @apply flex flex-wrap items-center gap-x-6 gap-y-3 pt-1; }
 .edit-settings label { @apply flex cursor-pointer items-center gap-2 text-xs text-ink dark:text-white; }
 .edit-settings input { @apply sr-only; }
-.edit-settings label > span { @apply grid size-5 place-items-center rounded-md border border-line dark:border-dark-line; }
-.edit-settings label:has(input:checked) > span { @apply border-brand-600 bg-brand-600; }
+.edit-settings label > span { @apply grid size-5 place-items-center rounded-full border border-line bg-white transition dark:border-dark-line dark:bg-dark-canvas; }
+.edit-settings label:has(input:checked) > span { @apply border-brand-600 bg-brand-600 shadow-[0_2px_6px_rgba(124,58,237,0.3)]; }
 .edit-settings label:has(input:checked) > span::after { content:'✓'; @apply text-[10px] font-bold text-white; }
 .form-error { @apply mb-4 rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger; }
 .field-error { @apply mt-1.5 block text-[10px] font-medium text-danger; }
@@ -61,3 +59,6 @@
 .form-dropdown [dropdown-trigger] span { @apply min-w-0 truncate; }
 .form-dropdown [dropdown-trigger] svg { @apply size-4 shrink-0 text-muted; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
 .shared-form-field:has(.field-error) .form-dropdown [dropdown-trigger] { @apply border-danger; }
+:host ::ng-deep app-modal .modal-panel { overflow: visible; }
+:host ::ng-deep app-modal .modal-content { max-height: 82vh; overflow-y: auto; overflow-x: visible; }
+@media (min-width: 1024px) { .vehicle-form-actions { width: calc(100% - 14rem); } }

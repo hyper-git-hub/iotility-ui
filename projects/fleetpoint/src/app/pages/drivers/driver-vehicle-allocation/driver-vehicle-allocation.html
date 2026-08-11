@@ -1,7 +1,7 @@
 <section class="driver-tab-content tab-enter">
   <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting allocation..." />
   <div class="tab-action">
-    <button type="button" class="add-driver" (click)="create()">+ Add Allocation</button>
+    <button type="button" class="add-driver" (click)="create()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add Allocation</button>
   </div>
   <section class="allocation-board">
     @if (initialLoading()) {

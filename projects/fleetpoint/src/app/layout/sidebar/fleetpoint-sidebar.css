@@ -8,7 +8,7 @@
     var(--color-brand-950) 48%,
     var(--color-brand-800)
   );
-  transition: width 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: width 0.55s cubic-bezier(0.33, 1, 0.68, 1);
   will-change: width;
 }
 .fleet-sidebar.collapsed {
@@ -16,7 +16,7 @@
 }
 .brand {
   @apply flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4;
-  transition: height 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+  position: relative;
 }
 .brand-mark {
   @apply shrink-0;
@@ -30,10 +30,10 @@
   opacity: 1;
   transform: translateX(0);
   transition:
-    max-width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
+    max-height 0.55s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.2s ease,
-    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .brand-text strong {
   @apply block truncate text-sm;
@@ -43,13 +43,17 @@
 }
 .brand-toggle {
   @apply ml-auto grid shrink-0 cursor-pointer place-items-center rounded-lg text-brand-300 transition hover:text-white;
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: right 0.55s cubic-bezier(0.33, 1, 0.68, 1), color 0.15s ease;
 }
 .brand-toggle img {
   @apply size-4;
 }
 .fleet-sidebar.collapsed .brand {
-  @apply h-16 justify-center;
-  position: relative;
+  @apply h-16;
 }
 .fleet-sidebar.collapsed .brand-mark {
   position: static;
@@ -57,12 +61,15 @@
   left: auto;
 }
 .fleet-sidebar.collapsed .brand-text {
-  display: none;
+  max-width: 0;
+  max-height: 0;
+  opacity: 0;
+  transform: translateX(-10px);
 }
 .fleet-sidebar.collapsed .brand-toggle {
   @apply ml-0;
   position: absolute;
-  right: 0.25rem;
+  right: 0;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -79,8 +86,8 @@ nav section > p {
   max-height: 2rem;
   opacity: 1;
   transition:
-    max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    margin-bottom 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    max-height 0.55s cubic-bezier(0.33, 1, 0.68, 1),
+    margin-bottom 0.55s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.2s ease;
 }
 .fleet-sidebar.collapsed nav section > p {
@@ -91,21 +98,20 @@ nav section > p {
 nav a,
 nav button {
   @apply relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-brand-300 transition hover:bg-brand-800/50 hover:text-white;
+  transition: padding 0.55s cubic-bezier(0.33, 1, 0.68, 1), gap 0.55s cubic-bezier(0.33, 1, 0.68, 1), background-color 0.15s ease, color 0.15s ease;
 }
 .fleet-sidebar.collapsed nav a {
-  @apply justify-center gap-0 px-0;
+  @apply gap-0;
+  padding-left: 1.375rem;
+  padding-right: 1.375rem;
 }
 nav .active {
   @apply bg-brand-600 text-white;
 }
 .nav-icon {
-  @apply grid w-5 shrink-0 place-items-center text-base;
+  @apply size-[18px] shrink-0;
 }
-.nav-icon img {
-  @apply size-[18px];
-  filter: brightness(1.35);
-}
-.vehicle-nav-icon img {
+.vehicle-nav-icon {
   @apply size-5;
 }
 .nav-label {
@@ -114,9 +120,9 @@ nav .active {
   opacity: 1;
   transform: translateX(0);
   transition:
-    max-width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.2s ease,
-    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .fleet-sidebar.collapsed .nav-label {
   max-width: 0;
@@ -140,11 +146,11 @@ nav .active {
   @apply relative ml-auto size-2 shrink-0 rounded-full bg-success;
   opacity: 1;
   transition:
-    width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    margin-left 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
+    height 0.55s cubic-bezier(0.33, 1, 0.68, 1),
+    margin-left 0.55s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.2s ease,
-    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .live-status-dot::after {
   content: '';
@@ -168,9 +174,9 @@ nav em {
   max-width: 4rem;
   opacity: 1;
   transition:
-    max-width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    padding-left 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    padding-right 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
+    padding-left 0.55s cubic-bezier(0.33, 1, 0.68, 1),
+    padding-right 0.55s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.2s ease;
 }
 .sidebar-footer {
@@ -178,6 +184,7 @@ nav em {
 }
 .footer-return {
   @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-brand-300 transition hover:bg-white/5 hover:text-white;
+  transition: padding 0.55s cubic-bezier(0.33, 1, 0.68, 1), gap 0.55s cubic-bezier(0.33, 1, 0.68, 1), background-color 0.15s ease, color 0.15s ease;
 }
 .footer-return-icon {
   @apply text-base leading-none;
@@ -188,12 +195,14 @@ nav em {
   opacity: 1;
   transform: translateX(0);
   transition:
-    max-width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.2s ease,
-    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .fleet-sidebar.collapsed .footer-return {
-  @apply justify-center gap-0 px-0;
+  @apply gap-0;
+  padding-left: 1.375rem;
+  padding-right: 1.375rem;
 }
 .fleet-sidebar.collapsed .footer-return-label {
   max-width: 0;

@@ -37,11 +37,11 @@
         }
         <ng-content select="[table-toolbar]" />
         @if (showExport()) {
-          <button>Export</button>
+          <button><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export</button>
         }
         @if (showPrimaryAction()) {
           <button class="primary" (click)="primaryAction.emit()">
-            + {{ primaryActionLabel() }}
+            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>{{ primaryActionLabel() }}
           </button>
         }
       </div>
@@ -152,17 +152,17 @@
                             <img src="assets/fleetpoint/icons/send-white.svg" alt="" aria-hidden="true"/>
                             <span>Dispatch</span>
                           } @else if (action === 'upload') {
-                            <img src="assets/fleetpoint/icons/upload-muted.svg" alt="" aria-hidden="true"/>
+                            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/upload-muted.svg')" aria-hidden="true"></span>
                           } @else if (action === 'map') {
-                            <img src="assets/fleetpoint/icons/map-pin.svg" alt="" aria-hidden="true"/>
+                            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/map-pin.svg')" aria-hidden="true"></span>
                           } @else if (action === 'history') {
-                            <img src="assets/fleetpoint/icons/history-muted.svg" alt="" aria-hidden="true"/>
+                            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/history-muted.svg')" aria-hidden="true"></span>
                           } @else if (action === 'edit') {
-                            <img src="assets/fleetpoint/icons/edit.svg" alt="" aria-hidden="true"/>
+                            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/edit.svg')" aria-hidden="true"></span>
                           } @else if (action === 'delete') {
-                            <img src="assets/fleetpoint/icons/trash.svg" alt="" aria-hidden="true"/>
+                            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/trash.svg')" aria-hidden="true"></span>
                           } @else {
-                            <img src="assets/fleetpoint/icons/eye-muted.svg" alt="" aria-hidden="true"/>
+                            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/eye-muted.svg')" aria-hidden="true"></span>
                           }
                         </button>
                       }

@@ -36,8 +36,8 @@
           </section>
         }@else if(activeStep()===2){
           <section class="form-step rules-grid"><header class="full"><h3>Zone Rules</h3><p>Configure alerts, limits and active hours.</p></header>
-            <label class="rule-toggle"><input type="checkbox" formControlName="alertOnEntry"/><span><strong>Alert on entry</strong><small>Notify when a vehicle enters.</small></span></label>
-            <label class="rule-toggle"><input type="checkbox" formControlName="alertOnExit"/><span><strong>Alert on exit</strong><small>Notify when a vehicle leaves.</small></span></label>
+            <label class="rule-toggle"><input class="fleet-checkbox" type="checkbox" formControlName="alertOnEntry"/><span><strong>Alert on entry</strong><small>Notify when a vehicle enters.</small></span></label>
+            <label class="rule-toggle"><input class="fleet-checkbox" type="checkbox" formControlName="alertOnExit"/><span><strong>Alert on exit</strong><small>Notify when a vehicle leaves.</small></span></label>
             @if(form.controls.type.value==='speed'){<label class="shared-form-field full"><span>Speed Limit (km/h)</span><input type="number" min="1" class="shared-form-control" formControlName="speedLimit" placeholder="e.g. 8"/></label>}
             <label class="shared-form-field full"><span>Maximum Dwell Time (minutes)</span><input type="number" min="1" class="shared-form-control" formControlName="maxDwell" placeholder="Leave blank for no limit"/></label>
             <label class="shared-form-field"><span>Curfew Start</span><shared-date-time-picker mode="time" formControlName="curfewStart" placeholder="Select start time"/></label>

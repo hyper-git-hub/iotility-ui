@@ -1,7 +1,7 @@
 <section class="violations-page">
   <header class="heading">
     <div><h1>Violations</h1><p>{{total}} violations · {{critical}} critical · {{pending}} pending review · {{totalFines}} in fines</p></div>
-    <div><button class="export" type="button"><img src="assets/fleetpoint/icons/export.svg" alt="" aria-hidden="true" />Export XLS</button><button class="export" type="button">Export PDF</button><button class="create" type="button" (click)="manualViolationOpen.set(true)">+ Add Manual Violation</button></div>
+    <div><button class="export" type="button"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export XLS</button><button class="export" type="button"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export PDF</button><button class="create" type="button" (click)="manualViolationOpen.set(true)"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add Manual Violation</button></div>
   </header>
   <section class="stats">
     <app-stat-card label="Total Violations" [value]="total" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4 3 7 8 9 5-2 8-5 8-9V6l-8-3Z"/><path d="M12 8v5m0 3h.01"/></svg></app-stat-card>

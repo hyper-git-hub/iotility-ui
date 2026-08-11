@@ -2,7 +2,7 @@
   <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting driver..." />
 
   <div class="tab-action">
-    <button type="button" class="add-driver" (click)="openCreateForm()">+ Add Driver</button>
+    <button type="button" class="add-driver" (click)="openCreateForm()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add Driver</button>
   </div>
 
   @if (initialLoading()) {

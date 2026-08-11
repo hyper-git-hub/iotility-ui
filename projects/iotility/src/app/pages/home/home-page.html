@@ -47,12 +47,20 @@
               @if (module.available) {
               <button type="button" class="module-action" (click)="module.action()">
                 Try for Free
-                <img src="assets/icons/chevron-right.svg" alt="" class="size-3" />
+                <span
+                  class="color-icon size-3"
+                  style="--icon: url('/assets/icons/chevron-right.svg')"
+                  aria-hidden="true"
+                ></span>
               </button>
               } @else {
               <button type="button" class="module-action" (click)="module.action()">
                 <!-- Cart Icon for 'Buy' from Mock -->
-                <img src="assets/icons/shopping-cart.svg" alt="" class="size-4" />
+                <span
+                  class="color-icon size-4"
+                  style="--icon: url('/assets/icons/shopping-cart.svg')"
+                  aria-hidden="true"
+                ></span>
                 Buy
               </button>
               }
@@ -89,7 +97,7 @@
     <button type="button" (click)="toggleGuide()"
       class="grid size-9 place-items-center rounded-full text-muted transition hover:bg-brand-50 hover:text-brand-700 dark:text-brand-300 dark:hover:bg-dark-canvas dark:hover:text-white"
       aria-label="Expand step-by-step guide" title="Expand guide">
-      <img src="assets/icons/chevron-left.svg" alt="" class="size-5 rotate-90 xl:rotate-0" />
+      <span class="color-icon size-5 rotate-90 xl:rotate-0" style="--icon: url('/assets/icons/chevron-left.svg')" aria-hidden="true"></span>
     </button>
   </aside>
   } @else {
@@ -105,7 +113,7 @@
       <button type="button" (click)="toggleGuide()"
         class="grid size-9 shrink-0 place-items-center rounded-full text-muted transition hover:bg-brand-50 hover:text-brand-700 dark:text-brand-300 dark:hover:bg-dark-canvas dark:hover:text-white"
         aria-label="Collapse step-by-step guide" title="Collapse guide">
-        <img src="assets/icons/chevron-right.svg" alt="" class="size-5 rotate-90 xl:rotate-0" />
+        <span class="color-icon size-5 rotate-90 xl:rotate-0" style="--icon: url('/assets/icons/chevron-right.svg')" aria-hidden="true"></span>
       </button>
     </div>
 
@@ -149,9 +157,9 @@
             }}</span>
           <span class="grid size-5 shrink-0 place-items-center text-muted dark:text-brand-300" aria-hidden="true">
             @if (expandedStep === step.id) {
-            <img src="assets/icons/minus.svg" alt="" class="size-4" />
+            <span class="color-icon size-4" style="--icon: url('/assets/icons/minus.svg')"></span>
             } @else {
-            <img src="assets/icons/plus.svg" alt="" class="size-4" />
+            <span class="color-icon size-4" style="--icon: url('/assets/icons/plus.svg')"></span>
             }
           </span>
         </button>

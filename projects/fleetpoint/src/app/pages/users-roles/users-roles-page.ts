@@ -4,6 +4,7 @@ import { BlockingLoader, DataTable, DataTableSkeleton, Dropdown, DropdownOption,
 import { finalize, forkJoin } from 'rxjs';
 import { Modal } from '../../shared/modal/modal';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
+import { Stepper, StepperStep } from '../../shared/stepper/stepper';
 import {
   ListingQuery,
   ManagedUser,
@@ -21,7 +22,7 @@ interface FeatureOption {
 
 @Component({
   selector: 'app-users-roles-page',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, Modal, ReactiveFormsModule, Skeleton, SmoothHeight],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, Modal, ReactiveFormsModule, Skeleton, SmoothHeight, Stepper],
   templateUrl: './users-roles-page.html',
   styleUrl: './users-roles-page.css',
 })
@@ -61,8 +62,11 @@ export class UsersRolesPage implements OnInit {
   protected readonly selectedFeatures = signal<number[]>([]);
   protected readonly selectedVehicles = signal<number[]>([]);
   protected readonly selectedAssignUsers = signal<string[]>([]);
-  protected readonly featuresExpanded = signal(true);
-  protected readonly vehiclesExpanded = signal(false);
+  protected readonly roleStep = signal<1 | 2>(1);
+  protected readonly roleSteps: StepperStep[] = [
+    { id: 'features', label: 'Features', description: 'Group permissions' },
+    { id: 'vehicles', label: 'Vehicles', description: 'Vehicle access' },
+  ];
   protected readonly submitted = signal(false);
   protected readonly featureOptions = signal<FeatureOption[]>([]);
   protected readonly statusFilterOptions: DropdownOption[] = [
@@ -275,8 +279,7 @@ export class UsersRolesPage implements OnInit {
     this.roleForm.reset({ name: '', description: '' });
     this.selectedFeatures.set([]);
     this.selectedVehicles.set([]);
-    this.featuresExpanded.set(true);
-    this.vehiclesExpanded.set(false);
+    this.roleStep.set(1);
     this.submitted.set(false);
     this.roleModalOpen.set(true);
     this.loadPackageFeatures();
@@ -296,6 +299,22 @@ export class UsersRolesPage implements OnInit {
 
   protected toggleVehicle(id: number, checked: boolean): void {
     this.selectedVehicles.update((ids) => checked ? [...new Set([...ids, id])] : ids.filter((value) => value !== id));
+  }
+
+  protected toggleAllFeatures(checked: boolean): void {
+    this.selectedFeatures.set(checked ? this.featureOptions().map((feature) => feature.id) : []);
+  }
+
+  protected toggleAllVehicles(checked: boolean): void {
+    this.selectedVehicles.set(checked ? this.vehicles().map((vehicle) => vehicle.id) : []);
+  }
+
+  protected continueRoleForm(): void {
+    this.submitted.set(true);
+    this.roleForm.markAllAsTouched();
+    if (this.roleForm.invalid || !this.selectedFeatures().length) return;
+    this.submitted.set(false);
+    this.roleStep.set(2);
   }
 
   protected saveRole(): void {
@@ -417,8 +436,7 @@ export class UsersRolesPage implements OnInit {
     this.roleForm.reset({ name: role.name, description: role.description || '' });
     this.selectedFeatures.set((role.group_features ?? []).map(Number));
     this.selectedVehicles.set((role.group_vehicles ?? []).map(Number));
-    this.featuresExpanded.set(true);
-    this.vehiclesExpanded.set(false);
+    this.roleStep.set(1);
     this.submitted.set(false);
     this.roleModalOpen.set(true);
     this.loadPackageFeatures();
@@ -518,12 +536,6 @@ export class UsersRolesPage implements OnInit {
     if (!value) return '—';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
-  }
-
-  protected userInitials(): string {
-    const first = this.userForm.controls.firstName.value.trim();
-    const last = this.userForm.controls.lastName.value.trim();
-    return `${first[0] || 'U'}${last[0] || ''}`.toUpperCase();
   }
 
   private success(title: string, message?: string): Promise<boolean> {
