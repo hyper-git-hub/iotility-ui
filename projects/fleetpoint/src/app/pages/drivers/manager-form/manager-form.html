@@ -2,21 +2,21 @@
   [visible]="loading()"
   [compact]="true"
   [label]="editing() ? 'Updating manager...' : 'Creating manager...'"
-/><app-modal [open]="open()" size="xl" labelledBy="manager-title" (closed)="cancel()"
-  ><h2 modal-header id="manager-title">{{ editing() ? 'Edit Manager' : 'Add Manager' }}</h2>
+/><app-modal [open]="open()" [busy]="loading()" size="lg" labelledBy="manager-title" (closed)="cancel()"
+  ><div modal-header><h2 id="manager-title">{{ editing() ? 'Update Manager' : 'Create Manager' }}</h2><p class="form-subtitle">{{ editing() ? 'Update manager details' : 'Add a new fleet manager' }}</p></div>
   <form id="manager-form" class="manager-form" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
       <div class="form-error wide">{{ error() }}</div>
     }
     <label class="shared-form-field"
-      ><span>Name *</span
+      ><span>Name <b>*</b></span
       ><input class="shared-form-control" formControlName="name" placeholder="Enter name" />
       @if (submitted() && form.controls.name.invalid) {
         <small class="field-error">Enter a valid name.</small>
       }
     </label>
     <label class="shared-form-field"
-      ><span>Employee ID *</span
+      ><span>Employee ID <b>*</b></span
       ><input
         class="shared-form-control"
         formControlName="employee_id"
@@ -28,19 +28,19 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>Birth Date *</span
+      ><span>Birth Date <b>*</b></span
       ><shared-date-time-picker
         mode="date"
         formControlName="date_of_birth"
         ariaLabel="Choose manager birth date" /></label
     ><label class="shared-form-field"
-      ><span>Joining Date *</span
+      ><span>Joining Date <b>*</b></span
       ><shared-date-time-picker
         mode="date"
         formControlName="date_joined"
         ariaLabel="Choose manager joining date" /></label
     ><label class="shared-form-field"
-      ><span>Salary *</span
+      ><span>Salary <b>*</b></span
       ><input
         type="number"
         min="0"
@@ -49,7 +49,7 @@
         placeholder="Enter salary"
     /></label>
     <label class="shared-form-field"
-      ><span>Marital Status *</span
+      ><span>Marital Status <b>*</b></span
       ><shared-dropdown
         class="form-dropdown"
         [options]="maritalOptions"
@@ -67,7 +67,7 @@
       ></label
     >
     <label class="shared-form-field"
-      ><span>Gender *</span
+      ><span>Gender <b>*</b></span
       ><shared-dropdown
         class="form-dropdown"
         [options]="genderOptions"
@@ -82,7 +82,7 @@
         </button></shared-dropdown
       ></label
     ><label class="shared-form-field"
-      ><span>Contact Number *</span><input class="shared-form-control" formControlName="phone"
+      ><span>Contact Number <b>*</b></span><input class="shared-form-control" formControlName="phone"
     /></label>
     @if (editing()) {
       <label class="shared-form-field"
@@ -107,10 +107,7 @@
         @if (imagePreview()) {
           <img [src]="imagePreview()" alt="Manager preview" />
         } @else {
-          <svg viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="34" r="20" />
-            <path d="M12 96c2-27 15-40 38-40s36 13 38 40" />
-          </svg>
+          <img class="picture-placeholder" src="assets/fleetpoint/icons/avatar-placeholder.svg" alt="" aria-hidden="true" />
         }
       </div>
       <div>
@@ -123,15 +120,15 @@
       </div>
     </section>
   </form>
-  <div modal-footer class="manager-footer">
-    <button class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">Close</button
+  <div modal-footer class="manager-form-actions">
+    <button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">Cancel</button
     ><button
       type="submit"
       form="manager-form"
       class="shared-button-primary"
-      [disabled]="form.invalid || loading()"
+      [disabled]="loading()"
     >
-      {{ editing() ? 'Update' : 'Submit' }}
+      {{ editing() ? 'Update Manager' : 'Create Manager' }}
     </button>
   </div></app-modal
 >

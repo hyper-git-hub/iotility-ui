@@ -28,13 +28,8 @@ router-outlet + * {
 .heading-actions .secondary {
   @apply inline-flex items-center gap-1.5;
 }
-.heading-actions .secondary svg {
+.heading-actions .secondary img {
   @apply size-4;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.7;
 }
 .heading-actions .secondary {
   @apply border-line bg-white text-muted hover:bg-canvas dark:border-dark-line dark:bg-dark-surface dark:text-brand-300 dark:hover:bg-dark-canvas;
@@ -163,20 +158,9 @@ router-outlet + * {
 .renew {
   @apply mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-[11px] font-semibold text-white;
 }
-.file-preview button svg,
-.renew svg {
+.file-preview button img,
+.renew img {
   @apply size-3.5;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.file-preview .file-icon {
-  @apply fill-none stroke-current;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 .detail-status {
   @apply flex items-center justify-between rounded-xl border p-3 text-xs;
@@ -280,13 +264,8 @@ router-outlet + * {
 .compliance header p {
   @apply text-[11px] text-muted;
 }
-.compliance svg {
+.compliance img {
   @apply size-4 shrink-0 text-brand-600;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 .compliance > div {
   @apply mt-4 grid gap-3 md:grid-cols-3;
@@ -342,13 +321,8 @@ router-outlet + * {
 .upload-actions .shared-button-primary {
   @apply gap-2;
 }
-.upload-actions svg {
+.upload-actions img {
   @apply size-4;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 .shared-form-field {
   @apply grid content-start gap-1;

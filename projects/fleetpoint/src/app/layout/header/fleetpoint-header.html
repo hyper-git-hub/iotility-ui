@@ -5,21 +5,45 @@
   (profileAction)="handleProfileAction($event)"
 >
   <div header-brand class="fleetpoint-brand">
-    <button
-      type="button"
-      class="mobile-menu-button"
-      aria-label="Open navigation"
-      (click)="menuToggle.emit()"
-    >
-<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+    <button type="button" class="mobile-menu-button" aria-label="Open navigation" (click)="menuToggle.emit()">
+      <img src="assets/fleetpoint/icons/menu.svg" alt="" aria-hidden="true" />
     </button>
-    <ui-logo
-      src="assets/fleetpoint/fleetpoint.svg"
-      alt="Fleetpoint"
-      size="1.5rem"
-      class="brand-mark"
-    />
-    <span class="brand-name">Fleet<span>point</span></span>
-    <span class="brand-context">— LogisticsPro</span>
+    <div class="global-search" [class.open]="searchOpen()">
+      @if (searchVisible()) {
+        <button type="button" class="search-scrim" aria-label="Close global search" (click)="closeSearch()"></button>
+      }
+      <div class="search-control">
+        <img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" />
+        <input
+          class="global-search-input"
+          type="search"
+          autocomplete="off"
+          placeholder="Search pages and tools..."
+          aria-label="Search FleetPoint pages and tools"
+          aria-controls="fleetpoint-search-results"
+          [attr.aria-expanded]="searchOpen()"
+          [value]="searchQuery()"
+          (focus)="openSearch()"
+          (input)="updateSearch($any($event.target).value)"
+          (keydown)="handleSearchKey($event)"
+        />
+        <kbd>Ctrl K</kbd>
+      </div>
+      @if (searchVisible()) {
+        <section id="fleetpoint-search-results" class="search-results" [class.closing]="!searchOpen()" aria-label="Search results">
+          <header><span>{{ searchQuery() ? 'Pages and tools' : 'Recent and suggested' }}</span></header>
+          @for (result of searchResults(); track result.id; let index = $index) {
+            <button type="button" [class.active]="activeResult() === index" (mouseenter)="activeResult.set(index)" (click)="selectDestination(result)">
+              <i><img [src]="result.icon" alt="" aria-hidden="true" /></i>
+              <span><strong>{{ result.label }}</strong><small>{{ result.description }}</small></span>
+              <em>Go</em>
+            </button>
+          } @empty {
+            <div class="search-empty"><strong>No matching page</strong><small>Try vehicles, routes, drivers, or settings.</small></div>
+          }
+          <footer><span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span><span><kbd>↵</kbd> Open</span><span><kbd>Esc</kbd> Close</span></footer>
+        </section>
+      }
+    </div>
   </div>
 </shared-platform-header>

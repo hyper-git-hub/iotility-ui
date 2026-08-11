@@ -95,9 +95,6 @@ export class VehicleForm implements OnChanges {
     { id: 'allocation', label: 'Ownership & Allocation' },
     { id: 'monitoring', label: 'Violations & Review' },
   ];
-  protected readonly progress = computed(() =>
-    Math.round(((this.activeStep() + 1) / this.steps.length) * 100),
-  );
   protected readonly form;
 
   constructor(
@@ -155,7 +152,12 @@ export class VehicleForm implements OnChanges {
     this.activeStep.update((step) => Math.min(step + 1, 2));
   }
   protected back(): void {
-    this.activeStep.update((step) => Math.max(step - 1, 0));
+    if (this.activeStep() === 0) {
+      this.cancel();
+      return;
+    }
+    this.submitted.set(false);
+    this.activeStep.update((step) => step - 1);
   }
   protected goToStep(index: number): void {
     if (index <= this.activeStep()) this.activeStep.set(index);

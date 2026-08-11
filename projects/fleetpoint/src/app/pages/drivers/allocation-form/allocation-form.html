@@ -1,14 +1,12 @@
 <ui-blocking-loader [visible]="loading()" [compact]="true" label="Creating allocation..." />
-<app-modal [open]="open()" size="lg" labelledBy="allocation-form-title" (closed)="cancel()">
-  <h2 modal-header id="allocation-form-title">
-    {{ editing() ? 'Edit Allocation' : lockVehicle() ? 'Assign driver' : 'Add Allocation' }}
-  </h2>
+<app-modal [open]="open()" [busy]="loading()" size="lg" labelledBy="allocation-form-title" (closed)="cancel()">
+  <div modal-header><h2 id="allocation-form-title">{{ editing() ? 'Update Allocation' : lockVehicle() ? 'Assign Driver' : 'Create Allocation' }}</h2><p class="form-subtitle">{{ editing() ? 'Update driver assignment details' : 'Assign drivers to a vehicle' }}</p></div>
   <form id="allocation-form" class="allocation-form" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
       <div class="form-error wide">{{ error() }}</div>
     }
     <label class="shared-form-field"
-      ><span>Vehicle *</span
+      ><span>Vehicle <b>*</b></span
       ><shared-dropdown
         class="form-dropdown"
         [options]="vehicleOptions()"
@@ -33,7 +31,7 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>Drivers *</span
+      ><span>Drivers <b>*</b></span
       ><shared-dropdown
         class="form-dropdown"
         [options]="driverOptions()"
@@ -54,7 +52,7 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>Start Date *</span
+      ><span>Start Date <b>*</b></span
       ><shared-date-time-picker
         mode="date"
         formControlName="start_date"
@@ -65,7 +63,7 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>End Date *</span
+      ><span>End Date <b>*</b></span
       ><shared-date-time-picker
         mode="date"
         formControlName="end_date"
@@ -78,16 +76,14 @@
   </form>
   <div modal-footer class="allocation-form-footer">
     <button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">
-      Close</button
+      Cancel</button
     ><button
       type="submit"
       form="allocation-form"
       class="shared-button-primary"
-      [disabled]="
-        form.invalid || !form.controls.drivers.value.length || loading() || optionsLoading()
-      "
+      [disabled]="loading() || optionsLoading()"
     >
-      {{ editing() ? 'Update' : 'Save' }}
+      {{ editing() ? 'Update Allocation' : 'Create Allocation' }}
     </button>
   </div>
 </app-modal>

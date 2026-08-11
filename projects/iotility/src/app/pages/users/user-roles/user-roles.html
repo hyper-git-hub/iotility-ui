@@ -4,10 +4,8 @@
     <div>
       <button type="button" class="browse-button" (click)="showAll.set(!showAll())">
         {{ showAll() ? 'Show Less' : 'Browse All' }}
-        <svg viewBox="0 0 24 24" aria-hidden="true" [class.rotate-90]="showAll()">
-          <path d="m9 18 6-6-6-6" />
-        </svg></button
-      ><button type="button" class="new-role-button"><span>+</span> New Role</button>
+        <span class="color-icon" style="--icon: url('/assets/icons/chevron-right-muted.svg')" aria-hidden="true" [class.rotate-90]="showAll()"></span></button
+      ><button type="button" class="new-role-button"><span class="color-icon size-4" style="--icon: url('/assets/icons/plus.svg')" aria-hidden="true"></span>New Role</button>
     </div>
   </header>
   <div class="roles-grid">

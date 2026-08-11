@@ -10,11 +10,7 @@
   .mobile-menu-button {
     @apply grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-transparent text-ink dark:border-dark-line dark:text-white;
   }
-  .mobile-menu-button svg {
+  .mobile-menu-button img {
     @apply size-5;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-width: 1.8;
   }
 }

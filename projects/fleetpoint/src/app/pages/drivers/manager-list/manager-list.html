@@ -1,6 +1,6 @@
 <section class="driver-tab-content tab-enter">
   <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Deleting manager..." />
-  <div class="tab-action"><button class="add-driver" (click)="openCreate()">+ Add Manager</button></div>
+  <div class="tab-action"><button class="add-driver" (click)="openCreate()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add Manager</button></div>
   @if (error()) { <section class="drivers-error">{{ error() }}</section> }
 
   @if (initialLoading()) {

@@ -52,14 +52,9 @@
   font-size: 1.25rem;
   font-weight: 900;
 }
-.dialog-icon svg {
+.dialog-icon img {
   width: 1.5rem;
   height: 1.5rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 .dialog-icon-success {
   background: var(--feedback-success);

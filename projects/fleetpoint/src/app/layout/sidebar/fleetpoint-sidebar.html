@@ -20,13 +20,9 @@
       [position]="collapsed() ? 'right' : 'bottom'"
     >
       @if (collapsed()) {
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m9 18 6-6-6-6" />
-        </svg>
+        <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/chevron-right-brand.svg')" aria-hidden="true"></span>
       } @else {
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m15 18-6-6 6-6" />
-        </svg>
+        <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/chevron-left-brand.svg')" aria-hidden="true"></span>
       }
     </button>
   </div>
@@ -43,9 +39,12 @@
             [position]="'right'"
             [disabled]="!collapsed()"
           >
-            <span class="nav-icon" [class.vehicle-nav-icon]="item.route === '/vehicles'">
-              <img [src]="item.icon" alt="" aria-hidden="true" />
-            </span>
+            <span
+              class="nav-icon color-icon"
+              [class.vehicle-nav-icon]="item.route === '/vehicles'"
+              [style.--icon]="'url(' + item.icon + ')'"
+              aria-hidden="true"
+            ></span>
             <span class="nav-label">{{ item.label }}</span>
             @if (item.route === '/live-tracking') {
               <span class="live-status-dot" title="Realtime tracking" aria-label="Realtime tracking"></span>

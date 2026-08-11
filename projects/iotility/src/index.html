@@ -17,9 +17,16 @@
         box-sizing: border-box;
         color: #fff;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: #3b0764;
+      }
+
+      .bootstrap-loading::before {
+        content: '';
+        position: absolute;
+        inset: 0;
         background:
-          radial-gradient(circle at 50% 45%, rgb(113 51 220 / 34%) 0%, transparent 36%),
-          linear-gradient(145deg, #09090f, #19082f);
+          radial-gradient(circle at 50% 45%, rgb(147 51 234 / 34%) 0%, transparent 36%),
+          linear-gradient(145deg, #09090f, #3b0764);
       }
 
       .bootstrap-loading__content {
@@ -31,10 +38,11 @@
         text-align: center;
       }
 
-.bootstrap-loading__logos {
+      .bootstrap-loading__logos {
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 1.5rem;
         margin: 0 auto 2rem;
       }
 
@@ -49,7 +57,6 @@
       .bootstrap-loading__separator {
         width: 1px;
         height: 2.5rem;
-        margin: 0 1.25rem;
         background: rgb(255 255 255 / 25%);
       }
 
@@ -58,12 +65,12 @@
         font-size: 1.875rem;
         font-weight: 700;
         line-height: 2.25rem;
-        letter-spacing: 0.03em
+        letter-spacing: -0.025em;
       }
 
       .bootstrap-loading__message {
         margin: 0.5rem 0 0;
-        color: #cbb5ff;
+        color: #d8b4fe;
         font-size: 0.875rem;
         line-height: 1.25rem;
       }
@@ -101,7 +108,7 @@
         aria-live="polite"
         aria-busy="true"
       >
-<div class="bootstrap-loading__logos">
+        <div class="bootstrap-loading__logos">
           <img
             src="assets/iotility-light.svg"
             alt="IoTility"

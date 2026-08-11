@@ -8,7 +8,8 @@
     var(--color-brand-950) 48%,
     var(--color-brand-800)
   );
-  transition: width 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+  contain: layout paint style;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: width;
 }
 .fleet-sidebar.collapsed {
@@ -16,7 +17,7 @@
 }
 .brand {
   @apply flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4;
-  transition: height 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+  position: relative;
 }
 .brand-mark {
   @apply shrink-0;
@@ -29,11 +30,7 @@
   max-height: 3rem;
   opacity: 1;
   transform: translateX(0);
-  transition:
-    max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    max-height 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.2s ease,
-    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: opacity 0.14s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .brand-text strong {
   @apply block truncate text-sm;
@@ -43,33 +40,35 @@
 }
 .brand-toggle {
   @apply ml-auto grid shrink-0 cursor-pointer place-items-center rounded-lg text-brand-300 transition hover:text-white;
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: color 0.15s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.brand-toggle svg {
+.brand-toggle img {
   @apply size-4;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
 }
 .fleet-sidebar.collapsed .brand {
-  @apply h-20;
-  position: relative;
+  @apply h-16;
+  padding-left: 0.75rem;
 }
 .fleet-sidebar.collapsed .brand-mark {
-  position: absolute;
-  top: 13px;
-  left: 16px;
+  position: static;
+  top: auto;
+  left: auto;
 }
 .fleet-sidebar.collapsed .brand-text {
-  display: none;
+  opacity: 0;
+  transform: translateX(-10px);
+  pointer-events: none;
 }
 .fleet-sidebar.collapsed .brand-toggle {
+  @apply ml-0;
   position: absolute;
-  left: 50%;
-  bottom: 4px;
-  transform: translateX(-50%);
-  margin-left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 nav {
   @apply flex-1 overflow-y-auto px-2 py-3;
@@ -83,73 +82,54 @@ nav section > p {
   white-space: nowrap;
   max-height: 2rem;
   opacity: 1;
-  transition:
-    max-height 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    margin-bottom 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.2s ease;
+  transition: opacity 0.12s ease;
 }
 .fleet-sidebar.collapsed nav section > p {
-  max-height: 0;
-  margin-bottom: 0;
   opacity: 0;
 }
 nav a,
 nav button {
   @apply relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-brand-300 transition hover:bg-brand-800/50 hover:text-white;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .fleet-sidebar.collapsed nav a {
-  @apply justify-center gap-0 px-0;
+  @apply gap-0;
 }
 nav .active {
   @apply bg-brand-600 text-white;
 }
 .nav-icon {
-  @apply grid w-5 shrink-0 place-items-center text-base;
+  @apply size-[18px] shrink-0;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.nav-icon img {
-  @apply size-[18px];
-  filter: brightness(1.35);
-}
-.vehicle-nav-icon img {
+.vehicle-nav-icon {
   @apply size-5;
 }
+.fleet-sidebar.collapsed .nav-icon { transform: translateX(0.8125rem); }
 .nav-label {
   @apply min-w-0 truncate;
   max-width: 8rem;
   opacity: 1;
   transform: translateX(0);
-  transition:
-    max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.2s ease,
-    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: opacity 0.14s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .fleet-sidebar.collapsed .nav-label {
-  max-width: 0;
   opacity: 0;
   transform: translateX(-10px);
+  pointer-events: none;
 }
 .fleet-sidebar.collapsed .live-status-dot {
-  margin-left: 0;
-  width: 0;
-  height: 0;
   opacity: 0;
   transform: scale(0);
 }
 .fleet-sidebar.collapsed nav em {
-  max-width: 0;
-  padding-left: 0;
-  padding-right: 0;
   opacity: 0;
+  transform: scale(0.85);
 }
 .live-status-dot {
   @apply relative ml-auto size-2 shrink-0 rounded-full bg-success;
   opacity: 1;
-  transition:
-    width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    height 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    margin-left 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.2s ease,
-    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: opacity 0.12s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .live-status-dot::after {
   content: '';
@@ -172,36 +152,35 @@ nav em {
   overflow: hidden;
   max-width: 4rem;
   opacity: 1;
-  transition:
-    max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    padding-left 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    padding-right 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.2s ease;
+  transition: opacity 0.12s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .sidebar-footer {
   @apply shrink-0 border-t border-white/10 p-2;
 }
 .footer-return {
   @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-brand-300 transition hover:bg-white/5 hover:text-white;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .footer-return-icon {
   @apply text-base leading-none;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .footer-return-label {
   @apply min-w-0 truncate;
   max-width: 8rem;
   opacity: 1;
   transform: translateX(0);
-  transition:
-    max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.2s ease,
-    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: opacity 0.14s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .fleet-sidebar.collapsed .footer-return {
-  @apply justify-center gap-0 px-0;
+  @apply gap-0;
 }
+.fleet-sidebar.collapsed .footer-return-icon { transform: translateX(0.75rem); }
 .fleet-sidebar.collapsed .footer-return-label {
-  max-width: 0;
   opacity: 0;
   transform: translateX(-10px);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fleet-sidebar,.brand-text,.brand-toggle,.nav-icon,.nav-label,.live-status-dot,nav em,.footer-return-icon,.footer-return-label { transition:none; }
 }

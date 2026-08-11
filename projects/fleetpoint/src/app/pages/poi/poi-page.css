@@ -1,11 +1,11 @@
 @reference "../../../styles.css";
 .poi-page { @apply grid content-start gap-4 p-5; }
 .poi-heading { @apply flex items-center justify-between gap-4; }.poi-heading h1 { @apply text-xl font-bold text-ink dark:text-white; }.poi-heading p { @apply mt-1 text-xs text-muted dark:text-brand-300; }.poi-heading > div:last-child { @apply flex gap-2; }
-.export-poi,.add-poi { @apply h-10 cursor-pointer rounded-xl px-4 text-xs font-semibold; }.export-poi { @apply inline-flex items-center gap-1.5 border border-line bg-white text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }.export-poi svg { @apply size-4;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7; }.add-poi { @apply bg-brand-600 text-white; }
+.export-poi,.add-poi { @apply h-10 cursor-pointer rounded-xl px-4 text-xs font-semibold; }.export-poi { @apply inline-flex items-center gap-1.5 border border-line bg-white text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }.export-poi img { @apply size-4; }.add-poi { @apply bg-brand-600 text-white; }
 .poi-stats { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5; }
 .poi-controls { @apply flex min-w-0 items-center justify-between gap-3; }
 .poi-tabs { @apply flex min-w-0 flex-1 gap-1 overflow-x-auto pb-1; }.poi-tabs button { @apply cursor-pointer whitespace-nowrap rounded-full border border-line bg-white px-3 py-1.5 text-[11px] text-muted transition hover:border-brand-400 dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }.poi-tabs button.active { @apply border-brand-600 bg-brand-600 font-semibold text-white; }.poi-tabs b { @apply ml-1; }
-.poi-search { @apply flex h-10 w-72 shrink-0 items-center gap-2 rounded-xl border border-line bg-white px-3 dark:border-dark-line dark:bg-dark-surface; }.poi-search svg { @apply size-4 text-muted;fill:none;stroke:currentColor;stroke-width:1.8; }.poi-search input { @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none dark:text-white; }
+.poi-search { @apply flex h-10 w-72 shrink-0 items-center gap-2 rounded-xl border border-line bg-white px-3 dark:border-dark-line dark:bg-dark-surface; }.poi-search img { @apply size-4; }.poi-search input { @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none dark:text-white; }
 .poi-workspace { @apply grid min-w-0 items-start gap-4 xl:grid-cols-5; }.poi-map-card { @apply overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface xl:col-span-2; }.poi-map-card > header { @apply flex gap-2 border-b border-line px-4 py-3 text-xs dark:border-dark-line; }.poi-map-card header span { @apply text-muted dark:text-brand-300; }.poi-legend { @apply flex flex-wrap gap-2 border-b border-line px-3 py-2 text-[10px] text-muted dark:border-dark-line dark:text-brand-300; }.poi-legend span { @apply flex items-center gap-1; }.poi-legend i { @apply size-2 rounded-full; }.poi-legend .depot i { @apply bg-brand-600; }.poi-legend .customer i { @apply bg-info; }.poi-legend .fuel i { @apply bg-warning; }.poi-legend .alert i { @apply bg-danger; }.poi-map { @apply h-[510px]; }.poi-map app-fleet-map { @apply block h-full; }
 .poi-list { @apply grid max-h-[580px] gap-3 overflow-y-auto pr-1 xl:col-span-3; }.poi-card { @apply cursor-pointer overflow-hidden rounded-2xl border border-line bg-white transition hover:border-brand-300 dark:border-dark-line dark:bg-dark-surface; }.poi-card.expanded { @apply border-brand-500 ring-2 ring-brand-500/10; }.poi-card.has-alert { @apply border-l-4 border-l-danger; }
 .poi-card-summary { @apply flex items-start gap-3 p-4; }.poi-type-icon { @apply grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-600/15 dark:text-brand-300; }.poi-copy { @apply min-w-0 flex-1; }.poi-title { @apply flex items-start justify-between gap-3; }.poi-title h2 { @apply text-sm font-bold text-ink dark:text-white; }.poi-title p { @apply mt-0.5 truncate text-[11px] text-muted dark:text-brand-300; }.poi-title > div:last-child { @apply flex shrink-0 gap-1; }.type-badge,.alert-badge { @apply rounded-full border px-2 py-0.5 text-[10px]; }.type-badge { @apply border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-600/30 dark:bg-brand-600/10 dark:text-brand-300; }.alert-badge { @apply border-danger/30 bg-danger/10 text-danger; }
@@ -21,13 +21,13 @@
 .poi-map-card { @apply flex h-[580px] flex-col; }
 .poi-map-card .poi-map { @apply min-h-0 flex-1; height:auto; }
 .poi-list { @apply h-[580px] content-start; grid-auto-rows: max-content; }
-.poi-map-card > header svg { @apply size-4 text-brand-600;fill:none;stroke:currentColor;stroke-width:1.8; }
-.poi-type-icon svg { @apply size-[18px];fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7; }
+.poi-map-card > header img { @apply size-4; }
+.poi-type-icon img { @apply size-[18px]; }
 .poi-meta span { @apply inline-flex items-center gap-1; }
-.poi-meta svg { @apply size-3;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
+.poi-meta img { @apply size-3; }
 .expand-icon { @apply text-muted; }
-.expand-icon svg { @apply size-5;fill:none;stroke:currentColor;stroke-width:1.8; }
+.expand-icon img { @apply size-5; }
 .poi-expanded header button:last-child { @apply hover:text-danger; }
-.poi-expanded header button svg { @apply size-4;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
+.poi-expanded header button img { @apply size-4; }
 @media(max-width:900px){.poi-controls{ @apply flex-wrap; }.poi-search{ @apply w-full; }}
 @media(max-width:700px){.poi-heading{ @apply items-start; }.poi-heading,.poi-expanded footer{ @apply flex-wrap; }.poi-map-card{ @apply h-[430px]; }.poi-list{ @apply h-auto max-h-none; }}

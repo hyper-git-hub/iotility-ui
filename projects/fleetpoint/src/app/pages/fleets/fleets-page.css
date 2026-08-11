@@ -45,7 +45,7 @@
 .fleet-stat-label-line {
   @apply flex h-[0.9375rem] items-center;
 }
-.fleet-stats svg { @apply mx-auto size-4 text-muted; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.fleet-stats img { @apply mx-auto size-4 text-muted; }
 .fleet-stats strong { @apply mt-1 block text-sm; }
 .fleet-stats small { @apply block text-[10px] text-muted dark:text-brand-300; }
 .score-list { @apply mb-4 flex flex-col gap-2.5; }
@@ -64,7 +64,7 @@
 .fleet-meta-skeleton { @apply flex min-h-[3.75rem] items-center; }
 .fleet-location { @apply flex items-center justify-between gap-3; }
 .fleet-location span { @apply flex min-w-0 items-center gap-1.5 truncate text-xs text-muted dark:text-brand-300; }
-.fleet-location svg { @apply size-3.5 shrink-0; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.fleet-location img { @apply size-3.5 shrink-0; }
 .fleet-location button { @apply shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400; }
 .fleet-card > footer { @apply flex min-h-11 flex-wrap items-center gap-2 border-t border-line px-5 py-3 dark:border-dark-line; }
 .fleet-card > footer span { @apply rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success; }

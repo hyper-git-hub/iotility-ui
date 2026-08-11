@@ -1,5 +1,5 @@
 <section class="geozones-page">
-  <header class="geo-heading"><div><h1>Geozones</h1><p>{{total}} zones · {{active}} active · {{inside}} vehicles inside now · {{violations}} violations</p></div><div><button type="button">Export</button><button type="button" class="primary" (click)="openForm()">+ New Zone</button></div></header>
+  <header class="geo-heading"><div><h1>Geozones</h1><p>{{total}} zones · {{active}} active · {{inside}} vehicles inside now · {{violations}} violations</p></div><div><button type="button"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export</button><button type="button" class="primary" (click)="openForm()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>New Zone</button></div></header>
   <section class="geo-stats">
     <app-stat-card label="Total Zones" [value]="total" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></app-stat-card>
     <app-stat-card label="Active" [value]="active" tone="success" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></app-stat-card>

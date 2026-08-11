@@ -43,6 +43,9 @@
 .replay-filters > button:disabled {
   @apply cursor-not-allowed opacity-60;
 }
+.fleet-search-field img {
+  @apply size-4 shrink-0;
+}
 .replay-error {
   @apply m-3 rounded-xl border border-danger/20 bg-danger/5 p-2 text-[10px] text-danger;
 }

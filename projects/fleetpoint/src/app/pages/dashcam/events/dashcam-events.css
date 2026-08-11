@@ -5,11 +5,8 @@
 .event-search {
   @apply flex h-10 items-center gap-2 rounded-xl border border-line bg-canvas px-3 dark:border-dark-line dark:bg-dark-canvas;
 }
-.event-search svg {
-  @apply size-4 shrink-0 text-muted;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
+.event-search img {
+  @apply size-4 shrink-0;
 }
 .event-search input {
   @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-muted dark:text-white;

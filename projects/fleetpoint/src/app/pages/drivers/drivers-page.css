@@ -57,13 +57,8 @@
 .vehicle-icon {
   @apply grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-dark-canvas dark:text-brand-300;
 }
-.vehicle-icon svg {
+.vehicle-icon img {
   @apply size-5;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 .allocation-status {
   @apply ml-auto rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-semibold text-success;
@@ -80,13 +75,8 @@
 .allocation-actions button.delete {
   @apply hover:border-danger hover:bg-danger/5 hover:text-danger;
 }
-.allocation-actions svg {
+.allocation-actions img {
   @apply size-4;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 .group-tone {
   @apply size-3 shrink-0 rounded-full;

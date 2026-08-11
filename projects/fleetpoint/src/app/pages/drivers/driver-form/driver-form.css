@@ -1,8 +1,10 @@
 @reference "../../../../styles.css";
 @import "../../../shared/styles/fields.css";
 
-.driver-form { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3; }
-.wide { @apply md:col-span-2 xl:col-span-3; }
+.driver-form { @apply grid gap-3 sm:grid-cols-2; }
+.wide { @apply sm:col-span-2; }
+.form-subtitle { @apply text-[10px] text-muted dark:text-brand-300; }
+.shared-form-field b { @apply text-danger; }
 .form-error { @apply rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger; }
 .field-error { @apply mt-1.5 block text-[10px] font-medium text-danger; }
 .shared-form-field:has(.field-error) .shared-form-control,
@@ -16,15 +18,18 @@
 .password-field button { @apply absolute inset-y-0 right-3 cursor-pointer text-[10px] font-semibold text-brand-600; }
 .poi-field { @apply flex h-10 cursor-pointer items-center gap-2 self-end text-xs text-ink dark:text-white; }
 .poi-field input { @apply sr-only; }
-.poi-field > span { @apply grid size-5 place-items-center rounded-md border border-line dark:border-dark-line; }
-.poi-field:has(input:checked) > span { @apply border-brand-600 bg-brand-600; }
+.poi-field > span { @apply grid size-5 place-items-center rounded-full border border-line bg-white transition dark:border-dark-line dark:bg-dark-canvas; }
+.poi-field:has(input:checked) > span { @apply border-brand-600 bg-brand-600 shadow-[0_2px_6px_rgba(124,58,237,0.3)]; }
 .poi-field:has(input:checked) > span::after { content: '✓'; @apply text-[10px] font-bold text-white; }
 .driver-picture { @apply flex items-center gap-5 rounded-2xl border border-dashed border-line bg-canvas p-4 dark:border-dark-line dark:bg-dark-canvas; }
 .picture-preview { @apply grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
 .picture-preview img { @apply size-full object-cover; }
-.picture-preview svg { @apply size-20 fill-muted/60; }
+.picture-preview img.picture-placeholder { @apply size-20; }
 .driver-picture strong { @apply text-xs text-ink dark:text-white; }
 .driver-picture p { @apply mb-3 mt-1 text-[10px] text-muted dark:text-brand-300; }
 .driver-picture label { @apply inline-flex cursor-pointer rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white; }
 .driver-picture input { @apply sr-only; }
-.form-footer { @apply ml-auto flex justify-end gap-3; }
+.driver-form-actions { @apply ml-auto flex w-full gap-2; }
+.driver-form-actions button { @apply flex-1; }
+:host ::ng-deep app-modal .modal-panel { overflow: visible; }
+:host ::ng-deep app-modal .modal-content { max-height: 82vh; overflow-y: auto; overflow-x: visible; }
