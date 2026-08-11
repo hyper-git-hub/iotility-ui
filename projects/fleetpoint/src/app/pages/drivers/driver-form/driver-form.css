@@ -22,7 +22,7 @@
 .driver-picture { @apply flex items-center gap-5 rounded-2xl border border-dashed border-line bg-canvas p-4 dark:border-dark-line dark:bg-dark-canvas; }
 .picture-preview { @apply grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
 .picture-preview img { @apply size-full object-cover; }
-.picture-preview svg { @apply size-20 fill-muted/60; }
+.picture-preview img.picture-placeholder { @apply size-20; }
 .driver-picture strong { @apply text-xs text-ink dark:text-white; }
 .driver-picture p { @apply mb-3 mt-1 text-[10px] text-muted dark:text-brand-300; }
 .driver-picture label { @apply inline-flex cursor-pointer rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white; }

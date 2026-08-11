@@ -16,9 +16,8 @@
   @apply m-3 flex h-10 shrink-0 items-center gap-2 rounded-xl border border-line bg-canvas px-3 dark:border-dark-line dark:bg-dark-canvas;
 }
 
-.zone-search svg {
-  @apply size-4 shrink-0 fill-none stroke-muted;
-  stroke-width: 1.8;
+.zone-search img {
+  @apply size-4 shrink-0;
 }
 
 .zone-search input {
@@ -251,9 +250,8 @@
   @apply flex items-center gap-1.5 text-[10px] font-medium text-brand-600 no-underline dark:text-brand-300;
 }
 
-.linked-zone svg {
-  @apply size-3.5 fill-none stroke-current;
-  stroke-width: 1.8;
+.linked-zone img {
+  @apply size-3.5;
 }
 
 .recent-zone-activity {
@@ -280,11 +278,8 @@
   @apply flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl border text-[10px] font-semibold transition;
 }
 
-.zone-details > footer svg {
-  @apply size-3.5 fill-none stroke-current;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
+.zone-details > footer img {
+  @apply size-3.5;
 }
 
 .edit-zone {

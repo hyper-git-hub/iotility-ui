@@ -107,10 +107,7 @@
         @if (imagePreview()) {
           <img [src]="imagePreview()" alt="Manager preview" />
         } @else {
-          <svg viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="34" r="20" />
-            <path d="M12 96c2-27 15-40 38-40s36 13 38 40" />
-          </svg>
+          <img class="picture-placeholder" src="assets/fleetpoint/icons/avatar-placeholder.svg" alt="" aria-hidden="true" />
         }
       </div>
       <div>

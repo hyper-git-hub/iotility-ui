@@ -8,13 +8,8 @@
 .video-empty {
   @apply absolute inset-0 grid place-content-center justify-items-center gap-1 text-center text-slate-500;
 }
-.video-empty svg {
+.video-empty img {
   @apply size-7;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.6;
 }
 .video-empty strong {
   @apply text-xs;
@@ -35,7 +30,7 @@
 .live i {
   @apply size-1.5 animate-pulse rounded-full bg-danger;
 }
-.compact .video-empty svg {
+.compact .video-empty img {
   @apply size-5;
 }
 .compact .video-empty strong {

@@ -14,7 +14,7 @@ header {
 .theme {
   @apply cursor-pointer text-sm dark:text-brand-300;
 }
-.theme svg { @apply size-4; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
+.theme img { @apply size-4; }
 .live {
   @apply text-xs font-medium text-success;
 }

@@ -9,12 +9,7 @@
 
   <nav class="flex flex-1 flex-col items-center gap-1" aria-label="Primary navigation">
     <a routerLink="/use-cases" routerLinkActive="sidebar-nav-active" class="sidebar-nav-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
+      <img src="assets/icons/grid.svg" alt="" aria-hidden="true" />
       <span>Use Cases</span>
     </a>
     <a
@@ -23,40 +18,23 @@
       [routerLinkActiveOptions]="{ exact: true }"
       class="sidebar-nav-item"
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" />
-      </svg>
+      <img src="assets/icons/home.svg" alt="" aria-hidden="true" />
       <span>Home</span>
     </a>
     <a routerLink="/users" routerLinkActive="sidebar-nav-active" class="sidebar-nav-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
-        />
-      </svg>
+      <img src="assets/icons/users.svg" alt="" aria-hidden="true" />
       <span>Users</span>
     </a>
     <a routerLink="/settings" routerLinkActive="sidebar-nav-active" class="sidebar-nav-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="3" />
-        <path
-          d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V21h-4v-.08a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3v-4h.08a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3h4v.08a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21v4h-.08a1.7 1.7 0 0 0-1.52 1Z"
-        />
-      </svg>
+      <img src="assets/icons/settings.svg" alt="" aria-hidden="true" />
       <span>Settings</span>
     </a>
     <a routerLink="/billing" routerLinkActive="sidebar-nav-active" class="sidebar-nav-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="2" y="5" width="20" height="14" rx="2" />
-        <path d="M2 10h20" />
-      </svg>
+      <img src="assets/icons/credit-card.svg" alt="" aria-hidden="true" />
       <span>Billing</span>
     </a>
     <a routerLink="/help" routerLinkActive="sidebar-nav-active" class="sidebar-nav-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01" />
-      </svg>
+      <img src="assets/icons/help-circle.svg" alt="" aria-hidden="true" />
       <span>Help</span>
     </a>
   </nav>
@@ -79,9 +57,7 @@
             class="app-close-button"
             [attr.aria-label]="'Remove ' + app.label"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
+            <img src="assets/icons/x.svg" alt="" aria-hidden="true" />
           </button>
         </div>
       }

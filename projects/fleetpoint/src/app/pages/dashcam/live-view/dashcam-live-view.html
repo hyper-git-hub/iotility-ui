@@ -12,11 +12,7 @@
           (click)="vehicle.online && selected.set(vehicle)"
         >
           <span class="vehicle-icon"
-            ><svg viewBox="0 0 24 24">
-              <path d="M3 16V9h12v7M15 11h3l3 3v2M3 16h2M9 16h6" />
-              <circle cx="7" cy="17" r="2" />
-              <circle cx="17" cy="17" r="2" />
-            </svg>
+            ><img src="assets/fleetpoint/icons/vehicle.svg" alt="" aria-hidden="true" />
             @if (hasAlert(vehicle)) {
               <i></i>
             }

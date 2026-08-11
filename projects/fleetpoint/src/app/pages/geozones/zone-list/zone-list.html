@@ -1,10 +1,7 @@
 <section class="zone-list-page">
   <div class="zone-list-controls">
     <label class="zone-search">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-4-4" />
-      </svg>
+      <img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" />
       <input
         type="search"
         placeholder="Search zones..."
@@ -45,13 +42,17 @@
         >
           <span class="zone-type-icon" aria-hidden="true">
             @if (zone.type === 'speed') {
-              <svg viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" /></svg>
+              <img src="assets/fleetpoint/icons/bolt.svg" alt="" aria-hidden="true" />
             } @else if (zone.type === 'curfew') {
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M12 7.5V12l3 2" /></svg>
+              <img src="assets/fleetpoint/icons/clock.svg" alt="" aria-hidden="true" />
             } @else if (zone.type === 'poi') {
-              <svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>
+              <img src="assets/fleetpoint/icons/pin.svg" alt="" aria-hidden="true" />
+            } @else if (zone.type === 'restricted') {
+              <img src="assets/fleetpoint/icons/shield-danger.svg" alt="" aria-hidden="true" />
+            } @else if (zone.type === 'corridor') {
+              <img src="assets/fleetpoint/icons/shield-teal.svg" alt="" aria-hidden="true" />
             } @else {
-              <svg viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4 2.8 7 7 9 4.2-2 7-5 7-9V6l-7-3Z" /></svg>
+              <img src="assets/fleetpoint/icons/shield-success.svg" alt="" aria-hidden="true" />
             }
           </span>
 
@@ -80,10 +81,10 @@
           </span>
 
           <span class="zone-actions" (click)="$event.stopPropagation()">
-            <button type="button" title="Edit zone"><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg></button>
-            <button type="button" class="delete" title="Delete zone"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" /></svg></button>
+            <button type="button" title="Edit zone"><img src="assets/fleetpoint/icons/edit.svg" alt="" aria-hidden="true" /></button>
+            <button type="button" class="delete" title="Delete zone"><img src="assets/fleetpoint/icons/trash-muted.svg" alt="" aria-hidden="true" /></button>
           </span>
-          <span class="expand-icon"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5" /></svg></span>
+          <span class="expand-icon"><img src="assets/fleetpoint/icons/chevron-down.svg" alt="" aria-hidden="true" /></span>
         </div>
 
         <shared-smooth-height>

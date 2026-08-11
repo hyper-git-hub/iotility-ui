@@ -33,7 +33,7 @@
 .speed-gauge-skeleton ui-skeleton { @apply absolute bottom-0 left-1/2 -translate-x-1/2; }
 .trip-link-skeleton { @apply mt-4; }
 .sensor-list { @apply grid gap-2 p-4; }.sensor-list > div { @apply flex items-center gap-3 rounded-xl bg-canvas p-3 dark:bg-dark-canvas; }.sensor-icon { @apply grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-dark-surface; }.sensor-list small { @apply block text-[10px] text-muted dark:text-brand-300; }.sensor-list strong { @apply mt-1 block text-xs; }
-.sensor-icon svg { @apply size-[18px]; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
+.sensor-icon img { @apply size-[18px]; }
 .live-sensor { @apply inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-1 text-success!; }.live-sensor i { @apply size-1.5 rounded-full bg-success; animation: live-sensor-pulse 1.8s ease-in-out infinite; }
 .live-sensor.offline { @apply bg-muted/10 text-muted!; }
 .live-sensor.offline i { @apply bg-muted; animation: none; }
@@ -46,7 +46,7 @@
 .vehicle-illustration { @apply overflow-hidden; }
 .vehicle-illustration img { @apply size-16 object-contain; }
 .location-unavailable { @apply flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center; }
-.location-unavailable svg { @apply size-12 text-brand-500; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.location-unavailable img { @apply size-12; }
 .location-unavailable strong { @apply text-sm; }
 .location-unavailable span { @apply text-xs text-muted dark:text-brand-300; }
 .heavy-equipment-card { @apply min-h-0; }

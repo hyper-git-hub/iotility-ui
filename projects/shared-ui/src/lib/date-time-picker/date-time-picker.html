@@ -10,11 +10,7 @@
   (click)="$event.stopPropagation(); $event.preventDefault(); toggle()"
 >
   <span>{{ displayValue() || resolvedPlaceholder() }}</span>
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"
-    />
-  </svg>
+  <img src="assets/fleetpoint/icons/calendar.svg" alt="" aria-hidden="true"/>
 </button>
 
 @if (isOpen()) {
@@ -31,7 +27,7 @@
     @if (mode() !== 'time') {
       <header class="calendar-header">
         <button type="button" aria-label="Previous month" (click)="previousMonth()">
-          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+          <img src="assets/fleetpoint/icons/chevron-left-muted.svg" alt="" aria-hidden="true"/>
         </button>
         <strong>
           @if (!selectingYear()) {
@@ -48,7 +44,7 @@
           </button>
         </strong>
         <button type="button" aria-label="Next month" (click)="nextMonth()">
-          <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
+          <img src="assets/fleetpoint/icons/chevron-right-muted.svg" alt="" aria-hidden="true"/>
         </button>
       </header>
       <div class="weekdays" aria-hidden="true">

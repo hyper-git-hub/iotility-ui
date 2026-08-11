@@ -9,7 +9,7 @@
 .view-switch button,.export-job { @apply inline-flex h-10 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-3 text-xs font-medium text-muted dark:text-brand-300; }
 .view-switch button + button { @apply border-l border-line dark:border-dark-line; }
 .view-switch button.active { @apply bg-brand-600 text-white; }
-.view-switch svg,.export-job svg { @apply size-4; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7; }
+.view-switch img,.export-job img { @apply size-4; }
 .export-job { @apply rounded-xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
 .add-job { @apply cursor-pointer rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-brand-700; }
 .jobs-stats { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6; }

@@ -1,10 +1,10 @@
 import { Component, output } from '@angular/core';
 import { Router } from '@angular/router';
-import { DropdownOption, Logo, PlatformHeader } from '@iotility/shared-ui';
+import { DropdownOption, PlatformHeader } from '@iotility/shared-ui';
 
 @Component({
   selector: 'app-fleetpoint-header',
-  imports: [Logo, PlatformHeader],
+  imports: [ PlatformHeader],
   templateUrl: './fleetpoint-header.html',
   styleUrl: './fleetpoint-header.css',
 })

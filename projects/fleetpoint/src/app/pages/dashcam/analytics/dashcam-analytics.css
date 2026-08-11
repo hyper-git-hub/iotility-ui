@@ -48,11 +48,8 @@
 .ai-note {
   @apply mt-4 flex items-start gap-3 border-info/40 bg-info/5 p-4 text-info;
 }
-.ai-note svg {
+.ai-note img {
   @apply size-6 shrink-0;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
 }
 .ai-note h3 {
   @apply text-xs font-bold;

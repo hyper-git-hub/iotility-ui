@@ -6,10 +6,10 @@
     </div>
     <div class="heading-actions">
       <div class="view-switch" aria-label="Job view">
-        <button type="button" [class.active]="activeView() === 'list'" (click)="selectView('list')"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8"/><circle cx="4.5" cy="12" r=".8"/><circle cx="4.5" cy="18" r=".8"/></svg>List</button>
-        <button type="button" [class.active]="activeView() === 'dispatch'" (click)="selectView('dispatch')"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>Dispatch</button>
+        <button type="button" [class.active]="activeView() === 'list'" (click)="selectView('list')"><img src="assets/fleetpoint/icons/list-dots.svg" alt="" aria-hidden="true" />List</button>
+        <button type="button" [class.active]="activeView() === 'dispatch'" (click)="selectView('dispatch')"><img src="assets/fleetpoint/icons/calendar.svg" alt="" aria-hidden="true" />Dispatch</button>
       </div>
-      <button type="button" class="export-job"><svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4"/></svg>Export</button>
+      <button type="button" class="export-job"><img src="assets/fleetpoint/icons/export.svg" alt="" aria-hidden="true" />Export</button>
       <button type="button" class="add-job" (click)="openJobForm()">+ Create Job</button>
     </div>
   </header>

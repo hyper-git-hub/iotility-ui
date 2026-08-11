@@ -14,13 +14,8 @@
 .export {
   @apply flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-line bg-white px-4 text-xs font-semibold text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
 }
-.export svg {
+.export img {
   @apply size-4;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 .dashcam-stats {
   @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5;

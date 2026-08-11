@@ -28,10 +28,7 @@
         <button type="button" [disabled]="loading() || trailLoading()" (click)="loadTrip()">Load trip</button>
       </section>
       <label class="fleet-search-field"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-4-4" /></svg
-        ><input
+        ><img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" /><input
           type="search"
           placeholder="Search vehicle or driver..."
           [value]="search()"

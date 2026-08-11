@@ -32,7 +32,7 @@
 .info-card > header { @apply flex items-center gap-3 border-b border-line px-5 py-4 dark:border-dark-line; }
 .info-card > header > div { @apply min-w-0 flex-1; }
 .section-icon { @apply grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-600/15 dark:text-brand-300; }
-.section-icon svg { @apply size-4; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.8; }
+.section-icon img { @apply size-4; }
 .info-card h2 { @apply text-sm font-bold text-ink dark:text-white; }
 .info-card header p { @apply mt-0.5 text-[10px] text-muted dark:text-brand-300; }
 .info-grid { @apply grid sm:grid-cols-2; }

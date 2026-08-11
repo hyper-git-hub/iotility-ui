@@ -48,14 +48,14 @@
 .location-filter {
   @apply mx-3 mt-3;
 }
+.fleet-search-field img {
+  @apply size-4 shrink-0;
+}
 .location-filter [dropdown-trigger] {
   @apply flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-xs text-ink dark:border-dark-line dark:text-white;
 }
-.location-filter [dropdown-trigger] svg {
+.location-filter [dropdown-trigger] img {
   @apply size-4 shrink-0 text-brand-600;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
 }
 .location-filter [dropdown-trigger] span {
   @apply min-w-0 flex-1 truncate;

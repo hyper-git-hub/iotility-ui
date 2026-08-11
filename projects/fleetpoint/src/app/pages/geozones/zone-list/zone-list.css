@@ -12,9 +12,8 @@
   @apply flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-white px-3 dark:border-dark-line dark:bg-dark-surface;
 }
 
-.zone-search svg {
-  @apply size-4 shrink-0 fill-none stroke-muted;
-  stroke-width: 1.8;
+.zone-search img {
+  @apply size-4 shrink-0;
 }
 
 .zone-search input {
@@ -58,11 +57,8 @@
   @apply grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-600/15 dark:text-brand-300;
 }
 
-.zone-type-icon svg {
-  @apply size-5 fill-none stroke-current;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
+.zone-type-icon img {
+  @apply size-5;
 }
 
 .zone-card[data-type='allowed'] .zone-type-icon { @apply bg-success/10 text-success; }
@@ -136,12 +132,9 @@
   @apply hover:text-danger;
 }
 
-.zone-actions svg,
-.expand-icon svg {
-  @apply size-4 fill-none stroke-current;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
+.zone-actions img,
+.expand-icon img {
+  @apply size-4;
 }
 
 .expand-icon {

@@ -156,30 +156,19 @@
         <section class="fleet-card-content">
           <div class="fleet-stats">
             <div>
-              <svg viewBox="0 0 24 24">
-                <path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6" />
-                <circle cx="7" cy="17" r="2" />
-                <circle cx="17" cy="17" r="2" /></svg
-              ><strong>{{ fleet.vehicles }}</strong
+              <img src="assets/fleetpoint/icons/truck-muted.svg" alt="" aria-hidden="true" /><strong>{{ fleet.vehicles }}</strong
               ><small>Vehicles</small>
             </div>
             <div>
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" />
-                <path d="m8 12 2.5 2.5L16 9" /></svg
-              ><strong>{{ fleet.status }}</strong
+              <img src="assets/fleetpoint/icons/check-circle-muted.svg" alt="" aria-hidden="true" /><strong>{{ fleet.status }}</strong
               ><small>Status</small>
             </div>
             <div>
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="8" r="3" />
-                <path d="M6 20v-2a6 6 0 0 1 12 0v2" /></svg
-              ><strong>{{ fleet.modifiedBy }}</strong
+              <img src="assets/fleetpoint/icons/user-muted.svg" alt="" aria-hidden="true" /><strong>{{ fleet.modifiedBy }}</strong
               ><small>Modified by</small>
             </div>
             <div>
-              <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16" /></svg
-              ><strong>{{ fleet.createdAt }}</strong
+              <img src="assets/fleetpoint/icons/calendar.svg" alt="" aria-hidden="true" /><strong>{{ fleet.createdAt }}</strong
               ><small>Created</small>
             </div>
           </div>
@@ -193,7 +182,7 @@
           </div>
           <div class="fleet-location">
             <span
-              ><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16" /></svg>Created
+              ><img src="assets/fleetpoint/icons/calendar.svg" alt="" aria-hidden="true" />Created
               {{ fleet.createdAt }}</span
             ><button type="button" (click)="trackFleet()">Track fleet ›</button>
           </div>

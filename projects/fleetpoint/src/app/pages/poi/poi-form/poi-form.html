@@ -9,16 +9,16 @@
             @for (type of poiTypes; track type.id) {
               <button type="button" [class.selected]="form.controls.type.value === type.id" (click)="chooseType(type.id)">
                 <span class="type-icon" [attr.data-type]="type.id">
-                  @switch (type.icon) {
-                    @case ('building') { <svg viewBox="0 0 24 24"><path d="M5 21V8l7-4 7 4v13M9 21v-4h6v4M9 9h.01M12 9h.01M15 9h.01M9 13h.01M12 13h.01M15 13h.01"/></svg> }
-                    @case ('users') { <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6.5 20v-2a5.5 5.5 0 0 1 11 0v2M18 5.5a3 3 0 0 1 0 5.5M20 20v-2a4 4 0 0 0-2-3.5"/></svg> }
-                    @case ('fuel') { <svg viewBox="0 0 24 24"><path d="M5 21V4h9v17M4 21h12M7.5 8h4M14 8h2l3 3v7a2 2 0 0 0 2 2V9l-2-2"/></svg> }
-                    @case ('coffee') { <svg viewBox="0 0 24 24"><path d="M5 8h12v6a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V8ZM17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 3v2M12 3v2M16 3v2"/></svg> }
-                    @case ('shield') { <svg viewBox="0 0 24 24"><path d="M12 3 5.5 6v5.5c0 4.2 2.6 7.3 6.5 9.5 3.9-2.2 6.5-5.3 6.5-9.5V6L12 3Z"/></svg> }
-                    @case ('alert') { <svg viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17ZM12 8v5M12 16.5h.01"/></svg> }
-                    @case ('bolt') { <svg viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/></svg> }
-                    @case ('route') { <svg viewBox="0 0 24 24"><path d="M19 10c0 4.5-7 11-7 11S5 14.5 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.5"/></svg> }
-                    @default { <svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg> }
+                  @switch (type.id) {
+                    @case ('depot') { <img src="assets/fleetpoint/icons/poi-type-depot.svg" alt="" aria-hidden="true"/> }
+                    @case ('customer') { <img src="assets/fleetpoint/icons/poi-type-customer.svg" alt="" aria-hidden="true"/> }
+                    @case ('fuel') { <img src="assets/fleetpoint/icons/poi-type-fuel.svg" alt="" aria-hidden="true"/> }
+                    @case ('rest') { <img src="assets/fleetpoint/icons/poi-type-rest.svg" alt="" aria-hidden="true"/> }
+                    @case ('exclusion') { <img src="assets/fleetpoint/icons/poi-type-exclusion.svg" alt="" aria-hidden="true"/> }
+                    @case ('unsafe') { <img src="assets/fleetpoint/icons/poi-type-unsafe.svg" alt="" aria-hidden="true"/> }
+                    @case ('competitor') { <img src="assets/fleetpoint/icons/poi-type-competitor.svg" alt="" aria-hidden="true"/> }
+                    @case ('route') { <img src="assets/fleetpoint/icons/poi-type-route.svg" alt="" aria-hidden="true"/> }
+                    @default { <img src="assets/fleetpoint/icons/poi-type-custom.svg" alt="" aria-hidden="true"/> }
                   }
                 </span>
                 <strong>{{ type.label }}</strong>
@@ -34,13 +34,13 @@
             <span></span>
             <div class="location-picker full">
               <div class="location-picker-heading"><span><strong>Choose location <b>*</b></strong><small>Click anywhere on the map to place the marker. Drag it to adjust the position.</small></span>
-                @if (form.controls.latitude.value) { <span class="location-selected"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-8"/></svg>Location selected</span> }
+                @if (form.controls.latitude.value) { <span class="location-selected"><img src="assets/fleetpoint/icons/check.svg" alt="" aria-hidden="true"/>Location selected</span> }
               </div>
               <app-poi-location-picker (locationSelected)="setLocation($event)"/>
               @if (form.controls.latitude.value) {
                 <div class="coordinate-values"><span><small>Latitude</small><strong>{{ form.controls.latitude.value }}</strong></span><span><small>Longitude</small><strong>{{ form.controls.longitude.value }}</strong></span></div>
               } @else {
-                <div class="map-hint"><svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span><strong>No location selected</strong><small>Select a point on the map to continue.</small></span></div>
+                <div class="map-hint"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" aria-hidden="true"/><span><strong>No location selected</strong><small>Select a point on the map to continue.</small></span></div>
               }
               @if (submitted() && invalid('latitude')) { <small class="shared-form-error">Choose a location on the map.</small> }
             </div>
@@ -57,7 +57,7 @@
           </section>
         } @else {
           <section class="form-step confirmation">
-            <span class="confirm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V17a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 17V6A2.5 2.5 0 0 1 7 3.5Z"/><path d="M14 3.5V8h4M8 10.5h6M8 14h3"/><circle class="review-lens" cx="16.5" cy="16.5" r="3.25"/><path class="review-lens" d="m19 19 2 2"/></svg></span>
+            <span class="confirm-icon" aria-hidden="true"><img src="assets/fleetpoint/icons/review-file.svg" alt=""/></span>
             <header><span class="review-label">Final review</span><h3>Review your POI</h3><p>Check these details before creating the point of interest.</p></header>
             <dl>
               <div><dt>Type</dt><dd><span class="summary-badge">{{ selectedTypeLabel() }}</span></dd></div>
@@ -73,7 +73,7 @@
               @if (form.controls.maxDwell.value) { <div><dt>Maximum dwell</dt><dd>{{ form.controls.maxDwell.value }} minutes</dd></div> }
               @if (form.controls.geozone.value) { <div><dt>Geozone</dt><dd>{{ optionsLabel(geozoneOptions,form.controls.geozone.value,'None') }}</dd></div> }
             </dl>
-            <p class="creation-note"><svg viewBox="0 0 24 24"><path d="M12 8v4m0 4h.01"/><circle cx="12" cy="12" r="9"/></svg>The POI will become active immediately after it is created.</p>
+            <p class="creation-note"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true"/>The POI will become active immediately after it is created.</p>
           </section>
         }
       </form>
