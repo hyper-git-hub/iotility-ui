@@ -22,11 +22,13 @@ export interface VehicleRealtimeUpdate {
   rtp?: string | number;
   vol?: string | number;
   sbStatus?: string | number;
+  b?: string | number;
+  receptionTime?: string;
   device_id?: string | number;
   location?: string;
 }
 
-const EVENTS = ['newMessage', 'broadcastMessage', 'mxChipData', 'telemetry', 'vehicleUpdate'];
+const EVENTS = ['notify', 'newMessage', 'broadcastMessage', 'mxChipData', 'telemetry', 'vehicleUpdate'];
 
 interface SignalRNegotiationResponse {
   url: string;

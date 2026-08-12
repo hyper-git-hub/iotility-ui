@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownOption, Skeleton } from '@iotility/shared-ui';
-import { EMPTY, Subscription, catchError, finalize, forkJoin, switchMap, timer } from 'rxjs';
+import { EMPTY, Subscription, catchError, finalize, forkJoin, interval, switchMap, timer } from 'rxjs';
 import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
 import {
   DetailReportRecord,
@@ -22,6 +22,9 @@ interface LiveVehicle extends TrackedVehicle {
   deviceId: string;
   image: string | null;
   seatBelt: boolean;
+  ignition: boolean;
+  battery: number | null;
+  lastSignalAt: number | null;
   kmPerDay: number;
 }
 
@@ -39,7 +42,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly statusFilter = signal<VehicleStatus | 'All'>('All');
   protected readonly locationFilter = signal('all');
   protected readonly selectedVehicle = signal<LiveVehicle | null>(null);
+  protected readonly liveTrackingEnabled = signal(false);
   protected readonly allocationOpen = signal(false);
+  protected readonly now = signal(Date.now());
   protected readonly vehicles = signal<LiveVehicle[]>([]);
   protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Offline'];
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
@@ -58,6 +63,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   );
   private readonly subscription = new Subscription();
   private detailReports = new Map<number, DetailReportRecord>();
+  private readonly apiSnapshots = new Map<number, LiveVehicle>();
+  private readonly realtimeVehicles = new Set<number>();
   private selectionRequest = 0;
   private requestedVehicleId = '';
 
@@ -80,6 +87,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.subscription.add(
       this.realtime.updates$.subscribe((update) => this.applyRealtimeUpdate(update)),
     );
+    this.subscription.add(interval(1_000).subscribe(() => this.now.set(Date.now())));
     void this.realtime.connect();
     this.startVehiclePolling();
   }
@@ -113,7 +121,26 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   private updateVehicleSnapshot(records: RealtimeVehicleRecord[]): void {
     const selectedId = this.selectedVehicle()?.numericId;
-    const vehicles = records.map((vehicle) => this.toTrackedVehicle(vehicle, this.detailReports.get(vehicle.id)));
+    const currentVehicles = new Map(this.vehicles().map((vehicle) => [vehicle.numericId, vehicle]));
+    const vehicles = records.map((record) => {
+      const snapshot = this.toTrackedVehicle(record, this.detailReports.get(record.id));
+      this.apiSnapshots.set(record.id, snapshot);
+      const current = currentVehicles.get(record.id);
+      return current && this.liveTrackingEnabled() && record.id === selectedId && this.realtimeVehicles.has(record.id)
+        ? {
+            ...snapshot,
+            lat: current.lat,
+            lng: current.lng,
+            speed: current.speed,
+            status: current.status,
+            ignition: current.ignition,
+            battery: current.battery,
+            seatBelt: current.seatBelt,
+            lastSignalAt: current.lastSignalAt,
+            updated: current.updated,
+          }
+        : snapshot;
+    });
     this.vehicles.set(vehicles);
     if (selectedId !== undefined) {
       this.selectedVehicle.set(vehicles.find((vehicle) => vehicle.numericId === selectedId) ?? null);
@@ -124,7 +151,10 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected updateLocation(ids: string[]): void { this.locationFilter.set(ids[0] ?? 'all'); }
   protected locationLabel(): string { return 'All locations'; }
   protected selectVehicle(vehicle: TrackedVehicle): void {
+    const previousId = this.selectedVehicle()?.numericId;
+    if (previousId !== undefined) this.restoreApiVehicle(previousId);
     const selected = this.vehicles().find((item) => item.id === vehicle.id) ?? vehicle as LiveVehicle;
+    this.liveTrackingEnabled.set(false);
     this.selectedVehicle.set(selected);
     this.resolveSelectedVehicleDevice(selected);
   }
@@ -141,7 +171,32 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   protected clearSelectedVehicle(): void {
     this.selectionRequest += 1;
+    const selectedId = this.selectedVehicle()?.numericId;
+    if (selectedId !== undefined) this.restoreApiVehicle(selectedId);
+    this.liveTrackingEnabled.set(false);
     this.selectedVehicle.set(null);
+  }
+
+  protected enableLiveTracking(): void {
+    const vehicleId = this.selectedVehicle()?.numericId;
+    if (vehicleId === undefined) return;
+    this.realtimeVehicles.delete(vehicleId);
+    this.liveTrackingEnabled.set(true);
+  }
+
+  protected stopLiveTracking(): void {
+    const vehicleId = this.selectedVehicle()?.numericId;
+    this.liveTrackingEnabled.set(false);
+    if (vehicleId !== undefined) this.restoreApiVehicle(vehicleId);
+  }
+
+  protected lastSignalLabel(vehicle: LiveVehicle): string {
+    if (!vehicle.lastSignalAt) return 'Waiting…';
+    const seconds = Math.max(0, Math.floor((this.now() - vehicle.lastSignalAt) / 1_000));
+    if (seconds < 5) return 'Just now';
+    if (seconds < 60) return `${seconds} sec ago`;
+    const minutes = Math.floor(seconds / 60);
+    return minutes === 1 ? '1 min ago' : `${minutes} min ago`;
   }
 
   protected openDriverAllocation(): void { this.allocationOpen.set(true); }
@@ -183,6 +238,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       lng: this.coordinate(vehicle.longitude),
       image: detail?.vehicle_image || vehicle.vehicle_type_image,
       seatBelt: vehicle.seat_belt,
+      ignition: vehicle.ignition_status,
+      battery: null,
+      lastSignalAt: null,
       kmPerDay: vehicle.km_per_day || 0,
     };
   }
@@ -190,7 +248,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {
     if (update.rtp !== undefined && Number(update.rtp) !== 1) return;
     const activeVehicle = this.selectedVehicle();
-    if (!activeVehicle) return;
+    if (!activeVehicle || !this.liveTrackingEnabled()) return;
     const updateId = String(update.vehicle_id ?? update.id ?? '');
     const packetDeviceId = String(update.device_id ?? update.id ?? '');
     const registration = update.registration?.toLowerCase();
@@ -205,19 +263,44 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       const speed = this.numberValue(update.speed ?? update.spd ?? vehicle.speed);
       const lat = this.numberValue(update.latitude ?? update.lat, vehicle.lat);
       const lng = this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng);
-      const ignition = Boolean(update.ignition_status ?? update.ign);
+      const ignition = this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition);
       const changed: LiveVehicle = {
         ...vehicle,
         speed,
         lat,
         lng,
         status: speed > 5 ? 'Moving' : ignition ? 'Idling' : 'Offline',
+        ignition,
+        battery: update.b === undefined || update.b === null
+          ? vehicle.battery
+          : this.numberValue(update.b, vehicle.battery ?? 0),
+        seatBelt: update.sbStatus === undefined || update.sbStatus === null
+          ? vehicle.seatBelt
+          : this.booleanValue(update.sbStatus, vehicle.seatBelt),
+        lastSignalAt: Date.now(),
         updated: this.updateTime(update.updated_time ?? update.t),
       };
+      this.realtimeVehicles.add(vehicle.numericId);
       if (this.selectedVehicle()?.numericId === vehicle.numericId) selected = changed;
       return changed;
     }));
     if (selected) this.selectedVehicle.set(selected);
+  }
+
+  private restoreApiVehicle(vehicleId: number): void {
+    const snapshot = this.apiSnapshots.get(vehicleId);
+    this.realtimeVehicles.delete(vehicleId);
+    if (!snapshot) return;
+    const selectedDeviceId = this.selectedVehicle()?.numericId === vehicleId
+      ? this.selectedVehicle()?.deviceId
+      : '';
+    const resolvedDeviceId = this.vehicles().find((vehicle) => vehicle.numericId === vehicleId)?.deviceId
+      || selectedDeviceId;
+    const restored = { ...snapshot, deviceId: resolvedDeviceId || snapshot.deviceId };
+    this.vehicles.update((vehicles) => vehicles.map((vehicle) =>
+      vehicle.numericId === vehicleId ? restored : vehicle,
+    ));
+    if (this.selectedVehicle()?.numericId === vehicleId) this.selectedVehicle.set(restored);
   }
 
   private resolveSelectedVehicleDevice(vehicle: LiveVehicle): void {
@@ -229,6 +312,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
           if (request !== this.selectionRequest || this.selectedVehicle()?.numericId !== vehicle.numericId) return;
           const deviceId = String(response.data?.data?.[0]?.device_id ?? '').trim();
           if (!deviceId) return;
+          const snapshot = this.apiSnapshots.get(vehicle.numericId);
+          if (snapshot) this.apiSnapshots.set(vehicle.numericId, { ...snapshot, deviceId });
           this.vehicles.update((vehicles) => vehicles.map((item) =>
             item.numericId === vehicle.numericId ? { ...item, deviceId } : item,
           ));
@@ -246,6 +331,12 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private numberValue(value: unknown, fallback = 0): number {
     const number = Number(value);
     return Number.isFinite(number) ? number : fallback;
+  }
+
+  private booleanValue(value: unknown, fallback = false): boolean {
+    if (value === undefined || value === null || value === '') return fallback;
+    if (typeof value === 'string') return !['0', 'false', 'off'].includes(value.toLowerCase());
+    return Boolean(value);
   }
 
   private updateTime(value: string | number | undefined): string {
