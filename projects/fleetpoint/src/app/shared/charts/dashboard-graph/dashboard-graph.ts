@@ -148,7 +148,16 @@ export class DashboardGraphComponent {
       interaction: { mode: 'index', intersect: false },
       plugins: { legend: { position: 'bottom' } },
       scales: {
-        x: { stacked, grid: { display: false } },
+        x: {
+          stacked,
+          grid: { display: false },
+          ticks: horizontal ? {} : {
+            autoSkip: false,
+            minRotation: 0,
+            maxRotation: 0,
+            callback: (_value, index) => this.wrapAxisLabel(this.barData().labels?.[index]),
+          },
+        },
         y: { stacked, beginAtZero: true },
       },
     };
@@ -170,6 +179,21 @@ export class DashboardGraphComponent {
       .replaceAll('_', ' ')
       .replace(/\b\w/g, (letter) => letter.toUpperCase())
       .replace(' Probability Count', '');
+  }
+
+  private wrapAxisLabel(label: unknown, maxLength = 16): string | string[] {
+    if (typeof label !== 'string' || label.length <= maxLength) return String(label ?? '');
+
+    const lines: string[] = [];
+    for (const word of label.split(/\s+/)) {
+      const currentLine = lines.at(-1);
+      if (!currentLine || `${currentLine} ${word}`.length > maxLength) {
+        lines.push(word);
+      } else {
+        lines[lines.length - 1] = `${currentLine} ${word}`;
+      }
+    }
+    return lines;
   }
 
   private namedSeries(series: GraphSeries[] | number[] | undefined): GraphSeries[] {
