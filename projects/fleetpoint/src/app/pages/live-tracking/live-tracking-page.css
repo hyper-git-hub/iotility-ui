@@ -176,6 +176,27 @@
 .live-tracking-notice {
   @apply mx-4 mt-4 flex items-center gap-3 rounded-xl border border-success/25 bg-success/10 px-3 py-2.5;
 }
+.live-tracking-notice.waiting {
+  @apply border-warning/25 bg-warning/10;
+}
+.live-tracking-notice.waiting .live-tracking-pulse {
+  @apply bg-warning;
+}
+.live-tracking-notice.waiting strong {
+  @apply text-warning;
+}
+.live-tracking-prompt {
+  @apply mx-4 mt-4 rounded-xl border border-line bg-canvas p-3 dark:border-dark-line dark:bg-dark-canvas;
+}
+.live-tracking-prompt strong {
+  @apply block text-xs font-semibold text-ink dark:text-white;
+}
+.live-tracking-prompt small {
+  @apply mt-0.5 block text-[9px] text-muted dark:text-brand-300;
+}
+.live-tracking-prompt button {
+  @apply mt-3 w-full cursor-pointer rounded-lg bg-brand-600 px-3 py-2 text-[10px] font-semibold text-white hover:bg-brand-700;
+}
 .live-tracking-pulse {
   @apply relative size-2.5 shrink-0 rounded-full bg-success;
 }
@@ -184,7 +205,13 @@
   @apply absolute inset-0 animate-ping rounded-full bg-success opacity-60;
 }
 .live-tracking-notice div {
-  @apply min-w-0;
+  @apply min-w-0 flex-1;
+}
+.live-tracking-notice > button {
+  @apply cursor-pointer rounded-lg border border-current/20 px-2 py-1 text-[9px] font-semibold text-success;
+}
+.live-tracking-notice.waiting > button {
+  @apply text-warning;
 }
 .live-tracking-notice strong {
   @apply block text-xs font-semibold text-success;

@@ -88,6 +88,7 @@
     <app-fleet-map
       [class.map-loaded]="mapLoaded()"
       [vehicles]="mapVehicles()"
+      [clusterMarkers]="true"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
       (ready)="mapLoaded.set(true)"
       (vehicleSelected)="selectVehicle($event)"
@@ -130,13 +131,33 @@
           ×
         </button>
       </header>
-      <div class="live-tracking-notice" role="status">
-        <span class="live-tracking-pulse" aria-hidden="true"></span>
-        <div>
-          <strong>Live tracking enabled</strong>
-          <small>Receiving realtime updates for this vehicle</small>
+      @if (!liveTrackingEnabled()) {
+        <div class="live-tracking-prompt">
+          <div>
+            <strong>Latest recorded data</strong>
+            <small>Enable tracking to follow this vehicle in real time</small>
+          </div>
+          <button type="button" (click)="enableLiveTracking()">Enable live tracking</button>
         </div>
-      </div>
+      } @else if (!vehicle.lastSignalAt) {
+        <div class="live-tracking-notice waiting" role="status">
+          <span class="live-tracking-pulse" aria-hidden="true"></span>
+          <div>
+            <strong>Connecting to live tracking…</strong>
+            <small>Waiting for the next vehicle signal</small>
+          </div>
+          <button type="button" (click)="stopLiveTracking()">Cancel</button>
+        </div>
+      } @else {
+        <div class="live-tracking-notice" role="status">
+          <span class="live-tracking-pulse" aria-hidden="true"></span>
+          <div>
+            <strong>Live tracking enabled</strong>
+            <small>Receiving realtime updates for this vehicle</small>
+          </div>
+          <button type="button" (click)="stopLiveTracking()">Stop</button>
+        </div>
+      }
       <section>
         <h2>Live data</h2>
         <div class="detail-grid">
@@ -144,16 +165,19 @@
             <span>Speed</span><strong>{{ vehicle.speed }} km/h</strong>
           </article>
           <article>
-            <span>KM / day</span><strong>{{ vehicle.kmPerDay }} km</strong>
+            <span>Ignition</span><strong>{{ vehicle.ignition ? 'On' : 'Off' }}</strong>
           </article>
           <article>
             <span>Status</span><strong>{{ vehicle.status }}</strong>
           </article>
           <article>
-            <span>Updated</span><strong>{{ vehicle.updated }}</strong>
+            <span>Battery</span><strong>{{ vehicle.battery === null ? '—' : vehicle.battery + '%' }}</strong>
           </article>
           <article>
             <span>Seat belt</span><strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
+          </article>
+          <article>
+            <span>Last signal</span><strong>{{ lastSignalLabel(vehicle) }}</strong>
           </article>
         </div>
       </section>
