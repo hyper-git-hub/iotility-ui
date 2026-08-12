@@ -4,7 +4,7 @@
       <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p class="vehicle-heading-line">Vehicles / <ui-skeleton width="6rem" height="0.625rem" /></p><h1 class="vehicle-title-skeleton"><ui-skeleton width="9rem" height="1.125rem" /></h1><span class="vehicle-heading-line vehicle-description-skeleton"><ui-skeleton width="15rem" height="0.75rem" /></span></div></div>
       <div class="heading-actions"><ui-skeleton width="4rem" height="1.5rem" radius="999px" /><button type="button" class="secondary-action" disabled>Trip Replay</button><button type="button" class="primary-action" disabled>Edit Vehicle</button></div>
     </header>
-    <section class="metric-grid">@for (item of [1, 2, 3, 4, 5, 6]; track item) { <ui-stat-card-skeleton /> }</section>
+    <section class="metric-grid">@for (item of [1, 2, 3, 4, 5, 6]; track item) { <ui-stat-card-skeleton [compact]="true" [showIcon]="false" /> }</section>
     <section class="overview-grid">
       <article class="detail-card identity-card vehicle-overview-skeleton">
         <header><h2>Vehicle Overview</h2><ui-skeleton width="6rem" height="1.25rem" radius="999px" /></header>
@@ -30,7 +30,7 @@
       <div class="heading-actions"><span class="offline-status" [class.online]="vehicle.online_status"><i></i>{{ vehicle.online_status ? 'Online' : 'Offline' }}</span><button type="button" class="secondary-action" (click)="tripReplay()">Trip Replay</button><button type="button" class="primary-action">Edit Vehicle</button></div>
     </header>
     <section class="metric-grid smooth-reveal reveal-metrics">
-      @for (metric of metrics(); track metric.code; let index = $index) { <app-stat-card [label]="metric.name" [value]="metricValue(metric)" [tone]="metricTone(index)"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4 3 7 8 9 5-2 8-5 8-9V6l-8-3Z"/><path d="M8 14l3-3 2 2 3-5"/></svg></app-stat-card> }
+      @for (metric of metrics(); track metric.code; let index = $index) { <app-stat-card [label]="metric.name" [value]="metricValue(metric)" [tone]="metricTone(index)" [compact]="true" [showIcon]="false" /> }
     </section>
     <section class="overview-grid">
       <article class="detail-card identity-card smooth-reveal reveal-profile"><header><h2>Vehicle Overview</h2><span class="signal-pill">{{ vehicle.device_id ? 'Device allocated' : 'No device' }}</span></header><div class="vehicle-identity"><span class="vehicle-illustration"><img [src]="image()" (error)="useDefaultImage($event)" alt="Vehicle" /></span><div><h3>{{ registration() }}</h3><p>{{ text(vehicle.make) }} {{ text(vehicle.model) }} · {{ text(vehicle.year) }}</p><span class="offline-status" [class.online]="vehicle.online_status"><i></i>{{ vehicle.online_status ? 'Online' : 'Offline' }}</span></div></div><dl class="details-list">@for (item of details(); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl></article>
