@@ -30,13 +30,14 @@ export class ForgotPasswordPage {
   ) {
     this.form = formBuilder.nonNullable.group({
       email: ['', [Validators.required, Validators.email]],
-      otp: ['', [Validators.required, Validators.pattern(/^\d{4,8}$/)]],
+      otp: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9]{4,8}$/)]],
       password: ['', [Validators.required, Validators.pattern(/^(?=[^A-Z]*[A-Z])(?=[^a-z]*[a-z])(?=[^0-9]*[0-9]).{8,15}$/)]],
       confirmPassword: ['', Validators.required],
     });
   }
 
-  protected requestCode(): void {
+  protected requestCode(event?: SubmitEvent): void {
+    event?.preventDefault();
     const control = this.form.controls.email;
     control.markAsTouched();
     if (control.invalid) return;
@@ -44,12 +45,12 @@ export class ForgotPasswordPage {
       this.authApi.requestPasswordReset(control.value),
       () => {
         this.step.set('otp');
-        this.message.set('We sent a verification code to your email.');
       },
     );
   }
 
-  protected verifyCode(): void {
+  protected verifyCode(event?: SubmitEvent): void {
+    event?.preventDefault();
     const control = this.form.controls.otp;
     control.markAsTouched();
     if (control.invalid) return;
@@ -57,12 +58,12 @@ export class ForgotPasswordPage {
       this.authApi.verifyPasswordResetCode(this.form.controls.email.value, control.value),
       () => {
         this.step.set('password');
-        this.message.set('Code accepted. Create your new password.');
       },
     );
   }
 
-  protected savePassword(): void {
+  protected savePassword(event?: SubmitEvent): void {
+    event?.preventDefault();
     const password = this.form.controls.password;
     const confirmation = this.form.controls.confirmPassword;
     password.markAsTouched(); confirmation.markAsTouched();
