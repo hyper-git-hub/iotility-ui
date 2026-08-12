@@ -289,9 +289,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           this.roadCoordinates.slice(recentStart, completedIndex + 1),
         ),
       );
-    const brand =
-      getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim() ||
-      '#7435e8';
+    // MapLibre's color parser does not reliably support the oklch() value
+    // returned by our Tailwind CSS variable, so use equivalent concrete colors.
+    const routeColor = document.documentElement.classList.contains('dark')
+      ? '#c4b5fd'
+      : '#8b19f5';
     const data: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features };
     const source = this.map.getSource('trip-route') as maplibregl.GeoJSONSource | undefined;
     const layerIds = [
@@ -311,21 +313,21 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         id: 'trip-route-casing',
         type: 'line',
         filter: ['==', ['get', 'kind'], 'route'],
-        paint: { 'line-color': brand, 'line-width': 10, 'line-opacity': 0.14 },
+        paint: { 'line-color': routeColor, 'line-width': 9, 'line-opacity': 0.18 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
       {
         id: 'trip-route-line',
         type: 'line',
         filter: ['==', ['get', 'kind'], 'route'],
-        paint: { 'line-color': brand, 'line-width': 4, 'line-opacity': 0.34 },
+        paint: { 'line-color': routeColor, 'line-width': 4, 'line-opacity': 0.82 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
       {
         id: 'trip-route-completed',
         type: 'line',
         filter: ['==', ['get', 'kind'], 'completed'],
-        paint: { 'line-color': brand, 'line-width': 4.5, 'line-opacity': 0.72 },
+        paint: { 'line-color': routeColor, 'line-width': 4.5, 'line-opacity': 0.9 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
       {
@@ -334,7 +336,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         id: 'trip-route-recent',
         type: 'line',
         filter: ['==', ['get', 'kind'], 'recent'],
-        paint: { 'line-color': brand, 'line-width': 5.5, 'line-opacity': ['get', 'fade'] },
+        paint: { 'line-color': routeColor, 'line-width': 5.5, 'line-opacity': ['get', 'fade'] },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
     ]);
@@ -907,6 +909,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.movementStartDistance +
       (this.targetRoadDistance - this.movementStartDistance) * progress;
     this.displayedRoadProgress = this.progressAtDistance(this.displayedRoadDistance);
+    this.renderRouteLayersIfNeeded();
     const position = this.coordinateAtDistance(this.displayedRoadDistance, this.cameraPointScratch);
     const heading = this.smoothVehicleHeading(
       this.rawHeadingAtDistance(this.displayedRoadDistance),

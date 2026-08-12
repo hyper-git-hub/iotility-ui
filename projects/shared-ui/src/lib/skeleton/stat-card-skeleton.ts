@@ -9,6 +9,7 @@ import { Skeleton } from './skeleton';
 })
 export class StatCardSkeleton {
   readonly compact = input(false);
+  readonly showIcon = input(true);
   readonly valueWidth = input('3.5rem');
   readonly labelWidth = input('6.5rem');
 }
