@@ -3,7 +3,7 @@
 
 :host { display: contents; }
 
-.loader-backdrop { @apply fixed inset-0 z-[2500] grid place-items-center bg-dark-canvas/65 p-5 backdrop-blur-sm; }
+.loader-backdrop { @apply fixed inset-0 z-[2500] grid place-items-center bg-dark-canvas/75 p-5 backdrop-blur-sm; }
 .loader-panel { @apply flex w-full max-w-xs flex-col items-center justify-center gap-0 text-center; }
 .loader-panel.animation-only { @apply grid place-items-center p-0; }
 .loader-panel.compact { @apply flex w-auto min-w-48 flex-col items-center justify-center gap-1 px-6 py-4; }
