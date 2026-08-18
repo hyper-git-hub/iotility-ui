@@ -211,13 +211,13 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     const value = image?.trim();
     return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase())
       ? value
-      : 'assets/fleetpoint/vehicle.svg';
+      : 'assets/fleetpoint/def-car.svg';
   }
 
   protected useDefaultVehicleImage(event: Event): void {
     const image = event.target as HTMLImageElement;
     image.onerror = null;
-    image.src = 'assets/fleetpoint/vehicle.svg';
+    image.src = 'assets/fleetpoint/def-car.svg';
   }
 
   private toTrackedVehicle(vehicle: RealtimeVehicleRecord, detail?: DetailReportRecord): LiveVehicle {

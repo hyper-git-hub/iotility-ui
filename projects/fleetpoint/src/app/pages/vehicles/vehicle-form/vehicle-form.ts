@@ -55,7 +55,7 @@ export class VehicleForm implements OnChanges {
   protected readonly editing = computed(() => !!this.vehicle());
   protected readonly error = signal('');
   protected readonly activeStep = signal(0);
-  protected readonly imagePreview = signal('assets/fleetpoint/vehicle.svg');
+  protected readonly imagePreview = signal('assets/fleetpoint/def-car.svg');
   protected readonly imageFile = signal<File | null>(null);
   protected readonly fleets = signal<InventoryOption[]>([]);
   protected readonly categories = signal<InventoryOption[]>([]);
@@ -190,7 +190,7 @@ export class VehicleForm implements OnChanges {
     if (file) this.imagePreview.set(URL.createObjectURL(file));
   }
   protected imageFailed(): void {
-    this.imagePreview.set('assets/fleetpoint/vehicle.svg');
+    this.imagePreview.set('assets/fleetpoint/def-car.svg');
   }
 
   protected submit(): void {
@@ -343,7 +343,7 @@ export class VehicleForm implements OnChanges {
     this.submitted.set(false);
     this.error.set('');
     this.imageFile.set(null);
-    this.imagePreview.set('assets/fleetpoint/vehicle.svg');
+    this.imagePreview.set('assets/fleetpoint/def-car.svg');
   }
 
   private prepareForm(): void {
@@ -382,6 +382,6 @@ export class VehicleForm implements OnChanges {
       status: vehicle.status === 1,
       is_immobilization_enabled: vehicle.is_immobilization_enabled !== false,
     });
-    this.imagePreview.set(vehicle.image || 'assets/fleetpoint/vehicle.svg');
+    this.imagePreview.set(vehicle.image || 'assets/fleetpoint/def-car.svg');
   }
 }
