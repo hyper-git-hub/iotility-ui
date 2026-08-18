@@ -93,7 +93,7 @@ nav button {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 .fleet-sidebar.collapsed nav a {
-  @apply gap-0;
+  @apply mx-auto size-8 justify-center gap-0 px-0;
 }
 nav .active {
   @apply bg-brand-600 text-white;
@@ -105,7 +105,6 @@ nav .active {
 .vehicle-nav-icon {
   @apply size-5;
 }
-.fleet-sidebar.collapsed .nav-icon { transform: translateX(0.8125rem); }
 .nav-label {
   @apply min-w-0 truncate;
   max-width: 8rem;
@@ -117,14 +116,21 @@ nav .active {
   opacity: 0;
   transform: translateX(-10px);
   pointer-events: none;
+  width: 0;
+  overflow: hidden;
 }
 .fleet-sidebar.collapsed .live-status-dot {
   opacity: 0;
   transform: scale(0);
+  width: 0;
+  margin-left: 0;
 }
 .fleet-sidebar.collapsed nav em {
   opacity: 0;
   transform: scale(0.85);
+  width: 0;
+  margin-left: 0;
+  padding: 0;
 }
 .live-status-dot {
   @apply relative ml-auto size-2 shrink-0 rounded-full bg-success;
@@ -173,13 +179,14 @@ nav em {
   transition: opacity 0.14s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .fleet-sidebar.collapsed .footer-return {
-  @apply gap-0;
+  @apply mx-auto size-8 justify-center gap-0 px-0;
 }
-.fleet-sidebar.collapsed .footer-return-icon { transform: translateX(0.75rem); }
 .fleet-sidebar.collapsed .footer-return-label {
   opacity: 0;
   transform: translateX(-10px);
   pointer-events: none;
+  width: 0;
+  overflow: hidden;
 }
 @media (prefers-reduced-motion: reduce) {
   .fleet-sidebar,.brand-text,.brand-toggle,.nav-icon,.nav-label,.live-status-dot,nav em,.footer-return-icon,.footer-return-label { transition:none; }
