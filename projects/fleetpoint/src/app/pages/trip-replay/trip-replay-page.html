@@ -58,10 +58,14 @@
               [class.selected]="selectedVehicleId() === vehicle.id"
               (click)="selectVehicle(vehicle)"
             >
-              <span class="driver-avatar">{{
-                (vehicle.vehicle_driver_name || vehicle.registration).slice(0, 1)
-              }}</span
-              ><span class="trip-copy"
+              <span class="vehicle-thumb"
+                ><img
+                  [src]="vehicleImage(vehicleImages()[vehicle.id] || vehicle.vehicle_type_image)"
+                  (error)="useDefaultVehicleImage($event)"
+                  alt=""
+                  aria-hidden="true"
+              /></span>
+              <span class="trip-copy"
                 ><strong>{{ vehicle.registration }}</strong
                 ><small>{{ vehicle.vehicle_driver_name || 'Unassigned' }}</small
                 ><small>{{ vehicle.vehicle_type }}</small></span
