@@ -33,7 +33,7 @@
         position: relative;
         z-index: 1;
         width: 100%;
-        max-width: 28rem;
+        max-width: 32rem;
         margin: auto;
         text-align: center;
       }
@@ -45,18 +45,27 @@
         gap: 1.5rem;
         margin: 0 auto 2rem;
       }
-
-      .bootstrap-loading__product-logo,
+      
+      .bootstrap-loading__product-logo {
+        display: block;
+        width: auto;
+        max-width: 15rem;
+        height: 2.5rem;
+        flex-shrink: 0;
+      }
+      
       .bootstrap-loading__label-logo {
         display: block;
         width: auto;
-        max-width: 8rem;
+        max-width: 15rem;
         height: 2.5rem;
+        flex-shrink: 0;
       }
 
       .bootstrap-loading__separator {
         width: 1px;
         height: 2.5rem;
+        flex-shrink: 0;
         background: rgb(255 255 255 / 25%);
       }
 
@@ -87,7 +96,7 @@
         width: 55%;
         height: 0.25rem;
         border-radius: 9999px;
-        background: linear-gradient(90deg, #a678ff, #8347f5, #3978d4);
+        background: linear-gradient(90deg, #c084fc, #a855f7, #3978d4);
         animation: bootstrap-loading-progress 2.2s ease-in-out infinite;
       }
 
@@ -110,13 +119,13 @@
       >
         <div class="bootstrap-loading__logos">
           <img
-            src="assets/iotility-light.svg"
+            src="assets/iotility-loader-light.svg"
             alt="IoTility"
             class="bootstrap-loading__product-logo"
           />
           <div class="bootstrap-loading__separator" aria-hidden="true"></div>
           <img
-            src="assets/hypernym-full.svg"
+            src="assets/hypernym-loader-full.svg"
             alt="Hypernym"
             class="bootstrap-loading__label-logo"
           />

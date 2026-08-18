@@ -1,5 +1,5 @@
 <main class="flex min-h-full flex-col xl:flex-row">
-  <section class="min-w-0 flex-1 p-5 dark:text-white sm:p-8">
+  <section class="min-w-0 flex-1 p-5 dark:bg-dark-canvas dark:text-white sm:p-8">
     <h1 class="text-2xl font-bold text-ink dark:text-white">Welcome to IoTility</h1>
     <p class="mb-6 mt-2 max-w-3xl text-sm leading-6 text-muted dark:text-brand-300">
       A connected SaaS platform designed to transform your operations. Manage fleets, assets,
@@ -23,20 +23,20 @@
       <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
         @for (module of modules; track module.id) {
         <article
-          class="group relative flex min-h-[160px] flex-col justify-between rounded-lg border border-gray-100 bg-white p-4 transition-all hover:shadow-md dark:border-dark-line dark:bg-dark-surface">
+          class="group relative flex min-h-[160px] flex-col justify-between rounded-lg border border-line bg-white p-4 transition-all hover:shadow-md dark:border-dark-line dark:bg-dark-surface">
 
           <!-- TOP SECTION: Title and Rating on the same line -->
           <div class="relative z-10">
             <div class="flex items-center justify-start gap-2">
-              <h3 class="text-[15px] font-bold text-gray-900 dark:text-white">{{ module.name }}</h3>
+              <h3 class="text-[15px] font-bold text-ink dark:text-white">{{ module.name }}</h3>
 
               <!-- Rating (Top-Right) -->
               <div class="flex items-center gap-1 text-[11px] font-bold text-amber-500">
                 <img src="assets/icons/star.svg" alt="" class="size-3.5" />
-                <span class="text-gray-500 dark:text-brand-300">{{ module.rating || '5.0' }}</span>
+                <span class="text-muted dark:text-brand-300">{{ module.rating || '5.0' }}</span>
               </div>
             </div>
-            <p class="mt-1 text-[12px] leading-snug text-gray-400 dark:text-brand-300">{{ module.tagline }}</p>
+            <p class="mt-1 text-[12px] leading-snug text-muted dark:text-brand-300">{{ module.tagline }}</p>
           </div>
 
           <!-- BOTTOM SECTION: Button (Left) and The Icon Asset (Right) -->
@@ -81,8 +81,8 @@
         </article>
         }
         <div (click)="browseAll()"
-          class="flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-100 p-4 transition-colors hover:bg-slate-100/50 dark:border-dark-line dark:hover:bg-dark-canvas/60">
-          <span class="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-brand-300">
+          class="flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-line p-4 transition-colors hover:bg-canvas/60 dark:border-dark-line dark:hover:bg-dark-canvas/60">
+          <span class="flex items-center gap-2 text-sm font-bold text-muted dark:text-brand-300">
             Browse All
             <img src="assets/icons/chevron-right.svg" alt="" class="size-4" />
           </span>
