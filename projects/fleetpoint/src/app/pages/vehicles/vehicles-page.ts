@@ -175,6 +175,6 @@ export class VehiclesPage implements OnInit {
     const value = image?.trim();
     return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase())
       ? value
-      : 'assets/fleetpoint/vehicle.svg';
+      : 'assets/fleetpoint/def-car.svg';
   }
 }
