@@ -44,7 +44,7 @@ const EMPTY_TRIP: ReplayTrip = {
   id: '',
   vehicleId: 0,
   vehicle: 'Select a vehicle',
-  vehicleImage: 'assets/fleetpoint/vehicle.svg',
+  vehicleImage: 'assets/fleetpoint/def-car.svg',
   driver: 'Unassigned',
   date: '',
   score: 0,
@@ -167,7 +167,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       ...EMPTY_TRIP,
       vehicleId: vehicle.id,
       vehicle: vehicle.registration,
-      vehicleImage: vehicle.vehicle_type_image || 'assets/fleetpoint/vehicle.svg',
+      vehicleImage: vehicle.vehicle_type_image || 'assets/fleetpoint/def-car.svg',
       driver: vehicle.vehicle_driver_name || 'Unassigned',
     });
     this.error.set('');
@@ -271,7 +271,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected useDefaultVehicleImage(event: Event): void {
     const image = event.target as HTMLImageElement;
     image.onerror = null;
-    image.src = 'assets/fleetpoint/vehicle.svg';
+    image.src = 'assets/fleetpoint/def-car.svg';
   }
   private buildTrip(
     trail: PlaybackTrailRecord[],
@@ -296,7 +296,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
         ...EMPTY_TRIP,
         vehicleId: this.selectedVehicleId(),
         vehicle: this.vehicle()?.registration ?? 'Vehicle',
-        vehicleImage: this.vehicle()?.vehicle_type_image || 'assets/fleetpoint/vehicle.svg',
+        vehicleImage: this.vehicle()?.vehicle_type_image || 'assets/fleetpoint/def-car.svg',
       });
       this.error.set('');
       void this.feedback.open({
@@ -382,7 +382,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       vehicleImage: String(
         detailRow['vehicle_image'] ||
           this.vehicle()?.vehicle_type_image ||
-          'assets/fleetpoint/vehicle.svg',
+          'assets/fleetpoint/def-car.svg',
       ),
       driver: String(driver),
       date: new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(

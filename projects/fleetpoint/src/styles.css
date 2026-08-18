@@ -23,3 +23,7 @@ button:has(> .color-icon[style*='export.svg']) {
 .fleet-status-success { @apply border-success/30 bg-success/5 dark:bg-success/10; }
 .fleet-status-warning { @apply border-warning/40 bg-warning/5 dark:bg-warning/10; }
 .fleet-status-danger { @apply border-danger/30 bg-danger/5 dark:bg-danger/10; }
+
+img[src$='assets/fleetpoint/def-car.svg'] {
+  padding: 0 !important;
+}
