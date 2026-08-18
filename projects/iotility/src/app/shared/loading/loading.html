@@ -7,7 +7,7 @@
   >
     <div class="mx-auto mb-8 flex items-center justify-center gap-6">
       @if (logoSrc()) {
-        <img [src]="logoSrc()" alt="FleetPoint" class="h-10 w-auto max-w-40" />
+        <img [src]="logoSrc()" alt="FleetPoint" class="h-10 w-auto max-w-60" />
       } @else {
         <div
           class="grid size-20 place-items-center rounded-3xl border border-brand-400/30 bg-brand-500/20 shadow-2xl shadow-brand-500/30"
@@ -17,7 +17,7 @@
       }
       <div class="h-10 w-px bg-white/25" aria-hidden="true"></div>
       @if (labelLogoSrc()) {
-        <img [src]="labelLogoSrc()" alt="IoTility" class="h-10 w-auto max-w-40" />
+        <img [src]="labelLogoSrc()" alt="IoTility" class="h-10 w-auto max-w-60" />
       } @else {
         <p class="text-xs font-bold uppercase tracking-[0.28em] text-brand-300">{{ label() }}</p>
       }

@@ -3,11 +3,11 @@
 
 /* Matching the mock button style */
 .module-action {
-  @apply flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600 transition-all 
+  @apply flex items-center gap-2 rounded-lg border border-line bg-white px-4 py-2 text-xs font-semibold text-muted transition-all 
   hover:border-brand-600 hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface dark:text-brand-300 dark:hover:border-brand-400 dark:hover:text-brand-300;
 }
 
 /* The "Browse All" card style */
 .browse-card {
-  @apply flex items-center justify-center rounded-2xl border-2 border-dashed border-gray-100 bg-slate-50/50 p-5 text-gray-500 transition-colors hover:bg-slate-100/50 dark:border-dark-line dark:bg-dark-canvas/50 dark:text-brand-300 dark:hover:bg-dark-canvas;
+  @apply flex items-center justify-center rounded-2xl border-2 border-dashed border-line bg-canvas/50 p-5 text-muted transition-colors hover:bg-canvas/80 dark:border-dark-line dark:bg-dark-surface dark:text-brand-300 dark:hover:bg-dark-surface;
 }

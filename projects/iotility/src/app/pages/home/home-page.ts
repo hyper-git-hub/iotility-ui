@@ -161,7 +161,7 @@ export class HomePage {
         message: 'Preparing your fleet command center...',
         initials: 'FP',
         logoSrc: 'assets/fleetpoint.svg',
-        labelLogoSrc: 'assets/iotility-light.svg',
+        labelLogoSrc: 'assets/iotility-loader-light.svg',
       },
       2000,
     );
