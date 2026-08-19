@@ -59,6 +59,9 @@
 .trip-row-skeleton {
   @apply flex h-[4.625rem] w-full items-start gap-2 border-t border-line px-3 py-3 dark:border-dark-line;
 }
+.trip-thumb-skeleton {
+  @apply mt-1 shrink-0;
+}
 .trip-copy-skeleton {
   @apply min-w-0 flex-1;
 }

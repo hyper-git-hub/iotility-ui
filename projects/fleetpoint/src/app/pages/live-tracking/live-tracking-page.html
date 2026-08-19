@@ -1,5 +1,5 @@
 <div class="tracking-page">
-  <aside class="vehicle-panel">
+  <aside class="vehicle-panel" [class.panel-hidden]="isFullscreen()">
     <div class="panel-heading">
       <div>
         <h1>Live Tracking</h1>
@@ -42,7 +42,12 @@
           (click)="statusFilter.set(filter)"
           [class.active]="statusFilter() === filter"
         >
-          {{ filter }}
+          @if (filter === 'All') {
+            <span>All({{ vehicles().length }})</span>
+          } @else {
+            <span class="filter-dot" [style.background]="statusColor(filter)"></span>
+            <span>{{ filter }}</span>
+          }
         </button>
       }
     </div>
@@ -86,26 +91,34 @@
 
   <section class="map-area">
     <app-fleet-map
+      #fleetMap
       [class.map-loaded]="mapLoaded()"
       [vehicles]="mapVehicles()"
-      [clusterMarkers]="true"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
-      (ready)="mapLoaded.set(true)"
+      [hasLeftOverlays]="true"
+      (ready)="onMapReady(fleetMap)"
       (vehicleSelected)="selectVehicle($event)"
     />
     <div class="map-status">
-      @if (loading()) {
-        <ui-skeleton width="8.5rem" height="0.65rem" radius="0.3rem" />
-      } @else {
-        <span class="map-count-reveal">
-          <i class="live-dot"></i>Live · {{ mapVehicles().length }} vehicles on map
-        </span>
-      }
+      <app-live-badge
+        [vehicleCount]="mapVehicles().length"
+        [isLive]="!loading()"
+        [loading]="loading()"
+      />
     </div>
-    <div class="map-legend">
-      <span><i class="bg-success"></i>Moving</span><span><i class="bg-warning"></i>Idling</span
-      ><span><i class="bg-danger"></i>Alert</span><span><i class="bg-muted"></i>Offline</span>
-    </div>
+    <app-vehicle-legend class="map-legend" />
+    @if (isFullscreen()) {
+      <app-search-overlay
+        class="search-overlay-overlay"
+        [search]="search()"
+        [filterStatus]="statusFilter()"
+        [vehicles]="filteredVehicles()"
+        [totalVehicles]="vehicles().length"
+        (searchChange)="updateSearchValue($event)"
+        (filterChange)="statusFilter.set($event)"
+        (selectVehicle)="selectVehicle($event)"
+      />
+    }
     @if (error()) {
       <div class="tracking-error tracking-map-error">
         <strong>Live tracking is unavailable</strong>
@@ -116,7 +129,7 @@
   </section>
 
   @if (selectedVehicle(); as vehicle) {
-    <aside class="details-panel">
+    <aside class="details-panel" [class.panel-hidden]="isFullscreen()">
       <header>
         <div>
           <strong>{{ vehicle.id }}</strong

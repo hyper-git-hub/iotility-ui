@@ -27,3 +27,7 @@ button:has(> .color-icon[style*='export.svg']) {
 img[src$='assets/fleetpoint/def-car.svg'] {
   padding: 0 !important;
 }
+
+.maplibregl-ctrl-attrib {
+  display: none !important;
+}

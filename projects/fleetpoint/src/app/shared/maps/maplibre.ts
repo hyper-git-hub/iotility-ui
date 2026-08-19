@@ -32,9 +32,7 @@ export function createIotMap(
     style: isDark() ? DARK_STYLE : LIGHT_STYLE,
     ...options,
   });
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-  map.addControl(new ThreeDimensionalControl(), 'top-right');
   replaceNativeTitles(map.getContainer());
   let darkTheme = isDark();
 
@@ -96,6 +94,10 @@ export function markerElement(html: string, className = 'iotility-map-marker'): 
 
 export function popup(text: string): maplibregl.Popup {
   return new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16 }).setText(text);
+}
+
+export function popupHtml(html: string): maplibregl.Popup {
+  return new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16 }).setHTML(html);
 }
 
 export function circlePolygon(center: LatLng, radiusMeters: number, steps = 64): LatLng[] {

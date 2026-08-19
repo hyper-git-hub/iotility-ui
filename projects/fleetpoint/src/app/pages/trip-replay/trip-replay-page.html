@@ -41,7 +41,7 @@
         @if (loading()) {
           @for (_ of vehicleSkeletons; track $index) {
             <div class="trip-row-skeleton" aria-hidden="true">
-              <ui-skeleton variant="circle" width="2rem" height="2rem" />
+              <ui-skeleton class="trip-thumb-skeleton" width="2.25rem" height="2.25rem" radius="0.5rem" />
               <div class="trip-copy-skeleton">
                 <span class="trip-title-line"><ui-skeleton width="5.25rem" height="0.75rem" radius="0.25rem" /></span>
                 <span class="trip-small-line"><ui-skeleton width="4.75rem" height="0.6rem" radius="0.25rem" /></span>

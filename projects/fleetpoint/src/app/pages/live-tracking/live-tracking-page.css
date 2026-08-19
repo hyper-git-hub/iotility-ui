@@ -8,7 +8,7 @@
   @apply relative flex h-full min-h-0 overflow-hidden bg-canvas dark:bg-dark-canvas;
 }
 .vehicle-panel {
-  @apply flex w-72 shrink-0 flex-col border-r border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply flex w-80 shrink-0 flex-col border-r border-line bg-white dark:border-dark-line dark:bg-dark-surface;
 }
 .vehicle-row-skeleton {
   @apply flex h-[4.625rem] w-full items-start gap-2 border-t border-line px-3 py-3 dark:border-dark-line;
@@ -61,17 +61,18 @@
   @apply min-w-0 flex-1 truncate;
 }
 .status-filters {
-  @apply flex gap-1 overflow-x-auto p-3;
-  scrollbar-width: none;
-}
-.status-filters::-webkit-scrollbar {
-  display: none;
+  @apply flex flex-wrap gap-1.5 px-3 py-2;
 }
 .status-filters button {
-  @apply whitespace-nowrap rounded-full bg-canvas px-2.5 py-1.5 text-[10px] text-muted dark:bg-dark-canvas dark:text-brand-300;
+  @apply flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[10px] font-medium transition
+         border-line bg-canvas text-muted
+         dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300;
 }
-.status-filters .active {
-  @apply bg-brand-600 text-white;
+.status-filters button.active {
+  @apply border-transparent bg-brand-600 text-white;
+}
+.filter-dot {
+  @apply size-2 rounded-full shrink-0;
 }
 .vehicle-list {
   @apply min-h-0 flex-1 overflow-y-auto;
@@ -136,21 +137,20 @@
 .map-area app-fleet-map.map-loaded {
   opacity: 1;
 }
-.map-status,
-.map-legend {
-  @apply absolute z-[500] flex items-center gap-2 rounded-xl border border-line bg-white/95 px-3 py-2 text-[10px] text-muted shadow-lg backdrop-blur dark:border-dark-line dark:bg-dark-surface/95 dark:text-brand-300;
-}
 .map-status {
-  @apply left-4 top-4 max-w-[calc(100%_-_5rem)] truncate;
+  @apply absolute z-[500] left-4 top-4 max-w-[calc(100%_-_5rem)] truncate;
+}
+.search-overlay-overlay {
+  @apply absolute z-[500] left-4 top-14;
 }
 .map-legend {
-  @apply bottom-4 left-1/2 -translate-x-1/2;
+  @apply absolute z-[500] bottom-4 left-1/2 -translate-x-1/2;
 }
-.map-legend span {
-  @apply flex items-center gap-1;
+.map-controls-overlay {
+  @apply absolute z-[500] right-4 top-4;
 }
-.map-legend i {
-  @apply size-2 rounded-full;
+.panel-hidden {
+  display: none;
 }
 .details-panel {
   @apply w-80 shrink-0 overflow-y-auto border-l border-line bg-white dark:border-dark-line dark:bg-dark-surface;

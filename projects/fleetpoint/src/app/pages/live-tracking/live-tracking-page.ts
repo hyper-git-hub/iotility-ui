@@ -1,9 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownOption, Skeleton } from '@iotility/shared-ui';
 import { EMPTY, Subscription, catchError, finalize, forkJoin, interval, switchMap, timer } from 'rxjs';
 import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
+import { LiveBadge } from '../../shared/map-overlays/live-badge';
+import { VehicleLegend } from '../../shared/map-overlays/vehicle-legend';
+import { SearchOverlay } from '../../shared/map-overlays/search-overlay';
+import { FullscreenUiService } from '../../shared/services/fullscreen-ui.service';
 import {
   DetailReportRecord,
   LiveTrackingApiService,
@@ -30,7 +34,7 @@ interface LiveVehicle extends TrackedVehicle {
 
 @Component({
   selector: 'app-live-tracking-page',
-  imports: [Skeleton, FleetMap, AllocationForm],
+  imports: [Skeleton, FleetMap, AllocationForm, LiveBadge, VehicleLegend, SearchOverlay],
   templateUrl: './live-tracking-page.html',
   styleUrl: './live-tracking-page.css',
 })
@@ -46,7 +50,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly allocationOpen = signal(false);
   protected readonly now = signal(Date.now());
   protected readonly vehicles = signal<LiveVehicle[]>([]);
-  protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Offline'];
+  protected readonly isFullscreen = computed(() => this.fullscreenUi.isFullscreen());
+  protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Alert', 'Offline'];
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly locationOptions: DropdownOption[] = [
     { id: 'all', label: 'All locations', description: 'Every tracked vehicle' },
@@ -74,6 +79,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     private readonly vehicleDetailApi: VehicleDetailApiService,
     private readonly router: Router,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly fullscreenUi: FullscreenUiService,
     route: ActivatedRoute,
   ) {
     const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
@@ -148,6 +154,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   }
 
   protected updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); }
+  protected updateSearchValue(value: string): void { this.search.set(value); }
   protected updateLocation(ids: string[]): void { this.locationFilter.set(ids[0] ?? 'all'); }
   protected locationLabel(): string { return 'All locations'; }
   protected selectVehicle(vehicle: TrackedVehicle): void {
@@ -343,6 +350,26 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     if (!value) return 'Just now';
     const date = typeof value === 'number' ? new Date(value > 1e12 ? value : value * 1000) : new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  }
+
+  protected onMapReady(fleetMap: FleetMap): void {
+    this.mapLoaded.set(true);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.fullscreenUi.isFullscreen()) void this.fullscreenUi.toggle();
+  }
+
+  protected statusColor(status: string): string {
+    switch (status) {
+      case 'Moving': return 'var(--color-success)';
+      case 'Idling': return 'var(--color-warning)';
+      case 'Stopped': return '#64748b';
+      case 'Alert': return 'var(--color-danger)';
+      case 'Offline': return 'var(--color-muted)';
+      default: return 'var(--color-muted)';
+    }
   }
 
   ngOnDestroy(): void {

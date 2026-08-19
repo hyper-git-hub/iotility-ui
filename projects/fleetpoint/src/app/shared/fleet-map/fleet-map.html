@@ -1,1 +1,17 @@
 <div #map class="map-container" aria-label="Live vehicle map"></div>
+@if (showOverlays()) {
+  <div class="map-overlays">
+    <app-location-search class="overlay-search" [class.no-left-overlays]="!hasLeftOverlays()" (locationSelect)="onLocationSelect($event)" />
+    <app-map-controls
+      class="overlay-controls"
+      [fullscreen]="isFullscreen()"
+      (zoomIn)="zoomIn()"
+      (zoomOut)="zoomOut()"
+      (toggle3D)="onToggle3D()"
+      (resetNorth)="onResetNorth()"
+      (rotate)="onRotate()"
+      (geolocate)="onGeolocate()"
+      (fullscreenToggle)="onFullscreenToggle()"
+    />
+  </div>
+}

@@ -1,16 +1,19 @@
 import {
-  AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, viewChild,
+  AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, signal, viewChild,
 } from '@angular/core';
 import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import {
   LatLng, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
-  polygonFeature, popup, removeGeoJson, upsertGeoJson,
+  polygonFeature, popupHtml, removeGeoJson, upsertGeoJson,
 } from '../maps/maplibre';
+import { MapControls } from '../map-overlays/map-controls';
+import { LocationSearch, LocationSelect } from '../map-overlays/location-search';
 
 export type VehicleStatus = 'Moving' | 'Idling' | 'Alert' | 'Offline';
 export interface TrackedVehicle {
   id: string; model: string; driver: string; status: VehicleStatus; speed: number;
   fuel: number; location: string; updated: string; lat: number; lng: number;
+  image?: string | null;
 }
 export interface MapZoneOverlay {
   id: string;
@@ -26,6 +29,7 @@ export interface MapZoneOverlay {
   selector: 'app-fleet-map',
   templateUrl: './fleet-map.html',
   styleUrl: './fleet-map.css',
+  imports: [MapControls, LocationSearch],
 })
 export class FleetMap implements AfterViewInit, OnDestroy {
   readonly vehicles = input.required<TrackedVehicle[]>();
@@ -34,11 +38,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly clusterMarkers = input(false);
   readonly fitZoomOffset = input(0);
   readonly selectedVehicleId = input<string | null>(null);
+  readonly showOverlays = input(true);
+  readonly hasLeftOverlays = input(false);
   readonly vehicleSelected = output<TrackedVehicle>();
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
+  protected readonly isFullscreen = signal(false);
   private fittedVehicleSet = '';
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
@@ -46,9 +53,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   constructor() {
     effect(() => {
       const vehicles = this.vehicles(), showMarkers = this.showMarkers(), clusterMarkers = this.clusterMarkers();
+      const selectedId = this.selectedVehicleId();
       if (this.map) {
         const vehicleSet = this.vehicleSetKey(vehicles);
-        this.renderMarkers(vehicles, vehicleSet !== this.fittedVehicleSet, showMarkers, clusterMarkers);
+        this.renderMarkers(vehicles, vehicleSet !== this.fittedVehicleSet, showMarkers, clusterMarkers, selectedId);
       }
     });
     effect(() => {
@@ -63,6 +71,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.map = createIotMap(this.mapElement().nativeElement, [25.2854, 51.531], 11);
+    document.addEventListener('fullscreenchange', this.onFullscreenChange);
     this.map.on('style.load', () => {
       this.renderMarkers(this.vehicles(), false, this.showMarkers(), this.clusterMarkers());
       this.renderZones(this.zones());
@@ -84,34 +93,143 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     this.ready.emit();
   }
 
+  zoomIn(): void {
+    this.map?.zoomIn();
+  }
+
+  zoomOut(): void {
+    this.map?.zoomOut();
+  }
+
+  onToggle3D(): void {
+    if (!this.map) return;
+    const pitch = this.map.getPitch();
+    this.map.easeTo({ pitch: pitch > 0 ? 0 : 60, duration: 500 });
+  }
+
+  onResetNorth(): void {
+    this.map?.easeTo({ bearing: 0, duration: 500 });
+  }
+
+  onRotate(): void {
+    if (!this.map) return;
+    const bearing = this.map.getBearing();
+    this.map.easeTo({ bearing: bearing + 90, duration: 500 });
+  }
+
+  onGeolocate(): void {
+    if (!this.map || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.map?.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 700 });
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  }
+
+  onFullscreenToggle(): void {
+    if (!this.mapElement) return;
+    const container = this.mapElement().nativeElement.closest('.map-area') ?? this.mapElement().nativeElement.parentElement;
+    if (!container) return;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void container.requestFullscreen();
+    }
+  }
+
+  onLocationSelect(location: LocationSelect): void {
+    this.map?.easeTo({ center: [location.lng, location.lat], zoom: 14, duration: 700 });
+  }
+
+  get mapInstance(): MapLibreMap | undefined {
+    return this.map;
+  }
+
   private renderMarkers(
     vehicles: TrackedVehicle[],
     fit = false,
     show = true,
     cluster = false,
+    selectedId: string | null = this.selectedVehicleId(),
   ): void {
     if (!this.map) return;
     this.markers.forEach((item) => item.remove());
     this.markers.clear();
     if (cluster) this.renderClusteredMarkers(show ? vehicles : []);
     else for (const vehicle of show ? vehicles : []) {
-      const element = markerElement(
-        `<div style="width:34px;height:34px;border:3px solid white;border-radius:50%;display:grid;place-items:center;background:${this.statusColor(vehicle.status)};color:white;font:700 10px Inter,sans-serif;box-shadow:0 5px 16px rgb(0 0 0 / 28%)">${vehicle.id.slice(-2)}</div>`,
-      );
+      const element = this.createVehicleMarker(vehicle, selectedId);
       element.addEventListener('click', () => {
         this.focusVehicle(vehicle);
         this.vehicleSelected.emit(vehicle);
       });
       const item = new maplibregl.Marker({ element })
         .setLngLat([vehicle.lng, vehicle.lat])
-        .setPopup(popup(`${vehicle.id} · ${vehicle.status}`))
+        .setPopup(popupHtml(this.vehiclePopupHtml(vehicle)))
         .addTo(this.map);
+      element.addEventListener('mouseenter', () => {
+        if (item.getPopup() && !item.getPopup()?.isOpen()) item.togglePopup();
+      });
+      element.addEventListener('mouseleave', () => {
+        if (item.getPopup()?.isOpen()) item.togglePopup();
+      });
       this.markers.set(vehicle.id, item);
     }
     if (fit && vehicles.length) {
       fitLatLngs(this.map, vehicles.map(({ lat, lng }) => [lat, lng]), 48, 15 + this.fitZoomOffset());
       this.fittedVehicleSet = this.vehicleSetKey(vehicles);
     }
+  }
+
+  private createVehicleMarker(vehicle: TrackedVehicle, selectedId: string | null): HTMLElement {
+    const selected = vehicle.id === selectedId;
+    const size = selected ? 44 : 34;
+    const color = this.statusColor(vehicle.status);
+    const image = this.vehicleImageUrl(vehicle.image);
+    return markerElement(`
+      <div class="vehicle-marker${selected ? ' selected' : ''}"
+        style="width:${size}px;height:${size}px;border-color:${color};
+          box-shadow:0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}">
+        <img src="${image}" alt="${vehicle.id}">
+      </div>
+    `);
+  }
+
+  private vehiclePopupHtml(vehicle: TrackedVehicle): string {
+    const statusColor = this.statusColor(vehicle.status);
+    const speed = vehicle.speed > 0 ? `<span>${Math.round(vehicle.speed)} km/h</span>` : '';
+    const fuel = vehicle.fuel > 0 ? `<span>Fuel ${Math.round(vehicle.fuel)}%</span>` : '';
+    return `
+      <div class="vehicle-popup">
+        <div class="vp-head">
+          <img class="vp-thumb" src="${this.vehicleImageUrl(vehicle.image)}" alt="" />
+          <div class="vp-title">
+            <strong>${vehicle.id}</strong>
+            <small>${vehicle.model}</small>
+          </div>
+        </div>
+        <div class="vp-row">
+          <svg class="vp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="vp-text">${vehicle.driver}</span>
+        </div>
+        <div class="vp-row">
+          <svg class="vp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="vp-text"><span class="vp-status" style="color:${statusColor}">${vehicle.status}</span>${speed}${fuel}</span>
+        </div>
+        <div class="vp-row">
+          <svg class="vp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="vp-text vp-location">${vehicle.location}</span>
+        </div>
+        <div class="vp-foot">Click for full details</div>
+      </div>`;
+  }
+
+  private vehicleImageUrl(image: string | null | undefined): string {
+    const value = image?.trim();
+    return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase())
+      ? value
+      : 'assets/fleetpoint/def-car.svg';
   }
 
   private renderClusteredMarkers(vehicles: TrackedVehicle[]): void {
@@ -246,7 +364,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       easing: (progress) => 1 - Math.pow(1 - progress, 3),
     });
     const marker = this.markers.get(vehicle.id);
-    if (marker && !marker.getPopup()?.isOpen()) marker.togglePopup();
+    if (marker && marker.getPopup() && !marker.getPopup()?.isOpen()) marker.togglePopup();
   }
 
   private statusColor(status: VehicleStatus): string {
@@ -259,6 +377,11 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.readyFallback);
+    document.removeEventListener('fullscreenchange', this.onFullscreenChange);
     this.map?.remove();
   }
+
+  private onFullscreenChange = (): void => {
+    this.isFullscreen.set(Boolean(document.fullscreenElement));
+  };
 }
