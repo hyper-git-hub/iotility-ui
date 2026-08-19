@@ -17,39 +17,55 @@
         box-sizing: border-box;
         color: #fff;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: #3b0764;
+      }
+
+      .bootstrap-loading::before {
+        content: '';
+        position: absolute;
+        inset: 0;
         background:
-          radial-gradient(circle at 50% 45%, rgb(113 51 220 / 34%) 0%, transparent 36%),
-          linear-gradient(145deg, #09090f, #19082f);
+          radial-gradient(circle at 50% 45%, rgb(147 51 234 / 34%) 0%, transparent 36%),
+          linear-gradient(145deg, #09090f, #3b0764);
       }
 
       .bootstrap-loading__content {
         position: relative;
         z-index: 1;
         width: 100%;
-        max-width: 28rem;
+        max-width: 32rem;
         margin: auto;
         text-align: center;
       }
 
-.bootstrap-loading__logos {
+      .bootstrap-loading__logos {
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 1.5rem;
         margin: 0 auto 2rem;
       }
-
-      .bootstrap-loading__product-logo,
+      
+      .bootstrap-loading__product-logo {
+        display: block;
+        width: auto;
+        max-width: 15rem;
+        height: 2.5rem;
+        flex-shrink: 0;
+      }
+      
       .bootstrap-loading__label-logo {
         display: block;
         width: auto;
-        max-width: 8rem;
+        max-width: 15rem;
         height: 2.5rem;
+        flex-shrink: 0;
       }
 
       .bootstrap-loading__separator {
         width: 1px;
         height: 2.5rem;
-        margin: 0 1.25rem;
+        flex-shrink: 0;
         background: rgb(255 255 255 / 25%);
       }
 
@@ -58,12 +74,12 @@
         font-size: 1.875rem;
         font-weight: 700;
         line-height: 2.25rem;
-        letter-spacing: 0.03em
+        letter-spacing: -0.025em;
       }
 
       .bootstrap-loading__message {
         margin: 0.5rem 0 0;
-        color: #cbb5ff;
+        color: #d8b4fe;
         font-size: 0.875rem;
         line-height: 1.25rem;
       }
@@ -80,7 +96,7 @@
         width: 55%;
         height: 0.25rem;
         border-radius: 9999px;
-        background: linear-gradient(90deg, #a678ff, #8347f5, #3978d4);
+        background: linear-gradient(90deg, #c084fc, #a855f7, #3978d4);
         animation: bootstrap-loading-progress 2.2s ease-in-out infinite;
       }
 
@@ -101,29 +117,41 @@
         aria-live="polite"
         aria-busy="true"
       >
-<div class="bootstrap-loading__logos">
+        <div class="bootstrap-loading__logos">
           <img
-            src="assets/iotility-light.svg"
+            src="assets/iotility-loader-light.svg"
             alt="IoTility"
             class="bootstrap-loading__product-logo"
           />
           <div class="bootstrap-loading__separator" aria-hidden="true"></div>
           <img
-            src="assets/hypernym-full.svg"
+            src="assets/hypernym-loader-full.svg"
             alt="Hypernym"
             class="bootstrap-loading__label-logo"
           />
         </div>
         <h1 class="bootstrap-loading__title">Loading IoTility</h1>
-
         <p class="bootstrap-loading__message">
           Preparing your connected operations platform&hellip;
         </p>
         <div class="bootstrap-loading__track" aria-hidden="true">
           <div class="bootstrap-loading__bar"></div>
         </div>
-      </section>
-    </main>
-    <app-root></app-root>
-  </body>
-</html>
+        </section>
+      </main>
+      <app-root></app-root>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const saved = localStorage.getItem('iotility-theme');
+          const html = document.documentElement;
+          if (saved === 'dark') {
+            html.classList.add('dark');
+          } else if (saved === 'light') {
+            html.classList.remove('dark');
+          } else {
+            html.classList.add('dark');
+          }
+        });
+      </script>
+    </body>
+  </html>

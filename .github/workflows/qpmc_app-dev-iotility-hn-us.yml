@@ -37,12 +37,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Temporary workaround for Fleetpoint component styles
-          # that currently exceed the 20 kB component-style limit.
-          sed -i \
-            's/"maximumError": "20kB"/"maximumError": "40kB"/g' \
-            angular.json
-
           npm run build
 
       - name: Assemble microfrontend deployment

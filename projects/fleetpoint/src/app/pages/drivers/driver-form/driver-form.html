@@ -6,24 +6,27 @@
 <app-modal
   [open]="open()"
   [busy]="loading()"
-  size="xl"
+  size="lg"
   labelledBy="add-driver-title"
   (closed)="cancel()"
 >
-  <h2 modal-header id="add-driver-title">{{ editing() ? 'Edit Driver' : 'Add Driver' }}</h2>
+  <div modal-header>
+    <h2 id="add-driver-title">{{ editing() ? 'Update Driver' : 'Create Driver' }}</h2>
+    <p class="form-subtitle">{{ editing() ? 'Update driver details' : 'Add a new driver record' }}</p>
+  </div>
   <form id="driver-form" class="driver-form" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
       <div class="form-error wide" role="alert">{{ error() }}</div>
     }
     <label class="shared-form-field"
-      ><span>Name *</span
+      ><span>Name <b>*</b></span
       ><input class="shared-form-control" formControlName="name" placeholder="Enter name" />
       @if (submitted() && form.controls.name.invalid) {
         <small class="field-error">Name is required.</small>
       }
     </label>
     <label class="shared-form-field"
-      ><span>Employee ID *</span
+      ><span>Employee ID <b>*</b></span
       ><input
         class="shared-form-control"
         formControlName="employee_id"
@@ -34,14 +37,14 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>Birth Date *</span
+      ><span>Birth Date <b>*</b></span
       ><shared-date-time-picker mode="date" formControlName="dob" ariaLabel="Choose birth date" />
       @if (submitted() && form.controls.dob.invalid) {
         <small class="field-error">Birth date is required.</small>
       }
     </label>
     <label class="shared-form-field"
-      ><span>Joining Date *</span
+      ><span>Joining Date <b>*</b></span
       ><shared-date-time-picker
         mode="date"
         formControlName="data_joined"
@@ -86,7 +89,7 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>Gender *</span
+      ><span>Gender <b>*</b></span
       ><shared-dropdown
         class="form-dropdown"
         [options]="genderOptions"
@@ -105,7 +108,7 @@
       }
     </label>
     <label class="shared-form-field"
-      ><span>Contact Number *</span
+      ><span>Contact Number <b>*</b></span
       ><input type="tel" class="shared-form-control" formControlName="phone" />
       @if (submitted() && form.controls.phone.invalid) {
         <small class="field-error">Enter a valid contact number.</small>
@@ -125,7 +128,7 @@
     </label>
     @if (!editing()) {
       <label class="shared-form-field"
-        ><span>Password *</span
+        ><span>Password <b>*</b></span
         ><span class="password-field"
           ><input
             [type]="showPassword() ? 'text' : 'password'"
@@ -188,7 +191,7 @@
     >
     @if (editing()) {
       <label class="shared-form-field"
-        ><span>Status *</span
+        ><span>Status <b>*</b></span
         ><shared-dropdown
           class="form-dropdown"
           [options]="statusOptions"
@@ -230,10 +233,7 @@
         @if (imagePreview()) {
           <img [src]="imagePreview()" alt="Driver preview" />
         } @else {
-          <svg viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="34" r="20" />
-            <path d="M12 96c2-27 15-40 38-40s36 13 38 40" />
-          </svg>
+          <img class="picture-placeholder" src="assets/fleetpoint/icons/avatar-placeholder.svg" alt="" aria-hidden="true" />
         }
       </div>
       <div>
@@ -254,16 +254,16 @@
       </div>
     </section>
   </form>
-  <div modal-footer class="form-footer">
+  <div modal-footer class="driver-form-actions">
     <button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">
-      Close</button
+      Cancel</button
     ><button
       type="submit"
       form="driver-form"
       class="shared-button-primary"
-      [disabled]="form.invalid || loading()"
+      [disabled]="loading()"
     >
-      {{ editing() ? 'Update Driver' : 'Save Driver' }}
+      {{ editing() ? 'Update Driver' : 'Create Driver' }}
     </button>
   </div>
 </app-modal>

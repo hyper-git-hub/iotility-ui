@@ -9,10 +9,9 @@
     </div>
     <div>
       <button type="button" class="export">
-        <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4" /></svg
-        >Export</button
+        <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export</button
       ><button type="button" class="register" (click)="formOpen.set(true)">
-        + Register Device
+        <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Register Device
       </button>
     </div>
   </header>
@@ -37,10 +36,7 @@
   </section>
   <section class="device-filters">
     <label class="search"
-      ><svg viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-4-4" /></svg
-      ><input
+      ><img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" /><input
         type="search"
         placeholder="Search IMEI, serial, model or vehicle..."
         [value]="search()"
@@ -72,13 +68,9 @@
     ><button type="button" class="clear" (click)="clear()">Clear</button>
     <div class="view-toggle">
       <button type="button" [class.active]="view() === 'list'" (click)="view.set('list')">
-        <svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg
-        >List</button
+        <img src="assets/fleetpoint/icons/list.svg" alt="" aria-hidden="true" />List</button
       ><button type="button" [class.active]="view() === 'bundle'" (click)="view.set('bundle')">
-        <svg viewBox="0 0 24 24">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg
-        >Bundle
+        <img src="assets/fleetpoint/icons/link.svg" alt="" aria-hidden="true" />Bundle
       </button>
     </div>
   </section>
@@ -100,40 +92,22 @@
           <span class="type-icon" [attr.data-category]="row['category']">
             @switch (row['category']) {
               @case ('dashcam') {
-                <svg viewBox="0 0 24 24">
-                  <rect x="3" y="7" width="18" height="12" rx="2" />
-                  <path d="m8 7 1.5-3h5L16 7" />
-                  <circle cx="12" cy="13" r="3" />
-                </svg>
+                <img src="assets/fleetpoint/icons/dashcam.svg" alt="" aria-hidden="true" />
               }
               @case ('temp-sensor') {
-                <svg viewBox="0 0 24 24">
-                  <path d="M10 5a2 2 0 0 1 4 0v8.5a4 4 0 1 1-4 0V5Z" />
-                  <path d="M12 9v7" />
-                </svg>
+                <img src="assets/fleetpoint/icons/temp-sensor.svg" alt="" aria-hidden="true" />
               }
               @case ('rfid-reader') {
-                <svg viewBox="0 0 24 24">
-                  <rect x="3" y="6" width="18" height="12" rx="2" />
-                  <path d="M6 10h12M6 14h7" />
-                </svg>
+                <img src="assets/fleetpoint/icons/rfid-reader.svg" alt="" aria-hidden="true" />
               }
               @case ('eye-sensor') {
-                <svg viewBox="0 0 24 24">
-                  <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-                  <circle cx="12" cy="12" r="2.5" />
-                </svg>
+                <img src="assets/fleetpoint/icons/eye-sensor.svg" alt="" aria-hidden="true" />
               }
               @case ('fuel-sensor') {
-                <svg viewBox="0 0 24 24">
-                  <path d="M6 21V4h9v17M4 21h13M8 8h5M15 7h2l3 3v7a2 2 0 0 1-4 0v-4" />
-                </svg>
+                <img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" aria-hidden="true" />
               }
               @default {
-                <svg viewBox="0 0 24 24">
-                  <rect x="5" y="5" width="14" height="14" rx="2" />
-                  <path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m14 0h4M1 15h4m14 0h4" />
-                </svg>
+                <img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />
               }
             }
           </span>
@@ -171,11 +145,8 @@
           >
         } @else {
           <span class="no-signal" title="No signal"
-            ><svg viewBox="0 0 24 24">
-              <path
-                d="M5 9a10 10 0 0 1 14 0M8 12a6 6 0 0 1 8 0m-5 4a2 2 0 0 1 2 0M3 3l18 18"
-              /></svg
-          ></span>
+            ><img src="assets/fleetpoint/icons/no-signal.svg" alt="" aria-hidden="true" /></span
+          >
         }</ng-template
       ><ng-template tableCell="battery" let-row
         ><span class="meter battery"
@@ -205,9 +176,12 @@
               </p>
             </div>
             <em>{{ bundle.devices.length }} devices</em
-            ><svg [class.open]="expanded().includes(bundle.vehicle)" viewBox="0 0 24 24">
-              <path d="m7 9.5 5 5 5-5" />
-            </svg></button
+            ><img
+              [class.open]="expanded().includes(bundle.vehicle)"
+              src="assets/fleetpoint/icons/chevron-down.svg"
+              alt=""
+              aria-hidden="true"
+            /></button
           ><shared-smooth-height>
             @if (expanded().includes(bundle.vehicle)) {
               <div class="bundle-devices">
@@ -216,40 +190,22 @@
                     <span class="device-icon" [attr.data-category]="device.category">
                       @switch (device.category) {
                         @case ('dashcam') {
-                          <svg viewBox="0 0 24 24">
-                            <rect x="3" y="7" width="18" height="12" rx="2" />
-                            <path d="m8 7 1.5-3h5L16 7" />
-                            <circle cx="12" cy="13" r="3" />
-                          </svg>
+                          <img src="assets/fleetpoint/icons/dashcam.svg" alt="" aria-hidden="true" />
                         }
                         @case ('temp-sensor') {
-                          <svg viewBox="0 0 24 24">
-                            <path d="M10 5a2 2 0 0 1 4 0v8.5a4 4 0 1 1-4 0V5Z" />
-                            <path d="M12 9v7" />
-                          </svg>
+                          <img src="assets/fleetpoint/icons/temp-sensor.svg" alt="" aria-hidden="true" />
                         }
                         @case ('rfid-reader') {
-                          <svg viewBox="0 0 24 24">
-                            <rect x="3" y="6" width="18" height="12" rx="2" />
-                            <path d="M6 10h12M6 14h7" />
-                          </svg>
+                          <img src="assets/fleetpoint/icons/rfid-reader.svg" alt="" aria-hidden="true" />
                         }
                         @case ('eye-sensor') {
-                          <svg viewBox="0 0 24 24">
-                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-                            <circle cx="12" cy="12" r="2.5" />
-                          </svg>
+                          <img src="assets/fleetpoint/icons/eye-sensor.svg" alt="" aria-hidden="true" />
                         }
                         @case ('fuel-sensor') {
-                          <svg viewBox="0 0 24 24">
-                            <path d="M6 21V4h9v17M4 21h13M8 8h5M15 7h2l3 3v7a2 2 0 0 1-4 0v-4" />
-                          </svg>
+                          <img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" aria-hidden="true" />
                         }
                         @default {
-                          <svg viewBox="0 0 24 24">
-                            <rect x="5" y="5" width="14" height="14" rx="2" />
-                            <path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m14 0h4M1 15h4m14 0h4" />
-                          </svg>
+                          <img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />
                         }
                       }
                     </span>
@@ -275,9 +231,8 @@
                         >
                       } @else {
                         <span class="no-signal"
-                          ><svg viewBox="0 0 24 24">
-                            <path d="M5 9a10 10 0 0 1 14 0M8 12a6 6 0 0 1 8 0M3 3l18 18" /></svg
-                        ></span>
+                          ><img src="assets/fleetpoint/icons/no-signal-alt.svg" alt="" aria-hidden="true" /></span
+                        >
                       }
                     </span>
                     <span class="bundle-metric ping"
@@ -297,11 +252,7 @@
         <article class="bundle-card unassigned">
           <div class="bundle-summary">
             <span class="truck unassigned-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="5" y="5" width="14" height="14" rx="2" />
-                <path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m14 0h4M1 15h4m14 0h4" />
-                <path d="m4 4 16 16" />
-              </svg>
+              <img src="assets/fleetpoint/icons/unassigned.svg" alt="" aria-hidden="true" />
             </span>
             <div>
               <h2>Unassigned Devices</h2>
@@ -312,44 +263,26 @@
             @for (device of unassigned(); track device.id) {
               <div>
                 <span class="device-icon" [attr.data-category]="device.category">
-                  @switch (device.category) {
-                    @case ('dashcam') {
-                      <svg viewBox="0 0 24 24">
-                        <rect x="3" y="7" width="18" height="12" rx="2" />
-                        <path d="m8 7 1.5-3h5L16 7" />
-                        <circle cx="12" cy="13" r="3" />
-                      </svg>
+                    @switch (device.category) {
+                      @case ('dashcam') {
+                        <img src="assets/fleetpoint/icons/dashcam.svg" alt="" aria-hidden="true" />
+                      }
+                      @case ('temp-sensor') {
+                        <img src="assets/fleetpoint/icons/temp-sensor.svg" alt="" aria-hidden="true" />
+                      }
+                      @case ('rfid-reader') {
+                        <img src="assets/fleetpoint/icons/rfid-reader.svg" alt="" aria-hidden="true" />
+                      }
+                      @case ('eye-sensor') {
+                        <img src="assets/fleetpoint/icons/eye-sensor.svg" alt="" aria-hidden="true" />
+                      }
+                      @case ('fuel-sensor') {
+                        <img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" aria-hidden="true" />
+                      }
+                      @default {
+                        <img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />
+                      }
                     }
-                    @case ('temp-sensor') {
-                      <svg viewBox="0 0 24 24">
-                        <path d="M10 5a2 2 0 0 1 4 0v8.5a4 4 0 1 1-4 0V5Z" />
-                        <path d="M12 9v7" />
-                      </svg>
-                    }
-                    @case ('rfid-reader') {
-                      <svg viewBox="0 0 24 24">
-                        <rect x="3" y="6" width="18" height="12" rx="2" />
-                        <path d="M6 10h12M6 14h7" />
-                      </svg>
-                    }
-                    @case ('eye-sensor') {
-                      <svg viewBox="0 0 24 24">
-                        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-                        <circle cx="12" cy="12" r="2.5" />
-                      </svg>
-                    }
-                    @case ('fuel-sensor') {
-                      <svg viewBox="0 0 24 24">
-                        <path d="M6 21V4h9v17M4 21h13M8 8h5M15 7h2l3 3v7a2 2 0 0 1-4 0v-4" />
-                      </svg>
-                    }
-                    @default {
-                      <svg viewBox="0 0 24 24">
-                        <rect x="5" y="5" width="14" height="14" rx="2" />
-                        <path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m14 0h4M1 15h4m14 0h4" />
-                      </svg>
-                    }
-                  }
                 </span>
                 <p>
                   <strong>{{ CATEGORY_LABELS[device.category] }}</strong

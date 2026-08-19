@@ -15,7 +15,7 @@ export const FLEETPOINT_APP: RecentApp = {
   initials: 'FP',
   url: '/fleetpoint/dashboard',
   logoSrc: 'assets/fleetpoint.svg',
-  labelLogoSrc: 'assets/iotility-light.svg',
+  labelLogoSrc: 'assets/iotility-loader-light.svg',
 };
 
 @Injectable({ providedIn: 'root' })

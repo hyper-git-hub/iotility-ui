@@ -1,6 +1,6 @@
 @reference "../../../styles.css";
 
-.auth-shell { @apply flex min-h-screen bg-canvas; }
+.auth-shell { @apply flex min-h-screen bg-canvas dark:bg-dark-canvas; }
 .auth-brand-panel { @apply relative hidden w-[63%] overflow-hidden bg-brand-950 p-10 text-white lg:flex lg:flex-col lg:justify-between; }
 .auth-glow { @apply absolute inset-0; background: radial-gradient(ellipse at center bottom,var(--color-brand-800) 0%,var(--color-brand-950) 48%,var(--color-ink) 100%); }
 .auth-brand-row { @apply relative z-10 flex items-center gap-4; }

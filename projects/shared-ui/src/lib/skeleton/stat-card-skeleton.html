@@ -1,10 +1,12 @@
 <article class="stat-card-skeleton" [class.compact]="compact()" aria-hidden="true">
-  <ui-skeleton
-    class="stat-card-skeleton-icon"
-    [width]="compact() ? '2rem' : '2.25rem'"
-    [height]="compact() ? '2rem' : '2.25rem'"
-    radius="0.75rem"
-  />
+  @if (showIcon()) {
+    <ui-skeleton
+      class="stat-card-skeleton-icon"
+      [width]="compact() ? '2rem' : '2.25rem'"
+      [height]="compact() ? '2rem' : '2.25rem'"
+      radius="0.75rem"
+    />
+  }
   <ui-skeleton
     class="stat-card-skeleton-value"
     [width]="valueWidth()"

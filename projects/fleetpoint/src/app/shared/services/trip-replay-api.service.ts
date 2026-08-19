@@ -31,6 +31,14 @@ export class TripReplayApiService {
       { params: { status: '1', page_category: 'vehicle_real_time_tracking' } },
     );
   }
+  getVehicleDetail(): Observable<
+    ApiResponse<{ count: number; data: DetailReportRecord[] }>
+  > {
+    return this.http.get<ApiResponse<{ count: number; data: DetailReportRecord[] }>>(
+      `${FLEET_API}/playback/detail-report`,
+      { params: new HttpParams() },
+    );
+  }
   getDetailReport(
     range: PlaybackRange,
   ): Observable<ApiResponse<{ count: number; data: PlaybackRecord[] }>> {

@@ -22,11 +22,6 @@
 }
 .dropdown-chevron {
   @apply pointer-events-none absolute right-3 top-1/2 z-[1] size-4 text-muted transition-transform;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
   transform: translateY(-50%);
 }
 .dropdown-trigger[aria-expanded='true'] .dropdown-chevron {
@@ -66,13 +61,8 @@
 .option-icon {
   @apply grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700;
 }
-.option-icon svg {
+.option-icon img {
   @apply size-4;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 .dropdown-option.danger .option-icon {
   @apply bg-danger/10 text-danger;
@@ -92,9 +82,8 @@
 .compact .option-icon {
   @apply size-7 rounded-md;
 }
-.compact .option-icon svg {
+.compact .option-icon img {
   @apply size-3.5;
-  stroke-width: 1.9;
 }
 .option-copy {
   @apply min-w-0 flex-1;

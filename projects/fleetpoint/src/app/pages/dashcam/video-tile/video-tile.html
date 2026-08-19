@@ -3,7 +3,7 @@
     <video [src]="src()" autoplay muted loop playsinline (error)="unavailable.set(true)"></video>
   } @else {
     <div class="video-empty">
-      <svg viewBox="0 0 24 24"><path d="M15 10l4-2v8l-4-2v3H3V7h12v3Z" /></svg>
+      <img src="assets/fleetpoint/icons/video-camera.svg" alt="" aria-hidden="true" />
       <strong>{{ label() }}</strong
       ><small>Footage unavailable</small>
     </div>

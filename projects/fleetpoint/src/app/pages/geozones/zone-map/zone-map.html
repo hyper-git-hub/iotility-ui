@@ -1,10 +1,7 @@
 <section class="zone-map-workspace" [class.details-open]="selectedZone()">
   <aside class="zone-panel">
     <label class="zone-search">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-4-4" />
-      </svg>
+      <img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" />
       <input
         type="search"
         placeholder="Search zones..."
@@ -112,7 +109,7 @@
           <section class="linked-zone">
             <h3>Linked To</h3>
             <a href="javascript:void(0)">
-              <svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <img src="assets/fleetpoint/icons/pin-brand.svg" alt="" aria-hidden="true" />
               {{ zone.link }}: {{ zone.id.replace('GZ-', 'EP') }}
             </a>
           </section>
@@ -131,11 +128,11 @@
 
       <footer>
         <button type="button" class="edit-zone">
-          <svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>
+          <img src="assets/fleetpoint/icons/edit.svg" alt="" aria-hidden="true" />
           Edit
         </button>
         <button type="button" class="delete-zone">
-          <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
+          <img src="assets/fleetpoint/icons/trash-danger.svg" alt="" aria-hidden="true" />
           Delete
         </button>
       </footer>

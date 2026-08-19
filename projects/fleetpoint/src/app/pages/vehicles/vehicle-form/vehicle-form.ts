@@ -73,7 +73,7 @@ export class VehicleForm implements OnChanges {
   protected readonly editing = computed(() => !!this.vehicle());
   protected readonly error = signal('');
   protected readonly activeStep = signal(0);
-  protected readonly imagePreview = signal('assets/fleetpoint/vehicle.svg');
+  protected readonly imagePreview = signal('assets/fleetpoint/def-car.svg');
   protected readonly imageFile = signal<File | null>(null);
   protected readonly fleets = signal<InventoryOption[]>([]);
   protected readonly categories = signal<InventoryOption[]>([]);
@@ -124,9 +124,6 @@ export class VehicleForm implements OnChanges {
     { id: 'allocation', label: 'Ownership & Allocation' },
     { id: 'monitoring', label: 'Violations & Review' },
   ];
-  protected readonly progress = computed(() =>
-    Math.round(((this.activeStep() + 1) / this.steps.length) * 100),
-  );
   protected readonly form;
 
   constructor(
@@ -183,7 +180,12 @@ export class VehicleForm implements OnChanges {
     this.activeStep.update((step) => Math.min(step + 1, 2));
   }
   protected back(): void {
-    this.activeStep.update((step) => Math.max(step - 1, 0));
+    if (this.activeStep() === 0) {
+      this.cancel();
+      return;
+    }
+    this.submitted.set(false);
+    this.activeStep.update((step) => step - 1);
   }
   protected goToStep(index: number): void {
     if (index <= this.activeStep()) this.activeStep.set(index);
@@ -229,7 +231,7 @@ export class VehicleForm implements OnChanges {
     if (file) this.imagePreview.set(URL.createObjectURL(file));
   }
   protected imageFailed(): void {
-    this.imagePreview.set('assets/fleetpoint/vehicle.svg');
+    this.imagePreview.set('assets/fleetpoint/def-car.svg');
   }
 
   protected submit(): void {
@@ -415,7 +417,7 @@ export class VehicleForm implements OnChanges {
     this.submitted.set(false);
     this.error.set('');
     this.imageFile.set(null);
-    this.imagePreview.set('assets/fleetpoint/vehicle.svg');
+    this.imagePreview.set('assets/fleetpoint/def-car.svg');
   }
 
   private prepareForm(): void {
@@ -453,7 +455,7 @@ export class VehicleForm implements OnChanges {
       camera_device: String(vehicle.camera_device_id ?? ''),
       status: vehicle.status === 1,
     });
-    this.imagePreview.set(vehicle.image || 'assets/fleetpoint/vehicle.svg');
+    this.imagePreview.set(vehicle.image || 'assets/fleetpoint/def-car.svg');
   }
 
   private isRestrictedPrimaryDevice(device: DeviceOption): boolean {

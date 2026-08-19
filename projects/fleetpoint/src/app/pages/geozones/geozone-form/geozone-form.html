@@ -10,12 +10,12 @@
               <button type="button" [class.selected]="form.controls.type.value===type.id" [attr.data-type]="type.id" (click)="chooseType(type.id)">
                 <span class="type-icon">
                   @switch(type.icon){
-                    @case('check'){<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8 12 2.5 2.5L16 9"/></svg>}
-                    @case('bolt'){<svg viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/></svg>}
-                    @case('clock'){<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>}
-                    @case('pin'){<svg viewBox="0 0 24 24"><path d="M20 10c0 5-5.4 9.1-7.3 10.4a1.2 1.2 0 0 1-1.4 0C9.4 19.1 4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>}
-                    @case('route'){<svg viewBox="0 0 24 24"><path d="M5 19c2-7 5-3 7-9s5-2 7-7"/><path d="m16 3 3 0 0 3"/></svg>}
-                    @default{<svg viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4 2.8 7 7 9 4.2-2 7-5 7-9V6l-7-3Z"/></svg>}
+                    @case('check'){<img src="assets/fleetpoint/icons/check-circle-success.svg" alt="" aria-hidden="true" />}
+                    @case('bolt'){<img src="assets/fleetpoint/icons/bolt-form.svg" alt="" aria-hidden="true" />}
+                    @case('clock'){<img src="assets/fleetpoint/icons/clock.svg" alt="" aria-hidden="true" />}
+                    @case('pin'){<img src="assets/fleetpoint/icons/pin.svg" alt="" aria-hidden="true" />}
+                    @case('route'){<img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" />}
+                    @default{<img src="assets/fleetpoint/icons/shield-danger.svg" alt="" aria-hidden="true" />}
                   }
                 </span><span><strong>{{type.label}}</strong><small>{{type.description}}</small></span>
               </button>
@@ -26,8 +26,8 @@
             <label class="shared-form-field full"><span>Zone Name <b>*</b></span><input class="shared-form-control" formControlName="name" placeholder="e.g. Stratford Depot Yard" [attr.aria-invalid]="invalid('name')"/>@if(invalid('name')){<small class="shared-form-error">Enter a zone name.</small>}</label>
             <label class="shared-form-field full"><span>Description</span><textarea class="shared-form-control" formControlName="description" rows="2" placeholder="What is this zone used for?"></textarea></label>
             <div class="shape-field full"><span>Shape Type</span><div>
-              <button type="button" [class.selected]="form.controls.shape.value==='circle'" (click)="chooseShape('circle')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>Circle</button>
-              <button type="button" [class.selected]="form.controls.shape.value==='polygon'" (click)="chooseShape('polygon')"><svg viewBox="0 0 24 24"><path d="m12 3 8 6-3 10H7L4 9l8-6Z"/></svg>Polygon</button>
+              <button type="button" [class.selected]="form.controls.shape.value==='circle'" (click)="chooseShape('circle')"><img src="assets/fleetpoint/icons/radius.svg" alt="" aria-hidden="true" />Circle</button>
+              <button type="button" [class.selected]="form.controls.shape.value==='polygon'" (click)="chooseShape('polygon')"><img src="assets/fleetpoint/icons/polygon.svg" alt="" aria-hidden="true" />Polygon</button>
             </div></div>
             <div class="drawing-field full">
               <app-geozone-drawing-map [active]="open()" [shape]="form.controls.shape.value" (geometryChanged)="setGeometry($event)" (geometryCleared)="clearGeometry()"/>
@@ -36,8 +36,8 @@
           </section>
         }@else if(activeStep()===2){
           <section class="form-step rules-grid"><header class="full"><h3>Zone Rules</h3><p>Configure alerts, limits and active hours.</p></header>
-            <label class="rule-toggle"><input type="checkbox" formControlName="alertOnEntry"/><span><strong>Alert on entry</strong><small>Notify when a vehicle enters.</small></span></label>
-            <label class="rule-toggle"><input type="checkbox" formControlName="alertOnExit"/><span><strong>Alert on exit</strong><small>Notify when a vehicle leaves.</small></span></label>
+            <label class="rule-toggle"><input class="fleet-checkbox" type="checkbox" formControlName="alertOnEntry"/><span><strong>Alert on entry</strong><small>Notify when a vehicle enters.</small></span></label>
+            <label class="rule-toggle"><input class="fleet-checkbox" type="checkbox" formControlName="alertOnExit"/><span><strong>Alert on exit</strong><small>Notify when a vehicle leaves.</small></span></label>
             @if(form.controls.type.value==='speed'){<label class="shared-form-field full"><span>Speed Limit (km/h)</span><input type="number" min="1" class="shared-form-control" formControlName="speedLimit" placeholder="e.g. 8"/></label>}
             <label class="shared-form-field full"><span>Maximum Dwell Time (minutes)</span><input type="number" min="1" class="shared-form-control" formControlName="maxDwell" placeholder="Leave blank for no limit"/></label>
             <label class="shared-form-field"><span>Curfew Start</span><shared-date-time-picker mode="time" formControlName="curfewStart" placeholder="Select start time"/></label>

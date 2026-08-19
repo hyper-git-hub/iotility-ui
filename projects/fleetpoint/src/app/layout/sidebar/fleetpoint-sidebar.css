@@ -50,7 +50,7 @@
     transform var(--sidebar-motion),
     color 160ms ease;
 }
-.brand-toggle svg {
+.brand-toggle img {
   @apply size-4;
   fill: none;
   stroke: currentColor;
@@ -60,8 +60,8 @@
   transition: transform var(--sidebar-motion);
 }
 .fleet-sidebar.collapsed .brand {
-  @apply h-20;
-  position: relative;
+  @apply h-16;
+  padding-left: 0.75rem;
 }
 .fleet-sidebar.collapsed .brand-text {
   max-width: 0;
@@ -75,11 +75,12 @@
     visibility 0s linear 280ms;
 }
 .fleet-sidebar.collapsed .brand-mark {
-  position: absolute;
-  top: 13px;
-  left: 16px;
+  position: static;
+  top: auto;
+  left: auto;
 }
 .fleet-sidebar.collapsed .brand-toggle {
+  @apply ml-0;
   position: absolute;
   bottom: 4px;
   left: 50%;
@@ -120,19 +121,16 @@ nav button {
     color 160ms ease;
 }
 .fleet-sidebar.collapsed nav a {
-  @apply justify-center gap-0 px-0;
+  @apply mx-auto size-8 justify-center gap-0 px-0;
 }
 nav .active {
   @apply bg-brand-600 text-white;
 }
 .nav-icon {
-  @apply grid w-5 shrink-0 place-items-center text-base;
+  @apply size-[18px] shrink-0;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.nav-icon img {
-  @apply size-[18px];
-  filter: brightness(1.35);
-}
-.vehicle-nav-icon img {
+.vehicle-nav-icon {
   @apply size-5;
 }
 .nav-label {
@@ -197,9 +195,11 @@ nav em {
 }
 .footer-return {
   @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-brand-300 transition hover:bg-white/5 hover:text-white;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .footer-return-icon {
   @apply text-base leading-none;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .footer-return-label {
   @apply min-w-0 truncate;
@@ -211,7 +211,7 @@ nav em {
     transform var(--sidebar-motion);
 }
 .fleet-sidebar.collapsed .footer-return {
-  @apply justify-center gap-0 px-0;
+  @apply mx-auto size-8 justify-center gap-0 px-0;
 }
 .fleet-sidebar.collapsed .footer-return-label {
   flex: 0 0 0;

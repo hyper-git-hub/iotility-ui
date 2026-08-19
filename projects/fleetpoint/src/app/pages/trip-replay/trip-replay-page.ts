@@ -2,7 +2,7 @@ import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
-import { RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
+import { DetailReportRecord, RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
 import {
   PlaybackRecord,
   PlaybackTrailRecord,
@@ -44,7 +44,7 @@ const EMPTY_TRIP: ReplayTrip = {
   id: '',
   vehicleId: 0,
   vehicle: 'Select a vehicle',
-  vehicleImage: 'assets/fleetpoint/vehicle.svg',
+  vehicleImage: 'assets/fleetpoint/def-car.svg',
   driver: 'Unassigned',
   date: '',
   score: 0,
@@ -69,6 +69,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly playbackStepDuration = 600;
   protected readonly search = signal('');
   protected readonly vehicles = signal<RealtimeVehicleRecord[]>([]);
+  protected readonly vehicleImages = signal<Record<number, string>>({});
   protected readonly selectedVehicleId = signal(0);
   protected readonly trip = signal<ReplayTrip>(EMPTY_TRIP);
   protected readonly positionIndex = signal(0);
@@ -126,13 +127,22 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.endDate.set(this.inputDate(end));
   }
   ngOnInit(): void {
-    this.api
-      .getVehicles()
+    forkJoin({
+      vehicles: this.api.getVehicles(),
+      detail: this.api.getVehicleDetail().pipe(catchError(() => of(null))),
+    })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (response) => {
-          const vehicles = response.data?.data ?? [];
+        next: ({ vehicles: vehicleResponse, detail }) => {
+          const vehicles = vehicleResponse.data?.data ?? [];
           this.vehicles.set(vehicles);
+          this.vehicleImages.set(
+            Object.fromEntries(
+              (detail?.data?.data ?? [])
+                .filter((record) => record.vehicle_image)
+                .map((record) => [record.vehicle_id, record.vehicle_image as string]),
+            ),
+          );
           const selected =
             vehicles.find(
               (vehicle) =>
@@ -173,7 +183,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       ...EMPTY_TRIP,
       vehicleId: vehicle.id,
       vehicle: vehicle.registration,
-      vehicleImage: vehicle.vehicle_type_image || 'assets/fleetpoint/vehicle.svg',
+      vehicleImage: this.vehicleImage(this.vehicleImages()[vehicle.id] || vehicle.vehicle_type_image),
       driver: vehicle.vehicle_driver_name || 'Unassigned',
     });
     this.error.set('');
@@ -194,6 +204,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     };
     forkJoin({
       detail: this.api.getDetailReport(range).pipe(catchError(() => of(null))),
+      vehicleDetail: this.api.getVehicleDetail().pipe(catchError(() => of(null))),
       trail: this.api.getMapTrail(range),
       stops: this.api.getStops(range).pipe(catchError(() => of(null))),
       statistics: this.api.getStatistics(range).pipe(catchError(() => of(null))),
@@ -206,6 +217,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
             result.detail?.data?.data ?? [],
             result.stops?.data?.data ?? [],
             result.statistics?.data,
+            result.vehicleDetail?.data?.data ?? [],
           ),
         error: (response) => {
           this.trip.set(EMPTY_TRIP);
@@ -282,13 +294,20 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected useDefaultVehicleImage(event: Event): void {
     const image = event.target as HTMLImageElement;
     image.onerror = null;
-    image.src = 'assets/fleetpoint/vehicle.svg';
+    image.src = 'assets/fleetpoint/def-car.svg';
+  }
+  protected vehicleImage(image: string | null | undefined): string {
+    const value = image?.trim();
+    return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase())
+      ? value
+      : 'assets/fleetpoint/def-car.svg';
   }
   private buildTrip(
     trail: PlaybackTrailRecord[],
     detail: PlaybackRecord[],
     stops: PlaybackRecord[],
     statisticsPayload: { data?: PlaybackRecord[] } | PlaybackRecord[] | null | undefined,
+    vehicleDetail: DetailReportRecord[] = [],
   ): void {
     const unique = trail
       .filter(
@@ -307,7 +326,9 @@ export class TripReplayPage implements OnInit, OnDestroy {
         ...EMPTY_TRIP,
         vehicleId: this.selectedVehicleId(),
         vehicle: this.vehicle()?.registration ?? 'Vehicle',
-        vehicleImage: this.vehicle()?.vehicle_type_image || 'assets/fleetpoint/vehicle.svg',
+        vehicleImage: this.vehicleImage(
+          this.vehicleImages()[this.selectedVehicleId()] || this.vehicle()?.vehicle_type_image,
+        ),
       });
       this.error.set('');
       void this.feedback.open({
@@ -374,27 +395,34 @@ export class TripReplayPage implements OnInit, OnDestroy {
       }),
     );
     const detailRow = detail[0] ?? {};
+    const imageRecord = vehicleDetail.find(
+      (record) => record.vehicle_id === this.selectedVehicleId(),
+    );
     const rawStats = Array.isArray(statisticsPayload)
       ? statisticsPayload
       : (statisticsPayload?.data ?? []);
     const statRow = rawStats[0] ?? detailRow;
-    const statistics = Object.entries(statRow)
-      .filter(([, value]) => value !== null && typeof value !== 'object')
-      .slice(0, 12)
-      .map(([key, value]) => ({
-        label: this.label(key),
-        value: String(value ?? '—'),
-        isImage: key.toLowerCase().includes('image'),
-      }));
-    this.trip.set({
-      id: String(this.selectedVehicleId()),
-      vehicleId: this.selectedVehicleId(),
-      vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
-      vehicleImage: String(
-        detailRow['vehicle_image'] ||
-          this.vehicle()?.vehicle_type_image ||
-          'assets/fleetpoint/vehicle.svg',
-      ),
+      const statistics = Object.entries(statRow)
+        .filter(([, value]) => value !== null && typeof value !== 'object')
+        .slice(0, 12)
+        .map(([key, value]) => {
+          const raw = String(value ?? '—');
+          const isImage = key.toLowerCase().includes('image');
+          return {
+            label: this.label(key),
+            value: isImage ? this.vehicleImage(raw) : raw,
+            isImage,
+          };
+        });
+      this.trip.set({
+        id: String(this.selectedVehicleId()),
+        vehicleId: this.selectedVehicleId(),
+        vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
+        vehicleImage: this.vehicleImage(
+          imageRecord?.vehicle_image ??
+            (detailRow['vehicle_image'] as string | undefined) ??
+            this.vehicle()?.vehicle_type_image,
+        ),
       driver: String(driver),
       date: new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
         new Date(unique[0].timestamp),

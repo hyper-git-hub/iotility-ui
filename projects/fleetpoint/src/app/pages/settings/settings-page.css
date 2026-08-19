@@ -23,13 +23,8 @@
 .settings-page nav a.active {
   @apply bg-brand-600 text-white;
 }
-.nav-icon svg {
+.nav-icon img {
   @apply size-4;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 .settings-page nav small {
   @apply ml-auto rounded bg-canvas px-1.5 py-0.5 text-[9px] dark:bg-dark-canvas;
@@ -43,11 +38,8 @@
 .settings-page footer button {
   @apply flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-xs font-semibold text-white disabled:bg-canvas disabled:text-muted dark:disabled:bg-dark-canvas;
 }
-.settings-page footer svg {
+.settings-page footer img {
   @apply size-4;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
 }
 .settings-page footer button.saved {
   @apply bg-success;

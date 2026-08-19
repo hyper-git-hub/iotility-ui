@@ -8,7 +8,7 @@
     </div>
     <div class="heading-actions">
       @if (activeTab() === 'users') {
-        <button type="button" class="primary-action" (click)="openCreateUser()">+ Add user</button>
+        <button type="button" class="primary-action" (click)="openCreateUser()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add user</button>
       } @else {
         <button type="button" class="secondary-action" (click)="openAssignUsers()">
           Assign users to a group

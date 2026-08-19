@@ -120,11 +120,8 @@
 .queue-empty {
   @apply grid min-h-72 place-content-center justify-items-center text-center;
 }
-.queue-empty svg {
+.queue-empty img {
   @apply size-10 text-success;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
 }
 .queue-empty h2 {
   @apply mt-3 text-sm font-bold;

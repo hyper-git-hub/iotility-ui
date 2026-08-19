@@ -3,8 +3,7 @@
 .no-violations,.violation-count{@apply inline-flex items-center gap-1.5 text-[10px] font-medium;}
 .no-violations{@apply text-success;}
 .violation-count{@apply text-danger;}
-.no-violations svg,.violation-count svg{@apply size-3.5 fill-none stroke-current;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.9;}
-.violation-count svg{@apply fill-warning/15 text-warning;}
+.no-violations img,.violation-count img{@apply size-3.5;}
 .zone-link{@apply inline-flex rounded-md px-2 py-1 text-[10px] font-semibold;}
 .poi-link{@apply bg-info/10 text-info;}
 .route-link{@apply bg-teal-500/10 text-teal-600 dark:text-teal-300;}

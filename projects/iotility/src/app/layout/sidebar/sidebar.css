@@ -14,13 +14,9 @@
   @apply flex w-16 cursor-pointer flex-col items-center gap-1 rounded-xl py-3 text-brand-300 transition duration-150 hover:bg-brand-800/40 hover:text-white;
 }
 
-.sidebar-nav-item svg {
+.sidebar-nav-item img,
+.sidebar-nav-item .color-icon {
   @apply size-5;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 
 .sidebar-nav-item span {
@@ -50,14 +46,9 @@
   background: var(--color-brand-700);
 }
 
-.app-close-button svg {
+.app-close-button img {
   width: 10px;
   height: 10px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.5;
 }
 
 .fleetpoint-button {

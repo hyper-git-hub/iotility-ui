@@ -43,6 +43,9 @@
 .replay-filters > button:disabled {
   @apply cursor-not-allowed opacity-60;
 }
+.fleet-search-field img {
+  @apply size-4 shrink-0;
+}
 .replay-error {
   @apply m-3 rounded-xl border border-danger/20 bg-danger/5 p-2 text-[10px] text-danger;
 }
@@ -74,8 +77,11 @@
 .trip-row.selected {
   @apply bg-brand-600 text-white hover:bg-brand-600 dark:bg-brand-600;
 }
-.driver-avatar {
-  @apply grid size-8 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700;
+.vehicle-thumb {
+  @apply mt-1 grid size-9 shrink-0 place-items-center;
+}
+.vehicle-thumb img {
+  @apply size-9 object-contain;
 }
 .vehicle-avatar {
   @apply grid size-10 shrink-0 place-items-center;

@@ -1,32 +1,55 @@
 @reference "../../../styles.css";
 
-.fleetpoint-brand {
-  @apply flex min-w-0 items-center gap-2;
+.fleetpoint-brand { @apply relative flex min-w-0 items-center gap-2; width:min(34rem,42vw); }
+.mobile-menu-button { display:none; }
+.global-search { @apply relative min-w-0 flex-1; }
+.search-control { @apply relative flex h-10 items-center gap-2 rounded-xl border border-line bg-canvas/60 px-3 transition focus-within:border-brand-400 focus-within:bg-white focus-within:shadow-[0_5px_18px_rgba(30,20,60,0.08)] dark:border-dark-line dark:bg-dark-canvas/70 dark:focus-within:border-brand-500 dark:focus-within:bg-dark-canvas; }
+.global-search.open .search-control { @apply z-[1602]; }
+.search-control>img { @apply size-4 shrink-0 opacity-70; }
+.search-control input { @apply min-w-0 flex-1 appearance-none bg-transparent text-xs text-ink outline-none placeholder:text-muted dark:text-white dark:placeholder:text-brand-300; }
+.search-control input::-webkit-search-cancel-button { display:none; }
+.search-control kbd { @apply shrink-0 rounded-md border border-line bg-white px-1.5 py-0.5 text-[9px] font-medium text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }
+.search-scrim { @apply fixed inset-0 z-[1600] cursor-default border-0 bg-transparent; }
+.search-results { @apply absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[1603] origin-top overflow-hidden rounded-2xl border border-line bg-white shadow-[0_18px_50px_rgba(25,15,50,0.18)] dark:border-dark-line dark:bg-dark-surface; animation:search-panel-in 180ms cubic-bezier(.22,1,.36,1) both; }
+.search-results.closing { @apply pointer-events-none; animation:search-panel-out 150ms ease-in both; }
+.search-results>header { @apply flex items-center justify-between border-b border-line px-3.5 py-2.5 dark:border-dark-line; }
+.search-results>header span { @apply text-[10px] font-semibold uppercase tracking-wide text-muted dark:text-brand-300; }
+.search-results>button { @apply flex w-full cursor-pointer items-center gap-3 border-0 border-b border-line bg-white px-3 py-2.5 text-left transition last:border-b-0 hover:bg-brand-50 dark:border-dark-line dark:bg-dark-surface dark:hover:bg-dark-canvas; }
+.search-results>button.active { @apply bg-brand-50 dark:bg-brand-600/10; }
+.search-results>button i { @apply grid size-8 shrink-0 place-items-center rounded-lg bg-canvas dark:bg-dark-canvas; }
+.search-results>button i img { @apply size-4 opacity-70; }
+.search-results>button>span { @apply min-w-0 flex-1; }
+.search-results>button strong,.search-results>button small { @apply block truncate; }
+.search-results>button strong { @apply text-xs font-semibold text-ink dark:text-white; }
+.search-results>button small { @apply mt-0.5 text-[9px] text-muted dark:text-brand-300; }
+.search-results>button em { @apply rounded-md px-1.5 py-1 text-[9px] not-italic text-muted opacity-0 transition dark:text-brand-300; }
+.search-results>button.active em { @apply bg-white text-brand-600 opacity-100 shadow-sm dark:bg-dark-canvas dark:text-brand-300; }
+.search-results>footer { @apply flex items-center gap-4 border-t border-line bg-canvas/50 px-3.5 py-2 text-[9px] text-muted dark:border-dark-line dark:bg-dark-canvas/50 dark:text-brand-300; }
+.search-results>footer span { @apply flex items-center gap-1; }
+.search-results kbd { @apply rounded border border-line bg-white px-1 py-0.5 text-[8px] dark:border-dark-line dark:bg-dark-surface; }
+.search-empty { @apply grid justify-items-center gap-1 px-5 py-8 text-center; }
+.search-empty strong { @apply text-xs text-ink dark:text-white; }
+.search-empty small { @apply text-[10px] text-muted dark:text-brand-300; }
+@keyframes search-panel-in {
+  from { opacity:0; transform:translateY(-6px) scale(.985); }
+  to { opacity:1; transform:translateY(0) scale(1); }
 }
-.brand-mark {
-  @apply shrink-0;
+@keyframes search-panel-out {
+  from { opacity:1; transform:translateY(0) scale(1); }
+  to { opacity:0; transform:translateY(-5px) scale(.985); }
 }
-.brand-name {
-  @apply whitespace-nowrap text-lg font-bold text-ink dark:text-white;
+@media(prefers-reduced-motion:reduce){ .search-results{animation:none;} }
+
+@media(max-width:767px){
+  .mobile-menu-button { @apply grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-transparent text-ink dark:border-dark-line dark:text-white; }
+  .mobile-menu-button img { @apply size-5; }
+  .fleetpoint-brand { width:min(23rem,58vw); }
+  .search-control kbd { @apply hidden; }
 }
-.brand-name span {
-  @apply text-brand-600 dark:text-brand-400;
-}
-.brand-context {
-  @apply hidden truncate text-sm text-muted dark:text-brand-300 sm:inline;
-}
-.mobile-menu-button {
-  display: none;
-}
-@media (max-width: 767px) {
-  .mobile-menu-button {
-    @apply grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-transparent text-ink dark:border-dark-line dark:text-white;
-  }
-  .mobile-menu-button svg {
-    @apply size-5;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-width: 1.8;
-  }
+@media(max-width:520px){
+  .fleetpoint-brand { @apply flex-1; width:auto; }
+  .search-control { @apply px-2.5; }
+  .search-control input::placeholder { color:transparent; }
+  .search-results { @apply fixed left-3 right-3 top-[4.5rem]; }
+  .search-results>footer { @apply hidden; }
 }

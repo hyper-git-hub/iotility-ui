@@ -15,6 +15,7 @@ import {
 import { finalize, forkJoin, switchMap } from 'rxjs';
 import { Modal } from '../../shared/modal/modal';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
+import { Stepper, StepperStep } from '../../shared/stepper/stepper';
 import {
   ListingQuery,
   ManagedUser,
@@ -370,6 +371,22 @@ export class UsersRolesPage implements OnInit {
     );
   }
 
+  protected toggleAllFeatures(checked: boolean): void {
+    this.selectedFeatures.set(checked ? this.featureOptions().map((feature) => feature.id) : []);
+  }
+
+  protected toggleAllVehicles(checked: boolean): void {
+    this.selectedVehicles.set(checked ? this.vehicles().map((vehicle) => vehicle.id) : []);
+  }
+
+  protected continueRoleForm(): void {
+    this.submitted.set(true);
+    this.roleForm.markAllAsTouched();
+    if (this.roleForm.invalid || !this.selectedFeatures().length) return;
+    this.submitted.set(false);
+    this.roleStep.set(2);
+  }
+
   protected saveRole(): void {
     this.submitted.set(true);
     this.roleForm.markAllAsTouched();
@@ -688,12 +705,6 @@ export class UsersRolesPage implements OnInit {
   private today(): string {
     const now = new Date();
     return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-  }
-
-  protected userInitials(): string {
-    const first = this.userForm.controls.firstName.value.trim();
-    const last = this.userForm.controls.lastName.value.trim();
-    return `${first[0] || 'U'}${last[0] || ''}`.toUpperCase();
   }
 
   private success(title: string, message?: string): Promise<boolean> {

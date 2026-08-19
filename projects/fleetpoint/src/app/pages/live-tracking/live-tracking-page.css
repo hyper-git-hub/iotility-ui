@@ -52,14 +52,14 @@
 .location-filter {
   @apply mx-3 mt-3;
 }
+.fleet-search-field img {
+  @apply size-4 shrink-0;
+}
 .location-filter [dropdown-trigger] {
   @apply flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-xs text-ink dark:border-dark-line dark:text-white;
 }
-.location-filter [dropdown-trigger] svg {
+.location-filter [dropdown-trigger] img {
   @apply size-4 shrink-0 text-brand-600;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
 }
 .location-filter [dropdown-trigger] span {
   @apply min-w-0 flex-1 truncate;
@@ -189,7 +189,13 @@
   @apply mx-4 mt-3 rounded-lg border border-success/25 bg-success/10 px-2.5 py-1.5;
 }
 .live-tracking-notice div {
-  @apply min-w-0;
+  @apply min-w-0 flex-1;
+}
+.live-tracking-notice > button {
+  @apply cursor-pointer rounded-lg border border-current/20 px-2 py-1 text-[9px] font-semibold text-success;
+}
+.live-tracking-notice.waiting > button {
+  @apply text-warning;
 }
 .live-tracking-notice strong {
   @apply block text-[10px] font-semibold leading-tight text-success;
