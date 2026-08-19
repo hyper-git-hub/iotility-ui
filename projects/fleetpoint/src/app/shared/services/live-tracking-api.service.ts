@@ -8,18 +8,22 @@ const FLEET_API = `${environment.fleetBaseUrl}/api`;
 
 export interface RealtimeVehicleRecord {
   id: number;
+  name?: string | null;
   device_id?: string | number | null;
-  poi: string | null;
+  poi?: string | null;
   speed: number | string | null;
-  latitude: string | null;
+  latitude: number | string | null;
   location: string | null;
-  poi_time: string | null;
-  longitude: string | null;
-  seat_belt: boolean;
+  poi_time?: string | null;
+  longitude: number | string | null;
+  seat_belt?: boolean;
   km_per_day: number;
   registration: string;
+  image?: string | null;
+  updated_at?: string | null;
   updated_time: string | null;
   vehicle_type: string;
+  vehicle_device_type?: string | null;
   online_status: boolean;
   ignition_status: boolean;
   vehicle_type_image: string | null;

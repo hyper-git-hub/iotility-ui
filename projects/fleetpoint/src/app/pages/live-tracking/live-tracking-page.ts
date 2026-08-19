@@ -128,7 +128,26 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   private updateVehicleSnapshot(records: RealtimeVehicleRecord[]): void {
     const selectedId = this.selectedVehicle()?.numericId;
-    const vehicles = records.map((vehicle) => this.toTrackedVehicle(vehicle));
+    const currentVehicles = new Map(this.vehicles().map((vehicle) => [vehicle.numericId, vehicle]));
+    const vehicles = records.map((record) => {
+      const snapshot = this.toTrackedVehicle(record);
+      this.apiSnapshots.set(record.id, snapshot);
+      const current = currentVehicles.get(record.id);
+      return current && this.liveTrackingEnabled() && record.id === selectedId && this.realtimeVehicles.has(record.id)
+        ? {
+            ...snapshot,
+            lat: current.lat,
+            lng: current.lng,
+            speed: current.speed,
+            status: current.status,
+            ignition: current.ignition,
+            battery: current.battery,
+            seatBelt: current.seatBelt,
+            lastSignalAt: current.lastSignalAt,
+            updated: current.updated,
+          }
+        : snapshot;
+    });
     this.vehicles.set(vehicles);
     if (selectedId !== undefined) {
       this.selectedVehicle.set(vehicles.find((vehicle) => vehicle.numericId === selectedId) ?? null);
@@ -214,8 +233,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     return {
       numericId: vehicle.id,
       deviceId: String(vehicle.device_id ?? '').trim(),
-      id: vehicle.registration || String(vehicle.id),
-      model: vehicle.vehicle_type || 'Vehicle',
+      id: vehicle.registration || vehicle.name || String(vehicle.id),
+      model: vehicle.vehicle_device_type || vehicle.vehicle_type || 'Vehicle',
       driver: vehicle.vehicle_driver_name || 'Unassigned',
       status: online ? (speed > 8 ? 'Moving' : 'Idling') : 'Offline',
       speed,
@@ -224,9 +243,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       updated: vehicle.updated_time || 'No recent update',
       lat: this.coordinate(vehicle.latitude),
       lng: this.coordinate(vehicle.longitude),
-      image: vehicle.vehicle_type_image,
-      seatBelt: vehicle.seat_belt,
-      ignition: vehicle.ignition_status,
+      image: vehicle.image || vehicle.vehicle_type_image,
+      seatBelt: Boolean(vehicle.seat_belt),
+      ignition: Boolean(vehicle.ignition_status),
       battery: null,
       lastSignalAt: null,
       kmPerDay: vehicle.km_per_day || 0,
@@ -336,8 +355,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     );
   }
 
-  private coordinate(value: string | null): number {
-    if (!value || value === 'None') return Number.NaN;
+  private coordinate(value: number | string | null): number {
+    if (value === null || value === '' || value === 'None') return Number.NaN;
     return this.numberValue(value, Number.NaN);
   }
 
