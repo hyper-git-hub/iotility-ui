@@ -309,7 +309,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     statisticsPayload: { data?: PlaybackRecord[] } | PlaybackRecord[] | null | undefined,
     vehicleDetail: DetailReportRecord[] = [],
   ): void {
-    const unique = trail
+    const unique = this.longestContinuousTrail(trail
       .filter(
         (row, index, rows) =>
           index ===
@@ -320,7 +320,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
               item.timestamp === row.timestamp,
           ),
       )
-      .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long)));
+      .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long))));
     if (unique.length < 2) {
       this.trip.set({
         ...EMPTY_TRIP,
@@ -440,6 +440,43 @@ export class TripReplayPage implements OnInit, OnDestroy {
     });
     this.positionIndex.set(0);
   }
+
+  private longestContinuousTrail(trail: PlaybackTrailRecord[]): PlaybackTrailRecord[] {
+    if (trail.length < 2) return trail;
+    const segments: PlaybackTrailRecord[][] = [[]];
+    for (const point of trail) {
+      const segment = segments.at(-1)!;
+      const previous = segment.at(-1);
+      if (previous && this.isImpossibleTrailJump(previous, point)) segments.push([]);
+      segments.at(-1)!.push(point);
+    }
+    return segments.reduce((longest, segment) => segment.length > longest.length ? segment : longest, []);
+  }
+
+  private isImpossibleTrailJump(previous: PlaybackTrailRecord, current: PlaybackTrailRecord): boolean {
+    const previousTime = new Date(previous.timestamp).getTime();
+    const currentTime = new Date(current.timestamp).getTime();
+    const elapsedSeconds = Math.max(1, (currentTime - previousTime) / 1_000);
+    const distance = this.distanceMetres(
+      Number(previous.lat),
+      Number(previous.long),
+      Number(current.lat),
+      Number(current.long),
+    );
+    // Permit a generous 198 km/h between samples, but never bridge a reset or
+    // device switch spanning hundreds of metres in only a few seconds.
+    return distance > Math.max(300, elapsedSeconds * 55);
+  }
+
+  private distanceMetres(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const radians = (value: number) => value * Math.PI / 180;
+    const deltaLat = radians(lat2 - lat1);
+    const deltaLng = radians(lng2 - lng1);
+    const value = Math.sin(deltaLat / 2) ** 2
+      + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(deltaLng / 2) ** 2;
+    return 12_742_000 * Math.asin(Math.sqrt(value));
+  }
+
   private vehicle(): RealtimeVehicleRecord | undefined {
     return this.vehicles().find((item) => item.id === this.selectedVehicleId());
   }
