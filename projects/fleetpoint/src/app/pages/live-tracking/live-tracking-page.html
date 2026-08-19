@@ -145,10 +145,13 @@
           ×
         </button>
       </header>
-      <div class="live-tracking-notice" role="status">
-        <div>
-          <strong>Live tracking enabled</strong>
-          <small>Receiving realtime updates for this vehicle</small>
+      @if (!liveTrackingEnabled()) {
+        <div class="live-tracking-prompt">
+          <div>
+            <strong>Latest recorded data</strong>
+            <small>Enable tracking to follow this vehicle in real time</small>
+          </div>
+          <button type="button" (click)="enableLiveTracking()">Enable live tracking</button>
         </div>
       } @else if (!vehicle.lastSignalAt) {
         <div class="live-tracking-notice waiting" role="status">

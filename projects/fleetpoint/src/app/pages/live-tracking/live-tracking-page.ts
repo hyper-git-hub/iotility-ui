@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownOption, Skeleton } from '@iotility/shared-ui';
-import { EMPTY, Subscription, catchError, finalize, switchMap, timer } from 'rxjs';
+import { EMPTY, Subscription, catchError, finalize, interval, switchMap, timer } from 'rxjs';
 import { FleetMap, MapZoneOverlay, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
 import {
   GeoZoneRecord,
@@ -63,6 +63,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.filteredVehicles().filter((vehicle) => Number.isFinite(vehicle.lat) && Number.isFinite(vehicle.lng)),
   );
   private readonly subscription = new Subscription();
+  private readonly apiSnapshots = new Map<number, LiveVehicle>();
+  private readonly realtimeVehicles = new Set<number>();
   private selectionRequest = 0;
   private requestedVehicleId = '';
 

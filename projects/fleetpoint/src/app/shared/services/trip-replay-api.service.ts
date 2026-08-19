@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
-import { RealtimeVehicleRecord } from './live-tracking-api.service';
+import { DetailReportRecord, RealtimeVehicleRecord } from './live-tracking-api.service';
 import { environment } from '../../../environments/environment';
 
 const FLEET_API = `${environment.fleetBaseUrl}/api`;
