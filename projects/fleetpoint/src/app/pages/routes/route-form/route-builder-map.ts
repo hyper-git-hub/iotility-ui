@@ -10,9 +10,8 @@ import {
   removeGeoJson,
   upsertGeoJson,
 } from '../../../shared/maps/maplibre';
+import { environment } from '../../../../environments/environment';
 
-const OSRM_BASE_URL = 'https://fms.backend.iot.vodafone.com.qa:5000';
-const OSRM_FALLBACK_URL = 'https://router.project-osrm.org';
 export interface RoutePoint { lat: number; lng: number; type: 'start' | 'stop' | 'end'; label: string; }
 
 @Component({
@@ -49,7 +48,7 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
   async calculateRoute(): Promise<boolean> {
     if (!this.map || this.points.length < 2) return false;
     const coordinates = this.points.map((point) => `${point.lng},${point.lat}`).join(';');
-    for (const baseUrl of [OSRM_BASE_URL, OSRM_FALLBACK_URL]) {
+    for (const baseUrl of [environment.osrmBaseUrl, environment.osrmFallbackUrl]) {
       try {
         const response = await fetch(`${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false`);
         if (!response.ok) continue;

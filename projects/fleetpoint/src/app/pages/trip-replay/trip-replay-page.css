@@ -220,13 +220,13 @@
   @apply m-3 flex flex-col gap-2 rounded-xl bg-canvas p-3 dark:bg-dark-canvas;
 }
 .journey-card span {
-  @apply flex items-center gap-2 text-xs text-ink dark:text-white;
+  @apply flex items-start gap-2 text-xs text-ink dark:text-white;
 }
 .journey-line-skeleton {
   @apply h-4;
 }
 .journey-card i {
-  @apply size-2 rounded-full;
+  @apply mt-1 size-2 shrink-0 rounded-full;
 }
 .start-dot {
   @apply bg-success;

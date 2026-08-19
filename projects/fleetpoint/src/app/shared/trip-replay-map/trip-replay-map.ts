@@ -25,8 +25,8 @@ import {
   upsertGeoJson,
 } from '../maps/maplibre';
 import { attachTooltip } from '@iotility/shared-ui';
+import { environment } from '../../../environments/environment';
 
-const OSRM_BASE_URL = 'https://fms.backend.iot.vodafone.com.qa:5000';
 const VEHICLE_MODEL_PATHS = [
   '/assets/fleetpoint/models-trip-vehicle.glb',
   '/assets/models-trip-vehicle.glb',
@@ -402,7 +402,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           })
           .join(';');
         const response = await fetch(
-          `${OSRM_BASE_URL}/match/v1/driving/${coordinates}?timestamps=${timestamps}&radiuses=${chunk.map(() => '50').join(';')}&overview=full&geometries=geojson`,
+          `${environment.osrmBaseUrl}/match/v1/driving/${coordinates}?timestamps=${timestamps}&radiuses=${chunk.map(() => '50').join(';')}&overview=full&geometries=geojson`,
           { signal: this.routeRequest.signal },
         );
         if (!response.ok) throw new Error();
@@ -433,7 +433,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     for (const chunk of this.positionChunks(positions, 95)) {
       const coordinates = chunk.map(({ lng, lat }) => `${lng},${lat}`).join(';');
       const response = await fetch(
-        `${OSRM_BASE_URL}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`,
+        `${environment.osrmBaseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`,
         { signal: this.routeRequest?.signal },
       );
       if (!response.ok) throw new Error();
