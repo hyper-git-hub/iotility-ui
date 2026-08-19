@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
 import { UserProfile } from './auth-api.service';
+import { FirebaseAuthService } from './firebase-auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthSessionService {
+  constructor(private readonly firebaseAuth: FirebaseAuthService) {}
+
   private readonly sessionKeys = [
     'token',
     'userMS-token',
@@ -38,6 +41,7 @@ export class AuthSessionService {
 
   clear(): void {
     this.sessionKeys.forEach((key) => localStorage.removeItem(key));
+    void this.firebaseAuth.signOut();
   }
 
   private isTokenExpired(token: string): boolean {

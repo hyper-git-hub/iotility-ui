@@ -46,4 +46,49 @@
       }
     </div>
   </div>
+  <div header-actions class="notification-control" (click)="$event.stopPropagation()">
+    <button type="button" class="notification-trigger" aria-label="Notifications" [attr.aria-expanded]="notificationsOpen()" (click)="toggleNotifications($event)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.27 21a2 2 0 0 0 3.46 0M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33Z" /></svg>
+      @if (notificationService.unreadCount()) {
+        <span>{{ notificationCount() }}</span>
+      }
+    </button>
+    @if (notificationsOpen()) {
+      <section class="notification-panel" aria-label="Notifications">
+        <header>
+          <div><strong>Notifications</strong><small>Fleet alerts and activity</small></div>
+          <button type="button" aria-label="Refresh notifications" (click)="refreshNotifications($event)">&#8635;</button>
+        </header>
+        <shared-smooth-height>
+          <div class="notification-list">
+            @if (notificationService.loading() && !notificationService.notifications().length) {
+              <div class="notification-skeleton"><i></i><span></span></div>
+            } @else if (notificationService.error() && !notificationService.notifications().length) {
+              <p class="notification-empty">Notifications could not be loaded.</p>
+            } @else {
+              @for (notification of notificationService.notifications(); track notification.id ?? $index) {
+                <button type="button" class="notification-item" [class.unread]="notification.is_viewed === false" [class.clickable]="notification.vehicle != null" (click)="openNotification(notification)">
+                  <i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.27 21a2 2 0 0 0 3.46 0M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33Z" /></svg></i>
+                  <div>
+                    <span class="notification-heading"><strong>{{ notificationTitle(notification) }}</strong><em [class.cleared]="notification.is_cleared">{{ notification.is_cleared ? 'Cleared' : 'Active' }}</em></span>
+                    <p>{{ notificationBody(notification) }}</p>
+                    <span class="notification-meta">
+                      @if (notification.vehicle_name) { <b>{{ notification.vehicle_name }}</b> }
+                      <b>{{ notification.driver_name || 'No driver allocated' }}</b>
+                      @if (isSpeedNotification(notification)) { <b>{{ notification.threshold_value }} km/h</b> }
+                    </span>
+                    @if (notification.location) { <span class="notification-location" [title]="notification.location">{{ notification.location }}</span> }
+                    <small>{{ notification.duration || 'Just now' }} @if (notification.notf_created_at) { · {{ notification.notf_created_at }} }</small>
+                  </div>
+                </button>
+              } @empty {
+                <p class="notification-empty">No new notifications.</p>
+              }
+            }
+          </div>
+        </shared-smooth-height>
+        <footer><button type="button" (click)="refreshNotifications($event)">Refresh notifications</button></footer>
+      </section>
+    }
+  </div>
 </shared-platform-header>

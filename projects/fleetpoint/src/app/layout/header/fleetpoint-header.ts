@@ -1,7 +1,8 @@
 import { Component, computed, HostListener, isDevMode, output, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { DropdownOption, PlatformHeader } from '@iotility/shared-ui';
+import { DropdownOption, PlatformHeader, SmoothHeight } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
+import { FleetNotification, NotificationService } from '../../shared/services/notification.service';
 import { SIDEBAR_MENU } from '../sidebar/menu.config';
 
 interface SearchDestination {
@@ -16,7 +17,7 @@ interface SearchDestination {
 
 @Component({
   selector: 'app-fleetpoint-header',
-  imports: [ PlatformHeader],
+  imports: [PlatformHeader, SmoothHeight],
   templateUrl: './fleetpoint-header.html',
   styleUrl: './fleetpoint-header.css',
 })
@@ -26,6 +27,7 @@ export class FleetpointHeader {
   protected readonly searchVisible = signal(false);
   protected readonly searchQuery = signal('');
   protected readonly activeResult = signal(0);
+  protected readonly notificationsOpen = signal(false);
   private readonly recentIds = signal<string[]>(this.readRecentIds());
   private readonly showAllDevelopmentItems = isDevMode();
   private searchCloseTimer?: number;
@@ -33,7 +35,51 @@ export class FleetpointHeader {
   constructor(
     private readonly router: Router,
     private readonly features: FeatureAccessService,
+    protected readonly notificationService: NotificationService,
   ) {}
+
+  protected toggleNotifications(event: MouseEvent): void {
+    event.stopPropagation();
+    const opening = !this.notificationsOpen();
+    this.notificationsOpen.set(opening);
+    if (opening) this.notificationService.load(true);
+  }
+
+  protected refreshNotifications(event: MouseEvent): void {
+    event.stopPropagation();
+    this.notificationService.load();
+  }
+
+  protected notificationTitle(notification: FleetNotification): string {
+    return notification.notf_title || 'Fleet notification';
+  }
+
+  protected notificationBody(notification: FleetNotification): string {
+    return notification.notf_body || notification.description || 'A new fleet event was received.';
+  }
+
+  protected notificationCount(): string {
+    const count = this.notificationService.unreadCount();
+    return count > 99 ? '99+' : String(count);
+  }
+
+  protected openNotification(notification: FleetNotification): void {
+    if (notification.vehicle == null) return;
+    this.notificationsOpen.set(false);
+    const prefix = this.router.url.startsWith('/fleetpoint') ? '/fleetpoint' : '';
+    void this.router.navigate([`${prefix}/live-tracking`], {
+      queryParams: { vehicle_id: notification.vehicle },
+    });
+  }
+
+  protected isSpeedNotification(notification: FleetNotification): boolean {
+    return Number(notification.notf_type) === 1 && notification.threshold_value != null;
+  }
+
+  @HostListener('document:click')
+  protected closeNotifications(): void {
+    this.notificationsOpen.set(false);
+  }
 
   protected readonly identity = this.readIdentity();
   private readonly destinations: SearchDestination[] = [

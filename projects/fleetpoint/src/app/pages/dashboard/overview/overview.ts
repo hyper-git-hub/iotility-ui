@@ -66,7 +66,7 @@ export class Overview implements OnInit {
     );
     return EXPECTED_DASHBOARD_GRAPHS.map((fallback) => {
       const graph = received.get(fallback.code);
-      return graph && this.hasGraphData(graph) ? graph : fallback;
+      return graph && this.hasBackendGraphPayload(graph) ? graph : fallback;
     }).filter((graph) =>
       !['ADF', 'DSS', 'DVG', 'MS', 'POVM', 'DTS', 'JJ', 'JSJ', 'JSS'].includes(graph.code),
     );
@@ -165,7 +165,7 @@ export class Overview implements OnInit {
         const received = new Map(this.graphs().map((graph) => [graph.code, graph]));
         this.api.cacheGraphs(EXPECTED_DASHBOARD_GRAPHS.map((fallback) => {
           const graph = received.get(fallback.code);
-          return graph && this.hasGraphData(graph) ? graph : fallback;
+          return graph && this.hasBackendGraphPayload(graph) ? graph : fallback;
         }));
       },
       error: (response) => {
@@ -221,23 +221,17 @@ export class Overview implements OnInit {
     return this.vehicles().length ? (value / this.vehicles().length) * 100 : 0;
   }
 
-  private hasGraphData(graph: DashboardGraph): boolean {
+  private hasBackendGraphPayload(graph: DashboardGraph): boolean {
     const data = graph?.data;
     if (!data) return false;
-    if (Array.isArray(data)) {
-      return data.some((row) => Number(row?.vehicle_count) > 0);
-    }
+    if (Array.isArray(data)) return data.length > 0;
     if (graph.code === 'DA') {
       return (data.fleets ?? []).some((fleet) => Array.isArray(fleet?.data) && fleet.data.length > 0);
     }
-    const series = Array.isArray(data.series) ? data.series : [];
-    const values = [
-      ...(Array.isArray(data.values) ? data.values : []),
-      ...series.flatMap((item) =>
-        typeof item === 'number' ? [item] : Array.isArray(item?.data) ? item.data : [],
-      ),
-    ];
-    return values.some((value) => Number(value) !== 0);
+    const hasCategories = Array.isArray(data.categories) && data.categories.length > 0;
+    const hasValues = Array.isArray(data.values) && data.values.length > 0;
+    const hasSeries = Array.isArray(data.series) && data.series.length > 0;
+    return hasCategories && (hasValues || hasSeries);
   }
 
 }

@@ -3,6 +3,38 @@
 .fleetpoint-brand { @apply relative flex min-w-0 items-center gap-2; width:min(34rem,42vw); }
 .mobile-menu-button { display:none; }
 .global-search { @apply relative min-w-0 flex-1; }
+.notification-control { @apply relative; }
+.notification-trigger { @apply relative grid size-9 cursor-pointer place-items-center rounded-full border border-line bg-white transition hover:border-brand-400 hover:bg-brand-50 dark:border-dark-line dark:bg-dark-canvas dark:hover:border-brand-500; }
+.notification-trigger svg { @apply size-[1.15rem] text-muted dark:text-brand-300; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.7; }
+.notification-trigger>span { @apply absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full border-2 border-white bg-danger px-1 text-[8px] font-bold leading-3 text-white dark:border-dark-surface; }
+.notification-panel { @apply absolute right-0 top-[calc(100%+0.65rem)] z-[1700] w-[22rem] overflow-hidden rounded-2xl border border-line bg-white shadow-[0_18px_55px_rgba(20,12,45,0.22)] dark:border-dark-line dark:bg-dark-surface; animation:search-panel-in 180ms cubic-bezier(.22,1,.36,1) both; }
+.notification-panel>header { @apply flex items-center justify-between border-b border-line px-4 py-3 dark:border-dark-line; }
+.notification-panel>header strong,.notification-panel>header small { @apply block; }
+.notification-panel>header strong { @apply text-sm text-ink dark:text-white; }
+.notification-panel>header small { @apply mt-0.5 text-[9px] text-muted dark:text-brand-300; }
+.notification-panel>header button { @apply grid size-7 cursor-pointer place-items-center rounded-lg border-0 bg-canvas text-base text-muted hover:text-brand-600 dark:bg-dark-canvas dark:text-brand-300; }
+.notification-list { @apply max-h-80 overflow-y-auto; }
+.notification-item { @apply flex w-full gap-3 border-0 border-b border-line bg-white px-4 py-3 text-left last:border-b-0 dark:border-dark-line dark:bg-dark-surface; }
+.notification-item.clickable { @apply cursor-pointer transition hover:bg-canvas dark:hover:bg-dark-canvas; }
+.notification-item.unread { @apply bg-brand-50/70 dark:bg-brand-600/10; }
+.notification-item>i { @apply mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-brand-100 dark:bg-brand-600/20; }
+.notification-item>i svg { @apply size-4 text-brand-600 dark:text-brand-300; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.8; }
+.notification-item>div { @apply min-w-0 flex-1; }
+.notification-heading { @apply flex items-center gap-2; }
+.notification-heading strong { @apply min-w-0 flex-1 truncate text-[11px] font-semibold text-ink dark:text-white; }
+.notification-heading em { @apply shrink-0 rounded-full bg-warning/10 px-1.5 py-0.5 text-[8px] font-semibold not-italic text-warning; }
+.notification-heading em.cleared { @apply bg-success/10 text-success; }
+.notification-item p { @apply mt-1 text-[10px] leading-4 text-muted dark:text-brand-300; }
+.notification-meta { @apply mt-1.5 flex flex-wrap gap-1; }
+.notification-meta b { @apply rounded-md bg-canvas px-1.5 py-0.5 text-[8px] font-semibold text-ink dark:bg-dark-canvas dark:text-brand-300; }
+.notification-location { @apply mt-1.5 block overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-muted dark:text-brand-300; }
+.notification-item small { @apply mt-1.5 block text-[9px] text-brand-500; }
+.notification-empty { @apply px-5 py-10 text-center text-xs text-muted dark:text-brand-300; }
+.notification-skeleton { @apply flex gap-3 border-b border-line px-4 py-3 dark:border-dark-line; }
+.notification-skeleton i { @apply size-8 animate-pulse rounded-full bg-line dark:bg-dark-line; }
+.notification-skeleton span { @apply mt-1 h-8 flex-1 animate-pulse rounded-lg bg-line dark:bg-dark-line; }
+.notification-panel>footer { @apply border-t border-line p-2 dark:border-dark-line; }
+.notification-panel>footer button { @apply w-full cursor-pointer rounded-lg border-0 bg-transparent py-2 text-[10px] font-semibold text-brand-600 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-dark-canvas; }
 .search-control { @apply relative flex h-10 items-center gap-2 rounded-xl border border-line bg-canvas/60 px-3 transition focus-within:border-brand-400 focus-within:bg-white focus-within:shadow-[0_5px_18px_rgba(30,20,60,0.08)] dark:border-dark-line dark:bg-dark-canvas/70 dark:focus-within:border-brand-500 dark:focus-within:bg-dark-canvas; }
 .global-search.open .search-control { @apply z-[1602]; }
 .search-control>img { @apply size-4 shrink-0 opacity-70; }
@@ -52,4 +84,5 @@
   .search-control input::placeholder { color:transparent; }
   .search-results { @apply fixed left-3 right-3 top-[4.5rem]; }
   .search-results>footer { @apply hidden; }
+  .notification-panel { @apply fixed left-3 right-3 top-[4.5rem] w-auto; }
 }

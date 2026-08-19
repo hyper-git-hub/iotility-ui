@@ -20,6 +20,14 @@
 .violations label { @apply relative flex min-h-24 cursor-pointer items-center justify-center gap-3 overflow-hidden rounded-2xl border border-line bg-canvas px-4 py-4 text-muted transition hover:border-brand-400 dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300; }
 .violations input { @apply sr-only; }
 .violations img { @apply size-9 shrink-0; }
+.violations svg {
+  @apply size-9 shrink-0;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
 .violations strong { @apply text-sm font-semibold; }
 .monitor-check { @apply absolute right-3 top-3 hidden size-5 place-items-center rounded-full border border-brand-600 bg-brand-600 text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(124,58,237,0.3)]; }
 .violations label:has(input:checked) { @apply border-brand-600 bg-brand-600 text-white shadow-md; }

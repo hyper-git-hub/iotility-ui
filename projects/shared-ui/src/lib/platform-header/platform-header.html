@@ -1,6 +1,7 @@
 <header>
   <div class="brand"><ng-content select="[header-brand]" /></div>
   <div class="actions">
+    <ng-content select="[header-actions]" />
     @if (showLive()) {
       <span class="live"><i></i>Live</span>
     }

@@ -293,13 +293,14 @@
   @apply p-4;
 }
 .statistics-list div {
-  @apply flex justify-between border-b border-line py-2.5 text-xs dark:border-dark-line;
+  @apply grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3 border-b border-line py-2.5 text-xs dark:border-dark-line;
 }
 .statistics-list dt {
-  @apply text-muted dark:text-brand-300;
+  @apply leading-4 text-muted dark:text-brand-300;
 }
 .statistics-list dd {
-  @apply font-semibold text-ink dark:text-white;
+  @apply min-w-0 break-words text-left font-semibold leading-4 text-ink dark:text-white;
+  overflow-wrap: anywhere;
 }
 .stat-vehicle-image {
   @apply h-12 w-20 rounded-lg object-contain;

@@ -7,4 +7,14 @@ export const environment = {
   fleetBaseUrl: 'https://devgateway.hypernymbiz.com/fms-fleet',
   signalRUrl: 'https://func-vfq-dev.azurewebsites.net',
   useCaseId: 6,
+  firebase: {
+    apiKey: 'AIzaSyDybdUp0Ue3yuPS5XQfGMxXeBq0CzQ-cME',
+    authDomain: 'fmsnewpackage.firebaseapp.com',
+    databaseURL: 'https://fmsnewpackage-default-rtdb.firebaseio.com',
+    projectId: 'fmsnewpackage',
+    storageBucket: 'fmsnewpackage.appspot.com',
+    messagingSenderId: '1076830721170',
+    appId: '1:1076830721170:web:b72455693f5aa3cfd1024b',
+    measurementId: 'G-FV991JH40G',
+  },
 } as const;

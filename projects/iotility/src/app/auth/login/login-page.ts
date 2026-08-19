@@ -3,10 +3,11 @@ import { Component, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BlockingLoader, SmoothHeight } from '@iotility/shared-ui';
-import { finalize, switchMap, tap } from 'rxjs';
+import { finalize, from, switchMap, tap } from 'rxjs';
 import { AuthApiResponse, AuthApiService } from '../../shared/services/auth-api.service';
 import { AuthSessionService } from '../../shared/services/auth-session.service';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
+import { FirebaseAuthService } from '../../shared/services/firebase-auth.service';
 
 @Component({
   selector: 'app-login-page',
@@ -25,6 +26,7 @@ export class LoginPage {
     private readonly authApi: AuthApiService,
     private readonly authSession: AuthSessionService,
     private readonly feedbackDialog: FeedbackDialogService,
+    private readonly firebaseAuth: FirebaseAuthService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
   ) {
@@ -58,6 +60,7 @@ export class LoginPage {
             ? localStorage.setItem('rememberedEmail', email.trim().toLowerCase())
             : localStorage.removeItem('rememberedEmail');
         }),
+        switchMap((response) => from(this.firebaseAuth.signIn(response.data?.fb_auth_token))),
         switchMap(() => this.authApi.getUserProfile()),
         finalize(() => this.submitting.set(false)),
       )

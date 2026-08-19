@@ -32,6 +32,8 @@ const VEHICLE_MODEL_PATHS = [
   '/assets/models-trip-vehicle.glb',
 ];
 const VEHICLE_MODEL_YAW_OFFSET = 180;
+const DEFAULT_MAP_CENTER: LatLng = [30.3753, 69.3451];
+const DEFAULT_MAP_ZOOM = 5;
 const NAVIGATION_PITCH = 52;
 const NAVIGATION_ZOOM = 16.5;
 const RECENT_TRAIL_POINTS = 32;
@@ -166,7 +168,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.map = createIotMap(this.mapElement().nativeElement, [25.3548, 51.1839], 9);
+    this.map = createIotMap(this.mapElement().nativeElement, DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
     this.vehicleOverlay = new MapboxOverlay({
       // A separate Deck canvas is more reliable than an interleaved custom layer
       // when this component is loaded through native module federation.
@@ -209,7 +211,10 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           'trip-route-completed',
           'trip-route-recent',
         ]);
-      this.map.jumpTo({ center: [51.1839, 25.3548], zoom: 9 });
+      this.map.jumpTo({
+        center: [DEFAULT_MAP_CENTER[1], DEFAULT_MAP_CENTER[0]],
+        zoom: DEFAULT_MAP_ZOOM,
+      });
       return;
     }
     const version = ++this.routeVersion;
