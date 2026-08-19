@@ -18,10 +18,7 @@
 }
 .badge-text,
 .badge-skeleton {
-  @apply whitespace-nowrap;
-}
-.badge-skeleton {
-  @apply flex-1;
+  @apply whitespace-nowrap flex items-center;
 }
 @keyframes live-dot-pulse {
   0%, 100% {

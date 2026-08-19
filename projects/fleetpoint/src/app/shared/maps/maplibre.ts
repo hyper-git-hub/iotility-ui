@@ -97,7 +97,7 @@ export function popup(text: string): maplibregl.Popup {
 }
 
 export function popupHtml(html: string): maplibregl.Popup {
-  return new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16 }).setHTML(html);
+  return new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 20 }).setHTML(html);
 }
 
 export function circlePolygon(center: LatLng, radiusMeters: number, steps = 64): LatLng[] {

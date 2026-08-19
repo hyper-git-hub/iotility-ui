@@ -33,14 +33,18 @@
   place-items: center;
   overflow: hidden;
   background: var(--color-canvas);
-  border: 4px solid;
+  border: 2px solid var(--color-line);
   border-radius: 50%;
   padding: 3px;
   transition:
     width 200ms ease,
     height 200ms ease,
     box-shadow 200ms ease,
-    transform 200ms ease;
+    transform 200ms ease,
+    border-width 200ms ease;
+}
+:host ::ng-deep .vehicle-marker.selected {
+  border-width: 4px;
 }
 :host-context(.dark) ::ng-deep .vehicle-marker {
   background: var(--color-dark-surface);
@@ -66,11 +70,7 @@
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
 }
 :host ::ng-deep .maplibregl-popup-tip {
-  border: 8px solid transparent;
-  border-top-color: #fff;
-  border-bottom-color: #fff;
-  border-left-color: #fff;
-  border-right-color: #fff;
+  display: none;
 }
 :host-context(.dark) ::ng-deep .maplibregl-popup-content {
   background: var(--color-dark-surface);
@@ -78,9 +78,6 @@
 }
 :host-context(.dark) ::ng-deep .maplibregl-popup-tip {
   border-top-color: var(--color-dark-surface);
-  border-bottom-color: var(--color-dark-surface);
-  border-left-color: var(--color-dark-surface);
-  border-right-color: var(--color-dark-surface);
 }
 
 :host ::ng-deep .vehicle-popup {
