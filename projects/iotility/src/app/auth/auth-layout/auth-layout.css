@@ -17,6 +17,18 @@
   height: 120%;
   background: radial-gradient(circle at center, #8938e7 0%, #7b2fe0 15%, #6d28d9 30%, #4c1d95 50%, #1a0533 70%, #000 100%);
   filter: blur(60px);
+  animation: auth-glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes auth-glow-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
 }
 .auth-brand-row { @apply relative z-10 flex items-center gap-4; }
 .auth-brand-row img { @apply h-7 w-auto max-w-36; }
