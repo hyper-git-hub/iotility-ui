@@ -41,11 +41,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly showOverlays = input(true);
   readonly hasLeftOverlays = input(false);
   readonly vehicleSelected = output<TrackedVehicle>();
+  readonly fullscreenVehicleClick = output<TrackedVehicle>();
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
-  protected readonly isFullscreen = signal(false);
+  readonly isFullscreen = input(false);
   private fittedVehicleSet = '';
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
@@ -53,10 +54,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   constructor() {
     effect(() => {
       const vehicles = this.vehicles(), showMarkers = this.showMarkers(), clusterMarkers = this.clusterMarkers();
-      const selectedId = this.selectedVehicleId();
       if (this.map) {
         const vehicleSet = this.vehicleSetKey(vehicles);
-        this.renderMarkers(vehicles, vehicleSet !== this.fittedVehicleSet, showMarkers, clusterMarkers, selectedId);
+        this.renderMarkers(vehicles, vehicleSet !== this.fittedVehicleSet, showMarkers, clusterMarkers);
       }
     });
     effect(() => {
@@ -67,11 +67,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const vehicle = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
       if (vehicle && this.map) this.focusVehicle(vehicle);
     });
+    effect(() => {
+      const selectedId = this.selectedVehicleId();
+      if (this.map) this.updateMarkerSelection(selectedId);
+    });
   }
 
   ngAfterViewInit(): void {
     this.map = createIotMap(this.mapElement().nativeElement, [25.2854, 51.531], 11);
-    document.addEventListener('fullscreenchange', this.onFullscreenChange);
     this.map.on('style.load', () => {
       this.renderMarkers(this.vehicles(), false, this.showMarkers(), this.clusterMarkers());
       this.renderZones(this.zones());
@@ -162,7 +165,11 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const element = this.createVehicleMarker(vehicle, selectedId);
       element.addEventListener('click', () => {
         this.focusVehicle(vehicle);
-        this.vehicleSelected.emit(vehicle);
+        if (this.isFullscreen()) {
+          this.fullscreenVehicleClick.emit(vehicle);
+        } else {
+          this.vehicleSelected.emit(vehicle);
+        }
       });
       const item = new maplibregl.Marker({ element })
         .setLngLat([vehicle.lng, vehicle.lat])
@@ -180,6 +187,25 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       fitLatLngs(this.map, vehicles.map(({ lat, lng }) => [lat, lng]), 48, 15 + this.fitZoomOffset());
       this.fittedVehicleSet = this.vehicleSetKey(vehicles);
     }
+  }
+
+  private updateMarkerSelection(selectedId: string | null): void {
+    this.markers.forEach((item, id) => {
+      const vehicle = this.vehicles().find((v) => v.id === id);
+      if (!vehicle) return;
+      const selected = id === selectedId;
+      const size = selected ? 44 : 34;
+      const color = this.statusColor(vehicle.status);
+      const element = item.getElement();
+      if (!element) return;
+      const markerDiv = element.querySelector('.vehicle-marker') as HTMLElement | null;
+      if (!markerDiv) return;
+      markerDiv.className = `vehicle-marker${selected ? ' selected' : ''}`;
+      markerDiv.style.width = `${size}px`;
+      markerDiv.style.height = `${size}px`;
+      markerDiv.style.borderColor = color;
+      markerDiv.style.boxShadow = `0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}`;
+    });
   }
 
   private createVehicleMarker(vehicle: TrackedVehicle, selectedId: string | null): HTMLElement {
@@ -200,6 +226,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const statusColor = this.statusColor(vehicle.status);
     const speed = vehicle.speed > 0 ? `<span class="vp-detail">${Math.round(vehicle.speed)} km/h</span>` : '';
     const fuel = vehicle.fuel > 0 ? `<span class="vp-detail">Fuel ${Math.round(vehicle.fuel)}%</span>` : '';
+    const footerText = this.isFullscreen() ? 'Click to enable live tracking' : 'Click for full details';
     return `
       <div class="vehicle-popup">
         <div class="vp-head">
@@ -215,13 +242,13 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         </div>
         <div class="vp-row">
           <svg class="vp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span class="vp-text"><span class="vp-status" style="color:${statusColor}">${vehicle.status}</span>${speed}${fuel}</span>
+          <span class="vp-text"><span class="vp-status" style="color:${statusColor}">${vehicle.status}</span> ${speed}${fuel}</span>
         </div>
         <div class="vp-row">
           <svg class="vp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           <span class="vp-text vp-location">${vehicle.location}</span>
         </div>
-        <div class="vp-foot">Click for full details</div>
+        <div class="vp-foot">${footerText}</div>
       </div>`;
   }
 
@@ -302,7 +329,11 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const vehicle = this.vehicles().find((item) => item.id === id);
       if (vehicle) {
         this.focusVehicle(vehicle);
-        this.vehicleSelected.emit(vehicle);
+        if (this.isFullscreen()) {
+          this.fullscreenVehicleClick.emit(vehicle);
+        } else {
+          this.vehicleSelected.emit(vehicle);
+        }
       }
     });
     for (const layer of ['vehicle-clusters', 'vehicle-points']) {
@@ -355,14 +386,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   private focusVehicle(vehicle: TrackedVehicle): void {
-    this.map?.easeTo({
-      center: [vehicle.lng, vehicle.lat],
-      zoom: 16,
-      pitch: 55,
-      bearing: -18,
-      duration: 650,
-      easing: (progress) => 1 - Math.pow(1 - progress, 3),
-    });
+    if (!this.map) return;
+    this.map.jumpTo({ center: [vehicle.lng, vehicle.lat], zoom: 16 });
+    this.map.easeTo({ pitch: 55, bearing: -18, duration: 180, easing: (t) => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2 });
     const marker = this.markers.get(vehicle.id);
     if (marker && marker.getPopup() && !marker.getPopup()?.isOpen()) marker.togglePopup();
   }
@@ -377,11 +403,6 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.readyFallback);
-    document.removeEventListener('fullscreenchange', this.onFullscreenChange);
     this.map?.remove();
   }
-
-  private onFullscreenChange = (): void => {
-    this.isFullscreen.set(Boolean(document.fullscreenElement));
-  };
 }

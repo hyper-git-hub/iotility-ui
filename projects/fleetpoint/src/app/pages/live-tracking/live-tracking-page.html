@@ -55,7 +55,7 @@
       @if (loading()) {
         @for (_ of vehicleSkeletons; track $index) {
           <div class="vehicle-row-skeleton" aria-hidden="true">
-            <ui-skeleton class="vehicle-image-skeleton" width="1.5rem" height="1.5rem" radius="0.4rem" />
+            <ui-skeleton class="vehicle-image-skeleton" width="1.6rem" height="1.6rem" radius="0.4rem" />
             <div class="vehicle-copy-skeleton">
               <span class="vehicle-title-line"><ui-skeleton width="5.25rem" height="0.75rem" radius="0.25rem" /></span>
               <span class="vehicle-small-line"><ui-skeleton width="4rem" height="0.6rem" radius="0.25rem" /></span>
@@ -95,10 +95,39 @@
       [class.map-loaded]="mapLoaded()"
       [vehicles]="mapVehicles()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
+      [isFullscreen]="isFullscreen()"
       [hasLeftOverlays]="true"
       (ready)="onMapReady(fleetMap)"
       (vehicleSelected)="selectVehicle($event)"
+      (fullscreenVehicleClick)="onFullscreenVehicleClick($event)"
     />
+    @if (isFullscreen() && isFullscreenTrackingEnabling()) {
+      <div class="fullscreen-tracking-notice enabling">
+        <span class="fullscreen-tracking-pulse" aria-hidden="true"></span>
+        <div>
+          <strong>Enabling live tracking…</strong>
+          <small>Please wait</small>
+        </div>
+      </div>
+    } @else if (isFullscreen() && isFullscreenTrackingWaiting()) {
+      <div class="fullscreen-tracking-notice waiting">
+        <span class="fullscreen-tracking-pulse" aria-hidden="true"></span>
+        <div>
+          <strong>Connecting to live tracking…</strong>
+          <small>Waiting for the next vehicle signal</small>
+        </div>
+        <button type="button" (click)="stopLiveTracking()">Stop</button>
+      </div>
+    } @else if (isFullscreen() && isFullscreenTrackingActive()) {
+      <div class="fullscreen-tracking-notice">
+        <span class="fullscreen-tracking-pulse" aria-hidden="true"></span>
+        <div>
+          <strong>Live tracking enabled</strong>
+          <small>Receiving realtime updates for this vehicle</small>
+        </div>
+        <button type="button" (click)="stopLiveTracking()">Stop</button>
+      </div>
+    }
     <div class="map-status">
       <app-live-badge
         [vehicleCount]="mapVehicles().length"
@@ -145,30 +174,30 @@
         </button>
       </header>
       @if (!liveTrackingEnabled()) {
-        <div class="live-tracking-prompt">
+        <div class="live-tracking-prompt" (click)="toggleLiveTracking()">
           <div>
             <strong>Latest recorded data</strong>
             <small>Enable tracking to follow this vehicle in real time</small>
           </div>
-          <button type="button" (click)="enableLiveTracking()">Enable live tracking</button>
+          <button type="button" (click)="$event.stopPropagation(); toggleLiveTracking()">Enable live tracking</button>
         </div>
       } @else if (!vehicle.lastSignalAt) {
-        <div class="live-tracking-notice waiting" role="status">
+        <div class="live-tracking-notice waiting" role="status" (click)="toggleLiveTracking()">
           <span class="live-tracking-pulse" aria-hidden="true"></span>
           <div>
             <strong>Connecting to live tracking…</strong>
             <small>Waiting for the next vehicle signal</small>
           </div>
-          <button type="button" (click)="stopLiveTracking()">Cancel</button>
+          <button type="button" (click)="$event.stopPropagation(); toggleLiveTracking()">Cancel</button>
         </div>
       } @else {
-        <div class="live-tracking-notice" role="status">
+        <div class="live-tracking-notice" role="status" (click)="toggleLiveTracking()">
           <span class="live-tracking-pulse" aria-hidden="true"></span>
           <div>
             <strong>Live tracking enabled</strong>
             <small>Receiving realtime updates for this vehicle</small>
           </div>
-          <button type="button" (click)="stopLiveTracking()">Stop</button>
+          <button type="button" (click)="$event.stopPropagation(); toggleLiveTracking()">Stop</button>
         </div>
       }
       <section>
@@ -187,7 +216,11 @@
             <div class="detail-label"><img src="assets/fleetpoint/icons/battery.svg" alt="" aria-hidden="true"><span>Battery</span></div><strong>{{ vehicle.battery === null ? '—' : vehicle.battery + '%' }}</strong>
           </article>
           <article>
-            <div class="detail-label"><img src="assets/fleetpoint/icons/seat-belt.svg" alt="" aria-hidden="true"><span>Seat belt</span></div><strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
+            <div class="detail-label">
+              <img src="assets/icons/seat-belt.svg" alt="" aria-hidden="true">
+              <span>Seat belt</span>
+            </div>
+            <strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
           </article>
           <article>
             <div class="detail-label"><img src="assets/fleetpoint/icons/clock-muted.svg" alt="" aria-hidden="true"><span>Last signal</span></div><strong>{{ lastSignalLabel(vehicle) }}</strong>

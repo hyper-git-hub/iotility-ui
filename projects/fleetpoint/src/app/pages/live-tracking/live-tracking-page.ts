@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownOption, Skeleton } from '@iotility/shared-ui';
 import { EMPTY, Subscription, catchError, finalize, forkJoin, interval, switchMap, timer } from 'rxjs';
@@ -51,6 +51,10 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly now = signal(Date.now());
   protected readonly vehicles = signal<LiveVehicle[]>([]);
   protected readonly isFullscreen = computed(() => this.fullscreenUi.isFullscreen());
+  protected readonly fullscreenTrackingState = signal<'idle' | 'enabling' | 'waiting' | 'active'>('idle');
+  protected readonly isFullscreenTrackingEnabling = computed(() => this.fullscreenTrackingState() === 'enabling');
+  protected readonly isFullscreenTrackingWaiting = computed(() => this.fullscreenTrackingState() === 'waiting');
+  protected readonly isFullscreenTrackingActive = computed(() => this.fullscreenTrackingState() === 'active');
   protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Alert', 'Offline'];
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly locationOptions: DropdownOption[] = [
@@ -72,6 +76,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private readonly realtimeVehicles = new Set<number>();
   private selectionRequest = 0;
   private requestedVehicleId = '';
+  private fullscreenTrackingTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly api: LiveTrackingApiService,
@@ -86,6 +91,17 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.requestedVehicleId = String(
       navigationState?.['vehicleId'] ?? route.snapshot.queryParamMap.get('vehicle_id') ?? '',
     );
+    effect(() => {
+      const isFullscreen = this.isFullscreen();
+      const enabled = this.liveTrackingEnabled();
+      const selected = this.selectedVehicle();
+      if (!isFullscreen || !enabled || !selected) {
+        this.fullscreenTrackingState.set('idle');
+        return;
+      }
+      if (this.fullscreenTrackingState() === 'enabling') return;
+      this.fullscreenTrackingState.set(selected.lastSignalAt ? 'active' : 'waiting');
+    });
   }
 
   ngOnInit(): void {
@@ -158,7 +174,12 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected updateLocation(ids: string[]): void { this.locationFilter.set(ids[0] ?? 'all'); }
   protected locationLabel(): string { return 'All locations'; }
   protected selectVehicle(vehicle: TrackedVehicle): void {
-    const previousId = this.selectedVehicle()?.numericId;
+    const current = this.selectedVehicle();
+    if (current && current.id === vehicle.id) {
+      this.clearSelectedVehicle();
+      return;
+    }
+    const previousId = current?.numericId;
     if (previousId !== undefined) this.restoreApiVehicle(previousId);
     const selected = this.vehicles().find((item) => item.id === vehicle.id) ?? vehicle as LiveVehicle;
     this.liveTrackingEnabled.set(false);
@@ -189,6 +210,34 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     if (vehicleId === undefined) return;
     this.realtimeVehicles.delete(vehicleId);
     this.liveTrackingEnabled.set(true);
+  }
+
+  protected toggleLiveTracking(): void {
+    if (this.liveTrackingEnabled()) {
+      this.stopLiveTracking();
+    } else {
+      this.enableLiveTracking();
+    }
+  }
+
+  protected onFullscreenVehicleClick(vehicle: TrackedVehicle): void {
+    const sameVehicle = this.selectedVehicle()?.id === vehicle.id && this.liveTrackingEnabled();
+    if (sameVehicle) {
+      this.stopLiveTracking();
+      return;
+    }
+    this.selectVehicle(vehicle);
+    this.enableLiveTracking();
+    if (this.isFullscreen()) {
+      this.fullscreenTrackingState.set('enabling');
+      clearTimeout(this.fullscreenTrackingTimeout);
+      this.fullscreenTrackingTimeout = setTimeout(() => {
+        const selected = this.selectedVehicle();
+        if (selected && this.liveTrackingEnabled()) {
+          this.fullscreenTrackingState.set(selected.lastSignalAt ? 'active' : 'waiting');
+        }
+      }, 800);
+    }
   }
 
   protected stopLiveTracking(): void {
@@ -375,5 +424,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
     void this.realtime.disconnect();
+    clearTimeout(this.fullscreenTrackingTimeout);
   }
 }
