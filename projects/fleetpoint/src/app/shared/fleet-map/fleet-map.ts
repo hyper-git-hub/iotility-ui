@@ -40,13 +40,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly selectedVehicleId = input<string | null>(null);
   readonly showOverlays = input(true);
   readonly hasLeftOverlays = input(false);
+  readonly isFullscreen = input(false);
+  readonly detailsPanelOpen = input(false);
   readonly vehicleSelected = output<TrackedVehicle>();
   readonly fullscreenVehicleClick = output<TrackedVehicle>();
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
-  readonly isFullscreen = input(false);
   private fittedVehicleSet = '';
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
@@ -64,6 +65,11 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       if (this.map?.isStyleLoaded()) this.renderZones(zones);
     });
     effect(() => {
+      const vehicle = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
+      if (vehicle && this.map) this.focusVehicle(vehicle);
+    });
+    effect(() => {
+      const panelOpen = this.detailsPanelOpen();
       const vehicle = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
       if (vehicle && this.map) this.focusVehicle(vehicle);
     });

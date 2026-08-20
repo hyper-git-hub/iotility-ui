@@ -96,6 +96,7 @@
       [vehicles]="mapVehicles()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
       [isFullscreen]="isFullscreen()"
+      [detailsPanelOpen]="!isFullscreen() && selectedVehicle() !== null"
       [hasLeftOverlays]="true"
       (ready)="onMapReady(fleetMap)"
       (vehicleSelected)="selectVehicle($event)"
@@ -217,7 +218,7 @@
           </article>
           <article>
             <div class="detail-label">
-              <img src="assets/icons/seat-belt.svg" alt="" aria-hidden="true">
+              <img src="assets/fleetpoint/icons/seat-belt.svg" alt="" aria-hidden="true">
               <span>Seat belt</span>
             </div>
             <strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
