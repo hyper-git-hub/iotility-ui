@@ -89,15 +89,15 @@
     </div>
   </aside>
 
-  <section class="map-area">
+  <section class="map-area" [class.details-panel-open]="!isFullscreen() && selectedVehicle() !== null">
     <app-fleet-map
       #fleetMap
       [class.map-loaded]="mapLoaded()"
+      [class.details-panel-open]="!isFullscreen() && selectedVehicle() !== null"
       [vehicles]="mapVehicles()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
       [isFullscreen]="isFullscreen()"
       [detailsPanelOpen]="!isFullscreen() && selectedVehicle() !== null"
-      [hasLeftOverlays]="true"
       (ready)="onMapReady(fleetMap)"
       (vehicleSelected)="selectVehicle($event)"
       (fullscreenVehicleClick)="onFullscreenVehicleClick($event)"

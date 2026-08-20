@@ -120,15 +120,28 @@
 .tracking-error button { @apply mt-2 cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-[10px] font-semibold text-white; }
 .tracking-map-error {
   @apply absolute left-1/2 top-1/2 z-[650] m-0 w-[min(22rem,calc(100%_-_2rem))] -translate-x-1/2 -translate-y-1/2 bg-white/95 shadow-xl backdrop-blur dark:bg-dark-surface/95;
+  transition: left 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tracking-map-error strong { @apply text-sm; }
 .tracking-map-error p { @apply mt-1; }
 .map-area {
   @apply relative min-w-0 flex-1;
-  background: var(--color-brand-50);
+  background: #f8fafc;
 }
 :host-context(.dark) .map-area {
-  background: var(--color-dark-canvas);
+  background: #0b0f19;
+}
+.map-area app-fleet-map,
+.map-area app-fleet-map ::ng-deep .map-container,
+.map-area app-fleet-map ::ng-deep .maplibregl-canvas-container,
+.map-area app-fleet-map ::ng-deep .maplibregl-canvas {
+  background-color: #f8fafc;
+}
+:host-context(.dark) .map-area app-fleet-map,
+:host-context(.dark) .map-area app-fleet-map ::ng-deep .map-container,
+:host-context(.dark) .map-area app-fleet-map ::ng-deep .maplibregl-canvas-container,
+:host-context(.dark) .map-area app-fleet-map ::ng-deep .maplibregl-canvas {
+  background-color: #0b0f19;
 }
 .map-area app-fleet-map {
   opacity: 0;
@@ -196,6 +209,19 @@
 }
 .map-legend {
   @apply absolute z-[500] bottom-4 left-1/2 -translate-x-1/2;
+  transition: left 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (min-width: 901px) {
+  .map-area.details-panel-open .map-legend,
+  .map-area.details-panel-open .tracking-map-error {
+    left: calc(50% - 10rem);
+  }
+  .map-area app-fleet-map ::ng-deep .maplibregl-ctrl-bottom-right {
+    transition: right 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .map-area app-fleet-map.details-panel-open ::ng-deep .maplibregl-ctrl-bottom-right {
+    right: 20rem;
+  }
 }
 .map-controls-overlay {
   @apply absolute z-[500] right-4 top-4;
@@ -204,7 +230,7 @@
   display: none;
 }
 .details-panel {
-  @apply w-80 shrink-0 overflow-x-hidden overflow-y-auto border-l border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply absolute bottom-0 right-0 top-0 z-[600] w-80 overflow-x-hidden overflow-y-auto border-l border-line bg-white shadow-xl dark:border-dark-line dark:bg-dark-surface;
   animation: details-panel-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: width, transform, opacity;
 }

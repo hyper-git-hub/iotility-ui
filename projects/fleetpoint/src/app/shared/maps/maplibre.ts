@@ -28,6 +28,15 @@ export function createIotMap(
     ...options,
   });
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+  const collapseAttribution = () => {
+    const attribution = map
+      .getContainer()
+      .querySelector<HTMLDetailsElement>('.maplibregl-ctrl-attrib.maplibregl-compact');
+    attribution?.classList.remove('maplibregl-compact-show');
+    if (attribution) attribution.open = false;
+  };
+  collapseAttribution();
+  map.once('load', collapseAttribution);
   replaceNativeTitles(map.getContainer());
   let darkTheme = isDark();
 
@@ -220,9 +229,9 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
         primaryCase: '#d6e4f7',
         secondary: '#dbe8fa',
         secondaryCase: '#c7d8ee',
-        local: '#ffffff',
-        localCase: '#dde4ec',
-        path: '#c2cad4',
+        local: '#f8fafc',
+        localCase: '#aebdce',
+        path: '#8fa2b8',
         rail: '#94a3b8',
         runway: '#d8dee7',
       };
@@ -297,8 +306,8 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
       'service_track',
       palette.local,
       palette.localCase,
-      ['interpolate', ['linear'], ['zoom'], 13, 0.5, 16, 1.6, 19, 5],
-      ['interpolate', ['linear'], ['zoom'], 13, 1, 16, 2.5, 19, 6.5],
+      ['interpolate', ['linear'], ['zoom'], 13, 0.8, 16, 2.3, 19, 5.5],
+      ['interpolate', ['linear'], ['zoom'], 13, 1.6, 16, 3.8, 19, 7.5],
     ],
     [
       'link',
@@ -345,6 +354,29 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
 
   for (const prefix of ['road', 'bridge', 'tunnel']) {
     paint(`${prefix}_path_pedestrian`, 'line-color', palette.path);
+    paint(`${prefix}_path_pedestrian`, 'line-width', [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      14,
+      0.8,
+      16,
+      1.6,
+      19,
+      3.5,
+    ]);
+    paint(`${prefix}_path_pedestrian_casing`, 'line-color', dark ? '#263246' : '#c2cedb');
+    paint(`${prefix}_path_pedestrian_casing`, 'line-width', [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      14,
+      1.4,
+      16,
+      2.6,
+      19,
+      4.8,
+    ]);
     paint(`${prefix}_major_rail`, 'line-color', palette.rail);
     paint(`${prefix}_transit_rail`, 'line-color', palette.rail);
   }

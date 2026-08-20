@@ -7,7 +7,6 @@ import {
   polygonFeature, popupHtml, removeGeoJson, upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
-import { LocationSearch, LocationSelect } from '../map-overlays/location-search';
 
 export type VehicleStatus = 'Moving' | 'Idling' | 'Alert' | 'Offline';
 export interface TrackedVehicle {
@@ -29,7 +28,7 @@ export interface MapZoneOverlay {
   selector: 'app-fleet-map',
   templateUrl: './fleet-map.html',
   styleUrl: './fleet-map.css',
-  imports: [MapControls, LocationSearch],
+  imports: [MapControls],
 })
 export class FleetMap implements AfterViewInit, OnDestroy {
   readonly vehicles = input.required<TrackedVehicle[]>();
@@ -39,7 +38,6 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly fitZoomOffset = input(0);
   readonly selectedVehicleId = input<string | null>(null);
   readonly showOverlays = input(true);
-  readonly hasLeftOverlays = input(false);
   readonly isFullscreen = input(false);
   readonly detailsPanelOpen = input(false);
   readonly vehicleSelected = output<TrackedVehicle>();
@@ -70,8 +68,13 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     });
     effect(() => {
       const panelOpen = this.detailsPanelOpen();
-      const vehicle = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
-      if (vehicle && this.map) this.focusVehicle(vehicle);
+      const isFullscreen = this.isFullscreen();
+      const panelPadding = panelOpen && !isFullscreen && !matchMedia('(max-width: 900px)').matches ? 320 : 0;
+      this.map?.easeTo({
+        padding: { top: 0, bottom: 0, left: 0, right: panelPadding },
+        duration: 400,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+      });
     });
     effect(() => {
       const selectedId = this.selectedVehicleId();
@@ -146,10 +149,6 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     } else {
       void container.requestFullscreen();
     }
-  }
-
-  onLocationSelect(location: LocationSelect): void {
-    this.map?.easeTo({ center: [location.lng, location.lat], zoom: 14, duration: 700 });
   }
 
   get mapInstance(): MapLibreMap | undefined {
@@ -398,7 +397,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       zoom: 16,
       pitch: 55,
       bearing: -18,
-      duration: 900,
+      duration: 1200,
       essential: true,
     });
     const marker = this.markers.get(vehicle.id);

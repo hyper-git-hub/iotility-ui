@@ -1,7 +1,6 @@
 <div #map class="map-container" aria-label="Live vehicle map"></div>
 @if (showOverlays()) {
-  <div class="map-overlays">
-    <app-location-search class="overlay-search" [class.no-left-overlays]="!hasLeftOverlays()" (locationSelect)="onLocationSelect($event)" />
+  <div class="map-overlays" [class.details-panel-open]="detailsPanelOpen() && !isFullscreen()">
     <app-map-controls
       class="overlay-controls"
       [fullscreen]="isFullscreen()"
