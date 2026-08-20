@@ -41,7 +41,7 @@
         @if (loading()) {
           @for (_ of vehicleSkeletons; track $index) {
             <div class="trip-row-skeleton" aria-hidden="true">
-              <ui-skeleton variant="circle" width="2rem" height="2rem" />
+              <ui-skeleton class="trip-thumb-skeleton" width="2.25rem" height="2.25rem" radius="0.5rem" />
               <div class="trip-copy-skeleton">
                 <span class="trip-title-line"><ui-skeleton width="5.25rem" height="0.75rem" radius="0.25rem" /></span>
                 <span class="trip-small-line"><ui-skeleton width="4.75rem" height="0.6rem" radius="0.25rem" /></span>
@@ -58,10 +58,14 @@
               [class.selected]="selectedVehicleId() === vehicle.id"
               (click)="selectVehicle(vehicle)"
             >
-              <span class="driver-avatar">{{
-                (vehicle.vehicle_driver_name || vehicle.registration).slice(0, 1)
-              }}</span
-              ><span class="trip-copy"
+              <span class="vehicle-thumb"
+                ><img
+                  [src]="vehicleImage(vehicleImages()[vehicle.id] || vehicle.vehicle_type_image)"
+                  (error)="useDefaultVehicleImage($event)"
+                  alt=""
+                  aria-hidden="true"
+              /></span>
+              <span class="trip-copy"
                 ><strong>{{ vehicle.registration }}</strong
                 ><small>{{ vehicle.vehicle_driver_name || 'Unassigned' }}</small
                 ><small>{{ vehicle.vehicle_type }}</small></span
