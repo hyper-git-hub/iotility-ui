@@ -13,9 +13,9 @@
   top: 50%;
   margin-top: 50%;
   transform: translate(-50%, -50%);
-  width: 100%;
+  width: 90%;
   height: 120%;
-  background: radial-gradient(circle at center, #8938e7 0%, #7b2fe0 15%, #6d28d9 30%, #4c1d95 50%, #1a0533 70%, #000 100%);
+  background: radial-gradient(circle at center, var(--color-brand-500) 0%, var(--color-brand-600) 15%, var(--color-brand-700) 30%, var(--color-brand-900) 50%, var(--color-brand-950) 70%, #000 100%);
   filter: blur(60px);
   animation: auth-glow-pulse 4s ease-in-out infinite;
 }
@@ -26,8 +26,8 @@
     transform: translate(-50%, -50%) scale(1);
   }
   50% {
-    opacity: 0.7;
-    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.12);
   }
 }
 .auth-brand-row { @apply relative z-10 flex items-center gap-4; }

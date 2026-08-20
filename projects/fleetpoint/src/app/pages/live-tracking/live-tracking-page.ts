@@ -102,6 +102,23 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       if (this.fullscreenTrackingState() === 'enabling') return;
       this.fullscreenTrackingState.set(selected.lastSignalAt ? 'active' : 'waiting');
     });
+
+    // When the user enters fullscreen while a vehicle is selected (details panel
+    // open), automatically activate live tracking for that vehicle.
+    effect(() => {
+      if (!this.isFullscreen()) return;
+      const selected = this.selectedVehicle();
+      if (!selected || this.liveTrackingEnabled()) return;
+      this.enableLiveTracking();
+      this.fullscreenTrackingState.set('enabling');
+      clearTimeout(this.fullscreenTrackingTimeout);
+      this.fullscreenTrackingTimeout = setTimeout(() => {
+        const current = this.selectedVehicle();
+        if (current && this.liveTrackingEnabled()) {
+          this.fullscreenTrackingState.set(current.lastSignalAt ? 'active' : 'waiting');
+        }
+      }, 800);
+    });
   }
 
   ngOnInit(): void {
