@@ -1,4 +1,5 @@
-import maplibregl, { GeoJSONSource, IControl, LngLatBounds, Map, MapOptions } from 'maplibre-gl';
+import { isDevMode } from '@angular/core';
+import maplibregl, { GeoJSONSource, LngLatBounds, Map, MapOptions } from 'maplibre-gl';
 import { attachTooltip } from '@iotility/shared-ui';
 
 export type LatLng = [number, number];
@@ -9,6 +10,27 @@ type LayerWithoutSource<T = maplibregl.LayerSpecification> = T extends { source:
 const LIGHT_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
 const BUILDINGS_LAYER = 'iotility-3d-buildings';
+// Critical OpenFreeMap layers used by our fleet palette. Keep this list in sync
+// when deliberately upgrading or replacing the upstream base style.
+const REQUIRED_STYLE_LAYERS = [
+  'background',
+  'water',
+  'building',
+  'landuse_residential',
+  'road_motorway',
+  'road_trunk_primary',
+  'road_secondary_tertiary',
+  'road_minor',
+  'road_street',
+  'road_service_track',
+  'road_path_pedestrian',
+  'label_city_capital',
+  'label_city',
+  'label_town',
+  'label_village',
+  'highway-name-major',
+  'highway-name-minor',
+] as const;
 
 export function createIotMap(
   container: HTMLElement,
@@ -45,6 +67,7 @@ export function createIotMap(
     applyFleetMapStyle(map, isDark());
     addThreeDimensionalBuildings(map);
     applyAtmosphere(map, isDark());
+    validateFleetStyleLayers(map);
   };
   map.on('style.load', configureStyle);
 
@@ -148,6 +171,15 @@ function isDark(): boolean {
   return document.documentElement.classList.contains('dark');
 }
 
+function validateFleetStyleLayers(map: Map): void {
+  if (!isDevMode()) return;
+  const missingLayers = REQUIRED_STYLE_LAYERS.filter((layerId) => !map.getLayer(layerId));
+  if (!missingLayers.length) return;
+  console.warn(
+    `[Fleet map] OpenFreeMap style schema changed. Missing required layers: ${missingLayers.join(', ')}`,
+  );
+}
+
 function applyEnglishLabels(map: Map): void {
   for (const layer of map.getStyle().layers ?? []) {
     if (layer.type !== 'symbol' || !layer.layout?.['text-field']) continue;
@@ -158,6 +190,7 @@ function applyEnglishLabels(map: Map): void {
       ['get', 'name:en'],
       ['get', 'name_en'],
       ['get', 'name:latin'],
+      ['get', 'name'],
       '',
     ]);
   }
@@ -223,15 +256,17 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
         label: '#1e293b',
         mutedLabel: '#64748b',
         halo: 'rgba(255,255,255,0.94)',
-        motorway: '#2563eb',
-        motorwayCase: '#c3d7f0',
-        primary: '#3b82f6',
-        primaryCase: '#d6e4f7',
-        secondary: '#dbe8fa',
-        secondaryCase: '#c7d8ee',
-        local: '#f8fafc',
-        localCase: '#aebdce',
-        path: '#8fa2b8',
+        // Keep the basemap intentionally neutral in light mode so live routes,
+        // selected vehicles and event markers can own the saturated accent colors.
+        motorway: '#6683a6',
+        motorwayCase: '#c8d2df',
+        primary: '#8399b3',
+        primaryCase: '#d5dde7',
+        secondary: '#e4e9ef',
+        secondaryCase: '#cbd4de',
+        local: '#f7f9fb',
+        localCase: '#d4dbe3',
+        path: '#9aa9ba',
         rail: '#94a3b8',
         runway: '#d8dee7',
       };
@@ -328,8 +363,9 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
       layout(`${prefix}_${kind}_casing`, 'line-cap', 'round');
       layout(`${prefix}_${kind}_casing`, 'line-join', 'round');
     }
-    // Faint glow on motorways so live-tracking trails/markers riding on top read as "on the highway", not floating.
-    paint(`${prefix}_motorway`, 'line-blur', 0.3);
+    // Keep the road itself crisp. A very small blur in dark mode softens aliasing
+    // without competing with route/trail glow layers rendered by the fleet UI.
+    paint(`${prefix}_motorway`, 'line-blur', dark ? 0.2 : 0.05);
   }
 
   const roadMinZooms: Array<[string, number]> = [
@@ -390,23 +426,26 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
     if (layer.id.startsWith('highway-name')) paint(layer.id, 'text-color', palette.mutedLabel);
   }
 
-  for (const [id, minZoom] of [
-    ['poi_r1', 7.5],
-    ['poi_r7', 8.5],
-    ['poi_r20', 9.5],
-    ['poi_transit', 7.5],
+  // Generic POIs are useful context, but they must not compete with fleet overlays.
+  // Bring them in later than settlement/road labels and allow collision handling to
+  // hide labels when the map is busy. Transit remains slightly more prominent.
+  for (const [id, minZoom, opacity] of [
+    ['poi_r1', 10, 0.78],
+    ['poi_r7', 11, 0.72],
+    ['poi_r20', 12, 0.68],
+    ['poi_transit', 9, 0.82],
   ] as const) {
     if (!map.getLayer(id)) continue;
     map.setLayerZoomRange(id, minZoom, 24);
-    paint(id, 'text-color', palette.label);
-    paint(id, 'icon-opacity', 1);
-    paint(id, 'text-opacity', 1);
-    layout(id, 'text-size', ['interpolate', ['linear'], ['zoom'], 8, 9, 13, 10, 17, 12]);
-    layout(id, 'text-padding', 0.5);
-    layout(id, 'icon-padding', 0.5);
-    layout(id, 'text-optional', false);
+    paint(id, 'text-color', palette.mutedLabel);
+    paint(id, 'icon-opacity', opacity);
+    paint(id, 'text-opacity', opacity);
+    layout(id, 'text-size', ['interpolate', ['linear'], ['zoom'], 9, 9, 13, 10, 17, 11.5]);
+    layout(id, 'text-padding', 2);
+    layout(id, 'icon-padding', 2);
+    layout(id, 'text-optional', true);
     layout(id, 'icon-optional', true);
-    layout(id, 'text-variable-anchor', ['top', 'bottom', 'left', 'right', 'top-left', 'top-right']);
+    layout(id, 'text-variable-anchor', ['top', 'bottom', 'left', 'right']);
     layout(id, 'text-radial-offset', 0.65);
     layout(id, 'text-justify', 'auto');
   }
@@ -499,7 +538,7 @@ function addThreeDimensionalBuildings(map: Map): void {
             0,
           ],
         ],
-        'fill-extrusion-opacity': 0.9,
+        'fill-extrusion-opacity': isDark() ? 0.88 : 0.8,
         // Vertical gradient + AO give buildings real form instead of flat cardboard cutouts.
         // Guarded properties below (added post-load) no-op silently on older MapLibre.
         'fill-extrusion-vertical-gradient': true,
@@ -517,7 +556,7 @@ function addThreeDimensionalBuildings(map: Map): void {
 }
 
 function applyAtmosphere(map: Map, dark: boolean): void {
-  // Subtle sky so the 3D tilt (see ThreeDimensionalControl) doesn't cut to flat void at the horizon.
+  // Subtle sky so the 3D tilt doesn't cut to a flat void at the horizon.
   try {
     map.setSky({
       'sky-color': dark ? '#0b0f19' : '#cfe3f7',
@@ -530,35 +569,5 @@ function applyAtmosphere(map: Map, dark: boolean): void {
     });
   } catch {
     // Sky/fog API isn't in every MapLibre version - degrade gracefully to a flat backdrop.
-  }
-}
-
-class ThreeDimensionalControl implements IControl {
-  private map?: Map;
-  private container?: HTMLElement;
-
-  onAdd(map: Map): HTMLElement {
-    this.map = map;
-    const container = document.createElement('div');
-    container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.setAttribute('aria-label', 'Toggle 3D view');
-    button.textContent = '3D';
-    button.style.cssText = 'font:700 10px Inter,sans-serif;width:29px';
-    attachTooltip(button, 'Toggle 3D view', 'left');
-    button.addEventListener('click', () => {
-      const enabled = map.getPitch() > 10;
-      map.easeTo({ pitch: enabled ? 0 : 55, bearing: enabled ? 0 : -18, duration: 600 });
-      button.classList.toggle('active', !enabled);
-    });
-    container.append(button);
-    this.container = container;
-    return container;
-  }
-
-  onRemove(): void {
-    this.container?.remove();
-    this.map = undefined;
   }
 }
