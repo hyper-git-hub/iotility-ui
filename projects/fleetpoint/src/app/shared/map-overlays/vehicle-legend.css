@@ -1,0 +1,19 @@
+@reference "../../../styles.css";
+
+:host {
+  @apply block;
+}
+.vehicle-legend {
+  @apply flex items-center gap-3 rounded-xl px-3 py-2 text-xs shadow-lg
+         bg-white/90 text-muted border border-line backdrop-blur-sm
+         dark:bg-dark-surface/90 dark:text-brand-300 dark:border-dark-line;
+}
+.legend-item {
+  @apply flex items-center gap-1.5;
+}
+.legend-dot {
+  @apply size-2.5 rounded-full;
+}
+.legend-label {
+  @apply whitespace-nowrap;
+}

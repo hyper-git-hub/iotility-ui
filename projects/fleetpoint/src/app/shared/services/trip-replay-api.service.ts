@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
-import { RealtimeVehicleRecord } from './live-tracking-api.service';
+import { DetailReportRecord, RealtimeVehicleRecord } from './live-tracking-api.service';
 
 const FLEET_API = 'https://staging.gateway.iot.vodafone.com.qa/fmsfleet/api';
 export type PlaybackRecord = Record<string, unknown>;
@@ -28,6 +28,14 @@ export class TripReplayApiService {
     return this.http.get<ApiResponse<{ count: number; data: RealtimeVehicleRecord[] }>>(
       `${FLEET_API}/fleet/vehicle`,
       { params: { status: '1', page_category: 'vehicle_real_time_tracking' } },
+    );
+  }
+  getVehicleDetail(): Observable<
+    ApiResponse<{ count: number; data: DetailReportRecord[] }>
+  > {
+    return this.http.get<ApiResponse<{ count: number; data: DetailReportRecord[] }>>(
+      `${FLEET_API}/playback/detail-report`,
+      { params: new HttpParams() },
     );
   }
   getDetailReport(

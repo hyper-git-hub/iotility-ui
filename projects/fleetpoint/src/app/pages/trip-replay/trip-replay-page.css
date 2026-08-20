@@ -59,6 +59,9 @@
 .trip-row-skeleton {
   @apply flex h-[4.625rem] w-full items-start gap-2 border-t border-line px-3 py-3 dark:border-dark-line;
 }
+.trip-thumb-skeleton {
+  @apply mt-1 shrink-0;
+}
 .trip-copy-skeleton {
   @apply min-w-0 flex-1;
 }
@@ -77,8 +80,11 @@
 .trip-row.selected {
   @apply bg-brand-600 text-white hover:bg-brand-600 dark:bg-brand-600;
 }
-.driver-avatar {
-  @apply grid size-8 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700;
+.vehicle-thumb {
+  @apply mt-1 grid size-9 shrink-0 place-items-center;
+}
+.vehicle-thumb img {
+  @apply size-9 object-contain;
 }
 .vehicle-avatar {
   @apply grid size-10 shrink-0 place-items-center;

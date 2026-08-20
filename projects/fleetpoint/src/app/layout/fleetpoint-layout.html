@@ -1,17 +1,21 @@
 <div class="layout-shell">
-  @if (sidebarOpen()) {
-    <button
-      type="button"
-      class="mobile-sidebar-backdrop"
-      aria-label="Close navigation"
-      (click)="closeSidebar()"
-    ></button>
+  @if (!isFullscreen()) {
+    @if (sidebarOpen()) {
+      <button
+        type="button"
+        class="mobile-sidebar-backdrop"
+        aria-label="Close navigation"
+        (click)="closeSidebar()"
+      ></button>
+    }
+    <div class="sidebar-region" [class.open]="sidebarOpen()" (click)="closeSidebar()">
+      <app-fleetpoint-sidebar />
+    </div>
   }
-  <div class="sidebar-region" [class.open]="sidebarOpen()" (click)="closeSidebar()">
-    <app-fleetpoint-sidebar />
-  </div>
   <div class="flex min-w-0 flex-1 flex-col">
-    <app-fleetpoint-header (menuToggle)="openSidebar()" />
+    @if (!isFullscreen()) {
+      <app-fleetpoint-header (menuToggle)="openSidebar()" />
+    }
     <main class="min-h-0 flex-1 overflow-y-auto"><router-outlet /></main>
   </div>
 </div>

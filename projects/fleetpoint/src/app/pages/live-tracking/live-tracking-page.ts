@@ -1,9 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownOption, Skeleton } from '@iotility/shared-ui';
 import { EMPTY, Subscription, catchError, finalize, forkJoin, interval, switchMap, timer } from 'rxjs';
 import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
+import { LiveBadge } from '../../shared/map-overlays/live-badge';
+import { VehicleLegend } from '../../shared/map-overlays/vehicle-legend';
+import { SearchOverlay } from '../../shared/map-overlays/search-overlay';
+import { FullscreenUiService } from '../../shared/services/fullscreen-ui.service';
 import {
   DetailReportRecord,
   LiveTrackingApiService,
@@ -30,7 +34,7 @@ interface LiveVehicle extends TrackedVehicle {
 
 @Component({
   selector: 'app-live-tracking-page',
-  imports: [Skeleton, FleetMap, AllocationForm],
+  imports: [Skeleton, FleetMap, AllocationForm, LiveBadge, VehicleLegend, SearchOverlay],
   templateUrl: './live-tracking-page.html',
   styleUrl: './live-tracking-page.css',
 })
@@ -46,7 +50,12 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly allocationOpen = signal(false);
   protected readonly now = signal(Date.now());
   protected readonly vehicles = signal<LiveVehicle[]>([]);
-  protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Offline'];
+  protected readonly isFullscreen = computed(() => this.fullscreenUi.isFullscreen());
+  protected readonly fullscreenTrackingState = signal<'idle' | 'enabling' | 'waiting' | 'active'>('idle');
+  protected readonly isFullscreenTrackingEnabling = computed(() => this.fullscreenTrackingState() === 'enabling');
+  protected readonly isFullscreenTrackingWaiting = computed(() => this.fullscreenTrackingState() === 'waiting');
+  protected readonly isFullscreenTrackingActive = computed(() => this.fullscreenTrackingState() === 'active');
+  protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Alert', 'Offline'];
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly locationOptions: DropdownOption[] = [
     { id: 'all', label: 'All locations', description: 'Every tracked vehicle' },
@@ -67,6 +76,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private readonly realtimeVehicles = new Set<number>();
   private selectionRequest = 0;
   private requestedVehicleId = '';
+  private fullscreenTrackingTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly api: LiveTrackingApiService,
@@ -74,12 +84,24 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     private readonly vehicleDetailApi: VehicleDetailApiService,
     private readonly router: Router,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly fullscreenUi: FullscreenUiService,
     route: ActivatedRoute,
   ) {
     const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
     this.requestedVehicleId = String(
       navigationState?.['vehicleId'] ?? route.snapshot.queryParamMap.get('vehicle_id') ?? '',
     );
+    effect(() => {
+      const isFullscreen = this.isFullscreen();
+      const enabled = this.liveTrackingEnabled();
+      const selected = this.selectedVehicle();
+      if (!isFullscreen || !enabled || !selected) {
+        this.fullscreenTrackingState.set('idle');
+        return;
+      }
+      if (this.fullscreenTrackingState() === 'enabling') return;
+      this.fullscreenTrackingState.set(selected.lastSignalAt ? 'active' : 'waiting');
+    });
   }
 
   ngOnInit(): void {
@@ -148,10 +170,16 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   }
 
   protected updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); }
+  protected updateSearchValue(value: string): void { this.search.set(value); }
   protected updateLocation(ids: string[]): void { this.locationFilter.set(ids[0] ?? 'all'); }
   protected locationLabel(): string { return 'All locations'; }
   protected selectVehicle(vehicle: TrackedVehicle): void {
-    const previousId = this.selectedVehicle()?.numericId;
+    const current = this.selectedVehicle();
+    if (current && current.id === vehicle.id) {
+      this.clearSelectedVehicle();
+      return;
+    }
+    const previousId = current?.numericId;
     if (previousId !== undefined) this.restoreApiVehicle(previousId);
     const selected = this.vehicles().find((item) => item.id === vehicle.id) ?? vehicle as LiveVehicle;
     this.liveTrackingEnabled.set(false);
@@ -182,6 +210,34 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     if (vehicleId === undefined) return;
     this.realtimeVehicles.delete(vehicleId);
     this.liveTrackingEnabled.set(true);
+  }
+
+  protected toggleLiveTracking(): void {
+    if (this.liveTrackingEnabled()) {
+      this.stopLiveTracking();
+    } else {
+      this.enableLiveTracking();
+    }
+  }
+
+  protected onFullscreenVehicleClick(vehicle: TrackedVehicle): void {
+    const sameVehicle = this.selectedVehicle()?.id === vehicle.id && this.liveTrackingEnabled();
+    if (sameVehicle) {
+      this.stopLiveTracking();
+      return;
+    }
+    this.selectVehicle(vehicle);
+    this.enableLiveTracking();
+    if (this.isFullscreen()) {
+      this.fullscreenTrackingState.set('enabling');
+      clearTimeout(this.fullscreenTrackingTimeout);
+      this.fullscreenTrackingTimeout = setTimeout(() => {
+        const selected = this.selectedVehicle();
+        if (selected && this.liveTrackingEnabled()) {
+          this.fullscreenTrackingState.set(selected.lastSignalAt ? 'active' : 'waiting');
+        }
+      }, 800);
+    }
   }
 
   protected stopLiveTracking(): void {
@@ -345,8 +401,29 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   }
 
+  protected onMapReady(fleetMap: FleetMap): void {
+    this.mapLoaded.set(true);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.fullscreenUi.isFullscreen()) void this.fullscreenUi.toggle();
+  }
+
+  protected statusColor(status: string): string {
+    switch (status) {
+      case 'Moving': return 'var(--color-success)';
+      case 'Idling': return 'var(--color-warning)';
+      case 'Stopped': return '#64748b';
+      case 'Alert': return 'var(--color-danger)';
+      case 'Offline': return 'var(--color-muted)';
+      default: return 'var(--color-muted)';
+    }
+  }
+
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
     void this.realtime.disconnect();
+    clearTimeout(this.fullscreenTrackingTimeout);
   }
 }

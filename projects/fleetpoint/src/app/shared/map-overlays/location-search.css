@@ -1,0 +1,39 @@
+@reference "../../../styles.css";
+
+:host {
+  @apply block;
+}
+.location-search {
+  @apply relative w-72;
+}
+.search-field {
+  @apply flex h-8 items-center gap-2 rounded-lg border border-line bg-white/95 px-3 shadow-lg backdrop-blur-sm
+         dark:border-dark-line dark:bg-dark-surface/95;
+}
+.search-field svg {
+  @apply size-3.5 shrink-0 text-muted;
+}
+.search-field input {
+  @apply min-w-0 h-full flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-muted
+         dark:text-white dark:placeholder:text-brand-300;
+}
+.clear-btn {
+  @apply cursor-pointer text-muted hover:text-ink dark:hover:text-white;
+}
+.spinner {
+  @apply size-3.5 shrink-0 rounded-full border-2 border-muted border-t-transparent animate-spin;
+}
+.results-list {
+  @apply absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-lg border border-line bg-white shadow-lg
+         dark:border-dark-line dark:bg-dark-surface;
+}
+.result-row {
+  @apply flex w-full cursor-pointer items-center gap-2 border-b border-line px-3 py-2 text-left transition last:border-b-0
+         hover:bg-brand-50 dark:border-dark-line dark:hover:bg-dark-canvas;
+}
+.result-icon {
+  @apply size-3 shrink-0 text-muted;
+}
+.result-text {
+  @apply min-w-0 flex-1 truncate text-xs text-ink dark:text-white;
+}
