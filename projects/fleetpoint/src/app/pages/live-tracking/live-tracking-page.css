@@ -375,7 +375,15 @@
   @apply flex flex-col gap-2;
 }
 .quick-actions button {
-  @apply flex justify-between rounded-xl bg-canvas px-3 py-2.5 text-left text-xs text-ink hover:text-brand-600 dark:bg-dark-canvas dark:text-white;
+  @apply flex items-center justify-between rounded-xl bg-canvas px-3 py-2.5 text-left text-xs text-ink hover:text-brand-600 dark:bg-dark-canvas dark:text-white;
+}
+.quick-actions button span:first-child {
+  @apply flex items-center gap-2;
+}
+.quick-actions button img {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
 }
 @media (max-width: 900px) {
   .vehicle-panel {

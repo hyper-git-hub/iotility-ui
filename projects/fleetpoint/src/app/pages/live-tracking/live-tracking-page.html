@@ -231,7 +231,7 @@
       <section>
         <h2>Location</h2>
         <div class="location-card">
-          <img src="assets/fleetpoint/icons/map-pin.svg" alt="" aria-hidden="true">
+          <img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" aria-hidden="true">
           <span>{{ vehicle.location }}</span>
         </div>
       </section>
@@ -250,9 +250,15 @@
       <section>
         <h2>Quick actions</h2>
         <div class="quick-actions">
-          <button type="button" (click)="viewTripHistory()">View trip history <span>›</span></button
-          ><button type="button">View all alerts <span>›</span></button
-          ><button type="button">Contact driver <span>›</span></button>
+          <button type="button" (click)="viewTripHistory()">
+            <span><img src="assets/fleetpoint/icons/clock-brand.svg" alt="" aria-hidden="true" />View trip history</span><span>›</span>
+          </button>
+          <button type="button" (click)="viewAllAlerts()">
+            <span><img src="assets/fleetpoint/icons/warning-brand.svg" alt="" aria-hidden="true" />View all alerts</span><span>›</span>
+          </button>
+          <button type="button">
+            <span><img src="assets/fleetpoint/icons/phone-brand.svg" alt="" aria-hidden="true" />Contact driver</span><span>›</span>
+          </button>
         </div>
       </section>
     </aside>

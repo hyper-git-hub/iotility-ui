@@ -2,7 +2,22 @@
 
 .auth-shell { @apply flex min-h-screen bg-canvas dark:bg-dark-canvas; }
 .auth-brand-panel { @apply relative hidden w-[63%] overflow-hidden bg-brand-950 p-10 text-white lg:flex lg:flex-col lg:justify-between; }
-.auth-glow { @apply absolute inset-0; background: radial-gradient(ellipse at center bottom,var(--color-brand-800) 0%,var(--color-brand-950) 48%,var(--color-ink) 100%); }
+.auth-glow {
+  @apply absolute inset-0;
+  background: #000;
+}
+.auth-glow::before {
+  content: '';
+  @apply absolute;
+  left: 50%;
+  top: 50%;
+  margin-top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 120%;
+  background: radial-gradient(circle at center, #8938e7 0%, #7b2fe0 15%, #6d28d9 30%, #4c1d95 50%, #1a0533 70%, #000 100%);
+  filter: blur(60px);
+}
 .auth-brand-row { @apply relative z-10 flex items-center gap-4; }
 .auth-brand-row img { @apply h-7 w-auto max-w-36; }
 .auth-brand-row span { @apply h-7 w-px bg-brand-400/60; }

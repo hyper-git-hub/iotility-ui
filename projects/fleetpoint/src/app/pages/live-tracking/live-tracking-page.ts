@@ -263,6 +263,11 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     if (vehicle) void this.router.navigate(['/fleetpoint/trip-replay'], { state: { vehicleId: vehicle.numericId } });
   }
 
+  protected viewAllAlerts(): void {
+    const vehicle = this.selectedVehicle();
+    if (vehicle) void this.router.navigate(['/fleetpoint/violations'], { state: { vehicleId: vehicle.numericId } });
+  }
+
   protected vehicleImage(image: string | null): string {
     const value = image?.trim();
     return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase())
