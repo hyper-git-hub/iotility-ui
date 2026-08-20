@@ -129,7 +129,7 @@
   </section>
 
   @if (selectedVehicle(); as vehicle) {
-    <aside class="details-panel" [class.panel-hidden]="isFullscreen()">
+    <aside class="details-panel" animate.leave="details-panel-leave" [class.panel-hidden]="isFullscreen()">
       <header>
         <div>
           <strong>{{ vehicle.id }}</strong

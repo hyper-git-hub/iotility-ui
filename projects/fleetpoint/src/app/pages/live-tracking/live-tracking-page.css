@@ -153,7 +153,37 @@
   display: none;
 }
 .details-panel {
-  @apply w-80 shrink-0 overflow-y-auto border-l border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply w-80 shrink-0 overflow-x-hidden overflow-y-auto border-l border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  animation: details-panel-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: width, transform, opacity;
+}
+.details-panel.details-panel-leave {
+  animation: details-panel-out 300ms cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+@keyframes details-panel-in {
+  from {
+    width: 0;
+    opacity: 0;
+    transform: translateX(2rem);
+  }
+  to {
+    width: 20rem;
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes details-panel-out {
+  from {
+    width: 20rem;
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    width: 0;
+    opacity: 0;
+    transform: translateX(2rem);
+  }
 }
 .details-panel > header {
   @apply flex items-start justify-between border-b border-line p-4 dark:border-dark-line;
@@ -276,10 +306,39 @@
   }
   .details-panel {
     @apply absolute bottom-0 right-0 top-0 z-[600] w-72 shadow-2xl;
+    animation-name: details-panel-overlay-in;
+  }
+  .details-panel.details-panel-leave {
+    animation: details-panel-overlay-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+  @keyframes details-panel-overlay-in {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes details-panel-overlay-out {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
   }
 }
 @media (max-width: 640px) {
   .vehicle-panel {
     @apply hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .details-panel {
+    animation: none;
   }
 }

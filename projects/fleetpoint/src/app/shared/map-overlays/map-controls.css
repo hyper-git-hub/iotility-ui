@@ -24,4 +24,7 @@
 }
 .map-btn svg {
   @apply size-4;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

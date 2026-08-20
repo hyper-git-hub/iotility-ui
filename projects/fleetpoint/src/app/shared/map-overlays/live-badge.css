@@ -4,9 +4,9 @@
   @apply block;
 }
 .live-badge {
-  @apply flex items-center gap-2 rounded-lg px-3 py-1 text-xs font-medium shadow-lg
-         bg-white/90 text-ink border border-line backdrop-blur-sm
-         dark:bg-dark-surface/90 dark:text-white dark:border-dark-line;
+  @apply flex items-center gap-2 rounded-lg px-3 py-1 text-xs shadow-lg
+         bg-white/90 text-muted border border-line backdrop-blur-sm
+         dark:bg-dark-surface/90 dark:text-brand-300 dark:border-dark-line;
 }
 .live-badge .live-dot {
   @apply size-2 rounded-full bg-online;
@@ -19,6 +19,16 @@
 .badge-text,
 .badge-skeleton {
   @apply whitespace-nowrap flex items-center;
+  font-variant-numeric: tabular-nums;
+}
+.badge-skeleton {
+  @apply relative;
+}
+.badge-skeleton-copy {
+  @apply invisible;
+}
+.badge-skeleton ui-skeleton {
+  @apply absolute left-0 top-1/2 -translate-y-1/2;
 }
 @keyframes live-dot-pulse {
   0%, 100% {
