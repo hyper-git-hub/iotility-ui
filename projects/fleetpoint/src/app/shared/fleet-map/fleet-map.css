@@ -61,23 +61,51 @@
 }
 
 :host ::ng-deep .maplibregl-popup-content {
+  --vehicle-popup-surface: #fff;
   min-width: 11rem;
   border-radius: 0.75rem;
   padding: 0.625rem 0.75rem;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  background: #fff;
+  background: var(--vehicle-popup-surface);
   color: var(--color-ink);
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
 }
-:host ::ng-deep .maplibregl-popup-tip {
-  display: none;
+:host ::ng-deep .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+:host ::ng-deep .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+:host ::ng-deep .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: #fff;
+}
+:host ::ng-deep .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+:host ::ng-deep .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+:host ::ng-deep .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: #fff;
+}
+:host ::ng-deep .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: #fff;
+}
+:host ::ng-deep .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: #fff;
 }
 :host-context(.dark) ::ng-deep .maplibregl-popup-content {
+  --vehicle-popup-surface: var(--color-dark-surface);
   background: var(--color-dark-surface);
   color: #fff;
 }
-:host-context(.dark) ::ng-deep .maplibregl-popup-tip {
+:host-context(.dark) ::ng-deep .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+:host-context(.dark) ::ng-deep .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+:host-context(.dark) ::ng-deep .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--color-dark-surface);
+}
+:host-context(.dark) ::ng-deep .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+:host-context(.dark) ::ng-deep .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+:host-context(.dark) ::ng-deep .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
   border-top-color: var(--color-dark-surface);
+}
+:host-context(.dark) ::ng-deep .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--color-dark-surface);
+}
+:host-context(.dark) ::ng-deep .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--color-dark-surface);
 }
 
 :host ::ng-deep .vehicle-popup {
@@ -99,11 +127,12 @@
   color: var(--color-muted);
 }
 :host ::ng-deep .vp-text {
-  font-size: 0.6875rem;
-  color: var(--color-ink);
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--color-muted);
 }
 :host-context(.dark) ::ng-deep .vp-text {
-  color: #fff;
+  color: var(--color-brand-300);
 }
 :host ::ng-deep .vp-thumb {
   width: 2rem;
@@ -151,8 +180,10 @@
 :host ::ng-deep .vp-status {
   font-weight: 600;
 }
+:host ::ng-deep .vp-detail {
+  margin-left: 0.25rem;
+}
 :host ::ng-deep .vp-location {
-  font-size: 0.625rem;
   color: var(--color-muted);
 }
 :host ::ng-deep .vp-foot {

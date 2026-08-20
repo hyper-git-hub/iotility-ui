@@ -175,28 +175,31 @@
         <h2>Live data</h2>
         <div class="detail-grid">
           <article>
-            <span>Speed</span><strong>{{ vehicle.speed }} km/h</strong>
+            <div class="detail-label"><img src="assets/fleetpoint/icons/speedometer.svg" alt="" aria-hidden="true"><span>Speed</span></div><strong>{{ vehicle.speed }} km/h</strong>
           </article>
           <article>
-            <span>Ignition</span><strong>{{ vehicle.ignition ? 'On' : 'Off' }}</strong>
+            <div class="detail-label"><img src="assets/fleetpoint/icons/ignition.svg" alt="" aria-hidden="true"><span>Ignition</span></div><strong>{{ vehicle.ignition ? 'On' : 'Off' }}</strong>
           </article>
           <article>
-            <span>Status</span><strong>{{ vehicle.status }}</strong>
+            <div class="detail-label"><img src="assets/fleetpoint/icons/vehicle-status.svg" alt="" aria-hidden="true"><span>Status</span></div><strong>{{ vehicle.status }}</strong>
           </article>
           <article>
-            <span>Battery</span><strong>{{ vehicle.battery === null ? '—' : vehicle.battery + '%' }}</strong>
+            <div class="detail-label"><img src="assets/fleetpoint/icons/battery.svg" alt="" aria-hidden="true"><span>Battery</span></div><strong>{{ vehicle.battery === null ? '—' : vehicle.battery + '%' }}</strong>
           </article>
           <article>
-            <span>Seat belt</span><strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
+            <div class="detail-label"><img src="assets/fleetpoint/icons/seat-belt.svg" alt="" aria-hidden="true"><span>Seat belt</span></div><strong>{{ vehicle.seatBelt ? 'Fastened' : 'Not detected' }}</strong>
           </article>
           <article>
-            <span>Last signal</span><strong>{{ lastSignalLabel(vehicle) }}</strong>
+            <div class="detail-label"><img src="assets/fleetpoint/icons/clock-muted.svg" alt="" aria-hidden="true"><span>Last signal</span></div><strong>{{ lastSignalLabel(vehicle) }}</strong>
           </article>
         </div>
       </section>
       <section>
         <h2>Location</h2>
-        <div class="location-card">⌖ {{ vehicle.location }}</div>
+        <div class="location-card">
+          <img src="assets/fleetpoint/icons/map-pin.svg" alt="" aria-hidden="true">
+          <span>{{ vehicle.location }}</span>
+        </div>
       </section>
       <section>
         <h2>Driver</h2>

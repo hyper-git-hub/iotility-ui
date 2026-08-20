@@ -231,6 +231,12 @@
 .detail-grid article {
   @apply rounded-xl bg-canvas p-3 dark:bg-dark-canvas;
 }
+.detail-label {
+  @apply flex items-center gap-1.5;
+}
+.detail-label img {
+  @apply size-3.5 shrink-0;
+}
 .detail-grid span {
   @apply block text-[10px] text-muted dark:text-brand-300;
 }
@@ -238,7 +244,10 @@
   @apply mt-1 block text-xs text-ink dark:text-white;
 }
 .location-card {
-  @apply rounded-xl bg-canvas p-3 text-xs text-ink dark:bg-dark-canvas dark:text-white;
+  @apply flex items-start gap-2 rounded-xl bg-canvas p-3 text-xs text-ink dark:bg-dark-canvas dark:text-white;
+}
+.location-card img {
+  @apply mt-0.5 size-3.5 shrink-0;
 }
 .driver-card {
   @apply flex items-center gap-3;
