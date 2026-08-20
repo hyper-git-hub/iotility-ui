@@ -387,8 +387,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   private focusVehicle(vehicle: TrackedVehicle): void {
     if (!this.map) return;
-    this.map.jumpTo({ center: [vehicle.lng, vehicle.lat], zoom: 16 });
-    this.map.easeTo({ pitch: 55, bearing: -18, duration: 180, easing: (t) => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2 });
+    this.map.flyTo({
+      center: [vehicle.lng, vehicle.lat],
+      zoom: 16,
+      pitch: 55,
+      bearing: -18,
+      duration: 900,
+      essential: true,
+    });
     const marker = this.markers.get(vehicle.id);
     if (marker && marker.getPopup() && !marker.getPopup()?.isOpen()) marker.togglePopup();
   }
