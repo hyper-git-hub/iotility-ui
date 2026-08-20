@@ -1,5 +1,5 @@
 import {
-  AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, signal, viewChild,
+  AfterViewInit, Component, ElementRef, OnDestroy, effect, inject, input, output, signal, viewChild,
 } from '@angular/core';
 import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import {
@@ -7,6 +7,7 @@ import {
   polygonFeature, popupHtml, removeGeoJson, upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
+import { FullscreenUiService } from '../services/fullscreen-ui.service';
 
 export type VehicleStatus = 'Moving' | 'Idling' | 'Alert' | 'Offline';
 export interface TrackedVehicle {
@@ -44,6 +45,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly fullscreenVehicleClick = output<TrackedVehicle>();
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
+  private readonly fullscreenUi = inject(FullscreenUiService);
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
   private fittedVehicleSet = '';
@@ -141,14 +143,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   onFullscreenToggle(): void {
-    if (!this.mapElement) return;
-    const container = this.mapElement().nativeElement.closest('.map-area') ?? this.mapElement().nativeElement.parentElement;
-    if (!container) return;
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      void container.requestFullscreen();
-    }
+    this.fullscreenUi.toggle();
+    requestAnimationFrame(() => requestAnimationFrame(() => this.map?.resize()));
   }
 
   get mapInstance(): MapLibreMap | undefined {
