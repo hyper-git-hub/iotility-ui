@@ -77,6 +77,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private selectionRequest = 0;
   private requestedVehicleId = '';
   private fullscreenTrackingTimeout?: ReturnType<typeof setTimeout>;
+  private wasFullscreen = false;
 
   constructor(
     private readonly api: LiveTrackingApiService,
@@ -104,9 +105,14 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     });
 
     // When the user enters fullscreen while a vehicle is selected (details panel
-    // open), automatically activate live tracking for that vehicle.
+    // open), automatically activate live tracking for that vehicle. This only
+    // fires on the transition into fullscreen, so the marker can still toggle
+    // tracking off while already in fullscreen.
     effect(() => {
-      if (!this.isFullscreen()) return;
+      const isFullscreen = this.isFullscreen();
+      const enteringFullscreen = isFullscreen && !this.wasFullscreen;
+      this.wasFullscreen = isFullscreen;
+      if (!enteringFullscreen) return;
       const selected = this.selectedVehicle();
       if (!selected || this.liveTrackingEnabled()) return;
       this.enableLiveTracking();
@@ -238,9 +244,23 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   }
 
   protected onFullscreenVehicleClick(vehicle: TrackedVehicle): void {
-    const sameVehicle = this.selectedVehicle()?.id === vehicle.id && this.liveTrackingEnabled();
+    const sameVehicle = this.selectedVehicle()?.id === vehicle.id;
     if (sameVehicle) {
-      this.stopLiveTracking();
+      // In fullscreen the marker always toggles live tracking for the
+      // currently selected vehicle — it never deselects.
+      if (this.liveTrackingEnabled()) {
+        this.stopLiveTracking();
+      } else {
+        this.enableLiveTracking();
+        this.fullscreenTrackingState.set('enabling');
+        clearTimeout(this.fullscreenTrackingTimeout);
+        this.fullscreenTrackingTimeout = setTimeout(() => {
+          const selected = this.selectedVehicle();
+          if (selected && this.liveTrackingEnabled()) {
+            this.fullscreenTrackingState.set(selected.lastSignalAt ? 'active' : 'waiting');
+          }
+        }, 800);
+      }
       return;
     }
     this.selectVehicle(vehicle);
