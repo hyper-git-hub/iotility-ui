@@ -1,6 +1,22 @@
+@if (navigationProgress() !== 'idle') {
+  <div
+    class="route-progress"
+    [class.complete]="navigationProgress() === 'complete'"
+    role="progressbar"
+    aria-label="Loading page"
+    aria-valuetext="Loading"
+  >
+    <span></span>
+  </div>
+}
+
 <router-outlet />
 <app-feedback-dialog />
-<ui-blocking-loader [visible]="authLogout.loggingOut()" label="Signing you out" message="Securely closing your IoTility session..." />
+<ui-blocking-loader
+  [visible]="authLogout.loggingOut()"
+  label="Signing you out"
+  message="Securely closing your IoTility session..."
+/>
 
 @if (loading.isVisible()) {
   <div class="fixed inset-0 z-[3000]">
