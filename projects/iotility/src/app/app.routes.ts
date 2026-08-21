@@ -1,8 +1,27 @@
 import { Routes } from '@angular/router';
-import { loadRemoteModule } from '@angular-architects/native-federation-v4';
+import { initFederation, loadRemoteModule } from '@angular-architects/native-federation-v4';
 import { authGuard, guestGuard } from './shared/guards/auth.guard';
 
 const fleetpointDashboard = 'fleetpoint/dashboard';
+const fleetpointManifestUrl = 'federation.manifest.json';
+
+type FleetpointRoutesModule = { routes: Routes };
+
+// The federation orchestrator caches remote entries in memory on globalThis.
+// If the fleetpoint dev server rebuilt (e.g. after a git pull or code change),
+// the cached chunk URLs are stale and module loading fails. Retry once after
+// dropping the cache and re-initializing federation so navigation to the
+// fleetpoint routes always recovers instead of silently falling back.
+async function loadFleetpointRoutes(): Promise<FleetpointRoutesModule> {
+  try {
+    return (await loadRemoteModule('fleetpoint', './Routes')) as FleetpointRoutesModule;
+  } catch (error) {
+    console.warn('Fleetpoint module load failed; re-initializing federation.', error);
+    delete (globalThis as Record<string, unknown>)['__NATIVE_FEDERATION__'];
+    await initFederation(fleetpointManifestUrl);
+    return (await loadRemoteModule('fleetpoint', './Routes')) as FleetpointRoutesModule;
+  }
+}
 
 export const routes: Routes = [
   {
@@ -15,6 +34,15 @@ export const routes: Routes = [
     canMatch: [guestGuard],
     loadChildren: () => import('./auth/auth.routes').then((module) => module.AUTH_ROUTES),
   },
+
+  // Declared before the empty host-layout route so the fleetpoint remote can
+  // never be shadowed by a prefix-matching parent route.
+  {
+    path: 'fleetpoint',
+    canMatch: [authGuard],
+    loadChildren: () => loadFleetpointRoutes().then((module) => module.routes),
+  },
+  { path: 'fleet', pathMatch: 'full', redirectTo: fleetpointDashboard },
 
   {
     path: 'home',
@@ -63,13 +91,8 @@ export const routes: Routes = [
     ],
   },
 
-  {
-    path: 'fleetpoint',
-    canMatch: [authGuard],
-    loadChildren: () => loadRemoteModule('fleetpoint', './Routes').then((module) => module.routes),
-  },
-  { path: 'fleet', redirectTo: fleetpointDashboard },
-
+  // Cleanup: preserve deep links by redirecting known fleetpoint short-hosts,
+  // then fall back to home as the last resort (never the first choice).
   {
     path: '**',
     redirectTo: 'home',

@@ -7,6 +7,12 @@ const manifestUrl = 'federation.manifest.json';
 const remoteReadyAttempts = 40;
 const remoteReadyDelayMs = 300;
 
+// The federation orchestrator caches remote entries in memory on globalThis.
+// When the remote dev server rebuilds (e.g. after a git pull or code change),
+// the cached chunk URLs become stale and the app fails to load. Clear the
+// cache on every startup so the remote entry is always re-fetched.
+delete (globalThis as Record<string, unknown>)['__NATIVE_FEDERATION__'];
+
 const delay = (milliseconds: number) =>
   new Promise<void>((resolve) => globalThis.setTimeout(resolve, milliseconds));
 
