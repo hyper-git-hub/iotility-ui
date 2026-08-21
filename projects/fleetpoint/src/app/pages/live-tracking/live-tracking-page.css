@@ -263,19 +263,40 @@
   }
 }
 .details-panel > header {
-  @apply flex items-start justify-between border-b border-line p-4 dark:border-dark-line;
+  @apply flex items-center gap-3 border-b border-line p-4 dark:border-dark-line;
+}
+.vehicle-avatar {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+.vehicle-avatar img {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: contain;
 }
 .details-panel header div {
-  @apply min-w-0;
+  @apply min-w-0 flex-1;
 }
 .details-panel header strong {
-  @apply mr-2 text-sm text-ink dark:text-white;
+  margin-right: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-ink);
+}
+:host-context(.dark) .details-panel header strong {
+  color: var(--color-white);
 }
 .details-panel header > div > span {
   @apply rounded-full bg-success/10 px-2 py-1 text-[9px];
 }
 .details-panel header small {
-  @apply mt-1 block text-xs text-muted dark:text-brand-300;
+  margin-top: 0.25rem;
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+:host-context(.dark) .details-panel header small {
+  color: var(--color-brand-300);
 }
 .details-panel header button {
   @apply text-xl text-muted hover:text-danger;

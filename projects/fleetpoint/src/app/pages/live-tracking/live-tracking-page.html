@@ -161,6 +161,12 @@
   @if (selectedVehicle(); as vehicle) {
     <aside class="details-panel" animate.leave="details-panel-leave" [class.panel-hidden]="isFullscreen()">
       <header>
+        <span class="vehicle-avatar"
+          ><img
+            [src]="vehicleImage(vehicle.image)"
+            (error)="useDefaultVehicleImage($event)"
+            alt="Vehicle"
+        /></span>
         <div>
           <strong>{{ vehicle.id }}</strong
           ><span [class]="'state-' + vehicle.status.toLowerCase()">{{ vehicle.status }}</span
