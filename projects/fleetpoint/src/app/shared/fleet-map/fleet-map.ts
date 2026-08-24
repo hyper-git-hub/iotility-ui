@@ -218,7 +218,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       <div class="vehicle-marker${selected ? ' selected' : ''}"
         style="width:${size}px;height:${size}px;border-color:${color};
           box-shadow:0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}">
-        <img src="${image}" alt="${vehicle.id}">
+        <img src="${image}" alt="${vehicle.id}" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'">
       </div>
     `);
   }
@@ -231,7 +231,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     return `
       <div class="vehicle-popup">
         <div class="vp-head">
-          <img class="vp-thumb" src="${this.vehicleImageUrl(vehicle.image)}" alt="" />
+          <img class="vp-thumb" src="${this.vehicleImageUrl(vehicle.image)}" alt="" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'" />
           <div class="vp-title">
             <strong>${vehicle.id}</strong>
             <small>${vehicle.model}</small>

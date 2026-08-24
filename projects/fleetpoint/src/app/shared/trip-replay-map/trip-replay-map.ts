@@ -79,6 +79,12 @@ export interface TripReplayEvent {
   positionIndex: number;
   detail: string;
 }
+interface EventMarkerRecord {
+  event: TripReplayEvent;
+  marker: maplibregl.Marker;
+  element: HTMLElement;
+  content: HTMLElement;
+}
 
 @Component({
   selector: 'app-trip-replay-map',
@@ -88,6 +94,7 @@ export interface TripReplayEvent {
 export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly positions = input.required<TripPosition[]>();
   readonly events = input<TripReplayEvent[]>([]);
+  readonly selectedEventId = input<string | null>(null);
   readonly positionIndex = input(0);
   readonly playbackActive = input(false);
   readonly playbackSpeed = input(1);
@@ -103,7 +110,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private pendingVehicle?: { position: LatLng; heading: number };
   private vehicleVisible = false;
   private endpointMarkers: maplibregl.Marker[] = [];
-  private eventMarkers: maplibregl.Marker[] = [];
+  private eventMarkers: EventMarkerRecord[] = [];
+  // One shared, theme-aware detail card reused for every event dot: hovering a
+  // dot previews it, clicking pins it until another event is selected.
+  private readonly eventCard = new maplibregl.Popup({
+    closeButton: false,
+    closeOnClick: false,
+    offset: 16,
+  });
+  private eventCardHideTimer?: number;
   private roadCoordinates: LatLng[] = [];
   private roadDistances: number[] = [];
   private positionRoadIndexes: number[] = [];
@@ -162,6 +177,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     effect(() => {
       const index = this.positionIndex();
       if (this.map) this.updateVehicle(index);
+    });
+    effect(() => {
+      if (!this.map) return;
+      this.selectedEventId();
+      this.applyEventSelection();
     });
   }
 
@@ -251,22 +271,35 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       const element = markerElement(
         `<span aria-hidden="true" style="display:grid;place-items:center;width:18px;height:18px;border:2px solid #fff;border-radius:50%;background:${color};color:#fff;font:700 10px/1 sans-serif;box-shadow:0 2px 7px #18223855">${glyph}</span>`,
       );
+      element.classList.add('event-dot', `type-${event.type}`);
       element.setAttribute('aria-label', `${event.label}: ${event.detail}`);
       element.setAttribute('role', 'button');
       element.tabIndex = 0;
-      attachTooltip(element, `${event.label} · ${event.detail}`, 'top');
+      const marker = new maplibregl.Marker({ element })
+        .setLngLat([point[1], point[0]])
+        .addTo(this.map);
+      const record: EventMarkerRecord = {
+        event,
+        marker,
+        element,
+        content: this.eventCardContent(event),
+      };
+      // Hovering previews the themed detail card; it stays reachable while the
+      // cursor is over the dot or the card itself, and pins when selected.
+      element.addEventListener('mouseenter', () => this.showEventCard(record));
+      element.addEventListener('mouseleave', () => this.queueHideEventCard());
+      record.content.addEventListener('mouseenter', () =>
+        clearTimeout(this.eventCardHideTimer),
+      );
+      record.content.addEventListener('mouseleave', () => this.queueHideEventCard());
       element.addEventListener('click', () => this.eventSelected.emit(event));
       element.addEventListener('keydown', (keyboardEvent) => {
         if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ')
           this.eventSelected.emit(event);
       });
-      this.eventMarkers.push(
-        new maplibregl.Marker({ element })
-          .setLngLat([point[1], point[0]])
-          .setPopup(popup(`${event.label} · ${event.detail}`))
-          .addTo(this.map),
-      );
+      this.eventMarkers.push(record);
     }
+    this.applyEventSelection();
     // Ease into the cinematic pitch/bearing rather than snapping to it, so the
     // very first frame of a trip doesn't feel like a hard cut.
     this.map.easeTo({ pitch: 42, bearing: -20, duration: 700 });
@@ -381,9 +414,89 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.lastRenderedRouteIndex = -1;
     this.vehicleOverlay?.setProps({ layers: [] });
     this.endpointMarkers.forEach((item) => item.remove());
-    this.eventMarkers.forEach((item) => item.remove());
+    this.eventMarkers.forEach((record) => record.marker.remove());
+    this.hideEventCard();
     this.endpointMarkers = [];
     this.eventMarkers = [];
+  }
+
+  // Keeps the map in sync with whichever event is selected anywhere in the UI:
+  // enlarges its dot and pins the shared detail card on it.
+  private applyEventSelection(): void {
+    const selectedId = this.selectedEventId();
+    let selectedRecord: EventMarkerRecord | undefined;
+    for (const record of this.eventMarkers) {
+      const isSelected = record.event.id === selectedId;
+      record.element.classList.toggle('selected', isSelected);
+      if (isSelected) selectedRecord = record;
+    }
+    if (selectedRecord) this.showEventCard(selectedRecord);
+    else this.hideEventCard();
+  }
+
+  private showEventCard(record: EventMarkerRecord): void {
+    clearTimeout(this.eventCardHideTimer);
+    if (!this.map) return;
+    this.eventCard
+      .setLngLat(record.marker.getLngLat())
+      .setDOMContent(record.content)
+      .addTo(this.map);
+  }
+
+  // Small delay so moving the cursor between the dot and the card (or within
+  // the card) never makes it flicker away mid-read. When a different event is
+  // pinned by selection, the card snaps back to that one instead of hiding.
+  private queueHideEventCard(): void {
+    if (this.eventCardHideTimer !== undefined) clearTimeout(this.eventCardHideTimer);
+    this.eventCardHideTimer = window.setTimeout(() => {
+      this.eventCardHideTimer = undefined;
+      const selectedId = this.selectedEventId();
+      const selectedRecord =
+        selectedId === null
+          ? undefined
+          : this.eventMarkers.find((item) => item.event.id === selectedId);
+      if (selectedRecord) this.showEventCard(selectedRecord);
+      else this.hideEventCard();
+    }, 90);
+  }
+
+  private hideEventCard(): void {
+    clearTimeout(this.eventCardHideTimer);
+    this.eventCardHideTimer = undefined;
+    this.eventCard.remove();
+  }
+
+  // Built with DOM APIs + textContent so API-sourced labels can never inject
+  // markup, and every element picks up its color from theme CSS variables.
+  private eventCardContent(event: TripReplayEvent): HTMLElement {
+    const position = this.positions()[Math.max(0, event.positionIndex)];
+    const time = position ? this.clockTime(position.timestamp ?? position.time) : '—:—';
+    const speed = position ? ` · ${position.speed} km/h` : '';
+    const root = document.createElement('div');
+    root.className = `trip-event-popup type-${event.type}`;
+    const header = document.createElement('header');
+    const dot = document.createElement('i');
+    dot.setAttribute('aria-hidden', 'true');
+    const title = document.createElement('strong');
+    title.textContent = event.label;
+    header.append(dot, title);
+    const meta = document.createElement('p');
+    meta.className = 'meta';
+    meta.textContent = `${time}${speed}`;
+    const detail = document.createElement('p');
+    detail.className = 'detail';
+    detail.textContent = event.detail;
+    root.append(header, meta, detail);
+    return root;
+  }
+
+  private clockTime(value: string | undefined): string {
+    if (!value) return '—:—';
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime()))
+      return new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit', hour12: false })
+        .format(date);
+    return value.match(/\b\d{1,2}:\d{2}\b/)?.[0] ?? value;
   }
 
   private async getRoadCoordinates(positions: TripPosition[]): Promise<LatLng[]> {
@@ -946,6 +1059,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.readyFallback);
+    clearTimeout(this.eventCardHideTimer);
     this.cancelMovement();
     this.stopCameraLoop();
     this.routeRequest?.abort();

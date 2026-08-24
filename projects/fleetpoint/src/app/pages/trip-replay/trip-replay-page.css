@@ -157,6 +157,67 @@
 .trip-status-reveal {
   @apply flex items-center gap-2;
 }
+.map-event-alert {
+  @apply absolute right-4 top-4 z-[500] flex max-w-[17rem] items-start gap-2.5 rounded-xl border border-line bg-white/95 px-3.5 py-3 shadow-lg backdrop-blur dark:border-dark-line dark:bg-dark-surface/95;
+  border-left: 4px solid var(--color-danger);
+  animation: event-alert-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.map-event-alert svg {
+  @apply mt-px size-4 shrink-0 fill-danger/15 stroke-danger;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.map-event-alert strong {
+  @apply block text-xs text-ink dark:text-white;
+}
+.map-event-alert small {
+  @apply mt-0.5 block text-[10px] leading-snug text-muted dark:text-brand-300;
+}
+@keyframes event-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.map-hud {
+  @apply absolute left-4 top-4 z-[500] flex items-center gap-3 rounded-xl border border-line bg-white/95 py-2 pe-4 ps-3 shadow-lg backdrop-blur dark:border-dark-line dark:bg-dark-surface/95;
+}
+.hud-speed {
+  @apply flex flex-col items-center leading-none;
+}
+.hud-speed b {
+  @apply text-lg font-black tabular-nums text-brand-600 dark:text-brand-400;
+}
+.hud-speed small,
+.hud-time small {
+  @apply mt-0.5 text-[9px] text-muted dark:text-brand-300;
+}
+.hud-divider {
+  @apply h-8 w-px bg-line dark:bg-dark-line;
+}
+.hud-time {
+  @apply flex flex-col leading-none;
+}
+.hud-time strong {
+  @apply text-xs font-bold tabular-nums text-ink dark:text-white;
+}
+.map-legend {
+  @apply absolute bottom-4 left-4 z-[500] flex max-w-[calc(100%_-_10rem)] flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-white/95 px-3 py-2 shadow-lg backdrop-blur dark:border-dark-line dark:bg-dark-surface/95;
+}
+.legend-item {
+  @apply flex items-center gap-1.5 text-[9px] font-medium text-muted dark:text-brand-300;
+}
+.legend-item i {
+  @apply size-2.5 rounded-full;
+}
+.legend-item i.square {
+  @apply rounded-sm;
+}
 .playback-panel {
   @apply shrink-0 border-t border-line bg-white px-3 py-2 dark:border-dark-line dark:bg-dark-surface;
 }
@@ -242,6 +303,13 @@
   transform: translate(-50%, -50%) scale(1.5);
   outline: none;
 }
+.event-markers button.selected {
+  z-index: 10;
+  transform: translate(-50%, -50%) scale(1.6);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-brand-500) 35%, transparent),
+    0 1px 2px rgb(0 0 / 15%);
+}
 .event-markers button.stop-marker {
   background: var(--color-warning);
 }
@@ -308,16 +376,33 @@
   stroke: currentColor;
 }
 .speed-controls {
+  position: relative;
   overflow: hidden;
   border: 1px solid var(--color-line);
-  border-radius: 9px;
+  border-radius: 12px;
   background: white;
 }
 :host-context(.dark) .speed-controls {
   border-color: var(--color-dark-line);
   background: var(--color-dark-surface);
 }
+.speed-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20%;
+  background: var(--color-brand-600);
+  /* border-radius: 8px; */
+  transition: left 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+:host-context(.dark) .speed-indicator {
+  background: var(--color-brand-700);
+}
 .speed-controls button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
   height: 26px;
   min-width: 30px;
   padding: 0 8px;
@@ -339,14 +424,12 @@
 }
 .speed-controls button.active {
   color: white;
-  background: var(--color-brand-600);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
 }
 .speed-controls button.active:hover,
 :host-context(.dark) .speed-controls button.active:hover {
   color: white;
-  background: var(--color-brand-700);
+  background: transparent;
 }
 .playback-progress {
   white-space: nowrap;
@@ -501,6 +584,10 @@
 }
 .event-row > b {
   @apply text-lg text-brand-500;
+}
+.event-row.active {
+  @apply bg-brand-50 hover:bg-brand-50 dark:bg-brand-600/10 dark:hover:bg-brand-600/10;
+  box-shadow: inset 3px 0 0 var(--color-brand-600);
 }
 .stop-card {
   @apply m-3 block w-[calc(100%-1.5rem)] cursor-pointer rounded-xl bg-canvas p-4 text-left dark:bg-dark-canvas;

@@ -113,17 +113,50 @@
           [playbackActive]="playing()"
           [playbackSpeed]="speed()"
           [playbackStepDuration]="playbackStepDuration"
+          [selectedEventId]="selectedEventId()"
           (ready)="mapLoaded.set(true)"
           (eventSelected)="jumpToEvent($event)"
           (routeLoadingChange)="updateRouteLoading($event)"
         />
-        <div class="map-trip-status">
-          @if (loading() || trailLoading()) {
-            <ui-skeleton width="8.5rem" height="0.65rem" radius="0.3rem" />
-          } @else {
-            <span class="trip-status-reveal"><i></i> Replay · {{ selectedTrip().vehicle }}</span>
-          }
-        </div>
+        @if (currentEvent(); as alert) {
+          <div class="map-event-alert" role="status">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M10.3 4.5 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.5a2 2 0 0 0-3.4 0Z"
+              />
+              <path d="M12 9v4M12 17h.01" />
+            </svg>
+            <div>
+              <strong>{{ alert.label }}</strong>
+              <small>
+                {{ alert.detail }} ·
+                {{ clockTime(selectedTrip().positions[alert.positionIndex]?.time) }} ·
+                {{ selectedTrip().positions[alert.positionIndex]?.speed }} km/h
+              </small>
+            </div>
+          </div>
+        }
+        @if (!loading() && !trailLoading() && selectedTrip().positions.length) {
+          <div class="map-hud">
+            <span class="hud-speed"
+              ><b>{{ currentPosition().speed }}</b
+              ><small>km/h</small></span
+            >
+            <i class="hud-divider" aria-hidden="true"></i>
+            <span class="hud-time"
+              ><strong>{{ clockTime(currentPosition().time) }}</strong
+              ><small>{{ selectedTrip().date }}</small></span
+            >
+          </div>
+          <div class="map-legend" aria-hidden="true">
+            @for (item of legendItems; track item.label) {
+              <span class="legend-item">
+                <i [class.square]="item.square" [style.background]="item.color"></i
+                >{{ item.label }}
+              </span>
+            }
+          </div>
+        }
       </div>
       <section class="playback-panel">
         @if (loading() || trailLoading()) {
@@ -160,6 +193,7 @@
                   <button
                     type="button"
                     [class.stop-marker]="event.type === 'stop'"
+                    [class.selected]="selectedEventId() === event.id"
                     [style.left.%]="markerPosition(event)"
                     [attr.aria-label]="
                       'Jump to ' +
@@ -167,9 +201,6 @@
                       ' at ' +
                       clockTime(selectedTrip().positions[event.positionIndex]?.time)
                     "
-                    tooltip="{{ event.label }} · {{
-                      clockTime(selectedTrip().positions[event.positionIndex]?.time)
-                    }}"
                     (click)="jumpToEvent(event)"
                   ></button>
                 }
@@ -216,6 +247,7 @@
             </button>
           </div>
           <div class="speed-controls" aria-label="Playback speed">
+            <span class="speed-indicator" [style.left.%]="(speed() - 1) * 20"></span>
             @for (value of [1, 2, 3, 4, 5]; track value) {
               <button
                 type="button"
@@ -325,7 +357,7 @@
           Stats
         </button>
       </nav>
-      <div class="detail-content">
+      <div #detailContent class="detail-content">
         @if (loading() || trailLoading()) {
           @for (_ of detailSkeletons; track $index) {
             <div class="detail-row-skeleton" aria-hidden="true">
@@ -338,7 +370,12 @@
           }
         } @else if (activeTab() === 'events') {
           @for (event of selectedTrip().events; track event.id) {
-            <button type="button" class="event-row" (click)="jumpToEvent(event)">
+            <button
+              type="button"
+              class="event-row"
+              [class.active]="isEventActive(event)"
+              (click)="jumpToEvent(event)"
+            >
               <span [class]="'event-icon ' + event.type">{{
                 event.type === 'stop' ? '●' : '!'
               }}</span

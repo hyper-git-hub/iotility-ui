@@ -1,5 +1,15 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  NgZone,
+  OnDestroy,
+  OnInit,
+  computed,
+  effect,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
@@ -26,6 +36,7 @@ interface ReplayStop {
   start: string;
   end: string;
   positionIndex: number;
+  id: number;
 }
 interface ReplayTrip {
   id: string;
@@ -78,6 +89,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly selectedVehicleId = signal(0);
   protected readonly trip = signal<ReplayTrip>(EMPTY_TRIP);
   protected readonly positionIndex = signal(0);
+  protected readonly selectedEventId = signal<string | null>(null);
   protected readonly playing = signal(false);
   protected readonly speed = signal(1);
   protected readonly activeTab = signal<'events' | 'stops' | 'statistics'>('events');
@@ -88,10 +100,21 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly error = signal('');
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly detailSkeletons = Array.from({ length: 5 });
+  // Mirrors the mock's map legend; colors resolve through app theme variables
+  // so the swatches match the actual marker palette in both light/dark modes.
+  protected readonly legendItems: Array<{ label: string; color: string; square: boolean }> = [
+    { label: 'Travelled', color: 'var(--color-brand-500)', square: false },
+    { label: 'Start', color: 'var(--color-success)', square: false },
+    { label: 'End', color: 'var(--color-danger)', square: false },
+    { label: 'Violation', color: 'var(--color-danger)', square: true },
+    { label: 'DashCam', color: 'var(--color-warning)', square: true },
+    { label: 'Stop', color: 'var(--color-info)', square: true },
+  ];
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
   private playbackFrame?: number;
   private readonly requestedVehicleId: string;
+  private readonly detailContent = viewChild<ElementRef<HTMLElement>>('detailContent');
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
     return this.vehicles().filter((vehicle) =>
@@ -119,6 +142,16 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly pointNumber = computed(() =>
     this.trip().positions.length ? this.positionIndex() + 1 : 0,
   );
+  // The event the playback cursor is currently sitting on. Stops are excluded
+  // so passing a rest area doesn't flash an alert or hijack the events list.
+  protected readonly currentEvent = computed(() => {
+    const index = this.positionIndex();
+    return (
+      this.trip().events.find(
+        (event) => event.type !== 'stop' && event.positionIndex === index,
+      ) ?? null
+    );
+  });
 
   constructor(
     private readonly api: TripReplayApiService,
@@ -133,6 +166,18 @@ export class TripReplayPage implements OnInit, OnDestroy {
     start.setHours(0, 0, 0, 0);
     this.startDate.set(this.inputDate(start));
     this.endDate.set(this.inputDate(end));
+    // Keep the active event row visible in the details panel when the
+    // selection changes from any source: map dot, timeline marker or list row.
+    effect(() => {
+      if (!this.selectedEventId() && !this.currentEvent()) return;
+      const container = this.detailContent()?.nativeElement;
+      if (!container) return;
+      requestAnimationFrame(() =>
+        container
+          .querySelector('.event-row.active')
+          ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+      );
+    });
   }
   ngOnInit(): void {
     forkJoin({
@@ -186,6 +231,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected selectVehicle(vehicle: RealtimeVehicleRecord): void {
     if (vehicle.id === this.selectedVehicleId()) return;
     this.stop();
+    this.selectedEventId.set(null);
     this.selectedVehicleId.set(vehicle.id);
     this.trip.set({
       ...EMPTY_TRIP,
@@ -305,14 +351,19 @@ export class TripReplayPage implements OnInit, OnDestroy {
     }
     return value.match(/\b\d{1,2}:\d{2}\b/)?.[0] ?? value;
   }
+  protected isEventActive(event: TripReplayEvent): boolean {
+    return this.selectedEventId() === event.id || this.currentEvent()?.id === event.id;
+  }
   protected jumpToEvent(event: TripReplayEvent): void {
     this.pause();
     this.positionIndex.set(event.positionIndex);
+    this.selectedEventId.set(event.id);
     this.activeTab.set('events');
   }
   protected jumpToStop(stop: ReplayStop): void {
     this.pause();
     this.positionIndex.set(stop.positionIndex);
+    this.selectedEventId.set(`stop-${stop.id}`);
   }
   protected updateRouteLoading(loading: boolean): void {
     this.routeLoading.set(loading);
@@ -349,6 +400,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       )
       .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long)));
     if (unique.length < 2) {
+      this.selectedEventId.set(null);
       this.trip.set({
         ...EMPTY_TRIP,
         vehicleId: this.selectedVehicleId(),
@@ -496,6 +548,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       stops: replayStops,
       statistics,
     });
+    this.selectedEventId.set(null);
     this.positionIndex.set(0);
   }
   private vehicle(): RealtimeVehicleRecord | undefined {
