@@ -49,7 +49,6 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
   private fittedVehicleSet = '';
-  private lastFocusedVehicleId: string | null = null;
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
 
@@ -69,7 +68,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const panelOpen = this.detailsPanelOpen();
       const isFullscreen = this.isFullscreen();
       const panelPadding = panelOpen && !isFullscreen && !matchMedia('(max-width: 900px)').matches ? 320 : 0;
+      const selected = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
       this.map?.easeTo({
+        ...(selected ? { center: [selected.lng, selected.lat] as [number, number] } : {}),
         padding: { top: 0, bottom: 0, left: 0, right: panelPadding },
         duration: 400,
         easing: (t) => 1 - Math.pow(1 - t, 3),
@@ -78,11 +79,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     effect(() => {
       const selectedId = this.selectedVehicleId();
       const vehicle = this.vehicles().find(({ id }) => id === selectedId);
-      if (!selectedId) {
-        this.lastFocusedVehicleId = null;
-      } else if (vehicle && this.map && selectedId !== this.lastFocusedVehicleId) {
-        this.focusVehicle(vehicle);
-      }
+      if (vehicle && this.map) this.focusVehicle(vehicle);
     });
     effect(() => {
       const selectedId = this.selectedVehicleId();
@@ -394,7 +391,6 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   private focusVehicle(vehicle: TrackedVehicle): void {
     if (!this.map) return;
-    this.lastFocusedVehicleId = vehicle.id;
     this.map.flyTo({
       center: [vehicle.lng, vehicle.lat],
       zoom: 16,

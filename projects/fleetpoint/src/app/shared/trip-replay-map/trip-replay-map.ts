@@ -48,6 +48,7 @@ const CAMERA_MAX_ROTATION_SPEED = 100;
 const CAMERA_SETTLE_SECONDS = 1.25;
 const CAMERA_ZOOM_EPSILON = 0.008;
 const CAMERA_PITCH_EPSILON = 0.08;
+const OSRM_MIN_MATCH_CONFIDENCE = 0.3;
 const VEHICLE_LIGHTING = new LightingEffect({
   ambientLight: new AmbientLight({ color: [255, 255, 255], intensity: 2.2 }),
   directionalLight: new DirectionalLight({
@@ -103,6 +104,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly playbackStepDuration = input(260);
   readonly eventSelected = output<TripReplayEvent>();
   readonly routeLoadingChange = output<boolean>();
+  readonly displayedSpeedChange = output<number>();
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
@@ -157,6 +159,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private displayedRoadProgress = 0;
   private displayedSpeedKph = 0;
   private targetSpeedKph = 0;
+  private lastEmittedSpeedKph = -1;
   // Scratch buffers reused across animation frames instead of allocating new
   // tuples ~5-6 times per rAF tick (bearing lookups + camera centering).
   private readonly bearingFromScratch: LatLng = [0, 0];
@@ -414,6 +417,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.displayedCameraPitch = undefined;
     this.displayedSpeedKph = 0;
     this.targetSpeedKph = 0;
+    this.emitDisplayedSpeed();
     this.movementFinished = true;
     this.cameraSettledFor = 0;
     this.lastRenderedRouteIndex = -1;
@@ -526,12 +530,25 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         if (!response.ok) throw new Error();
         const result = (await response.json()) as {
           code?: string;
-          matchings?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
+          matchings?: Array<{
+            confidence?: number;
+            geometry?: { coordinates?: Array<[number, number]> };
+          }>;
         };
-        const values =
-          result.code === 'Ok'
-            ? result.matchings?.flatMap((item) => item.geometry?.coordinates ?? [])
-            : [];
+        // A split match means OSRM could not produce one continuous trace. Do
+        // not discard one part while retaining all playback samples: they would
+        // collapse onto the retained route endpoint and make the vehicle pause.
+        // Falling back to /route keeps every sample represented by a continuous,
+        // road-following geometry without drawing straight joins between matches.
+        const matching = result.code === 'Ok' && result.matchings?.length === 1
+          ? result.matchings[0]
+          : undefined;
+        if (
+          (matching?.confidence ?? 0) < OSRM_MIN_MATCH_CONFIDENCE ||
+          (matching?.geometry?.coordinates?.length ?? 0) < 2
+        )
+          throw new Error();
+        const values = matching?.geometry?.coordinates ?? [];
         if (!values?.length) throw new Error();
         matched.push(...values.map(([lng, lat]) => [lat, lng] as LatLng));
       }
@@ -951,6 +968,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     if (!this.map) return;
     this.displayedSpeedKph +=
       (this.targetSpeedKph - this.displayedSpeedKph) * Math.min(1, dt * SPEED_DAMPING);
+    this.emitDisplayedSpeed();
     const {
       zoom: targetZoom,
       pitch: targetPitch,
@@ -1013,6 +1031,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     if (Math.abs(this.displayedCameraZoom - this.map.getZoom()) >= 0.0005)
       camera.zoom = this.displayedCameraZoom;
     this.map.jumpTo(camera);
+  }
+
+  private emitDisplayedSpeed(): void {
+    const speed = Math.max(0, Math.round(this.displayedSpeedKph));
+    if (speed === this.lastEmittedSpeedKph) return;
+    this.lastEmittedSpeedKph = speed;
+    this.zone.run(() => this.displayedSpeedChange.emit(speed));
   }
 
   private applyMovementFrame(now: number, dt: number): void {

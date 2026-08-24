@@ -117,6 +117,7 @@
           (ready)="mapLoaded.set(true)"
           (eventSelected)="jumpToEvent($event)"
           (routeLoadingChange)="updateRouteLoading($event)"
+          (displayedSpeedChange)="displayedSpeed.set($event)"
         />
         @if (currentEvent(); as alert) {
           <div class="map-event-alert" role="status">
@@ -139,7 +140,7 @@
         @if (!loading() && !trailLoading() && selectedTrip().positions.length) {
           <div class="map-hud">
             <span class="hud-speed"
-              ><b>{{ currentPosition().speed }}</b
+              ><b>{{ displayedSpeed() }}</b
               ><small>km/h</small></span
             >
             <i class="hud-divider" aria-hidden="true"></i>

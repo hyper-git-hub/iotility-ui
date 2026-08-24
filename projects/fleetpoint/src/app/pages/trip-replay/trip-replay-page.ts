@@ -85,6 +85,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly trailLoading = signal(false);
   protected readonly routeLoading = signal(false);
   protected readonly mapLoaded = signal(false);
+  protected readonly displayedSpeed = signal(0);
   protected readonly error = signal('');
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly detailSkeletons = Array.from({ length: 5 });

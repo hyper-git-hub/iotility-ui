@@ -224,13 +224,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 0 0 3rem;
   line-height: 1;
 }
 .hud-speed b {
+  width: 3ch;
   color: var(--color-brand-600);
   font-size: 18px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 .hud-speed small,
 .hud-time small {
