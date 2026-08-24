@@ -15,6 +15,13 @@ export interface PlaybackTrailRecord {
   driver_name?: string | null;
   seat_belt_notf?: boolean;
 }
+export interface PlaybackTrailData {
+  distance: number | string | null;
+  fuel_filled: number | string | null;
+  fuel_consumed: number | string | null;
+  jobs_completed: number | string | null;
+  map_trail: PlaybackTrailRecord[];
+}
 export interface PlaybackRange {
   vehicleId: number;
   start: string;
@@ -30,9 +37,7 @@ export class TripReplayApiService {
       { params: { status: '1', page_category: 'vehicle_real_time_tracking' } },
     );
   }
-  getVehicleDetail(): Observable<
-    ApiResponse<{ count: number; data: DetailReportRecord[] }>
-  > {
+  getVehicleDetail(): Observable<ApiResponse<{ count: number; data: DetailReportRecord[] }>> {
     return this.http.get<ApiResponse<{ count: number; data: DetailReportRecord[] }>>(
       `${FLEET_API}/playback/detail-report`,
       { params: new HttpParams() },
@@ -50,11 +55,10 @@ export class TripReplayApiService {
       },
     );
   }
-  getMapTrail(range: PlaybackRange): Observable<ApiResponse<{ map_trail: PlaybackTrailRecord[] }>> {
-    return this.http.get<ApiResponse<{ map_trail: PlaybackTrailRecord[] }>>(
-      `${FLEET_API}/playback/map-trail`,
-      { params: this.params(range) },
-    );
+  getMapTrail(range: PlaybackRange): Observable<ApiResponse<PlaybackTrailData>> {
+    return this.http.get<ApiResponse<PlaybackTrailData>>(`${FLEET_API}/playback/map-trail`, {
+      params: this.params(range),
+    });
   }
   getStops(
     range: PlaybackRange,
