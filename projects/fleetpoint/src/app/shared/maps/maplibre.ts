@@ -26,10 +26,16 @@ export function createIotMap(
     style: isDark() ? environment.mapDarkStyleUrl : environment.mapLightStyleUrl,
     ...options,
   });
-  map.addControl(new LocationSearchControl(), 'top-right');
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-  map.addControl(new ThreeDimensionalControl(), 'bottom-right');
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+  const collapseAttribution = () => {
+    const attribution = map
+      .getContainer()
+      .querySelector<HTMLDetailsElement>('.maplibregl-ctrl-attrib.maplibregl-compact');
+    attribution?.classList.remove('maplibregl-compact-show');
+    if (attribution) attribution.open = false;
+  };
+  collapseAttribution();
+  map.once('load', collapseAttribution);
   replaceNativeTitles(map.getContainer());
   let darkTheme = isDark();
 

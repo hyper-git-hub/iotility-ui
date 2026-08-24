@@ -210,7 +210,7 @@
   @apply flex cursor-pointer items-center gap-3 border-b border-line bg-brand-50/60 px-4 py-3 dark:border-dark-line dark:bg-brand-600/10;
 }
 .select-all-features input {
-  @apply size-4 shrink-0 accent-brand-600;
+  @apply shrink-0;
 }
 .select-all-features span {
   @apply flex min-w-0 flex-col;
@@ -225,7 +225,7 @@
   @apply flex! cursor-pointer items-center gap-3 bg-white p-3 transition hover:bg-brand-50 dark:bg-dark-surface dark:hover:bg-dark-canvas;
 }
 .selection-item input {
-  @apply size-4 shrink-0 accent-brand-600;
+  @apply shrink-0;
 }
 .selection-item span {
   @apply grid min-w-0;
@@ -258,7 +258,7 @@
   @apply flex cursor-pointer items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-[10px] text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
 }
 .assigned-users input {
-  @apply accent-brand-600;
+  @apply shrink-0;
 }
 .assigned-users > div > span {
   @apply rounded-full bg-brand-50 px-2.5 py-1 text-[10px] text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;

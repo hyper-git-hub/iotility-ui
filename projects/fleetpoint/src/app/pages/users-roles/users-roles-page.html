@@ -8,7 +8,14 @@
     </div>
     <div class="heading-actions">
       @if (activeTab() === 'users') {
-        <button type="button" class="primary-action" (click)="openCreateUser()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add user</button>
+        <button type="button" class="primary-action" (click)="openCreateUser()">
+          <span
+            class="color-icon size-4"
+            style="--icon: url('/assets/fleetpoint/icons/plus.svg')"
+            aria-hidden="true"
+          ></span
+          >Add user
+        </button>
       } @else {
         <button type="button" class="secondary-action" (click)="openAssignUsers()">
           Assign users to a group
@@ -302,7 +309,9 @@
         >
       }
       <label class="check-field"
-        ><input type="checkbox" formControlName="write" /><span>Allow write access</span></label
+        ><input class="fleet-checkbox" type="checkbox" formControlName="write" /><span
+          >Allow write access</span
+        ></label
       >
     </div>
   </form>
@@ -377,6 +386,7 @@
               @if (featureOptions().length) {
                 <label class="select-all-features">
                   <input
+                    class="fleet-checkbox"
                     type="checkbox"
                     [checked]="allFeaturesSelected()"
                     [indeterminate]="someFeaturesSelected()"
@@ -392,6 +402,7 @@
                 @for (feature of featureOptions(); track feature.id) {
                   <label class="selection-item"
                     ><input
+                      class="fleet-checkbox"
                       type="checkbox"
                       [checked]="selectedFeatures().includes(feature.id)"
                       (change)="toggleFeature(feature.id, $any($event.target).checked)"
@@ -420,6 +431,7 @@
           @for (user of selectedRole()!.group_user; track user.guid) {
             <label>
               <input
+                class="fleet-checkbox"
                 type="checkbox"
                 [checked]="!selectedUnassignUsers().includes(user.guid)"
                 (change)="toggleAssignedUser(user.guid, $any($event.target).checked)"
@@ -505,6 +517,7 @@
           @for (user of unassignedUsers(); track user.guid) {
             <label class="selection-item"
               ><input
+                class="fleet-checkbox"
                 type="checkbox"
                 [checked]="selectedAssignUsers().includes(user.email)"
                 (change)="toggleAssignUser(user.email, $any($event.target).checked)"
