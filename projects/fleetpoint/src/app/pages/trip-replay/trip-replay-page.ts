@@ -1,8 +1,12 @@
+import { DecimalPipe } from '@angular/common';
 import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
-import { DetailReportRecord, RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
+import {
+  DetailReportRecord,
+  RealtimeVehicleRecord,
+} from '../../shared/services/live-tracking-api.service';
 import {
   PlaybackRecord,
   PlaybackTrailRecord,
@@ -61,7 +65,7 @@ const EMPTY_TRIP: ReplayTrip = {
 
 @Component({
   selector: 'app-trip-replay-page',
-  imports: [DateTimePicker, Skeleton, Tooltip, TripReplayMap],
+  imports: [DateTimePicker, DecimalPipe, Skeleton, Tooltip, TripReplayMap],
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
 })
@@ -73,6 +77,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly selectedVehicleId = signal(0);
   protected readonly trip = signal<ReplayTrip>(EMPTY_TRIP);
   protected readonly positionIndex = signal(0);
+  protected readonly selectedEventId = signal<string | null>(null);
   protected readonly playing = signal(false);
   protected readonly speed = signal(1);
   protected readonly activeTab = signal<'events' | 'stops' | 'statistics'>('events');
@@ -83,6 +88,14 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly error = signal('');
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly detailSkeletons = Array.from({ length: 5 });
+  protected readonly legendItems: Array<{ label: string; color: string; square: boolean }> = [
+    { label: 'Travelled', color: 'var(--color-brand-500)', square: false },
+    { label: 'Start', color: 'var(--color-success)', square: false },
+    { label: 'End', color: 'var(--color-danger)', square: false },
+    { label: 'Violation', color: 'var(--color-danger)', square: true },
+    { label: 'DashCam', color: 'var(--color-warning)', square: true },
+    { label: 'Stop', color: 'var(--color-info)', square: true },
+  ];
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
   private playbackFrame?: number;
@@ -110,6 +123,16 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly progress = computed(() => {
     const last = this.trip().positions.length - 1;
     return last > 0 ? (this.positionIndex() / last) * 100 : 0;
+  });
+  protected readonly pointNumber = computed(() =>
+    this.trip().positions.length ? this.positionIndex() + 1 : 0,
+  );
+  protected readonly currentEvent = computed(() => {
+    const index = this.positionIndex();
+    return (
+      this.trip().events.find((event) => event.type !== 'stop' && event.positionIndex === index) ??
+      null
+    );
   });
 
   constructor(
@@ -183,7 +206,9 @@ export class TripReplayPage implements OnInit, OnDestroy {
       ...EMPTY_TRIP,
       vehicleId: vehicle.id,
       vehicle: vehicle.registration,
-      vehicleImage: this.vehicleImage(this.vehicleImages()[vehicle.id] || vehicle.vehicle_type_image),
+      vehicleImage: this.vehicleImage(
+        this.vehicleImages()[vehicle.id] || vehicle.vehicle_type_image,
+      ),
       driver: vehicle.vehicle_driver_name || 'Unassigned',
     });
     this.error.set('');
@@ -279,9 +304,29 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected scrub(event: Event): void {
     this.positionIndex.set(Number((event.target as HTMLInputElement).value));
   }
+  protected markerPosition(event: TripReplayEvent): number {
+    const last = this.maxPosition();
+    return last > 0 ? (event.positionIndex / last) * 100 : 0;
+  }
+  protected clockTime(value: string | undefined): string {
+    if (!value || value === '—') return '—:—';
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return new Intl.DateTimeFormat('en', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(date);
+    }
+    return value.match(/\b\d{1,2}:\d{2}\b/)?.[0] ?? value;
+  }
+  protected isEventActive(event: TripReplayEvent): boolean {
+    return this.selectedEventId() === event.id || this.currentEvent()?.id === event.id;
+  }
   protected jumpToEvent(event: TripReplayEvent): void {
     this.pause();
     this.positionIndex.set(event.positionIndex);
+    this.selectedEventId.set(event.id);
     this.activeTab.set('events');
   }
   protected jumpToStop(stop: ReplayStop): void {
@@ -309,18 +354,20 @@ export class TripReplayPage implements OnInit, OnDestroy {
     statisticsPayload: { data?: PlaybackRecord[] } | PlaybackRecord[] | null | undefined,
     vehicleDetail: DetailReportRecord[] = [],
   ): void {
-    const unique = this.longestContinuousTrail(trail
-      .filter(
-        (row, index, rows) =>
-          index ===
-          rows.findIndex(
-            (item) =>
-              Number(item.lat) === Number(row.lat) &&
-              Number(item.long) === Number(row.long) &&
-              item.timestamp === row.timestamp,
-          ),
-      )
-      .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long))));
+    const unique = this.longestContinuousTrail(
+      trail
+        .filter(
+          (row, index, rows) =>
+            index ===
+            rows.findIndex(
+              (item) =>
+                Number(item.lat) === Number(row.lat) &&
+                Number(item.long) === Number(row.long) &&
+                item.timestamp === row.timestamp,
+            ),
+        )
+        .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long))),
+    );
     if (unique.length < 2) {
       this.trip.set({
         ...EMPTY_TRIP,
@@ -402,27 +449,27 @@ export class TripReplayPage implements OnInit, OnDestroy {
       ? statisticsPayload
       : (statisticsPayload?.data ?? []);
     const statRow = rawStats[0] ?? detailRow;
-      const statistics = Object.entries(statRow)
-        .filter(([, value]) => value !== null && typeof value !== 'object')
-        .slice(0, 12)
-        .map(([key, value]) => {
-          const raw = String(value ?? '—');
-          const isImage = key.toLowerCase().includes('image');
-          return {
-            label: this.label(key),
-            value: isImage ? this.vehicleImage(raw) : raw,
-            isImage,
-          };
-        });
-      this.trip.set({
-        id: String(this.selectedVehicleId()),
-        vehicleId: this.selectedVehicleId(),
-        vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
-        vehicleImage: this.vehicleImage(
-          imageRecord?.vehicle_image ??
-            (detailRow['vehicle_image'] as string | undefined) ??
-            this.vehicle()?.vehicle_type_image,
-        ),
+    const statistics = Object.entries(statRow)
+      .filter(([, value]) => value !== null && typeof value !== 'object')
+      .slice(0, 12)
+      .map(([key, value]) => {
+        const raw = String(value ?? '—');
+        const isImage = key.toLowerCase().includes('image');
+        return {
+          label: this.label(key),
+          value: isImage ? this.vehicleImage(raw) : raw,
+          isImage,
+        };
+      });
+    this.trip.set({
+      id: String(this.selectedVehicleId()),
+      vehicleId: this.selectedVehicleId(),
+      vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
+      vehicleImage: this.vehicleImage(
+        imageRecord?.vehicle_image ??
+          (detailRow['vehicle_image'] as string | undefined) ??
+          this.vehicle()?.vehicle_type_image,
+      ),
       driver: String(driver),
       date: new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
         new Date(unique[0].timestamp),
@@ -450,10 +497,16 @@ export class TripReplayPage implements OnInit, OnDestroy {
       if (previous && this.isImpossibleTrailJump(previous, point)) segments.push([]);
       segments.at(-1)!.push(point);
     }
-    return segments.reduce((longest, segment) => segment.length > longest.length ? segment : longest, []);
+    return segments.reduce(
+      (longest, segment) => (segment.length > longest.length ? segment : longest),
+      [],
+    );
   }
 
-  private isImpossibleTrailJump(previous: PlaybackTrailRecord, current: PlaybackTrailRecord): boolean {
+  private isImpossibleTrailJump(
+    previous: PlaybackTrailRecord,
+    current: PlaybackTrailRecord,
+  ): boolean {
     const previousTime = new Date(previous.timestamp).getTime();
     const currentTime = new Date(current.timestamp).getTime();
     const elapsedSeconds = Math.max(1, (currentTime - previousTime) / 1_000);
@@ -469,11 +522,12 @@ export class TripReplayPage implements OnInit, OnDestroy {
   }
 
   private distanceMetres(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const radians = (value: number) => value * Math.PI / 180;
+    const radians = (value: number) => (value * Math.PI) / 180;
     const deltaLat = radians(lat2 - lat1);
     const deltaLng = radians(lng2 - lng1);
-    const value = Math.sin(deltaLat / 2) ** 2
-      + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(deltaLng / 2) ** 2;
+    const value =
+      Math.sin(deltaLat / 2) ** 2 +
+      Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(deltaLng / 2) ** 2;
     return 12_742_000 * Math.asin(Math.sqrt(value));
   }
 

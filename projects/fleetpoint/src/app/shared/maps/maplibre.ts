@@ -1,16 +1,11 @@
-import maplibregl, {
-  GeoJSONSource,
-  IControl,
-  LngLatBounds,
-  Map,
-  MapOptions,
-} from 'maplibre-gl';
+import maplibregl, { GeoJSONSource, IControl, LngLatBounds, Map, MapOptions } from 'maplibre-gl';
 import { attachTooltip } from '@iotility/shared-ui';
 import { environment } from '../../../environments/environment';
 
 export type LatLng = [number, number];
-type LayerWithoutSource<T = maplibregl.LayerSpecification> =
-  T extends { source: unknown } ? Omit<T, 'source'> : T;
+type LayerWithoutSource<T = maplibregl.LayerSpecification> = T extends { source: unknown }
+  ? Omit<T, 'source'>
+  : T;
 
 const BUILDINGS_LAYER = 'iotility-3d-buildings';
 
@@ -80,12 +75,7 @@ export function removeGeoJson(map: Map, id: string, layerIds: string[]): void {
   if (map.getSource(id)) map.removeSource(id);
 }
 
-export function fitLatLngs(
-  map: Map,
-  coordinates: LatLng[],
-  padding = 40,
-  maxZoom = 14,
-): void {
+export function fitLatLngs(map: Map, coordinates: LatLng[], padding = 40, maxZoom = 14): void {
   if (!coordinates.length) return;
   const bounds = new LngLatBounds();
   for (const [lat, lng] of coordinates) bounds.extend([lng, lat]);
@@ -100,7 +90,15 @@ export function markerElement(html: string, className = 'iotility-map-marker'): 
 }
 
 export function popup(text: string): maplibregl.Popup {
-  return new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16 }).setText(text);
+  return new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16 }).setText(
+    text,
+  );
+}
+
+export function popupHtml(html: string): maplibregl.Popup {
+  return new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 20 }).setHTML(
+    html,
+  );
 }
 
 export function circlePolygon(center: LatLng, radiusMeters: number, steps = 64): LatLng[] {
@@ -118,7 +116,10 @@ export function circlePolygon(center: LatLng, radiusMeters: number, steps = 64):
   return points;
 }
 
-export function lineFeature(points: LatLng[], properties: GeoJSON.GeoJsonProperties = {}): GeoJSON.Feature {
+export function lineFeature(
+  points: LatLng[],
+  properties: GeoJSON.GeoJsonProperties = {},
+): GeoJSON.Feature {
   return {
     type: 'Feature',
     properties,
@@ -168,22 +169,64 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
   // slate so geozone fills and POI pins read clearly against roads.
   const palette = dark
     ? {
-        canvas: '#0b0f19', residential: '#141b2e', water: '#0d3856', waterLine: '#2f8fc4',
-        park: '#123a2e', grass: '#163f2f', wood: '#102e26', wetland: '#123531', sand: '#332c1f',
-        hospital: '#3a2230', school: '#1c2740', building: '#1f2937', buildingEdge: '#2f3b52',
-        boundary: '#475569', label: '#f1f5f9', mutedLabel: '#94a3b8', halo: 'rgba(11,15,25,0.92)',
-        motorway: '#3b82f6', motorwayCase: '#16233a', primary: '#60a5fa', primaryCase: '#20304a',
-        secondary: '#3c4a63', secondaryCase: '#1c2637', local: '#2a3548', localCase: '#182130',
-        path: '#475569', rail: '#64748b', runway: '#2d3648',
+        canvas: '#0b0f19',
+        residential: '#141b2e',
+        water: '#0d3856',
+        waterLine: '#2f8fc4',
+        park: '#123a2e',
+        grass: '#163f2f',
+        wood: '#102e26',
+        wetland: '#123531',
+        sand: '#332c1f',
+        hospital: '#3a2230',
+        school: '#1c2740',
+        building: '#1f2937',
+        buildingEdge: '#2f3b52',
+        boundary: '#475569',
+        label: '#f1f5f9',
+        mutedLabel: '#94a3b8',
+        halo: 'rgba(11,15,25,0.92)',
+        motorway: '#3b82f6',
+        motorwayCase: '#16233a',
+        primary: '#60a5fa',
+        primaryCase: '#20304a',
+        secondary: '#3c4a63',
+        secondaryCase: '#1c2637',
+        local: '#2a3548',
+        localCase: '#182130',
+        path: '#475569',
+        rail: '#64748b',
+        runway: '#2d3648',
       }
     : {
-        canvas: '#f8fafc', residential: '#eef1f6', water: '#a8d8f0', waterLine: '#5bb8e0',
-        park: '#c8ecd4', grass: '#dcf3e1', wood: '#bfe4c8', wetland: '#cfeee7', sand: '#f6edd9',
-        hospital: '#fde3e9', school: '#e6edfb', building: '#e4e8ee', buildingEdge: '#cfd7e2',
-        boundary: '#94a3b8', label: '#1e293b', mutedLabel: '#64748b', halo: 'rgba(255,255,255,0.94)',
-        motorway: '#2563eb', motorwayCase: '#c3d7f0', primary: '#3b82f6', primaryCase: '#d6e4f7',
-        secondary: '#dbe8fa', secondaryCase: '#c7d8ee', local: '#ffffff', localCase: '#dde4ec',
-        path: '#c2cad4', rail: '#94a3b8', runway: '#d8dee7',
+        canvas: '#f8fafc',
+        residential: '#eef1f6',
+        water: '#a8d8f0',
+        waterLine: '#5bb8e0',
+        park: '#c8ecd4',
+        grass: '#dcf3e1',
+        wood: '#bfe4c8',
+        wetland: '#cfeee7',
+        sand: '#f6edd9',
+        hospital: '#fde3e9',
+        school: '#e6edfb',
+        building: '#e4e8ee',
+        buildingEdge: '#cfd7e2',
+        boundary: '#94a3b8',
+        label: '#1e293b',
+        mutedLabel: '#64748b',
+        halo: 'rgba(255,255,255,0.94)',
+        motorway: '#2563eb',
+        motorwayCase: '#c3d7f0',
+        primary: '#3b82f6',
+        primaryCase: '#d6e4f7',
+        secondary: '#dbe8fa',
+        secondaryCase: '#c7d8ee',
+        local: '#ffffff',
+        localCase: '#dde4ec',
+        path: '#c2cad4',
+        rail: '#94a3b8',
+        runway: '#d8dee7',
       };
 
   paint('background', 'background-color', palette.canvas);
@@ -210,30 +253,62 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
   }
 
   const roadKinds: Array<[string, string, string, unknown, unknown]> = [
-    ['motorway', palette.motorway, palette.motorwayCase,
+    [
+      'motorway',
+      palette.motorway,
+      palette.motorwayCase,
       ['interpolate', ['linear'], ['zoom'], 6.5, 0.45, 9, 1.3, 12, 3.2, 14, 6, 18, 18],
-      ['interpolate', ['linear'], ['zoom'], 6.5, 0.9, 9, 2, 12, 4.5, 14, 8, 18, 21]],
-    ['motorway_link', palette.motorway, palette.motorwayCase,
+      ['interpolate', ['linear'], ['zoom'], 6.5, 0.9, 9, 2, 12, 4.5, 14, 8, 18, 21],
+    ],
+    [
+      'motorway_link',
+      palette.motorway,
+      palette.motorwayCase,
       ['interpolate', ['linear'], ['zoom'], 9, 1, 14, 4, 18, 11],
-      ['interpolate', ['linear'], ['zoom'], 9, 2, 14, 6, 18, 14]],
-    ['trunk_primary', palette.primary, palette.primaryCase,
+      ['interpolate', ['linear'], ['zoom'], 9, 2, 14, 6, 18, 14],
+    ],
+    [
+      'trunk_primary',
+      palette.primary,
+      palette.primaryCase,
       ['interpolate', ['linear'], ['zoom'], 8, 0.5, 11, 1.8, 14, 5, 18, 15],
-      ['interpolate', ['linear'], ['zoom'], 8, 1, 11, 3, 14, 7, 18, 18]],
-    ['secondary_tertiary', palette.secondary, palette.secondaryCase,
+      ['interpolate', ['linear'], ['zoom'], 8, 1, 11, 3, 14, 7, 18, 18],
+    ],
+    [
+      'secondary_tertiary',
+      palette.secondary,
+      palette.secondaryCase,
       ['interpolate', ['linear'], ['zoom'], 9, 0.7, 12, 1.8, 15, 4, 18, 11],
-      ['interpolate', ['linear'], ['zoom'], 9, 1.4, 12, 3, 15, 6, 18, 14]],
-    ['minor', palette.local, palette.localCase,
+      ['interpolate', ['linear'], ['zoom'], 9, 1.4, 12, 3, 15, 6, 18, 14],
+    ],
+    [
+      'minor',
+      palette.local,
+      palette.localCase,
       ['interpolate', ['linear'], ['zoom'], 12, 0.6, 15, 2.2, 18, 7],
-      ['interpolate', ['linear'], ['zoom'], 12, 1.2, 15, 3.4, 18, 9]],
-    ['street', palette.local, palette.localCase,
+      ['interpolate', ['linear'], ['zoom'], 12, 1.2, 15, 3.4, 18, 9],
+    ],
+    [
+      'street',
+      palette.local,
+      palette.localCase,
       ['interpolate', ['linear'], ['zoom'], 12, 0.7, 15, 2.4, 18, 7.5],
-      ['interpolate', ['linear'], ['zoom'], 12, 1.3, 15, 3.6, 18, 9.5]],
-    ['service_track', palette.local, palette.localCase,
+      ['interpolate', ['linear'], ['zoom'], 12, 1.3, 15, 3.6, 18, 9.5],
+    ],
+    [
+      'service_track',
+      palette.local,
+      palette.localCase,
       ['interpolate', ['linear'], ['zoom'], 13, 0.5, 16, 1.6, 19, 5],
-      ['interpolate', ['linear'], ['zoom'], 13, 1, 16, 2.5, 19, 6.5]],
-    ['link', palette.primary, palette.primaryCase,
+      ['interpolate', ['linear'], ['zoom'], 13, 1, 16, 2.5, 19, 6.5],
+    ],
+    [
+      'link',
+      palette.primary,
+      palette.primaryCase,
       ['interpolate', ['linear'], ['zoom'], 10, 0.8, 14, 3.5, 18, 10],
-      ['interpolate', ['linear'], ['zoom'], 10, 1.6, 14, 5.5, 18, 13]],
+      ['interpolate', ['linear'], ['zoom'], 10, 1.6, 14, 5.5, 18, 13],
+    ],
   ];
   for (const prefix of ['road', 'bridge', 'tunnel']) {
     for (const [kind, roadColor, casingColor, width, casingWidth] of roadKinds) {
@@ -285,7 +360,12 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
     if (layer.id.startsWith('highway-name')) paint(layer.id, 'text-color', palette.mutedLabel);
   }
 
-  for (const [id, minZoom] of [['poi_r1', 7.5], ['poi_r7', 8.5], ['poi_r20', 9.5], ['poi_transit', 7.5]] as const) {
+  for (const [id, minZoom] of [
+    ['poi_r1', 7.5],
+    ['poi_r7', 8.5],
+    ['poi_r20', 9.5],
+    ['poi_transit', 7.5],
+  ] as const) {
     if (!map.getLayer(id)) continue;
     map.setLayerZoomRange(id, minZoom, 24);
     paint(id, 'text-color', palette.label);
@@ -315,7 +395,13 @@ function applyFleetMapStyle(map: Map, dark: boolean): void {
 
   // OpenFreeMap's defaults leave generous collision boxes. Fleet maps benefit
   // from seeing districts, nearby settlements and road names one zoom earlier.
-  for (const id of ['label_other', 'label_village', 'label_town', 'label_city', 'label_city_capital']) {
+  for (const id of [
+    'label_other',
+    'label_village',
+    'label_town',
+    'label_city',
+    'label_city_capital',
+  ]) {
     if (!map.getLayer(id)) continue;
     layout(id, 'text-padding', 1);
     layout(id, 'icon-optional', true);
@@ -343,7 +429,9 @@ function addThreeDimensionalBuildings(map: Map): void {
   if (map.getLayer(BUILDINGS_LAYER) || !map.getSource('openmaptiles')) return;
   const labelLayer = map
     .getStyle()
-    .layers?.find((layer) => layer.type === 'symbol' && 'layout' in layer && layer.layout?.['text-field']);
+    .layers?.find(
+      (layer) => layer.type === 'symbol' && 'layout' in layer && layer.layout?.['text-field'],
+    );
   map.addLayer(
     {
       id: BUILDINGS_LAYER,
@@ -354,14 +442,32 @@ function addThreeDimensionalBuildings(map: Map): void {
       paint: {
         'fill-extrusion-color': isDark() ? '#25324a' : '#dde3ec',
         'fill-extrusion-height': [
-          'interpolate', ['linear'], ['zoom'],
-          13, 0,
-          14, ['coalesce', ['to-number', ['get', 'render_height']], ['to-number', ['get', 'height']], 6],
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          13,
+          0,
+          14,
+          [
+            'coalesce',
+            ['to-number', ['get', 'render_height']],
+            ['to-number', ['get', 'height']],
+            6,
+          ],
         ],
         'fill-extrusion-base': [
-          'interpolate', ['linear'], ['zoom'],
-          13, 0,
-          14, ['coalesce', ['to-number', ['get', 'render_min_height']], ['to-number', ['get', 'min_height']], 0],
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          13,
+          0,
+          14,
+          [
+            'coalesce',
+            ['to-number', ['get', 'render_min_height']],
+            ['to-number', ['get', 'min_height']],
+            0,
+          ],
         ],
         'fill-extrusion-opacity': 0.9,
         // Vertical gradient + AO give buildings real form instead of flat cardboard cutouts.
@@ -447,10 +553,12 @@ class LocationSearchControl implements IControl {
     this.map = map;
     const container = document.createElement('div');
     container.className = 'maplibregl-ctrl iotility-map-search';
-    container.style.cssText = 'position:relative;width:min(18rem,calc(100vw - 5rem));font:500 12px Inter,sans-serif';
+    container.style.cssText =
+      'position:relative;width:min(18rem,calc(100vw - 5rem));font:500 12px Inter,sans-serif';
 
     const form = document.createElement('form');
-    form.style.cssText = 'display:flex;align-items:center;height:38px;border:1px solid rgba(148,163,184,.45);border-radius:11px;background:rgba(255,255,255,.96);box-shadow:0 5px 18px rgba(15,23,42,.14);overflow:hidden;backdrop-filter:blur(8px)';
+    form.style.cssText =
+      'display:flex;align-items:center;height:38px;border:1px solid rgba(148,163,184,.45);border-radius:11px;background:rgba(255,255,255,.96);box-shadow:0 5px 18px rgba(15,23,42,.14);overflow:hidden;backdrop-filter:blur(8px)';
     const icon = document.createElement('span');
     icon.textContent = '⌕';
     icon.setAttribute('aria-hidden', 'true');
@@ -460,12 +568,14 @@ class LocationSearchControl implements IControl {
     input.placeholder = 'Search a location';
     input.setAttribute('aria-label', 'Search map location');
     input.autocomplete = 'off';
-    input.style.cssText = 'min-width:0;flex:1;border:0;outline:0;background:transparent;padding:0 11px;color:#263445;font:500 12px Inter,sans-serif';
+    input.style.cssText =
+      'min-width:0;flex:1;border:0;outline:0;background:transparent;padding:0 11px;color:#263445;font:500 12px Inter,sans-serif';
     form.append(icon, input);
 
     const results = document.createElement('div');
     results.hidden = true;
-    results.style.cssText = 'position:absolute;top:44px;left:0;right:0;max-height:240px;overflow:auto;border:1px solid rgba(148,163,184,.35);border-radius:11px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.18)';
+    results.style.cssText =
+      'position:absolute;top:44px;left:0;right:0;max-height:240px;overflow:auto;border:1px solid rgba(148,163,184,.35);border-radius:11px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.18)';
     container.append(form, results);
 
     input.addEventListener('input', () => {
@@ -526,9 +636,10 @@ class LocationSearchControl implements IControl {
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = result.display_name;
-      button.style.cssText = 'display:block;width:100%;cursor:pointer;border:0;border-bottom:1px solid #eef2f7;background:#fff;padding:9px 11px;text-align:left;color:#334155;font:500 11px/1.35 Inter,sans-serif';
-      button.addEventListener('mouseenter', () => button.style.background = '#f4f7fb');
-      button.addEventListener('mouseleave', () => button.style.background = '#fff');
+      button.style.cssText =
+        'display:block;width:100%;cursor:pointer;border:0;border-bottom:1px solid #eef2f7;background:#fff;padding:9px 11px;text-align:left;color:#334155;font:500 11px/1.35 Inter,sans-serif';
+      button.addEventListener('mouseenter', () => (button.style.background = '#f4f7fb'));
+      button.addEventListener('mouseleave', () => (button.style.background = '#fff'));
       button.addEventListener('click', () => this.select(result));
       this.results.append(button);
     }

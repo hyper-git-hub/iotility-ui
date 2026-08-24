@@ -12,7 +12,7 @@
     <label class="poi-search"><img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true"/><input type="search" placeholder="Search POI name, address, notes..." [value]="search()" (input)="updateSearch($event)"/></label>
   </section>
   <section class="poi-workspace smooth-reveal">
-    <article class="poi-map-card"><header><div class="poi-map-title"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" aria-hidden="true"/><strong>POI Map</strong><span>· {{ filtered().length }} shown</span></div><div class="poi-legend"><span class="depot"><i></i>Depot</span><span class="customer"><i></i>Customer</span><span class="fuel"><i></i>Fuel</span><span class="alert"><i></i>Alert</span></div></header><div class="poi-map"><app-fleet-map [vehicles]="mapPois()" [selectedVehicleId]="expandedId()" (vehicleSelected)="selectFromMap($event)"/></div></article>
+    <article class="poi-map-card"><header><div class="poi-map-title"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" aria-hidden="true"/><strong>POI Map</strong><span>· {{ filtered().length }} shown</span></div><div class="poi-legend"><span class="depot"><i></i>Depot</span><span class="customer"><i></i>Customer</span><span class="fuel"><i></i>Fuel</span><span class="alert"><i></i>Alert</span></div></header><div class="poi-map"><app-fleet-map [vehicles]="mapPois()" [selectedVehicleId]="expandedId()" (vehicleSelected)="selectFromMap($event)" [showOverlays]="false" /></div></article>
     <div class="poi-list">
       @for (poi of filtered(); track poi.id) {
         <article class="poi-card" [class.expanded]="expandedId() === poi.id" [class.has-alert]="poi.alerts" (click)="toggle(poi)">

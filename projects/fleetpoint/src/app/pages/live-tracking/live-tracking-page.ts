@@ -1,9 +1,26 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  computed,
+  effect,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownOption, Skeleton } from '@iotility/shared-ui';
 import { EMPTY, Subscription, catchError, finalize, interval, switchMap, timer } from 'rxjs';
-import { FleetMap, MapZoneOverlay, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
+import {
+  FleetMap,
+  MapZoneOverlay,
+  TrackedVehicle,
+  VehicleStatus,
+} from '../../shared/fleet-map/fleet-map';
+import { LiveBadge } from '../../shared/map-overlays/live-badge';
+import { SearchOverlay } from '../../shared/map-overlays/search-overlay';
+import { VehicleLegend } from '../../shared/map-overlays/vehicle-legend';
+import { FullscreenUiService } from '../../shared/services/fullscreen-ui.service';
 import {
   GeoZoneRecord,
   LiveTrackingApiService,
@@ -30,7 +47,7 @@ interface LiveVehicle extends TrackedVehicle {
 
 @Component({
   selector: 'app-live-tracking-page',
-  imports: [Skeleton, FleetMap, AllocationForm],
+  imports: [Skeleton, FleetMap, AllocationForm, LiveBadge, SearchOverlay, VehicleLegend],
   templateUrl: './live-tracking-page.html',
   styleUrl: './live-tracking-page.css',
 })
@@ -47,26 +64,52 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly now = signal(Date.now());
   protected readonly vehicles = signal<LiveVehicle[]>([]);
   protected readonly zones = signal<MapZoneOverlay[]>([]);
-  protected readonly filters: Array<VehicleStatus | 'All'> = ['All', 'Moving', 'Idling', 'Offline'];
+  protected readonly isFullscreen = computed(() => this.fullscreenUi.isFullscreen());
+  protected readonly fullscreenTrackingState = signal<'idle' | 'enabling' | 'waiting' | 'active'>(
+    'idle',
+  );
+  protected readonly isFullscreenTrackingEnabling = computed(
+    () => this.fullscreenTrackingState() === 'enabling',
+  );
+  protected readonly isFullscreenTrackingWaiting = computed(
+    () => this.fullscreenTrackingState() === 'waiting',
+  );
+  protected readonly isFullscreenTrackingActive = computed(
+    () => this.fullscreenTrackingState() === 'active',
+  );
+  protected readonly filters: Array<VehicleStatus | 'All'> = [
+    'All',
+    'Moving',
+    'Idling',
+    'Alert',
+    'Offline',
+  ];
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly locationOptions: DropdownOption[] = [
     { id: 'all', label: 'All locations', description: 'Every tracked vehicle' },
   ];
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
-    return this.vehicles().filter((vehicle) =>
-      (this.statusFilter() === 'All' || vehicle.status === this.statusFilter()) &&
-      (!query || `${vehicle.id} ${vehicle.model} ${vehicle.driver} ${vehicle.location}`.toLowerCase().includes(query)),
+    return this.vehicles().filter(
+      (vehicle) =>
+        (this.statusFilter() === 'All' || vehicle.status === this.statusFilter()) &&
+        (!query ||
+          `${vehicle.id} ${vehicle.model} ${vehicle.driver} ${vehicle.location}`
+            .toLowerCase()
+            .includes(query)),
     );
   });
   protected readonly mapVehicles = computed(() =>
-    this.filteredVehicles().filter((vehicle) => Number.isFinite(vehicle.lat) && Number.isFinite(vehicle.lng)),
+    this.filteredVehicles().filter(
+      (vehicle) => Number.isFinite(vehicle.lat) && Number.isFinite(vehicle.lng),
+    ),
   );
   private readonly subscription = new Subscription();
   private readonly apiSnapshots = new Map<number, LiveVehicle>();
   private readonly realtimeVehicles = new Set<number>();
   private selectionRequest = 0;
   private requestedVehicleId = '';
+  private fullscreenTrackingTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly api: LiveTrackingApiService,
@@ -74,12 +117,24 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     private readonly vehicleDetailApi: VehicleDetailApiService,
     private readonly router: Router,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly fullscreenUi: FullscreenUiService,
     route: ActivatedRoute,
   ) {
     const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
     this.requestedVehicleId = String(
       navigationState?.['vehicleId'] ?? route.snapshot.queryParamMap.get('vehicle_id') ?? '',
     );
+    effect(() => {
+      if (!this.isFullscreen() || !this.liveTrackingEnabled() || !this.selectedVehicle()) {
+        this.fullscreenTrackingState.set('idle');
+        return;
+      }
+      if (this.fullscreenTrackingState() !== 'enabling') {
+        this.fullscreenTrackingState.set(
+          this.selectedVehicle()?.lastSignalAt ? 'active' : 'waiting',
+        );
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -95,11 +150,16 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected loadVehicles(): void {
     this.loading.set(true);
     this.error.set('');
-    this.subscription.add(this.api.getGeoZones().subscribe({
-      next: (response) => this.zones.set((response.data?.data ?? []).flatMap((zone) => this.toMapZone(zone))),
-      error: () => this.zones.set([]),
-    }));
-    this.api.getVehicles().pipe(finalize(() => this.loading.set(false)))
+    this.subscription.add(
+      this.api.getGeoZones().subscribe({
+        next: (response) =>
+          this.zones.set((response.data?.data ?? []).flatMap((zone) => this.toMapZone(zone))),
+        error: () => this.zones.set([]),
+      }),
+    );
+    this.api
+      .getVehicles()
+      .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
           if (response.status !== 1000) {
@@ -113,16 +173,22 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
         error: (response: HttpErrorResponse) => {
           const message = response.error?.message || 'Live vehicle data could not be loaded.';
           this.error.set(message);
-          void this.feedback.open({ type: 'error', title: 'Unable to load live tracking', message, confirmText: 'Close', showCancel: false });
+          void this.feedback.open({
+            type: 'error',
+            title: 'Unable to load live tracking',
+            message,
+            confirmText: 'Close',
+            showCancel: false,
+          });
         },
       });
   }
 
   private startVehiclePolling(): void {
     this.subscription.add(
-      timer(30_000, 30_000).pipe(
-        switchMap(() => this.api.getVehicles().pipe(catchError(() => EMPTY))),
-      ).subscribe((response) => this.updateVehicleSnapshot(response.data?.data ?? [])),
+      timer(30_000, 30_000)
+        .pipe(switchMap(() => this.api.getVehicles().pipe(catchError(() => EMPTY))))
+        .subscribe((response) => this.updateVehicleSnapshot(response.data?.data ?? [])),
     );
   }
 
@@ -133,7 +199,10 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       const snapshot = this.toTrackedVehicle(record);
       this.apiSnapshots.set(record.id, snapshot);
       const current = currentVehicles.get(record.id);
-      return current && this.liveTrackingEnabled() && record.id === selectedId && this.realtimeVehicles.has(record.id)
+      return current &&
+        this.liveTrackingEnabled() &&
+        record.id === selectedId &&
+        this.realtimeVehicles.has(record.id)
         ? {
             ...snapshot,
             lat: current.lat,
@@ -150,17 +219,29 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     });
     this.vehicles.set(vehicles);
     if (selectedId !== undefined) {
-      this.selectedVehicle.set(vehicles.find((vehicle) => vehicle.numericId === selectedId) ?? null);
+      this.selectedVehicle.set(
+        vehicles.find((vehicle) => vehicle.numericId === selectedId) ?? null,
+      );
     }
   }
 
-  protected updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); }
-  protected updateLocation(ids: string[]): void { this.locationFilter.set(ids[0] ?? 'all'); }
-  protected locationLabel(): string { return 'All locations'; }
+  protected updateSearch(event: Event): void {
+    this.search.set((event.target as HTMLInputElement).value);
+  }
+  protected updateSearchValue(value: string): void {
+    this.search.set(value);
+  }
+  protected updateLocation(ids: string[]): void {
+    this.locationFilter.set(ids[0] ?? 'all');
+  }
+  protected locationLabel(): string {
+    return 'All locations';
+  }
   protected selectVehicle(vehicle: TrackedVehicle): void {
     const previousId = this.selectedVehicle()?.numericId;
     if (previousId !== undefined) this.restoreApiVehicle(previousId);
-    const selected = this.vehicles().find((item) => item.id === vehicle.id) ?? vehicle as LiveVehicle;
+    const selected =
+      this.vehicles().find((item) => item.id === vehicle.id) ?? (vehicle as LiveVehicle);
     this.liveTrackingEnabled.set(false);
     this.selectedVehicle.set(selected);
     this.resolveSelectedVehicleDevice(selected);
@@ -170,8 +251,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     if (!this.requestedVehicleId) return;
     const requested = this.requestedVehicleId;
     this.requestedVehicleId = '';
-    const vehicle = this.vehicles().find((item) =>
-      String(item.numericId) === requested || item.id.toLowerCase() === requested.toLowerCase(),
+    const vehicle = this.vehicles().find(
+      (item) =>
+        String(item.numericId) === requested || item.id.toLowerCase() === requested.toLowerCase(),
     );
     if (vehicle) this.selectVehicle(vehicle);
   }
@@ -191,6 +273,24 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.liveTrackingEnabled.set(true);
   }
 
+  protected toggleLiveTracking(): void {
+    this.liveTrackingEnabled() ? this.stopLiveTracking() : this.enableLiveTracking();
+  }
+
+  protected onFullscreenVehicleClick(vehicle: TrackedVehicle): void {
+    if (this.selectedVehicle()?.id !== vehicle.id) this.selectVehicle(vehicle);
+    if (this.liveTrackingEnabled()) {
+      this.stopLiveTracking();
+      return;
+    }
+    this.enableLiveTracking();
+    this.fullscreenTrackingState.set('enabling');
+    clearTimeout(this.fullscreenTrackingTimeout);
+    this.fullscreenTrackingTimeout = setTimeout(() => {
+      this.fullscreenTrackingState.set(this.selectedVehicle()?.lastSignalAt ? 'active' : 'waiting');
+    }, 800);
+  }
+
   protected stopLiveTracking(): void {
     const vehicleId = this.selectedVehicle()?.numericId;
     this.liveTrackingEnabled.set(false);
@@ -206,12 +306,44 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     return minutes === 1 ? '1 min ago' : `${minutes} min ago`;
   }
 
-  protected openDriverAllocation(): void { this.allocationOpen.set(true); }
-  protected closeDriverAllocation(): void { this.allocationOpen.set(false); }
-  protected allocationSaved(): void { this.allocationOpen.set(false); this.loadVehicles(); }
+  protected openDriverAllocation(): void {
+    this.allocationOpen.set(true);
+  }
+  protected closeDriverAllocation(): void {
+    this.allocationOpen.set(false);
+  }
+  protected allocationSaved(): void {
+    this.allocationOpen.set(false);
+    this.loadVehicles();
+  }
   protected viewTripHistory(): void {
     const vehicle = this.selectedVehicle();
-    if (vehicle) void this.router.navigate(['/fleetpoint/trip-replay'], { state: { vehicleId: vehicle.numericId } });
+    if (vehicle)
+      void this.router.navigate(['/fleetpoint/trip-replay'], {
+        state: { vehicleId: vehicle.numericId },
+      });
+  }
+
+  protected onMapReady(_fleetMap: FleetMap): void {
+    this.mapLoaded.set(true);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.fullscreenUi.isFullscreen()) void this.fullscreenUi.toggle();
+  }
+
+  protected statusColor(status: string): string {
+    switch (status) {
+      case 'Moving':
+        return 'var(--color-success)';
+      case 'Idling':
+        return 'var(--color-warning)';
+      case 'Alert':
+        return 'var(--color-danger)';
+      default:
+        return 'var(--color-muted)';
+    }
   }
 
   protected vehicleImage(image: string | null): string {
@@ -260,21 +392,34 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       const points = territory
         .map((point) => this.zonePoint(point))
         .filter((point): point is [number, number] => Boolean(point));
-      return points.length > 2 ? [{ id: String(zone.id), label: zone.name, geometry: 'polygon', color, points }] : [];
+      return points.length > 2
+        ? [{ id: String(zone.id), label: zone.name, geometry: 'polygon', color, points }]
+        : [];
     }
     if (typeof territory !== 'object') return [];
     const record = territory as Record<string, unknown>;
     const center = this.zonePoint(record);
     const radius = this.numberValue(record['radius'], Number.NaN);
     if (center && Number.isFinite(radius)) {
-      return [{ id: String(zone.id), label: zone.name, geometry: 'circle', color, center, radius: radius * 1000 }];
+      return [
+        {
+          id: String(zone.id),
+          label: zone.name,
+          geometry: 'circle',
+          color,
+          center,
+          radius: radius * 1000,
+        },
+      ];
     }
     const rawPoints = record['coordinates'] ?? record['points'] ?? record['paths'];
     if (!Array.isArray(rawPoints)) return [];
     const points = rawPoints
       .map((point) => this.zonePoint(point))
       .filter((point): point is [number, number] => Boolean(point));
-    return points.length > 2 ? [{ id: String(zone.id), label: zone.name, geometry: 'polygon', color, points }] : [];
+    return points.length > 2
+      ? [{ id: String(zone.id), label: zone.name, geometry: 'polygon', color, points }]
+      : [];
   }
 
   private zonePoint(value: unknown): [number, number] | null {
@@ -293,29 +438,32 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     const packetDeviceId = String(update.device_id ?? update.id ?? '');
     const registration = update.registration?.toLowerCase();
     let selected: LiveVehicle | undefined;
-    this.vehicles.update((vehicles) => vehicles.map((vehicle) => {
-      if (vehicle.numericId !== activeVehicle.numericId) return vehicle;
-      if (
-        String(vehicle.numericId) !== updateId &&
-        (!vehicle.deviceId || vehicle.deviceId !== packetDeviceId) &&
-        vehicle.id.toLowerCase() !== registration
-      ) return vehicle;
-      const speed = this.numberValue(update.speed ?? update.spd ?? vehicle.speed);
-      const lat = this.numberValue(update.latitude ?? update.lat, vehicle.lat);
-      const lng = this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng);
-      const ignition = this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition);
-      const changed: LiveVehicle = {
-        ...vehicle,
-        speed,
-        lat,
-        lng,
-        status: speed > 8 ? 'Moving' : ignition ? 'Idling' : 'Offline',
-        updated: this.updateTime(update.updated_time ?? update.t),
-      };
-      this.realtimeVehicles.add(vehicle.numericId);
-      if (this.selectedVehicle()?.numericId === vehicle.numericId) selected = changed;
-      return changed;
-    }));
+    this.vehicles.update((vehicles) =>
+      vehicles.map((vehicle) => {
+        if (vehicle.numericId !== activeVehicle.numericId) return vehicle;
+        if (
+          String(vehicle.numericId) !== updateId &&
+          (!vehicle.deviceId || vehicle.deviceId !== packetDeviceId) &&
+          vehicle.id.toLowerCase() !== registration
+        )
+          return vehicle;
+        const speed = this.numberValue(update.speed ?? update.spd ?? vehicle.speed);
+        const lat = this.numberValue(update.latitude ?? update.lat, vehicle.lat);
+        const lng = this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng);
+        const ignition = this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition);
+        const changed: LiveVehicle = {
+          ...vehicle,
+          speed,
+          lat,
+          lng,
+          status: speed > 8 ? 'Moving' : ignition ? 'Idling' : 'Offline',
+          updated: this.updateTime(update.updated_time ?? update.t),
+        };
+        this.realtimeVehicles.add(vehicle.numericId);
+        if (this.selectedVehicle()?.numericId === vehicle.numericId) selected = changed;
+        return changed;
+      }),
+    );
     if (selected) this.selectedVehicle.set(selected);
   }
 
@@ -323,15 +471,15 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     const snapshot = this.apiSnapshots.get(vehicleId);
     this.realtimeVehicles.delete(vehicleId);
     if (!snapshot) return;
-    const selectedDeviceId = this.selectedVehicle()?.numericId === vehicleId
-      ? this.selectedVehicle()?.deviceId
-      : '';
-    const resolvedDeviceId = this.vehicles().find((vehicle) => vehicle.numericId === vehicleId)?.deviceId
-      || selectedDeviceId;
+    const selectedDeviceId =
+      this.selectedVehicle()?.numericId === vehicleId ? this.selectedVehicle()?.deviceId : '';
+    const resolvedDeviceId =
+      this.vehicles().find((vehicle) => vehicle.numericId === vehicleId)?.deviceId ||
+      selectedDeviceId;
     const restored = { ...snapshot, deviceId: resolvedDeviceId || snapshot.deviceId };
-    this.vehicles.update((vehicles) => vehicles.map((vehicle) =>
-      vehicle.numericId === vehicleId ? restored : vehicle,
-    ));
+    this.vehicles.update((vehicles) =>
+      vehicles.map((vehicle) => (vehicle.numericId === vehicleId ? restored : vehicle)),
+    );
     if (this.selectedVehicle()?.numericId === vehicleId) this.selectedVehicle.set(restored);
   }
 
@@ -341,15 +489,23 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.subscription.add(
       this.vehicleDetailApi.getVehicle(String(vehicle.numericId)).subscribe({
         next: (response) => {
-          if (request !== this.selectionRequest || this.selectedVehicle()?.numericId !== vehicle.numericId) return;
+          if (
+            request !== this.selectionRequest ||
+            this.selectedVehicle()?.numericId !== vehicle.numericId
+          )
+            return;
           const deviceId = String(response.data?.data?.[0]?.device_id ?? '').trim();
           if (!deviceId) return;
           const snapshot = this.apiSnapshots.get(vehicle.numericId);
           if (snapshot) this.apiSnapshots.set(vehicle.numericId, { ...snapshot, deviceId });
-          this.vehicles.update((vehicles) => vehicles.map((item) =>
-            item.numericId === vehicle.numericId ? { ...item, deviceId } : item,
-          ));
-          this.selectedVehicle.update((selected) => selected ? { ...selected, deviceId } : selected);
+          this.vehicles.update((vehicles) =>
+            vehicles.map((item) =>
+              item.numericId === vehicle.numericId ? { ...item, deviceId } : item,
+            ),
+          );
+          this.selectedVehicle.update((selected) =>
+            selected ? { ...selected, deviceId } : selected,
+          );
         },
       }),
     );
@@ -373,12 +529,14 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   private updateTime(value: string | number | undefined): string {
     if (!value) return 'Just now';
-    const date = typeof value === 'number' ? new Date(value > 1e12 ? value : value * 1000) : new Date(value);
+    const date =
+      typeof value === 'number' ? new Date(value > 1e12 ? value : value * 1000) : new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   }
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
     void this.realtime.disconnect();
+    clearTimeout(this.fullscreenTrackingTimeout);
   }
 }
