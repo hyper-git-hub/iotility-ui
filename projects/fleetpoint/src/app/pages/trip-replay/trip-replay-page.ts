@@ -71,6 +71,7 @@ const EMPTY_TRIP: ReplayTrip = {
 })
 export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly playbackStepDuration = 600;
+  protected readonly stepDurationMs = signal(this.playbackStepDuration);
   protected readonly search = signal('');
   protected readonly vehicles = signal<RealtimeVehicleRecord[]>([]);
   protected readonly vehicleImages = signal<Record<number, string>>({});
@@ -131,6 +132,24 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly currentEvent = computed(() => {
     const id = this.selectedEventId();
     return id ? this.trip().events.find((event) => event.id === id) ?? null : null;
+  });
+  protected readonly tripStats = computed(() => {
+    const trip = this.trip();
+    const positions = trip.positions;
+    if (!positions.length) return null;
+    const speeds = positions.map((p) => p.speed);
+    const maxSpeed = Math.max(...speeds);
+    const avgSpeed = Math.round(speeds.reduce((sum, s) => sum + s, 0) / speeds.length);
+    const idlePositions = positions.filter((p) => p.speed === 0).length;
+    const idleMinutes = Math.round((idlePositions * this.playbackStepDuration) / 60_000);
+    return {
+      distance: trip.distance,
+      duration: trip.duration,
+      maxSpeed,
+      avgSpeed,
+      idleTime: idleMinutes,
+      fuel: trip.fuel,
+    };
   });
 
   constructor(
@@ -263,25 +282,30 @@ export class TripReplayPage implements OnInit, OnDestroy {
     if (this.positionIndex() >= this.trip().positions.length - 1) this.positionIndex.set(0);
     this.clearPlaybackFrame();
     this.playing.set(true);
-    const startedAt = performance.now();
-    const startIndex = this.positionIndex();
-    const stepDuration = this.playbackStepDuration / this.speed();
-    const lastIndex = this.trip().positions.length - 1;
+    const positions = this.trip().positions;
+    const speed = this.speed();
+    const startIdx = this.positionIndex();
+    const lastIndex = positions.length - 1;
+    const offsets = this.buildTimeOffsets(positions, startIdx);
+    const totalTripMs = offsets[offsets.length - 1] || 1;
+    const wallStart = performance.now();
     this.zone.runOutsideAngular(() => {
       const advance = (now: number) => {
         if (!this.playing()) return;
-        // Derive progress from the animation clock instead of accumulating
-        // setInterval delays. A late frame can catch up without permanently
-        // shifting every following GPS transition.
-        const timelineIndex = startIndex + Math.floor((now - startedAt) / stepDuration);
-        const nextIndex = Math.min(timelineIndex, lastIndex);
-        if (nextIndex !== this.positionIndex()) this.positionIndex.set(nextIndex);
-        // Keep playback active for the final segment's duration so the map
-        // interpolates into the last point instead of snapping to it.
-        if (timelineIndex > lastIndex) {
-          this.pause();
-          return;
+        const elapsedTripMs = (now - wallStart) * speed;
+        let idx = 0;
+        for (let i = offsets.length - 1; i >= 0; i--) {
+          if (offsets[i] <= elapsedTripMs) { idx = i; break; }
         }
+        const nextIndex = Math.min(startIdx + idx, lastIndex);
+        if (nextIndex !== this.positionIndex()) {
+          const segmentDuration = idx > 0 ? offsets[idx] - offsets[idx - 1] : offsets[0];
+          this.stepDurationMs.set(Math.max(40, segmentDuration / speed));
+          this.positionIndex.set(nextIndex);
+          const pos = positions[nextIndex];
+          console.log(`[Playback] idx=${nextIndex} lat=${pos.lat} lng=${pos.lng} speed=${pos.speed} km/h time=${pos.timestamp}`);
+        }
+        if (elapsedTripMs >= totalTripMs) { this.pause(); return; }
         this.playbackFrame = requestAnimationFrame(advance);
       };
       this.playbackFrame = requestAnimationFrame(advance);
@@ -583,6 +607,24 @@ export class TripReplayPage implements OnInit, OnDestroy {
   private clearPlaybackFrame(): void {
     if (this.playbackFrame !== undefined) cancelAnimationFrame(this.playbackFrame);
     this.playbackFrame = undefined;
+  }
+  private buildTimeOffsets(positions: TripPosition[], startIdx: number): number[] {
+    const offsets = [0];
+    for (let i = startIdx + 1; i < positions.length; i++) {
+      const prev = this.parseTimestamp(positions[i - 1]?.timestamp);
+      const curr = this.parseTimestamp(positions[i]?.timestamp);
+      const gap =
+        Number.isFinite(prev) && Number.isFinite(curr) && curr > prev
+          ? Math.min(curr - prev, 300_000)
+          : this.playbackStepDuration;
+      offsets.push(offsets[offsets.length - 1] + gap);
+    }
+    return offsets;
+  }
+  private parseTimestamp(value?: string): number {
+    if (!value) return NaN;
+    const ms = new Date(value).getTime();
+    return Number.isFinite(ms) ? ms : NaN;
   }
   ngOnDestroy(): void {
     this.clearPlaybackFrame();

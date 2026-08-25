@@ -16,7 +16,7 @@
   <div class="list-column">
     <shared-data-table
       title="All Violations"
-      [subtitle]="'Showing '+filtered().length+' of '+VIOLATIONS.length+' violations · Click a row to view details'"
+      [subtitle]="'Showing '+filtered().length+' of '+totalCount()+' violations · Click a row to view details'"
       [columns]="columns"
       [rows]="rows()"
       [clientSideSearch]="false"
@@ -31,6 +31,24 @@
       (searchChange)="search.set($event)"
       (rowSelected)="selectRow($event)"
     >
+      <ng-template tableCell="type" let-row>
+        <span class="violation-type-cell">
+          <span class="type-icon-badge" [style.background]="categoryIconColor(row['category'])" [innerHTML]="categoryIcon(row['category'])"></span>
+          <span class="type-text"><strong>{{ row['type'] }}</strong><small>{{ row['id'] }}</small></span>
+        </span>
+      </ng-template>
+      <ng-template tableCell="source" let-row>
+        <span class="source-badge" [style.--src-color]="sourceIconColor(row['source'])">
+          <span class="source-icon" [innerHTML]="sourceIcon(row['source'])"></span>
+          {{ row['source'] }}
+        </span>
+      </ng-template>
+      <ng-template tableCell="speedDisplay" let-row>
+        <span class="speed-cell" [class.speed-exceeded]="isSpeedExceeded(row)">{{ row['speedDisplay'] }}</span>
+      </ng-template>
+      <ng-template tableCell="fineDisplay" let-row>
+        <span class="fine-cell" [class.has-fine]="row['fine'] > 0">{{ row['fineDisplay'] }}</span>
+      </ng-template>
       <ng-template tableBottomPanel>
         @if (selected(); as item) {
           <section class="violation-details">

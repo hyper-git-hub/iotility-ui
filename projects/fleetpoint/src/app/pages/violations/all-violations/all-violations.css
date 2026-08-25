@@ -40,5 +40,22 @@
 :host-context(.dark) .map-panel { background:var(--color-dark-surface);border-color:var(--color-dark-line);color:white; }
 :host-context(.dark) .filter-dropdown [dropdown-trigger] { background:var(--color-dark-canvas); }
 
+.violation-type-cell { @apply inline-flex items-center gap-2; }
+.type-icon-badge { @apply flex size-6 shrink-0 items-center justify-center rounded-lg text-white; }
+.type-icon-badge svg { @apply size-3; }
+.type-text { @apply flex flex-col leading-tight; }
+.type-text strong { @apply text-xs font-semibold text-ink dark:text-white; }
+.type-text small { @apply text-[9px] text-muted dark:text-brand-300; }
+
+.source-badge { @apply inline-flex items-center gap-1 rounded-full bg-canvas px-2 py-0.5 text-[10px] font-medium text-muted dark:bg-dark-canvas dark:text-brand-300; color: var(--src-color); background: color-mix(in srgb, var(--src-color) 10%, transparent); }
+.source-icon { @apply flex size-3 items-center justify-center; }
+.source-icon svg { @apply size-3; }
+
+.speed-cell { @apply text-xs font-medium; }
+.speed-exceeded { @apply font-bold text-danger; }
+
+.fine-cell { @apply text-xs; }
+.fine-cell.has-fine { @apply font-bold text-danger; }
+
 @media (max-width:1279px) { .map-panel { @apply h-[28rem]; } }
 @media (max-width:700px) { .detail-footer { @apply items-start; } .detail-footer { @apply flex-col; } }

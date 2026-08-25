@@ -112,7 +112,7 @@
           [positionIndex]="positionIndex()"
           [playbackActive]="playing()"
           [playbackSpeed]="speed()"
-          [playbackStepDuration]="playbackStepDuration"
+          [playbackStepDuration]="stepDurationMs()"
           [selectedEventId]="selectedEventId()"
           (ready)="mapLoaded.set(true)"
           (eventSelected)="jumpToEvent($event)"
@@ -318,6 +318,43 @@
           }
         }
       </header>
+      @if (loading() || trailLoading()) {
+        <section class="trip-stats">
+          @for (_ of [1, 2, 3, 4, 5, 6]; track $index) {
+            <div class="trip-stat">
+              <ui-skeleton width="3rem" height="1rem" radius="0.25rem" />
+              <ui-skeleton width="2.5rem" height="0.6rem" radius="0.25rem" />
+            </div>
+          }
+        </section>
+      } @else if (tripStats(); as stats) {
+        <section class="trip-stats">
+          <div class="trip-stat">
+            <strong>{{ stats.distance }} mi</strong>
+            <small>Distance</small>
+          </div>
+          <div class="trip-stat">
+            <strong>{{ stats.duration }}</strong>
+            <small>Duration</small>
+          </div>
+          <div class="trip-stat">
+            <strong>{{ stats.maxSpeed }}kph</strong>
+            <small>Max Speed</small>
+          </div>
+          <div class="trip-stat">
+            <strong>{{ stats.avgSpeed }}kph</strong>
+            <small>Avg Speed</small>
+          </div>
+          <div class="trip-stat">
+            <strong>{{ stats.idleTime }}m</strong>
+            <small>Idle Time</small>
+          </div>
+          <div class="trip-stat">
+            <strong>{{ stats.fuel }}L</strong>
+            <small>Fuel Used</small>
+          </div>
+        </section>
+      }
       <section class="journey-card">
         @if (loading() || trailLoading()) {
           <span class="journey-line-skeleton"

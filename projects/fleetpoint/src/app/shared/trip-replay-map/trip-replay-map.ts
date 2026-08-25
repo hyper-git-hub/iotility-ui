@@ -712,7 +712,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.movementStartDistance = this.displayedRoadDistance;
     this.targetRoadDistance = targetDistance;
     this.movementStartedAt = performance.now();
-    this.movementDuration = Math.max(40, this.playbackStepDuration() / this.playbackSpeed());
+    this.movementDuration = Math.max(40, this.playbackStepDuration());
     this.movementFinished = false;
     this.cameraSettledFor = 0;
     this.startCameraLoop();
