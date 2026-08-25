@@ -318,17 +318,15 @@
           }
         }
       </header>
-      @if (loading() || trailLoading()) {
-        <section class="trip-stats">
+      <section class="trip-stats">
+        @if (loading()) {
           @for (_ of [1, 2, 3, 4, 5, 6]; track $index) {
             <div class="trip-stat">
               <ui-skeleton width="3rem" height="1rem" radius="0.25rem" />
               <ui-skeleton width="2.5rem" height="0.6rem" radius="0.25rem" />
             </div>
           }
-        </section>
-      } @else if (tripStats(); as stats) {
-        <section class="trip-stats">
+        } @else if (tripStats(); as stats) {
           <div class="trip-stat">
             <strong>{{ stats.distance }} mi</strong>
             <small>Distance</small>
@@ -353,10 +351,35 @@
             <strong>{{ stats.fuel }}L</strong>
             <small>Fuel Used</small>
           </div>
-        </section>
-      }
+        } @else {
+          <div class="trip-stat">
+            <strong>—</strong>
+            <small>Distance</small>
+          </div>
+          <div class="trip-stat">
+            <strong>—</strong>
+            <small>Duration</small>
+          </div>
+          <div class="trip-stat">
+            <strong>—</strong>
+            <small>Max Speed</small>
+          </div>
+          <div class="trip-stat">
+            <strong>—</strong>
+            <small>Avg Speed</small>
+          </div>
+          <div class="trip-stat">
+            <strong>—</strong>
+            <small>Idle Time</small>
+          </div>
+          <div class="trip-stat">
+            <strong>—</strong>
+            <small>Fuel Used</small>
+          </div>
+        }
+      </section>
       <section class="journey-card">
-        @if (loading() || trailLoading()) {
+        @if (loading()) {
           <span class="journey-line-skeleton"
             ><ui-skeleton variant="circle" width="0.5rem" height="0.5rem" /><ui-skeleton
               width="10.5rem"
@@ -396,7 +419,7 @@
         </button>
       </nav>
       <div #detailContent class="detail-content">
-        @if (loading() || trailLoading()) {
+        @if (loading()) {
           @for (_ of detailSkeletons; track $index) {
             <div class="detail-row-skeleton" aria-hidden="true">
               <ui-skeleton width="1.75rem" height="1.75rem" radius="0.5rem" />

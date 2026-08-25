@@ -50,7 +50,7 @@
     transform var(--sidebar-motion),
     color 160ms ease;
 }
-.brand-toggle img {
+.brand-toggle svg {
   @apply size-4;
   fill: none;
   stroke: currentColor;
@@ -60,8 +60,10 @@
   transition: transform var(--sidebar-motion);
 }
 .fleet-sidebar.collapsed .brand {
-  @apply h-16;
-  padding-left: 0.75rem;
+  @apply h-16 justify-center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  gap: 0.25rem;
 }
 .fleet-sidebar.collapsed .brand-text {
   max-width: 0;
@@ -80,12 +82,9 @@
   left: auto;
 }
 .fleet-sidebar.collapsed .brand-toggle {
-  @apply ml-0;
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  margin-left: 0;
-  transform: translateX(-50%);
+  @apply shrink-0 ml-0;
+  position: static;
+  transform: none;
 }
 .fleet-sidebar.collapsed .brand-toggle svg {
   transform: rotate(180deg);
