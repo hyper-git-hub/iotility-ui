@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { AuthSessionService } from './auth-session.service';
 
 export interface RecentApp {
   id: string;
@@ -20,10 +21,10 @@ export const FLEETPOINT_APP: RecentApp = {
 
 @Injectable({ providedIn: 'root' })
 export class RecentAppsService {
-  private readonly storageKey = 'iotility-recent-apps';
+  private readonly storageKeyBase = 'iotility-recent-apps';
   readonly apps = signal<RecentApp[]>([]);
 
-  constructor() {
+  constructor(private readonly authSession: AuthSessionService) {
     this.load();
   }
 
@@ -37,6 +38,16 @@ export class RecentAppsService {
     const next = this.apps().filter((item) => item.id !== id);
     this.apps.set(next);
     this.persist(next);
+  }
+
+  reload(): void {
+    this.apps.set([]);
+    this.load();
+  }
+
+  private get storageKey(): string {
+    const email = this.authSession.email;
+    return email ? `${this.storageKeyBase}-${email}` : this.storageKeyBase;
   }
 
   private load(): void {

@@ -173,6 +173,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return this.vehicleOrientationScratch;
   };
 
+  private themeObserver?: MutationObserver;
+
   constructor(private readonly zone: NgZone) {
     effect(() => {
       const positions = this.positions(),
@@ -203,6 +205,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.map.addControl(this.vehicleOverlay as unknown as maplibregl.IControl);
     void this.loadVehicleModel();
     this.map.on('style.load', () => this.renderRouteLayers());
+    this.watchTheme();
     this.map.once('load', () => {
       void this.renderRoute(this.positions(), this.events());
       this.map?.once('idle', () => this.emitReady());
@@ -275,9 +278,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           : event.type === 'dashcam'
             ? css('--color-warning', '#eca91f')
             : css('--color-info', '#397bd5');
-      const glyph = event.type === 'violation' ? '!' : event.type === 'dashcam' ? '●' : '■';
+      const glyph = event.type === 'violation' ? '!' : event.type === 'dashcam' ? '●' : '';
+      const border = event.type === 'stop' ? 'none' : '2px solid #fff';
+      const size = event.type === 'stop' ? '12px' : '18px';
       const element = markerElement(
-        `<span aria-hidden="true" style="display:grid;place-items:center;width:18px;height:18px;border:2px solid #fff;border-radius:50%;background:${color};color:#fff;font:700 10px/1 sans-serif;box-shadow:0 2px 7px #18223855">${glyph}</span>`,
+        `<span aria-hidden="true" style="display:grid;place-items:center;width:${size};height:${size};border:${border};border-radius:50%;background:${color};color:#fff;font:700 10px/1 sans-serif;box-shadow:0 2px 7px #18223855">${glyph}</span>`,
       );
       element.classList.add('event-dot', `type-${event.type}`);
       element.setAttribute('aria-label', `${event.label}: ${event.detail}`);
@@ -430,17 +435,12 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   }
 
   // Keeps the map in sync with whichever event is selected anywhere in the UI:
-  // enlarges its dot and pins the shared detail card on it.
+  // enlarges its dot — the detail card only appears on hover.
   private applyEventSelection(): void {
     const selectedId = this.selectedEventId();
-    let selectedRecord: EventMarkerRecord | undefined;
     for (const record of this.eventMarkers) {
-      const isSelected = record.event.id === selectedId;
-      record.element.classList.toggle('selected', isSelected);
-      if (isSelected) selectedRecord = record;
+      record.element.classList.toggle('selected', record.event.id === selectedId);
     }
-    if (selectedRecord) this.showEventCard(selectedRecord);
-    else this.hideEventCard();
   }
 
   private showEventCard(record: EventMarkerRecord): void {
@@ -453,19 +453,12 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   }
 
   // Small delay so moving the cursor between the dot and the card (or within
-  // the card) never makes it flicker away mid-read. When a different event is
-  // pinned by selection, the card snaps back to that one instead of hiding.
+  // the card) never makes it flicker away mid-read.
   private queueHideEventCard(): void {
     if (this.eventCardHideTimer !== undefined) clearTimeout(this.eventCardHideTimer);
     this.eventCardHideTimer = window.setTimeout(() => {
       this.eventCardHideTimer = undefined;
-      const selectedId = this.selectedEventId();
-      const selectedRecord =
-        selectedId === null
-          ? undefined
-          : this.eventMarkers.find((item) => item.event.id === selectedId);
-      if (selectedRecord) this.showEventCard(selectedRecord);
-      else this.hideEventCard();
+      this.hideEventCard();
     }, 90);
   }
 
@@ -1094,7 +1087,22 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.stopCameraLoop();
     this.routeRequest?.abort();
     this.vehicleOverlay?.finalize();
+    this.themeObserver?.disconnect();
     if (this.vehicleModelUrl) URL.revokeObjectURL(this.vehicleModelUrl);
     this.map?.remove();
+  }
+
+  private watchTheme(): void {
+    this.themeObserver = new MutationObserver(() => {
+      if (!this.map) return;
+      // After setStyle({ diff: false }) the new style may not be fully settled
+      // when 'style.load' fires, so use 'idle' which guarantees the map has
+      // finished painting the new style and all sources are ready.
+      this.map.once('idle', () => this.renderRouteLayers());
+    });
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
   }
 }

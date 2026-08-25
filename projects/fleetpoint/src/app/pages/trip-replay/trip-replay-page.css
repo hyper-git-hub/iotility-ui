@@ -305,9 +305,6 @@
   height: 10px;
   border-radius: 999px;
 }
-.legend-item i.square {
-  border-radius: 2px;
-}
 :host-context(.dark) .map-legend {
   border-color: var(--color-dark-line);
   background: color-mix(in srgb, var(--color-dark-surface) 95%, transparent);
@@ -430,7 +427,7 @@
     0 1px 2px rgb(0 0 / 15%);
 }
 .event-markers button.stop-marker {
-  background: var(--color-warning);
+  background: var(--color-info);
 }
 .playback-toolbar {
   display: flex;

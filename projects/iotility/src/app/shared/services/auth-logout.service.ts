@@ -4,6 +4,7 @@ import { finalize } from 'rxjs';
 import { AuthApiService } from './auth-api.service';
 import { AuthSessionService } from './auth-session.service';
 import { FeedbackDialogService } from './feedback-dialog.service';
+import { RecentAppsService } from './recent-apps.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthLogoutService {
@@ -13,6 +14,7 @@ export class AuthLogoutService {
     private readonly authApi: AuthApiService,
     private readonly authSession: AuthSessionService,
     private readonly feedbackDialog: FeedbackDialogService,
+    private readonly recentApps: RecentAppsService,
     private readonly router: Router,
   ) {}
 
@@ -43,6 +45,7 @@ export class AuthLogoutService {
 
   private finish(): void {
     this.authSession.clear();
+    this.recentApps.reload();
     void this.router.navigateByUrl('/auth/login');
   }
 }

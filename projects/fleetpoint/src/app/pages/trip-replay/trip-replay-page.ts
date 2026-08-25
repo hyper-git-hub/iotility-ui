@@ -89,13 +89,13 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly error = signal('');
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
   protected readonly detailSkeletons = Array.from({ length: 5 });
-  protected readonly legendItems: Array<{ label: string; color: string; square: boolean }> = [
-    { label: 'Travelled', color: 'var(--color-brand-500)', square: false },
-    { label: 'Start', color: 'var(--color-success)', square: false },
-    { label: 'End', color: 'var(--color-danger)', square: false },
-    { label: 'Violation', color: 'var(--color-danger)', square: true },
-    { label: 'DashCam', color: 'var(--color-warning)', square: true },
-    { label: 'Stop', color: 'var(--color-info)', square: true },
+  protected readonly legendItems: Array<{ label: string; color: string }> = [
+    { label: 'Travelled', color: 'var(--color-brand-500)' },
+    { label: 'Start', color: 'var(--color-success)' },
+    { label: 'End', color: 'var(--color-danger)' },
+    { label: 'Violation', color: 'var(--color-danger)' },
+    { label: 'DashCam', color: 'var(--color-warning)' },
+    { label: 'Stop', color: 'var(--color-info)' },
   ];
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
@@ -129,11 +129,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.trip().positions.length ? this.positionIndex() + 1 : 0,
   );
   protected readonly currentEvent = computed(() => {
-    const index = this.positionIndex();
-    return (
-      this.trip().events.find((event) => event.type !== 'stop' && event.positionIndex === index) ??
-      null
-    );
+    const id = this.selectedEventId();
+    return id ? this.trip().events.find((event) => event.id === id) ?? null : null;
   });
 
   constructor(

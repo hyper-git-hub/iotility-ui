@@ -152,7 +152,7 @@
           <div class="map-legend" aria-hidden="true">
             @for (item of legendItems; track item.label) {
               <span class="legend-item">
-                <i [class.square]="item.square" [style.background]="item.color"></i
+                <i [style.background]="item.color"></i
                 >{{ item.label }}
               </span>
             }
