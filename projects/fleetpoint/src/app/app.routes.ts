@@ -397,12 +397,6 @@ export const routes: Routes = [
               ),
           },
           {
-            path: 'groups',
-            title: 'Driver Groups | FleetPoint',
-            loadComponent: () =>
-              import('./pages/drivers/group-list/group-list').then((module) => module.GroupList),
-          },
-          {
             path: 'managers',
             title: 'Driver Managers | FleetPoint',
             loadComponent: () =>

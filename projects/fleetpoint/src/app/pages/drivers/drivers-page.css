@@ -175,8 +175,47 @@
 .driver-filters {
   @apply rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
 }
+.driver-view-switch { @apply flex h-10 overflow-hidden rounded-xl border border-line dark:border-dark-line; }
+.driver-view-switch button { @apply inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-line px-3 text-[11px] font-medium text-muted transition dark:border-dark-line dark:text-brand-300; }
+.driver-view-switch button { @apply h-full rounded-none border-0; }
+.driver-view-switch button.active { @apply border-brand-600 bg-brand-600 text-white; }
+.driver-grid-icon { @apply grid size-4 grid-cols-2 gap-0.5; }
+.driver-grid-icon i { @apply rounded-[2px] bg-current; }
+.driver-card-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3; }
+.driver-card { @apply cursor-pointer rounded-2xl border border-line bg-white p-4 transition hover:border-brand-500/50 hover:shadow-md dark:border-dark-line dark:bg-dark-surface; }
+.driver-card > header { @apply mb-4 flex items-start gap-3; }
+.driver-card-avatar { @apply grid size-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-info text-xs font-bold text-white; }
+.driver-card header > div { @apply grid min-w-0 flex-1; }
+.driver-card header strong { @apply truncate text-sm; }
+.driver-card header small { @apply mt-0.5 truncate text-[10px] text-muted dark:text-brand-300; }
+.driver-shift { @apply rounded-full border border-line bg-canvas px-2 py-1 text-[10px] text-muted dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300; }
+.driver-shift.active { @apply border-success/20 bg-success/10 text-success; }
+.driver-score { @apply mb-4 grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1; }
+.driver-score span { @apply text-[10px] text-muted dark:text-brand-300; }
+.driver-score strong { @apply text-xs; }
+.driver-score i { @apply col-span-2 h-2 overflow-hidden rounded-full bg-canvas dark:bg-dark-canvas; }
+.driver-score b { @apply block h-full rounded-full; }
+.driver-score.score-high strong { @apply text-success; }
+.driver-score.score-high b { @apply bg-success; }
+.driver-score.score-medium strong { @apply text-warning; }
+.driver-score.score-medium b { @apply bg-warning; }
+.driver-score.score-low strong { @apply text-danger; }
+.driver-score.score-low b { @apply bg-danger; }
+.driver-card-stats { @apply mb-4 grid grid-cols-3 gap-2; }
+.driver-card-stats > span { @apply grid rounded-xl bg-canvas p-2 text-center dark:bg-dark-canvas; }
+.driver-card-stats strong { @apply text-sm; }
+.driver-card-stats small { @apply text-[10px] text-muted dark:text-brand-300; }
+.driver-card-stats > span.danger strong { @apply text-danger; }
+.driver-card footer { @apply flex items-center gap-2 border-t border-line pt-3 text-[10px] text-muted dark:border-dark-line dark:text-brand-300; }
+.driver-card footer strong { @apply ml-auto text-[10px]; }
+.driver-card footer .licence-safe { @apply text-success; }
+.driver-card footer .licence-warning { @apply text-warning; }
+.driver-card footer .licence-danger { @apply text-danger; }
+.driver-card-empty { @apply col-span-full rounded-2xl border border-dashed border-line p-10 text-center text-xs text-muted dark:border-dark-line dark:text-brand-300; }
+.driver-grid-sentinel { @apply flex h-10 items-center justify-center gap-2 text-xs text-muted dark:text-brand-300; }
+.driver-grid-spinner { @apply size-3.5 rounded-full border-2 border-brand-500/25 border-t-brand-600; animation: driver-grid-spin 700ms linear infinite; }
 .filter-controls {
-  @apply grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(10rem,1fr))_auto];
+  @apply grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(10rem,1fr))_auto_auto];
 }
 .filter-controls label > span {
   @apply mb-1.5 block text-[10px] font-medium text-muted dark:text-brand-300;
@@ -241,10 +280,13 @@
   @apply grid;
 }
 :host ::ng-deep .drivers-table .status-on-shift {
-  @apply bg-success/10 text-success;
+  @apply border border-success/30 bg-success/10 text-success;
 }
 :host ::ng-deep .drivers-table .status-off-shift {
-  @apply bg-canvas text-muted dark:bg-dark-canvas;
+  @apply border border-line bg-muted/10 text-muted dark:border-dark-line dark:bg-white/5 dark:text-brand-300;
+}
+:host ::ng-deep .drivers-table .status-on-break {
+  @apply border border-warning/30 bg-warning/10 text-warning;
 }
 .drivers-error {
   @apply flex items-center justify-between rounded-xl border border-danger/20 bg-danger/5 p-3 text-xs text-danger;
@@ -266,8 +308,10 @@
   50% { transform: scaleX(0.72); opacity: 1; }
   100% { transform: scaleX(1); opacity: 0; }
 }
+@keyframes driver-grid-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   .driver-refresh-progress i { animation: none; }
+  .driver-grid-spinner { animation: none; }
 }
 
 @media (max-width: 640px) {

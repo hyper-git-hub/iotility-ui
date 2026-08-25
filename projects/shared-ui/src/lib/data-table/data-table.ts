@@ -29,7 +29,10 @@ export type TableColumnType =
   | 'fleet'
   | 'fuel'
   | 'mot'
-  | 'alert';
+  | 'alert'
+  | 'score'
+  | 'violations'
+  | 'categories';
 export interface TableColumn {
   key: string;
   label: string;
@@ -41,7 +44,7 @@ export interface TableColumn {
   clickableWhenKey?: string;
 }
 export type TableRow = Record<string, string | number | boolean>;
-export type TableAction = 'view' | 'upload' | 'map' | 'history' | 'edit' | 'delete' | 'dispatch';
+export type TableAction = 'view' | 'upload' | 'map' | 'phone' | 'history' | 'edit' | 'delete' | 'dispatch';
 export interface ExpandedRowContext {
   $implicit: TableRow;
   row: TableRow;
@@ -146,6 +149,17 @@ export class DataTable implements AfterViewInit, OnDestroy {
       : Number.parseInt(value, 10) <= 90
         ? 'mot-warning'
         : 'mot-success';
+  }
+  protected scoreClass(value: unknown): string {
+    const score = Number(value);
+    return score >= 90 ? 'score-high' : score >= 75 ? 'score-medium' : 'score-low';
+  }
+  protected violationsClass(value: unknown): string {
+    const count = Number(value);
+    return count > 10 ? 'violations-high' : count > 5 ? 'violations-medium' : 'violations-low';
+  }
+  protected categoryValues(value: unknown): string[] {
+    return String(value).split(',').map((item) => item.trim()).filter(Boolean);
   }
   protected useFallbackImage(event: Event): void {
     const image = event.target as HTMLImageElement;
