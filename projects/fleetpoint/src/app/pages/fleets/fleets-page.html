@@ -22,67 +22,39 @@
       }
     } @else {
     <app-stat-card label="Total Fleets" [value]="total()" tone="brand"
-      ><svg stat-card-icon viewBox="0 0 24 24">
-        <path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z" />
-        <path d="M9 12h6M12 9v6" /></svg
+      ><span
+        stat-card-icon
+        class="color-icon size-[18px]"
+        style="--icon: url('/assets/fleetpoint/sidebar-icons/fleets.svg')"
+        aria-hidden="true"
+      ></span
     ></app-stat-card>
-    <app-stat-card label="Vehicles on Page" [value]="totalVehicles()" tone="info"
-      ><svg stat-card-icon viewBox="0 0 24 24">
-        <path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6" />
-        <circle cx="7" cy="17" r="2" />
-        <circle cx="17" cy="17" r="2" /></svg
+    <app-stat-card label="Total Vehicles" [value]="totalVehicles()" tone="info"
+      ><span
+        stat-card-icon
+        class="color-icon size-[18px]"
+        style="--icon: url('/assets/fleetpoint/sidebar-icons/vehicles.svg')"
+        aria-hidden="true"
+      ></span
     ></app-stat-card>
-    <app-stat-card label="Active Fleets" [value]="activeFleets()" tone="success"
-      ><svg stat-card-icon viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" />
-        <path d="m8 12 2.5 2.5L16 9" /></svg
+    <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="success"
+      ><span
+        stat-card-icon
+        class="color-icon size-[18px]"
+        style="--icon: url('/assets/fleetpoint/sidebar-icons/drivers.svg')"
+        aria-hidden="true"
+      ></span
     ></app-stat-card>
-    <app-stat-card label="Inactive Fleets" [value]="inactiveFleets()" tone="danger"
-      ><svg stat-card-icon viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M9 9l6 6M15 9l-6 6" /></svg
+    <app-stat-card label="Active Alerts" [value]="totalAlerts()" tone="danger"
+      ><span
+        stat-card-icon
+        class="color-icon size-[18px]"
+        style="--icon: url('/assets/fleetpoint/sidebar-icons/violations.svg')"
+        aria-hidden="true"
+      ></span
     ></app-stat-card>
     }
   </div>
-
-  <section class="fleet-filters">
-    <label
-      ><span>Search fleets</span
-      ><input
-        class="shared-form-control shared-form-control--single-line"
-        type="search"
-        placeholder="Search by fleet name"
-        [value]="search()"
-        (input)="updateSearch($event)"
-        (keyup.enter)="applyFilters()"
-    /></label>
-    <label
-      ><span>Fleet</span
-      ><shared-dropdown
-        class="fleet-filter-dropdown"
-        [options]="fleetFilterOptions()"
-        mode="single"
-        align="left"
-        [searchable]="true"
-        searchPlaceholder="Search fleets"
-        [showOptionIcons]="false"
-        [matchTriggerWidth]="true"
-        [selected]="[selectedFleetId()]"
-        (optionSelected)="selectFleetFilter($event)"
-        ><button dropdown-trigger type="button" [disabled]="filterOptionsLoading() || loading()">
-          @if (filterOptionsLoading()) {
-            <ui-skeleton width="5.5rem" height="0.75rem" radius="0.3rem" />
-          } @else {
-            <span>{{ selectedFleetLabel() }}</span>
-          }
-        </button></shared-dropdown
-      ></label
-    >
-    <div class="fleet-filter-actions">
-      <button type="button" class="fleet-reset" [disabled]="loading()" (click)="resetFilters()">Reset</button
-      ><button type="button" class="fleet-apply" [disabled]="loading()" (click)="applyFilters()">Apply filters</button>
-    </div>
-  </section>
 
   @if (error() && !initialLoading()) {
     <div class="fleet-error">
@@ -102,29 +74,44 @@
             <ui-skeleton width="2.5rem" height="2.5rem" radius="0.75rem" />
             <div class="fleet-card-heading-skeleton">
               <ui-skeleton width="8rem" height="0.875rem" radius="0.3rem" />
+              <ui-skeleton width="14rem" height="0.75rem" radius="0.3rem" />
             </div>
+            <ui-skeleton width="1.5rem" height="0.5rem" radius="9999px" />
           </header>
           <section class="fleet-card-content">
             <div class="fleet-stats">
               @for (_ of [1, 2, 3, 4]; track $index) {
                 <div class="fleet-stat-skeleton">
+                  <ui-skeleton width="1rem" height="1rem" radius="0.25rem" />
                   <ui-skeleton width="2.75rem" height="0.875rem" radius="0.3rem" />
+                  <ui-skeleton width="2.5rem" height="0.625rem" radius="0.25rem" />
                 </div>
               }
             </div>
-            <div class="fleet-meta">
-              @for (_ of [1, 2]; track $index) {
-                <div class="fleet-meta-skeleton">
-                  <ui-skeleton width="7rem" height="0.875rem" radius="0.3rem" />
+            <div class="score-list score-list-skeleton">
+              @for (_ of [1, 2, 3]; track $index) {
+                <div>
+                  <span><ui-skeleton height="0.625rem" radius="0.25rem" /></span>
+                  <i><ui-skeleton height="0.5rem" radius="9999px" /></i>
+                  <strong><ui-skeleton width="2rem" height="0.625rem" radius="0.25rem" /></strong>
                 </div>
               }
             </div>
             <div class="fleet-location fleet-location-skeleton">
-              <ui-skeleton width="9rem" height="1rem" radius="0.3rem" />
+              <span>
+                <ui-skeleton width="0.875rem" height="0.875rem" radius="9999px" />
+                <ui-skeleton width="13rem" height="0.75rem" radius="0.3rem" />
+              </span>
+              <button type="button" tabindex="-1">
+                <ui-skeleton width="4.5rem" height="0.75rem" radius="0.3rem" />
+              </button>
             </div>
           </section>
           <footer>
-            <ui-skeleton width="5rem" height="1.25rem" radius="9999px" />
+            @for (_ of [1, 2, 3, 4, 5]; track $index) {
+              <ui-skeleton width="3.5rem" height="1.25rem" radius="9999px" />
+            }
+            <ui-skeleton width="3rem" height="0.625rem" radius="0.25rem" />
           </footer>
         </article>
       }
@@ -137,11 +124,18 @@
           }}</span>
           <div>
             <h2>{{ fleet.name }}</h2>
-            <p>{{ fleet.customer }}</p>
+            <p>{{ fleet.description }}</p>
           </div>
-          <span [class]="fleet.status === 'Active' ? 'fleet-active' : 'fleet-inactive'">{{
-            fleet.status
-          }}</span>
+          @if (fleet.alertVehicles) {
+            <span class="alert-pill"
+              ><span
+                class="color-icon size-3"
+                style="--icon: url('/assets/fleetpoint/sidebar-icons/violations.svg')"
+                aria-hidden="true"
+              ></span
+              >{{ fleet.alertVehicles }}</span
+            >
+          }
           <shared-dropdown
             [options]="fleetActions"
             mode="action"
@@ -156,40 +150,36 @@
         <section class="fleet-card-content">
           <div class="fleet-stats">
             <div>
-              <img src="assets/fleetpoint/icons/truck-muted.svg" alt="" aria-hidden="true" /><strong>{{ fleet.vehicles }}</strong
+              <img src="assets/fleetpoint/sidebar-icons/vehicles.svg" alt="" aria-hidden="true" /><strong>{{ fleet.vehicles }}</strong
               ><small>Vehicles</small>
             </div>
             <div>
-              <img src="assets/fleetpoint/icons/check-circle-muted.svg" alt="" aria-hidden="true" /><strong>{{ fleet.status }}</strong
-              ><small>Status</small>
+              <img src="assets/fleetpoint/sidebar-icons/drivers.svg" alt="" aria-hidden="true" /><strong>{{ fleet.drivers }}</strong
+              ><small>Drivers</small>
             </div>
             <div>
-              <img src="assets/fleetpoint/icons/user-muted.svg" alt="" aria-hidden="true" /><strong>{{ fleet.modifiedBy }}</strong
-              ><small>Modified by</small>
+              <img src="assets/fleetpoint/sidebar-icons/live-tracking.svg" alt="" aria-hidden="true" /><strong>{{ fleet.activeVehicles }}</strong
+              ><small>Active</small>
             </div>
             <div>
-              <img src="assets/fleetpoint/icons/calendar.svg" alt="" aria-hidden="true" /><strong>{{ fleet.createdAt }}</strong
-              ><small>Created</small>
+              <img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" aria-hidden="true" /><strong>{{ fleet.avgFuel }}</strong
+              ><small>Avg Fuel</small>
             </div>
           </div>
-          <div class="fleet-meta">
-            <div>
-              <span>Modified datetime</span><strong>{{ fleet.updatedAt }}</strong>
-            </div>
-            <div>
-              <span>Customer</span><strong>{{ fleet.customer }}</strong>
-            </div>
+          <div class="score-list">
+            <div><span>Safety Score</span><i><b [class]="fleet.safetyScore >= 85 ? 'score-high' : fleet.safetyScore >= 70 ? 'score-medium' : 'score-low'" [style.width.%]="fleet.safetyScore"></b></i><strong>{{ fleet.safetyScore }}%</strong></div>
+            <div><span>Fuel Efficiency</span><i><b [class]="fleet.fuelEfficiency >= 85 ? 'score-high' : fleet.fuelEfficiency >= 70 ? 'score-medium' : 'score-low'" [style.width.%]="fleet.fuelEfficiency"></b></i><strong>{{ fleet.fuelEfficiency }}%</strong></div>
+            <div><span>Utilisation</span><i><b [class]="fleet.utilisation >= 85 ? 'score-high' : fleet.utilisation >= 70 ? 'score-medium' : 'score-low'" [style.width.%]="fleet.utilisation"></b></i><strong>{{ fleet.utilisation }}%</strong></div>
           </div>
           <div class="fleet-location">
             <span
-              ><img src="assets/fleetpoint/icons/calendar.svg" alt="" aria-hidden="true" />Created
-              {{ fleet.createdAt }}</span
+              ><img src="assets/fleetpoint/icons/map-pin.svg" alt="" aria-hidden="true" />{{ fleet.location }}</span
             ><button type="button" (click)="trackFleet()">Track fleet ›</button>
           </div>
         </section>
         <footer>
-          @for (vehicle of fleet.vehicleIds.slice(0, 5); track vehicle) {
-            <span>{{ vehicle }}</span>
+          @for (vehicle of fleet.vehicleIds.slice(0, 5); track vehicle.label) {
+            <span [class]="'vehicle-pill-' + vehicle.state">{{ vehicle.label }}</span>
           }
           @if (fleet.vehicleIds.length > 5) {
             <small>+{{ fleet.vehicleIds.length - 5 }} more</small>
@@ -201,23 +191,20 @@
       </article>
     } @empty {
       @if (!loading()) {
-        <p class="empty-fleets">No fleets match the selected filters.</p>
+        <p class="empty-fleets">No fleets are available.</p>
       }
     }
     }
   </div>
 
-  <nav class="fleet-pagination">
-    @if (initialLoading()) {
-      <ui-skeleton width="8.5rem" height="0.75rem" radius="0.3rem" />
-    } @else {
-      <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ total() }}</span>
-    }
-    <div>
-      <button [disabled]="loading() || offset() === 0" (click)="previousPage()">Previous</button
-      ><button [disabled]="loading() || offset() + limit >= total()" (click)="nextPage()">Next</button>
+  @if (!initialLoading() && hasMore()) {
+    <div #loadMoreSentinel class="fleet-load-sentinel" aria-live="polite">
+      @if (loadingMore()) {
+        <span class="fleet-load-spinner" aria-hidden="true"></span>
+        <span>Loading more fleets...</span>
+      }
     </div>
-  </nav>
+  }
 </section>
 
 <app-fleet-form

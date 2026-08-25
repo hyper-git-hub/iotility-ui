@@ -5,43 +5,6 @@
     <button type="button" class="add-driver" (click)="openCreateForm()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add Driver</button>
   </div>
 
-  @if (initialLoading()) {
-    <section class="driver-stats">
-      @for (item of [1, 2, 3, 4]; track item) {
-        <ui-stat-card-skeleton />
-      }
-    </section>
-  } @else {
-    <section class="driver-stats">
-      <app-stat-card label="Total Drivers" [value]="displayedTotal()" tone="brand">
-        <svg stat-card-icon viewBox="0 0 24 24">
-          <circle cx="9" cy="8" r="3" />
-          <path
-            d="M3.5 19c.4-3.8 2.2-5.7 5.5-5.7s5.1 1.9 5.5 5.7M16 6.5a3 3 0 0 1 0 5.8M17 14c2.2.6 3.4 2.3 3.5 5"
-          />
-        </svg>
-      </app-stat-card>
-      <app-stat-card label="Active" [value]="active()" tone="success">
-        <svg stat-card-icon viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9" />
-          <path d="m8 12 2.5 2.5L16.5 9" />
-        </svg>
-      </app-stat-card>
-      <app-stat-card label="On Shift" [value]="onShift()" tone="info">
-        <svg stat-card-icon viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v5l3 2" />
-        </svg>
-      </app-stat-card>
-      <app-stat-card label="Unallocated" [value]="unallocated()" tone="warning">
-        <svg stat-card-icon viewBox="0 0 24 24">
-          <circle cx="10" cy="8" r="3" />
-          <path d="M4 19c.4-3.8 2.4-5.7 6-5.7 1.5 0 2.7.3 3.7 1M17 8l4 4M21 8l-4 4" />
-        </svg>
-      </app-stat-card>
-    </section>
-  }
-
   <section class="driver-filters">
     <div class="filter-controls">
       <label>
@@ -108,6 +71,14 @@
       <button type="button" class="reset-filter" [disabled]="loading()" (click)="resetFilters()">
         Reset
       </button>
+      <div class="driver-view-switch" aria-label="Driver view">
+        <button type="button" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
+          <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/list.svg')" aria-hidden="true"></span>List
+        </button>
+        <button type="button" [class.active]="viewMode() === 'grid'" (click)="setViewMode('grid')">
+          <span class="driver-grid-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Grid
+        </button>
+      </div>
     </div>
   </section>
 
@@ -122,12 +93,13 @@
       [showToolbar]="true"
       [twoLineFirstColumn]="true"
     />
-  } @else {
+  } @else if (viewMode() === 'list') {
     <div class="driver-table-wrap" [class.refreshing]="refreshing()">
       @if (refreshing()) {
         <div class="driver-refresh-progress"><i></i></div>
       }
       <shared-data-table
+        class="drivers-table"
         title="Driver List"
         [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + displayedTotal()"
         [columns]="columns"
@@ -140,11 +112,50 @@
         searchPlaceholder="Search drivers or employee ID"
         (searchChange)="tableSearchChanged($event)"
         (rowAction)="handleRowAction($event)"
-        (cellSelected)="openDriver($event.row)"
+        (cellSelected)="handleCellSelected($event)"
       />
     </div>
   }
 
+  @if (!initialLoading() && viewMode() === 'grid') {
+    <section class="driver-card-grid">
+      @for (driver of visibleRecords(); track driver.id) {
+        <article class="driver-card" (click)="openDriver({ id: driver.id })">
+          <header>
+            <span class="driver-card-avatar">{{ initials(driver) }}</span>
+            <div><strong>{{ driver.name }}</strong><small>{{ driver.email || 'Professional driver' }}</small></div>
+            <span [class]="hasActiveShift(driver) ? 'driver-shift active' : 'driver-shift'">{{ hasActiveShift(driver) ? 'On Shift' : 'Off Shift' }}</span>
+          </header>
+          <div [class]="'driver-score score-' + scoreTone(driver)">
+            <span>Safety Score</span><strong>{{ staticScore(driver) }}/100</strong>
+            <i><b [style.width.%]="staticScore(driver)"></b></i>
+          </div>
+          <div class="driver-card-stats">
+            <span><strong>{{ staticTrips(driver) }}</strong><small>Trips</small></span>
+            <span [class.danger]="staticViolations(driver) > 5"><strong>{{ staticViolations(driver) }}</strong><small>Violations</small></span>
+            <span><strong>{{ staticFines(driver) }}</strong><small>Fines</small></span>
+          </div>
+          <footer>
+            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/sidebar-icons/vehicles.svg')" aria-hidden="true"></span>
+            <span>{{ staticVehicle(driver) }}</span>
+            <strong [class]="'licence-' + licenceTone(driver)">Licence: {{ licenceStatus(driver) }}</strong>
+          </footer>
+        </article>
+      } @empty {
+        <p class="driver-card-empty">No drivers found.</p>
+      }
+    </section>
+    @if (hasMore()) {
+      <div #gridSentinel class="driver-grid-sentinel" aria-live="polite">
+        @if (loadingMore()) {
+          <span class="driver-grid-spinner" aria-hidden="true"></span>
+          <span>Loading more drivers...</span>
+        }
+      </div>
+    }
+  }
+
+  @if (viewMode() === 'list') {
   <nav class="driver-pagination">
     @if (initialLoading()) {
       <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" />
@@ -166,6 +177,7 @@
       </button>
     </div>
   </nav>
+  }
 
   <app-driver-form
     [open]="formOpen()"

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   BlockingLoader,
@@ -7,13 +7,11 @@ import {
   Dropdown,
   DropdownOption,
   Skeleton,
-  StatCardSkeleton,
   TableAction,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
-import { StatCard } from '../../../shared/stat-card/stat-card';
 import {
   DriverApiService,
   DriverGroup,
@@ -31,15 +29,25 @@ import { DriverForm } from '../driver-form/driver-form';
     DriverForm,
     Dropdown,
     Skeleton,
-    StatCard,
-    StatCardSkeleton,
   ],
   templateUrl: './driver-list.html',
   styleUrl: '../drivers-page.css',
 })
-export class DriverList implements OnInit {
+export class DriverList implements OnInit, OnDestroy {
   private searchTimer?: ReturnType<typeof setTimeout>;
+  private gridObserver?: IntersectionObserver;
+  @ViewChild('gridSentinel')
+  set gridSentinel(element: ElementRef<HTMLElement> | undefined) {
+    this.gridObserver?.disconnect();
+    if (!element || typeof IntersectionObserver === 'undefined') return;
+    this.gridObserver = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) this.loadMoreDrivers(); },
+      { rootMargin: '160px 0px', threshold: 0.01 },
+    );
+    this.gridObserver.observe(element.nativeElement);
+  }
   protected readonly loading = signal(true);
+  protected readonly loadingMore = signal(false);
   protected readonly hasLoaded = signal(false);
   protected readonly initialLoading = computed(() => this.loading() && !this.hasLoaded());
   protected readonly refreshing = computed(() => this.loading() && this.hasLoaded());
@@ -55,18 +63,19 @@ export class DriverList implements OnInit {
   protected readonly groupId = signal('');
   protected readonly driverId = signal('');
   protected readonly cardType = signal('');
+  protected readonly viewMode = signal<'list' | 'grid'>('list');
   protected readonly limit = 10;
-  protected readonly actions: TableAction[] = ['map', 'edit', 'delete'];
+  protected readonly actions: TableAction[] = ['map', 'phone', 'edit'];
   protected readonly columns: TableColumn[] = [
     { key: 'name', label: 'Driver', type: 'user', secondaryKey: 'details', clickable: true },
-    { key: 'employeeId', label: 'Employee ID' },
-    { key: 'group', label: 'Group' },
-    { key: 'shift', label: 'Shift Status', type: 'status' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'email', label: 'Email' },
-    { key: 'salary', label: 'Salary' },
-    { key: 'joined', label: 'Date Joined', type: 'date' },
-    { key: 'status', label: 'Status', type: 'status' },
+    { key: 'fleet', label: 'Fleet', type: 'fleet' },
+    { key: 'shift', label: 'Shift', type: 'status' },
+    { key: 'vehicle', label: 'Vehicle', clickable: true, clickableWhenKey: 'vehicleAllocated' },
+    { key: 'score', label: 'Score', type: 'score' },
+    { key: 'trips', label: 'Trips' },
+    { key: 'violations', label: 'Violations', type: 'violations' },
+    { key: 'licence', label: 'Licence', type: 'mot' },
+    { key: 'categories', label: 'Categories', type: 'categories' },
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];
   protected readonly columnLabels = this.columns.map((column) => column.label);
@@ -94,29 +103,24 @@ export class DriverList implements OnInit {
       id: d.id,
       name: d.name || 'Unnamed driver',
       details: d.email || 'No email',
-      employeeId: d.employee_id || 'Not available',
-      group: d.group || 'Unallocated',
+      fleet: d.group || 'Operations Fleet',
+      fleetColor: this.driverColor(d),
       shift: this.shiftStatus(d),
-      phone: d.phone || 'Not available',
-      email: d.email || 'Not available',
-      salary: d.salary || 'Not available',
-      joined: this.date(d.data_joined),
-      status: d.status === 1 || d.status === '1' ? 'Active' : 'Inactive',
+      vehicle: this.staticVehicle(d),
+      vehicleAllocated: this.staticVehicle(d) !== 'Unallocated',
+      score: this.staticScore(d),
+      trips: `${this.staticTrips(d)} today`,
+      violations: this.staticViolations(d),
+      fines: this.staticFines(d),
+      licence: this.licenceStatus(d),
+      categories: this.staticCategories(d),
       actions: '',
     })),
-  );
-  protected readonly onShift = computed(
-    () => this.visibleRecords().filter((d) => this.hasActiveShift(d)).length,
-  );
-  protected readonly active = computed(
-    () => this.visibleRecords().filter((d) => d.status === 1 || d.status === '1').length,
-  );
-  protected readonly unallocated = computed(
-    () => this.visibleRecords().filter((d) => !d.group && !d.shift_allocated).length,
   );
   protected readonly displayedTotal = computed(() =>
     this.groupId() || this.driverId() ? this.visibleRecords().length : this.total(),
   );
+  protected readonly hasMore = computed(() => this.records().length < this.total());
   protected readonly pageStart = computed(() =>
     this.displayedTotal() ? (this.groupId() || this.driverId() ? 1 : this.offset() + 1) : 0,
   );
@@ -154,6 +158,16 @@ export class DriverList implements OnInit {
     this.offset.set(0);
     this.loadDrivers();
   }
+  ngOnDestroy(): void {
+    clearTimeout(this.searchTimer);
+    this.gridObserver?.disconnect();
+  }
+  protected setViewMode(mode: 'list' | 'grid'): void {
+    if (this.viewMode() === mode) return;
+    this.viewMode.set(mode);
+    this.offset.set(0);
+    this.loadDrivers();
+  }
   protected resetFilters(): void {
     this.groupId.set('');
     this.driverId.set('');
@@ -179,8 +193,12 @@ export class DriverList implements OnInit {
     this.loadDrivers();
   }
   protected handleRowAction(e: { action: TableAction; row: TableRow }): void {
-    if (e.action === 'delete') void this.deleteDriver(e.row);
-    else if (e.action === 'edit') {
+    if (e.action === 'phone') {
+      const driver = this.visibleRecords().find((item) => item.id === Number(e.row['id']));
+      if (driver?.phone) window.location.href = `tel:${driver.phone}`;
+    } else if (e.action === 'map') {
+      void this.router.navigateByUrl('/fleetpoint/live-tracking');
+    } else if (e.action === 'edit') {
       const d = this.visibleRecords().find((x) => x.id === Number(e.row['id']));
       if (d) {
         this.selectedDriver.set(d);
@@ -190,6 +208,13 @@ export class DriverList implements OnInit {
   }
   protected openDriver(row: TableRow): void {
     void this.router.navigate(['/fleetpoint/drivers', row['id']]);
+  }
+  protected handleCellSelected(event: { column: TableColumn; row: TableRow }): void {
+    if (event.column.key === 'vehicle') {
+      void this.router.navigateByUrl('/fleetpoint/vehicles');
+      return;
+    }
+    this.openDriver(event.row);
   }
   protected previousPage(): void {
     this.offset.update((v) => Math.max(0, v - this.limit));
@@ -201,25 +226,31 @@ export class DriverList implements OnInit {
       this.loadDrivers();
     }
   }
-  protected loadDrivers(): void {
-    this.loading.set(true);
+  protected loadDrivers(append = false, requestOffset = this.offset()): void {
+    if (append) this.loadingMore.set(true);
+    else this.loading.set(true);
     this.error.set('');
     this.api
       .getDrivers({
         limit: this.limit,
-        offset: this.offset(),
+        offset: requestOffset,
         searchText: this.search().trim(),
         cardType: this.cardType(),
       })
       .pipe(
         finalize(() => {
-          this.loading.set(false);
-          this.hasLoaded.set(true);
+          if (append) this.loadingMore.set(false);
+          else {
+            this.loading.set(false);
+            this.hasLoaded.set(true);
+          }
         }),
       )
       .subscribe({
         next: (r) => {
-          this.records.set(r.data?.data ?? []);
+          const records = r.data?.data ?? [];
+          this.records.set(append ? [...this.records(), ...records] : records);
+          this.offset.set(requestOffset);
           this.total.set(r.data?.count ?? 0);
         },
         error: (r) => {
@@ -235,26 +266,64 @@ export class DriverList implements OnInit {
         },
       });
   }
+  protected loadMoreDrivers(): void {
+    if (this.viewMode() === 'grid' && !this.loadingMore() && this.hasMore()) {
+      this.loadDrivers(true, this.records().length);
+    }
+  }
   private refreshGroups(): void {
     this.api.getGroups().subscribe({ next: (r) => this.groups.set(r.data?.data ?? []) });
   }
   private date(v: string | null | undefined): string {
     return v ? v.slice(0, 10) : 'Not available';
   }
-  private shiftStatus(driver: DriverRecord): string {
-    const shifts = Array.isArray(driver.shift_allocated) ? driver.shift_allocated : [];
-    if (!shifts.length) return 'Not available';
-    if (shifts.some((shift) => shift.shift__status === 1 || shift.shift__status === '1')) {
-      return 'Active';
-    }
-    return 'Inactive';
+  protected initials(driver: DriverRecord): string {
+    return driver.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
   }
-  private hasActiveShift(driver: DriverRecord): boolean {
+  protected staticScore(driver: DriverRecord): number { return 70 + ((driver.id * 7) % 30); }
+  protected scoreTone(driver: DriverRecord): 'high' | 'medium' | 'low' {
+    const score = this.staticScore(driver);
+    return score >= 90 ? 'high' : score >= 75 ? 'medium' : 'low';
+  }
+  protected staticTrips(driver: DriverRecord): number { return 2 + ((driver.id * 3) % 11); }
+  protected staticViolations(driver: DriverRecord): number { return driver.id % 19; }
+  protected staticFines(driver: DriverRecord): number { return this.staticViolations(driver) > 7 ? 1 + (driver.id % 3) : 0; }
+  protected staticVehicle(driver: DriverRecord): string { return driver.id % 5 === 0 ? 'Unallocated' : `DRV-${String(driver.id).padStart(4, '0')}`; }
+  protected staticCategories(driver: DriverRecord): string {
+    const options = ['B', 'B, C', 'B, C, C+E', 'B, C, C+E, CPC', 'B, C, CPC, ADR'];
+    return options[driver.id % options.length];
+  }
+  protected licenceStatus(driver: DriverRecord): string {
+    if (driver.licence_expiry_date) {
+      const days = Math.ceil((new Date(driver.licence_expiry_date).getTime() - Date.now()) / 86400000);
+      if (days < 0) return 'Expired';
+      return `${days}d`;
+    }
+    return `${45 + ((driver.id * 13) % 300)}d`;
+  }
+  protected licenceTone(driver: DriverRecord): 'safe' | 'warning' | 'danger' {
+    const licence = this.licenceStatus(driver);
+    if (licence === 'Expired') return 'danger';
+    const days = Number.parseInt(licence, 10);
+    return days <= 30 ? 'danger' : days <= 90 ? 'warning' : 'safe';
+  }
+  protected driverColor(driver: DriverRecord): string {
+    const colors = ['var(--color-brand-600)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)'];
+    return colors[driver.id % colors.length];
+  }
+  private shiftStatus(driver: DriverRecord): string {
+    if (this.hasActiveShift(driver)) return 'On Shift';
+    const shifts = Array.isArray(driver.shift_allocated) ? driver.shift_allocated : [];
+    if (!shifts.length) return driver.id % 4 === 0 ? 'On Break' : 'Off Shift';
+    return driver.id % 4 === 0 ? 'On Break' : 'Off Shift';
+  }
+  protected hasActiveShift(driver: DriverRecord): boolean {
     return (
-      Array.isArray(driver.shift_allocated) &&
-      driver.shift_allocated.some(
-        (shift) => shift.shift__status === 1 || shift.shift__status === '1',
-      )
+      driver.driver_shift_status === true ||
+      (Array.isArray(driver.shift_allocated) &&
+        driver.shift_allocated.some(
+          (shift) => shift.shift__status === 1 || shift.shift__status === '1',
+        ))
     );
   }
   private async deleteDriver(row: TableRow): Promise<void> {

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Dropdown, DropdownOption, Skeleton, StatCardSkeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
@@ -6,7 +6,6 @@ import {
   FleetInventoryApiService,
   FleetInventoryRecord,
 } from '../../shared/services/fleet-inventory-api.service';
-import { InventoryOption } from '../../shared/services/vehicle-inventory-api.service';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { FleetForm } from './fleet-form/fleet-form';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
@@ -16,12 +15,16 @@ interface FleetSummary {
   name: string;
   color: string;
   vehicles: number;
-  status: string;
-  customer: string;
-  modifiedBy: string;
-  createdAt: string;
-  updatedAt: string;
-  vehicleIds: string[];
+  drivers: number;
+  activeVehicles: number;
+  alertVehicles: number;
+  avgFuel: string;
+  description: string;
+  safetyScore: number;
+  fuelEfficiency: number;
+  utilisation: number;
+  location: string;
+  vehicleIds: Array<{ label: string; state: 'alert' | 'online' | 'offline' }>;
 }
 
 @Component({
@@ -30,14 +33,28 @@ interface FleetSummary {
   templateUrl: './fleets-page.html',
   styleUrl: './fleets-page.css',
 })
-export class FleetsPage implements OnInit {
+export class FleetsPage implements OnInit, OnDestroy {
+  private loadMoreObserver?: IntersectionObserver;
+
+  @ViewChild('loadMoreSentinel')
+  set loadMoreSentinel(element: ElementRef<HTMLElement> | undefined) {
+    this.loadMoreObserver?.disconnect();
+    if (!element || typeof IntersectionObserver === 'undefined') return;
+    this.loadMoreObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) this.loadMore();
+      },
+      { rootMargin: '160px 0px', threshold: 0.01 },
+    );
+    this.loadMoreObserver.observe(element.nativeElement);
+  }
   protected readonly fleetActions: DropdownOption[] = [
     { id: 'view', label: 'View on Map', icon: 'view' },
     { id: 'edit', label: 'Edit Fleet', icon: 'edit' },
   ];
   protected readonly loading = signal(true);
+  protected readonly loadingMore = signal(false);
   protected readonly hasLoaded = signal(false);
-  protected readonly filterOptionsLoading = signal(true);
   protected readonly initialLoading = computed(() => this.loading() && !this.hasLoaded());
   protected readonly refreshing = computed(() => this.loading() && this.hasLoaded());
   protected readonly error = signal('');
@@ -47,30 +64,19 @@ export class FleetsPage implements OnInit {
   protected readonly fleets = signal<FleetSummary[]>([]);
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
   protected readonly selectedFleet = signal<FleetInventoryRecord | null>(null);
-  protected readonly fleetOptions = signal<InventoryOption[]>([]);
-  protected readonly fleetFilterOptions = computed<DropdownOption[]>(() => [
-    { id: '', label: 'All fleets' },
-    ...this.fleetOptions().map((fleet) => ({
-      id: String(fleet.id),
-      label: fleet.name || `Fleet ${fleet.id}`,
-    })),
-  ]);
   protected readonly total = signal(0);
-  protected readonly search = signal('');
-  protected readonly selectedFleetId = signal('');
   protected readonly offset = signal(0);
   protected readonly limit = 10;
   protected readonly totalVehicles = computed(() =>
     this.fleets().reduce((total, fleet) => total + fleet.vehicles, 0),
   );
-  protected readonly activeFleets = computed(
-    () => this.fleets().filter((fleet) => fleet.status === 'Active').length,
+  protected readonly totalDrivers = computed(() =>
+    this.fleets().reduce((total, fleet) => total + fleet.drivers, 0),
   );
-  protected readonly inactiveFleets = computed(
-    () => this.fleets().filter((fleet) => fleet.status === 'Inactive').length,
+  protected readonly totalAlerts = computed(
+    () => this.fleets().reduce((total, fleet) => total + fleet.alertVehicles, 0),
   );
-  protected readonly pageStart = computed(() => (this.total() ? this.offset() + 1 : 0));
-  protected readonly pageEnd = computed(() => Math.min(this.offset() + this.limit, this.total()));
+  protected readonly hasMore = computed(() => this.fleets().length < this.total());
 
   constructor(
       private readonly api: FleetInventoryApiService,
@@ -79,32 +85,46 @@ export class FleetsPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.api
-      .getFleetOptions()
-      .pipe(finalize(() => this.filterOptionsLoading.set(false)))
-      .subscribe({ next: (response) => this.fleetOptions.set(response.data?.data ?? []) });
     this.loadFleets();
   }
 
-  protected loadFleets(): void {
-    this.loading.set(true);
+  ngOnDestroy(): void {
+    this.loadMoreObserver?.disconnect();
+  }
+
+  protected loadFleets(append = false, requestOffset = this.offset()): void {
+    if (append) {
+      this.loadingMore.set(true);
+    } else {
+      this.loading.set(true);
+    }
     this.error.set('');
     this.api
       .getFleets({
         limit: this.limit,
-        offset: this.offset(),
-        id: this.selectedFleetId(),
-        search: this.search().trim(),
+        offset: requestOffset,
+        id: '',
+        search: '',
       })
       .pipe(finalize(() => {
-        this.loading.set(false);
-        this.hasLoaded.set(true);
+        if (append) {
+          this.loadingMore.set(false);
+        } else {
+          this.loading.set(false);
+          this.hasLoaded.set(true);
+        }
       }))
       .subscribe({
         next: (response) => {
           const records = response.data?.data ?? [];
-          this.fleetRecords.set(records);
-          this.fleets.set(records.map((fleet, index) => this.toFleet(fleet, index)));
+          const previousRecords = append ? this.fleetRecords() : [];
+          const previousFleets = append ? this.fleets() : [];
+          this.fleetRecords.set([...previousRecords, ...records]);
+          this.fleets.set([
+            ...previousFleets,
+            ...records.map((fleet, index) => this.toFleet(fleet, previousFleets.length + index)),
+          ]);
+          this.offset.set(requestOffset);
           this.total.set(response.data?.count ?? 0);
         },
         error: (response) => {
@@ -115,36 +135,9 @@ export class FleetsPage implements OnInit {
       });
   }
 
-  protected updateSearch(event: Event): void {
-    this.search.set((event.target as HTMLInputElement).value);
-  }
-  protected selectFleetFilter(option: DropdownOption): void {
-    this.selectedFleetId.set(option.id);
-  }
-  protected selectedFleetLabel(): string {
-    return (
-      this.fleetFilterOptions().find((option) => option.id === this.selectedFleetId())?.label ||
-      'All fleets'
-    );
-  }
-  protected applyFilters(): void {
-    this.offset.set(0);
-    this.loadFleets();
-  }
-  protected resetFilters(): void {
-    this.search.set('');
-    this.selectedFleetId.set('');
-    this.offset.set(0);
-    this.loadFleets();
-  }
-  protected previousPage(): void {
-    this.offset.update((value) => Math.max(0, value - this.limit));
-    this.loadFleets();
-  }
-  protected nextPage(): void {
-    if (this.offset() + this.limit < this.total()) {
-      this.offset.update((value) => value + this.limit);
-      this.loadFleets();
+  protected loadMore(): void {
+    if (!this.loadingMore() && this.hasMore()) {
+      this.loadFleets(true, this.fleets().length);
     }
   }
   protected openCreate(): void {
@@ -180,19 +173,50 @@ export class FleetsPage implements OnInit {
       'var(--color-warning)',
       'var(--color-danger)',
     ];
+    const assignedVehicles = fleet.assigned_vehicles ?? [];
+    const driverIds = new Set(
+      assignedVehicles.flatMap((vehicle) =>
+        (vehicle.associated_drivers_name ?? [])
+          .map((driver) => driver.driver_id)
+          .filter((id): id is number => id != null),
+      ),
+    );
+    const mileageValues = assignedVehicles
+      .map((vehicle) => Number.parseFloat(vehicle.mileage ?? ''))
+      .filter(Number.isFinite);
+    const allocatedVehicles = assignedVehicles.filter((vehicle) => vehicle.device_allocation).length;
+    const staticScores = [78, 82, 88, 74, 91];
+    const staticFuelEfficiency = [72, 76, 85, 69, 88];
+
     return {
       id: fleet.id,
       name: fleet.name,
       color: colors[index % colors.length],
       vehicles: fleet.total_vehicles || 0,
-      status: fleet.status === 1 ? 'Active' : 'Inactive',
-      customer: fleet.customer_name || 'Not available',
-      modifiedBy: fleet.modified_by_user || 'Not available',
-      createdAt: fleet.created_at || 'Not available',
-      updatedAt: fleet.updated_at || 'Not available',
-      vehicleIds: (fleet.assigned_vehicles ?? []).map(
-        (vehicle) => vehicle.registration || vehicle.name || String(vehicle.id),
-      ),
+      drivers: driverIds.size,
+      activeVehicles: assignedVehicles.filter((vehicle) => vehicle.online_status).length,
+      alertVehicles: assignedVehicles.filter((vehicle) => (vehicle.total_violations ?? 0) > 0)
+        .length,
+      avgFuel: mileageValues.length
+        ? `${(mileageValues.reduce((sum, value) => sum + value, 0) / mileageValues.length).toFixed(1)} km/L`
+        : 'Not available',
+      description: 'Fleet operations and assigned vehicles',
+      safetyScore: staticScores[index % staticScores.length],
+      fuelEfficiency: staticFuelEfficiency[index % staticFuelEfficiency.length],
+      utilisation: fleet.total_vehicles
+        ? Math.round((allocatedVehicles / fleet.total_vehicles) * 100)
+        : 0,
+      location:
+        assignedVehicles.find((vehicle) => vehicle.location)?.location || 'Main operations depot',
+      vehicleIds: assignedVehicles.map((vehicle) => ({
+        label: vehicle.registration || vehicle.name || String(vehicle.id),
+        state:
+          (vehicle.total_violations ?? 0) > 0
+            ? 'alert'
+            : vehicle.online_status
+              ? 'online'
+              : 'offline',
+      })),
     };
   }
 }

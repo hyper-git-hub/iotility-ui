@@ -33,23 +33,46 @@
   } @else {
     <section class="fleet-status-card">
       <div class="status-title">
-        <strong>Vehicle Inventory</strong><small>{{ total() }} total vehicles</small>
+        <i class="live-dot"></i><strong>Live Fleet Status</strong
+        ><small>{{ records().length }} loaded of {{ total() }} vehicles</small>
       </div>
       <div class="status-bar">
-        @if (active() > 0) {
-          <i class="moving" [style.flex-grow]="active()"></i>
+        @if (moving() > 0) {
+          <i class="moving" [style.flex-grow]="moving()"></i>
         }
-        @if (inactive() > 0) {
-          <i class="alert" [style.flex-grow]="inactive()"></i>
+        @if (idling() > 0) {
+          <i class="idling" [style.flex-grow]="idling()"></i>
         }
-        @if (unassigned() > 0) {
-          <i class="offline" [style.flex-grow]="unassigned()"></i>
+        @if (stopped() > 0) {
+          <i class="stopped" [style.flex-grow]="stopped()"></i>
+        }
+        @if (alerts() > 0) {
+          <i class="alert" [style.flex-grow]="alerts()"></i>
+        }
+        @if (offline() > 0) {
+          <i class="offline" [style.flex-grow]="offline()"></i>
         }
       </div>
       <div class="status-pills">
-        <span class="moving"><i></i>Active {{ active() }}</span>
-        <span class="alert"><i></i>Inactive {{ inactive() }}</span>
-        <span class="offline"><i></i>Fleet unassigned {{ unassigned() }}</span>
+        <span class="moving"><i></i>Moving {{ moving() }}</span>
+        <span class="idling"><i></i>Idling {{ idling() }}</span>
+        <span class="stopped"><i></i>Stopped {{ stopped() }}</span>
+        <span class="alert"><i></i>Alert {{ alerts() }}</span>
+        <span class="offline"><i></i>Offline {{ offline() }}</span>
+      </div>
+    </section>
+  }
+
+  @if (!initialLoading() && attentionItems().length) {
+    <section class="attention-card">
+      <p>Compliance &amp; attention required</p>
+      <div>
+        @for (item of attentionItems(); track item.label) {
+          <div [class]="'attention-chip ' + item.tone">
+            <span class="color-icon size-3.5" [style.--icon]="'url(' + item.icon + ')'" aria-hidden="true"></span>
+            <span><strong>{{ item.vehicles.length }} {{ item.label }}</strong> — {{ item.registrations }}</span>
+          </div>
+        }
       </div>
     </section>
   }

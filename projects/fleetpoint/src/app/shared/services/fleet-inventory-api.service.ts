@@ -16,7 +16,17 @@ export interface FleetInventoryRecord {
   created_at: string | null;
   customer_name: string | null;
   status: number;
-  assigned_vehicles?: Array<{ id?: number; name?: string; registration?: string }>;
+  assigned_vehicles?: Array<{
+    id?: number;
+    name?: string;
+    registration?: string;
+    online_status?: boolean;
+    location?: string | null;
+    mileage?: string | null;
+    total_violations?: number | null;
+    device_allocation?: boolean;
+    associated_drivers_name?: Array<{ driver_id?: number; driver_name?: string }>;
+  }>;
 }
 
 export interface FleetVehicleOption {

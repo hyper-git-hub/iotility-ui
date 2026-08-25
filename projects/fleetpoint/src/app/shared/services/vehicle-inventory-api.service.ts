@@ -42,6 +42,19 @@ export interface VehicleInventoryRecord {
   sharp_turning: boolean;
   geo_zone?: boolean;
   fuel_sensor?: boolean;
+  speed?: number | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  online_status?: boolean;
+  ignition_status?: boolean;
+  location?: string | null;
+  vehicle_driver_name?: string | null;
+  total_violations?: number | null;
+  last_volume?: number | string | null;
+  mileage?: string | null;
+  km_per_day?: number | null;
+  updated_time?: string | null;
+  next_maintenance?: string | null;
 }
 
 export interface InventoryOption {

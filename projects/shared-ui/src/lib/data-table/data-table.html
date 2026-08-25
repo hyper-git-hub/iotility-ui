@@ -138,6 +138,21 @@
                     <span class="alert-cell" [class.clear]="!r[c.key]">{{
                       r[c.key] ? '!' : '✓'
                     }}</span>
+                  } @else if (c.type === 'score') {
+                    <span [class]="'score-cell ' + scoreClass(r[c.key])"
+                      ><i><b [style.width.%]="r[c.key]"></b></i><strong>{{ r[c.key] }}</strong></span
+                    >
+                  } @else if (c.type === 'violations') {
+                    <span [class]="'violations-cell ' + violationsClass(r[c.key])"
+                      >{{ r[c.key] }}
+                      @if (+r['fines'] > 0) { <small>({{ r['fines'] }} fine)</small> }</span
+                    >
+                  } @else if (c.type === 'categories') {
+                    <span class="category-cell">
+                      @for (category of categoryValues(r[c.key]); track category) {
+                        <i>{{ category }}</i>
+                      }
+                    </span>
                   } @else if (c.type === 'actions') {
                     <span class="actions icon-actions">
                       @for (action of actions(); track action) {
@@ -155,6 +170,8 @@
                             <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/upload-muted.svg')" aria-hidden="true"></span>
                           } @else if (action === 'map') {
                             <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/map-pin.svg')" aria-hidden="true"></span>
+                          } @else if (action === 'phone') {
+                            <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/phone.svg')" aria-hidden="true"></span>
                           } @else if (action === 'history') {
                             <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/history-muted.svg')" aria-hidden="true"></span>
                           } @else if (action === 'edit') {

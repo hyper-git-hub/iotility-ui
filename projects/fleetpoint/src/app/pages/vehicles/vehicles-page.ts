@@ -50,11 +50,13 @@ export class VehiclesPage implements OnInit {
     { key: 'registration', label: 'Vehicle', type: 'vehicle', secondaryKey: 'makeModel', imageKey: 'image', clickable: true },
     { key: 'fleet', label: 'Fleet', type: 'fleet' },
     { key: 'status', label: 'Status', type: 'status' },
-    { key: 'device', label: 'Device ID' },
-    { key: 'odometer', label: 'Odometer' },
-    { key: 'owner', label: 'Owner' },
-    { key: 'commissioned', label: 'Commissioned' },
-    { key: 'expiry', label: 'Registration Expiry' },
+    { key: 'driver', label: 'Driver' },
+    { key: 'location', label: 'Location' },
+    { key: 'speed', label: 'Speed' },
+    { key: 'fuel', label: 'Fuel', type: 'fuel' },
+    { key: 'odometer', label: 'Mileage' },
+    { key: 'mot', label: 'MOT', type: 'mot' },
+    { key: 'alerts', label: 'Alerts', type: 'alert' },
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];
   protected readonly columnLabels = this.columns.map((column) => column.label);
@@ -65,17 +67,39 @@ export class VehiclesPage implements OnInit {
     makeModel: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Details unavailable',
     fleet: vehicle.fleet_name || 'Unassigned',
     fleetColor: vehicle.fleet_name ? 'var(--color-brand-600)' : 'var(--color-muted)',
-    status: vehicle.status === 1 ? 'Active' : 'Inactive',
-    device: vehicle.device_id || 'Not assigned',
+    status: this.vehicleStatus(vehicle),
+    driver: vehicle.vehicle_driver_name || 'Unassigned',
+    location: vehicle.location || 'Location unavailable',
+    speed: vehicle.speed ? `${vehicle.speed.toFixed(1)} km/h` : '—',
+    fuel: this.staticFuel(vehicle),
     odometer: `${Number(vehicle.odo_reading || 0).toLocaleString()} km`,
-    owner: vehicle.owner || 'Not available',
-    commissioned: vehicle.date_commissioned || 'Not available',
-    expiry: vehicle.expiry_date || 'Not available',
+    mot: this.staticMot(vehicle),
+    alerts: (vehicle.total_violations ?? 0) > 0,
     actions: '',
   })));
-  protected readonly active = computed(() => this.records().filter((vehicle) => vehicle.status === 1).length);
-  protected readonly inactive = computed(() => this.records().filter((vehicle) => vehicle.status !== 1).length);
-  protected readonly unassigned = computed(() => this.records().filter((vehicle) => !vehicle.fleet_name).length);
+  protected readonly moving = computed(() => this.statusCount('Moving'));
+  protected readonly idling = computed(() => this.statusCount('Idling'));
+  protected readonly stopped = computed(() => this.statusCount('Stopped'));
+  protected readonly alerts = computed(() => this.statusCount('Alert'));
+  protected readonly offline = computed(() => this.statusCount('Offline'));
+  protected readonly attentionItems = computed(() => {
+    const motExpiring = this.records().filter((vehicle) => {
+      const mot = this.staticMot(vehicle);
+      return mot === 'Expired' || Number.parseInt(mot, 10) <= 30;
+    });
+    const serviceOverdue = this.records().filter((vehicle) => vehicle.id % 3 !== 0);
+    const offline = this.records().filter((vehicle) => !vehicle.online_status);
+    return [
+      { label: 'MOT expiring', vehicles: motExpiring, tone: 'danger', icon: '/assets/fleetpoint/icons/shield-alert.svg' },
+      { label: 'service overdue', vehicles: serviceOverdue, tone: 'warning', icon: '/assets/fleetpoint/sidebar-icons/maintenance.svg' },
+      { label: 'offline', vehicles: offline, tone: 'neutral', icon: '/assets/fleetpoint/sidebar-icons/devices.svg' },
+    ]
+      .filter((item) => item.vehicles.length > 0)
+      .map((item) => ({
+        ...item,
+        registrations: item.vehicles.map((vehicle) => vehicle.registration || vehicle.name).join(', '),
+      }));
+  });
   protected readonly pageStart = computed(() => this.total() ? this.offset() + 1 : 0);
   protected readonly pageEnd = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
@@ -176,5 +200,26 @@ export class VehiclesPage implements OnInit {
     return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase())
       ? value
       : 'assets/fleetpoint/def-car.svg';
+  }
+
+  private vehicleStatus(vehicle: VehicleInventoryRecord): string {
+    if ((vehicle.total_violations ?? 0) > 0) return 'Alert';
+    if (!vehicle.online_status) return 'Offline';
+    if ((vehicle.speed ?? 0) > 0) return 'Moving';
+    if (vehicle.ignition_status) return 'Idling';
+    return 'Stopped';
+  }
+
+  private statusCount(status: string): number {
+    return this.records().filter((vehicle) => this.vehicleStatus(vehicle) === status).length;
+  }
+
+  private staticFuel(vehicle: VehicleInventoryRecord): number {
+    return 20 + ((vehicle.id * 17) % 76);
+  }
+
+  private staticMot(vehicle: VehicleInventoryRecord): string {
+    const options = ['Expired', '24d', '67d', '184d', '310d'];
+    return options[vehicle.id % options.length];
   }
 }
