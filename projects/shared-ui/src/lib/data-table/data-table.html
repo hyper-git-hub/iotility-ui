@@ -3,6 +3,7 @@
   [class.fixed-card-height]="cardHeight() !== null"
   [style.height.px]="cardHeight()"
 >
+  @if (showHeader()) {
   <header>
     <div>
       <h2>{{ title() }}</h2>
@@ -47,12 +48,14 @@
       </div>
     }
   </header>
+  }
   <div class="table-height" [class.ready]="heightReady()" [style.height.px]="resolvedBodyHeight()">
     <div
       class="scroll"
       #tableBody
       [class.fixed-height]="viewportHeight() !== null"
       [style.padding-bottom.px]="bodyBottomPadding()"
+      (scroll)="handleScroll($event)"
     >
       <table [style.min-width.px]="minTableWidth()">
         <thead>

@@ -1,77 +1,29 @@
-<section class="violation-filters">
-  <label><span>Category</span><shared-dropdown class="filter-dropdown" [options]="categoryOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[category()]" (optionSelected)="selectFilter('category',$event)"><button dropdown-trigger type="button">{{label(categoryOptions,category())}}</button></shared-dropdown></label>
-  <label><span>Severity</span><shared-dropdown class="filter-dropdown" [options]="severityOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[severity()]" (optionSelected)="selectFilter('severity',$event)"><button dropdown-trigger type="button">{{label(severityOptions,severity())}}</button></shared-dropdown></label>
-  <label><span>Source</span><shared-dropdown class="filter-dropdown" [options]="sourceOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[source()]" (optionSelected)="selectFilter('source',$event)"><button dropdown-trigger type="button">{{label(sourceOptions,source())}}</button></shared-dropdown></label>
-</section>
-
-<section class="violations-workspace">
-  <article class="map-panel">
-    <header><h2>Violation Map</h2><span>{{ filtered().length }} shown</span></header>
-    <div class="map-legend">
-      <span><i class="speeding"></i>Speeding</span><span><i class="behaviour"></i>Behaviour</span><span><i class="safety"></i>Safety</span><span><i class="compliance"></i>Compliance</span><span><i class="geozone"></i>Geozone</span>
+<section class="violation-controls">
+  <div class="date-range" aria-label="Date range"><button type="button" [class.active]="dateRange()==='today'" (click)="selectDateRange('today')">Today</button><button type="button" [class.active]="dateRange()==='week'" (click)="selectDateRange('week')">This Week</button><button type="button" [class.active]="dateRange()==='month'" (click)="selectDateRange('month')">This Month</button></div>
+  <label class="violation-search"><span class="color-icon" style="--icon:url('/assets/fleetpoint/icons/search.svg')" aria-hidden="true"></span><input type="search" placeholder="Search plate, driver, violation type, location..." [value]="search()" (input)="updateSearch($event)" /></label>
+  <button class="filter-toggle" type="button" [class.active]="filtersVisible()" (click)="toggleFilters()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v5l-4 2v-7L4 5Z"/></svg>Filters</button>
+  @if (filtersVisible()) {
+    <div class="filter-row">
+      <shared-dropdown class="filter-dropdown" [options]="categoryOptions" mode="single" align="left" [showOptionIcons]="false" [selected]="[category()]" (optionSelected)="selectFilter('category',$event)"><button dropdown-trigger type="button">{{label(categoryOptions,category())}}</button></shared-dropdown>
+      <shared-dropdown class="filter-dropdown" [options]="severityOptions" mode="single" align="left" [showOptionIcons]="false" [selected]="[severity()]" (optionSelected)="selectFilter('severity',$event)"><button dropdown-trigger type="button">{{label(severityOptions,severity())}}</button></shared-dropdown>
+      <shared-dropdown class="filter-dropdown" [options]="sourceOptions" mode="single" align="left" [showOptionIcons]="false" [selected]="[source()]" (optionSelected)="selectFilter('source',$event)"><button dropdown-trigger type="button">{{label(sourceOptions,source())}}</button></shared-dropdown>
+      <button class="clear-filters" type="button" (click)="clearFilters()">Clear all</button>
     </div>
-    <app-violation-map [violations]="filtered()" [selectedId]="selected()?.id ?? null" (violationSelected)="selectViolation($event)" />
-  </article>
-
-  <div class="list-column">
-    <shared-data-table
-      title="All Violations"
-      [subtitle]="'Showing '+filtered().length+' of '+totalCount()+' violations · Click a row to view details'"
-      [columns]="columns"
-      [rows]="rows()"
-      [clientSideSearch]="false"
-      [showExport]="false"
-      [showPrimaryAction]="false"
-      [cardHeight]="580"
-      [minTableWidth]="1100"
-      [rowsClickable]="true"
-      [selectedRowId]="selected()?.id ?? null"
-      [showBottomPanel]="!!selected()"
-      searchPlaceholder="Search violation, driver, vehicle or location..."
-      (searchChange)="search.set($event)"
-      (rowSelected)="selectRow($event)"
-    >
-      <ng-template tableCell="type" let-row>
-        <span class="violation-type-cell">
-          <span class="type-icon-badge" [style.background]="categoryIconColor(row['category'])" [innerHTML]="categoryIcon(row['category'])"></span>
-          <span class="type-text"><strong>{{ row['type'] }}</strong><small>{{ row['id'] }}</small></span>
-        </span>
-      </ng-template>
-      <ng-template tableCell="source" let-row>
-        <span class="source-badge" [style.--src-color]="sourceIconColor(row['source'])">
-          <span class="source-icon" [innerHTML]="sourceIcon(row['source'])"></span>
-          {{ row['source'] }}
-        </span>
-      </ng-template>
-      <ng-template tableCell="speedDisplay" let-row>
-        <span class="speed-cell" [class.speed-exceeded]="isSpeedExceeded(row)">{{ row['speedDisplay'] }}</span>
-      </ng-template>
-      <ng-template tableCell="fineDisplay" let-row>
-        <span class="fine-cell" [class.has-fine]="row['fine'] > 0">{{ row['fineDisplay'] }}</span>
-      </ng-template>
-      <ng-template tableBottomPanel>
-        @if (selected(); as item) {
-          <section class="violation-details">
-            <button class="detail-close" type="button" aria-label="Close details" (click)="selected.set(null)">×</button>
-            <div class="detail-copy">
-              <h3>{{ item.type }}</h3>
-              <p>{{ item.driver }} · {{ item.vehicle }} · {{ item.location }}</p>
-              <span>{{ item.description }}</span>
-            </div>
-            <div class="detail-footer">
-              <div class="detail-meta">
-                <span>Score: <strong>{{ item.scoreImpact }}</strong></span>
-                @if (item.source === 'DashCam') {
-                  <a href="#" (click)="$event.preventDefault()">▣ DashCam footage: {{ item.id }}</a>
-                } @else {
-                  <span>Severity: <strong [class]="item.severity.toLowerCase()">{{ item.severity }}</strong></span>
-                }
-              </div>
-              <div class="detail-actions"><button type="button">Mark Reviewed</button><button type="button">Raise Fine</button></div>
-            </div>
-          </section>
-        }
-      </ng-template>
+  }
+</section>
+<section class="violations-workspace">
+  <article class="map-panel"><header><h2>Violation Map</h2><span>{{ filtered().length }} shown</span></header><div class="map-legend"><span><i class="speeding"></i>Speeding</span><span><i class="behaviour"></i>Behaviour</span><span><i class="safety"></i>Safety</span><span><i class="compliance"></i>Compliance</span><span><i class="geozone"></i>Geozone</span></div><app-violation-map [violations]="filtered()" [selectedId]="selected()?.id ?? null" (violationSelected)="selectViolation($event)" /></article>
+  <div class="violations-list">
+    <shared-data-table [showHeader]="false" [showToolbar]="false" [columns]="columns" [rows]="rows()" [clientSideSearch]="false" [rowsClickable]="true" [selectedRowId]="selected()?.id ?? null" [cardHeight]="490" [minTableWidth]="880" [showBottomPanel]="true" (rowSelected)="selectRow($event)" (scrollEnd)="loadMore()">
+      <ng-template tableCell="type" let-row><span class="violation-cell"><span class="type-icon-badge" [style.background]="violationIconBackground(row['type'])" [style.color]="violationIconColor(row['type'])" [innerHTML]="violationIcon(row['type'])"></span><span><strong>{{row['type']}}</strong><small>{{row['location']}}</small></span></span></ng-template>
+      <ng-template tableCell="driver" let-row><span class="driver-cell"><i>{{initials(row['driver'])}}</i><span><strong>{{firstName(row['driver'])}}</strong><small>{{row['vehicle']}}</small></span></span></ng-template>
+      <ng-template tableCell="source" let-row><span class="source-badge" [style.--src-color]="sourceIconColor(row['source'])"><span class="source-icon" [innerHTML]="sourceIcon(row['source'])"></span>{{row['source']}}</span></ng-template>
+      <ng-template tableCell="severity" let-row><span class="severity" [attr.data-severity]="row['severity'].toLowerCase()"><i></i>{{row['severity']}}</span></ng-template>
+      <ng-template tableCell="speedDisplay" let-row><span class="speed" [class.exceeded]="row['thresholdKph']>0 && row['speedKph']>row['thresholdKph']">@if(row['speedKph']>0){<strong>{{row['speedKph']}}</strong>@if(row['thresholdKph']>0){<small>/{{row['thresholdKph']}}</small>}}@else{—}</span></ng-template>
+      <ng-template tableCell="timestamp" let-row>{{timeOnly(row['timestamp'])}}</ng-template>
+      <ng-template tableCell="fineDisplay" let-row>{{row['fine']>0?('£'+row['fine']):'—'}}</ng-template>
+      <ng-template tableCell="review" let-row><span class="review" [attr.data-review]="row['review'].toLowerCase()">{{row['review']}}</span></ng-template>
+      <ng-template tableBottomPanel>@if(selected();as item){<section class="violation-details"><button type="button" aria-label="Close details" (click)="selected.set(null);$event.stopPropagation()">×</button><strong>{{item.type}}</strong><p>{{item.driver}} · {{item.vehicle}} · {{item.location}}</p><span>{{item.description}}</span></section>}<footer><span>Showing {{filtered().length}} of {{totalCount()}} violations</span><span>Click row to see details · Click map pin to highlight</span></footer></ng-template>
     </shared-data-table>
   </div>
 </section>
