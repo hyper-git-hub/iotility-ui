@@ -145,14 +145,16 @@
 @media (prefers-reduced-motion:reduce){.route-progress i{animation:none}}
 .map-event-alert {
   position: absolute;
-  right: 16px;
+  left: 50%;
   top: 16px;
   z-index: 500;
   display: flex;
-  max-width: 272px;
+  max-width: 32rem;
+  width: max-content;
+  transform: translateX(-50%);
   align-items: flex-start;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border: 1px solid var(--color-line);
   border-radius: 12px;
   background: rgb(255 255 255/95%);
