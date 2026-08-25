@@ -86,6 +86,7 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly headerFilterTitle = input('Filter');
   readonly headerFilterLabel = input('Filters');
   readonly showToolbar = input(true);
+  readonly showHeader = input(true);
   readonly showExport = input(true);
   readonly showPrimaryAction = input(true);
   readonly clientSideSearch = input(true);
@@ -106,6 +107,7 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly rowSelected = output<TableRow>();
   readonly cellSelected = output<{ column: TableColumn; row: TableRow }>();
   readonly rowExpanded = output<TableRow | null>();
+  readonly scrollEnd = output<void>();
   private readonly expandedTemplate = contentChild(DataTableExpandedRow);
   private readonly bottomPanel = contentChild(DataTableBottomPanel);
   private readonly cellTemplates = contentChildren(DataTableCellTemplate);
@@ -149,6 +151,12 @@ export class DataTable implements AfterViewInit, OnDestroy {
       : Number.parseInt(value, 10) <= 90
         ? 'mot-warning'
         : 'mot-success';
+  }
+  protected handleScroll(event: Event): void {
+    const element = event.currentTarget as HTMLElement;
+    if (element.scrollHeight - element.scrollTop - element.clientHeight <= 160) {
+      this.scrollEnd.emit();
+    }
   }
   protected scoreClass(value: unknown): string {
     const score = Number(value);

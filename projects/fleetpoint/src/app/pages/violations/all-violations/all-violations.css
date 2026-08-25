@@ -1,61 +1,105 @@
 @reference "../../../../styles.css";
+.violation-controls{@apply relative z-[1200] mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface}.date-range{@apply flex overflow-hidden rounded-xl border border-line dark:border-dark-line}.date-range button{@apply h-9 border-0 bg-white px-3 text-[11px] font-medium text-muted dark:bg-dark-surface dark:text-brand-300}.date-range button.active{@apply bg-brand-600 text-white}.violation-search{@apply flex h-9 min-w-52 flex-1 items-center gap-2 rounded-xl border border-line bg-canvas/50 px-3 dark:border-dark-line dark:bg-dark-canvas}.violation-search .color-icon,.filter-toggle .color-icon{@apply size-3.5 text-muted}.violation-search input{@apply min-w-0 flex-1 border-0 bg-transparent text-xs text-ink outline-none placeholder:text-[#9aa3bd] dark:text-white}.filter-toggle{@apply inline-flex h-9 items-center gap-2 rounded-xl border border-line bg-white px-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300}.filter-toggle.active{@apply border-brand-500 bg-brand-50 text-brand-600}.filter-row{@apply flex w-full flex-wrap items-center gap-3 border-t border-line pt-3 dark:border-dark-line}.filter-dropdown [dropdown-trigger]{@apply flex h-9 min-w-40 items-center justify-between rounded-xl border border-line bg-white px-3 text-left text-xs dark:border-dark-line dark:bg-dark-canvas dark:text-white}.clear-filters{@apply bg-transparent text-xs text-brand-600 hover:underline}
+.violations-workspace{@apply grid min-w-0 items-stretch gap-4 xl:grid-cols-5}.map-panel,.violations-list{@apply h-[520px] min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface}.map-panel{@apply flex flex-col xl:col-span-2}.map-panel>header{@apply flex h-11 shrink-0 items-center justify-between border-b border-line px-4 dark:border-dark-line}.map-panel h2{@apply text-xs font-bold}.map-panel header span{@apply text-[10px] text-muted}.map-legend{@apply flex shrink-0 flex-wrap gap-2 border-b border-line px-3 py-2 text-[10px] text-muted dark:border-dark-line dark:text-brand-300}.map-legend span{@apply inline-flex items-center gap-1}.map-legend i{@apply size-2 rounded-full}.speeding{@apply bg-danger}.behaviour{@apply bg-warning}.safety{background:#ea580c}.compliance{@apply bg-brand-600}.geozone{@apply bg-info}.map-panel app-violation-map{@apply min-h-0 flex-1}.violations-list{@apply flex flex-col xl:col-span-3}.table-scroll{@apply min-h-0 flex-1 overflow-auto}table{@apply w-full min-w-[880px] border-collapse text-left}thead{@apply sticky top-0 z-10 bg-canvas dark:bg-dark-canvas}th{@apply border-b border-line px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-muted dark:border-dark-line dark:text-brand-300}td{@apply border-b border-line/50 px-3 py-2 text-[10px] text-muted dark:border-dark-line dark:text-brand-300}tbody tr{@apply cursor-pointer transition hover:bg-canvas/70 dark:hover:bg-dark-canvas/60}tbody tr.selected{@apply bg-brand-50 dark:bg-brand-600/10}tbody tr.critical td:first-child{@apply border-l-2 border-l-danger}.violation-cell,.driver-cell{@apply flex items-center gap-2}.violation-cell>span:last-child,.driver-cell>span{@apply flex min-w-0 flex-col}.violation-cell strong,.driver-cell strong{@apply max-w-36 truncate text-[11px] font-semibold text-ink dark:text-white}.violation-cell small{@apply mt-0.5 max-w-36 truncate text-[10px] text-[#9aa3bd]}.type-icon-badge{@apply flex size-7 shrink-0 items-center justify-center rounded-lg}.type-icon-badge :where(svg){display:block;width:.875rem;height:.875rem;max-width:none}.driver-cell i{@apply grid size-5 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-info text-[8px] font-bold not-italic text-white}.driver-cell small{@apply text-[9px] text-brand-600}.source-badge{@apply inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[9px] font-medium;color:var(--src-color);background:color-mix(in srgb,var(--src-color) 9%,transparent)}.source-icon,.source-icon :where(svg){@apply size-2.5}.severity{@apply inline-flex items-center gap-1 font-medium}.severity i{@apply size-1.5 rounded-full}.severity[data-severity=critical]{@apply text-danger}.severity[data-severity=critical] i{@apply bg-danger}.severity[data-severity=high]{color:#ea580c}.severity[data-severity=high] i{background:#f97316}.severity[data-severity=medium]{@apply text-warning}.severity[data-severity=medium] i{@apply bg-warning}.severity[data-severity=low]{@apply text-info}.severity[data-severity=low] i{@apply bg-info}.speed strong{@apply text-[10px]}.speed small{@apply text-[#9aa3bd]}.speed.exceeded strong{@apply text-danger}.review{@apply rounded-full px-2 py-0.5 font-medium}.review[data-review=pending]{@apply bg-warning/10 text-warning}.review[data-review=reviewed]{@apply bg-success/10 text-success}.empty{@apply h-40 text-center}.violations-list footer{@apply flex shrink-0 items-center justify-between border-t border-line px-4 py-2 text-[9px] text-muted dark:border-dark-line dark:text-brand-300}.violation-details{@apply relative shrink-0 border-t border-line bg-canvas p-3 dark:border-dark-line dark:bg-dark-canvas}.violation-details>button{@apply absolute right-3 top-2 bg-transparent text-base text-muted}.violation-details>strong{@apply text-xs text-ink dark:text-white}.violation-details p,.violation-details>span{@apply mt-1 block text-[9px] text-muted dark:text-brand-300}
+@media(max-width:1279px){.map-panel,.violations-list{@apply h-[30rem]}}@media(max-width:700px){.violation-controls{@apply items-stretch}.date-range,.filter-toggle{@apply self-start}.violations-list footer{@apply items-start gap-1}.violations-list footer{@apply flex-col}}
+.filter-toggle svg{@apply size-3.5 fill-none stroke-current text-muted;stroke-width:1.8;stroke-linejoin:round}
+:host ::ng-deep .source-icon svg{display:block;width:.625rem;height:.625rem;max-width:none}
+.type-icon-badge{width:1.5rem;height:1.5rem;border-radius:.5rem}
+:host ::ng-deep .type-icon-badge svg{display:block;width:.75rem;height:.75rem;max-width:none}
+.violations-list{border:0;background:transparent;overflow:visible}
+.violations-list shared-data-table{display:block;width:100%;height:520px}
+:host ::ng-deep .violations-list .table-card{height:520px;border-radius:1rem}
+:host ::ng-deep .violations-list .table-height{min-height:0;flex:1}
+:host ::ng-deep .violations-list .scroll{height:100%}
 
-.violation-filters { @apply relative z-[1200] mb-4 grid gap-3 overflow-visible rounded-2xl border border-line bg-white p-4 sm:grid-cols-3 dark:border-dark-line dark:bg-dark-surface; }
-.violation-filters label { @apply grid gap-1.5; }
-.violation-filters label > span { @apply text-[10px] font-medium text-muted dark:text-brand-300; }
-.filter-dropdown [dropdown-trigger] { @apply flex h-10 w-full items-center justify-between rounded-xl border border-line bg-white px-3 text-left text-xs dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
-
-.violations-workspace { @apply grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(22rem,0.8fr)_minmax(0,1.7fr)]; }
-.map-panel { @apply flex h-[580px] min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
-.map-panel > header { @apply flex h-12 items-center justify-between border-b border-line px-4 dark:border-dark-line; }
-.map-panel h2 { @apply text-sm font-bold; }
-.map-panel header span { @apply text-[10px] text-muted dark:text-brand-300; }
-.map-legend { @apply flex flex-wrap gap-3 border-b border-line px-4 py-2 text-[9px] text-muted dark:border-dark-line dark:text-brand-300; }
-.map-legend span { @apply inline-flex items-center gap-1; }
-.map-legend i { @apply size-2 rounded-full; }
-.map-legend .speeding { @apply bg-danger; }
-.map-legend .behaviour { @apply bg-warning; }
-.map-legend .safety { background:#ef6c36; }
-.map-legend .compliance { @apply bg-brand-500; }
-.map-legend .geozone { @apply bg-info; }
-.map-panel app-violation-map { @apply min-h-0 flex-1; }
-.list-column { @apply min-w-0 overflow-hidden; }
-
-.violation-details { @apply relative grid gap-3 bg-canvas/60 p-4 dark:bg-dark-canvas/50; }
-.violation-details h3 { @apply text-sm font-bold; }
-.violation-details p { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }
-.detail-copy > span { @apply mt-2 block text-[10px] leading-4 text-ink dark:text-white; }
-.detail-close { @apply absolute right-3 top-3 grid size-7 cursor-pointer place-items-center rounded-lg bg-transparent text-lg text-muted hover:bg-white dark:hover:bg-dark-surface; }
-.detail-footer { @apply flex items-center justify-between gap-4; }
-.detail-meta { @apply flex flex-wrap items-center gap-4 text-[10px] text-muted dark:text-brand-300; }
-.detail-meta strong { @apply text-danger; }
-.detail-meta strong.medium { @apply text-warning; }
-.detail-meta strong.low { @apply text-info; }
-.detail-meta a { @apply font-medium text-brand-600 no-underline hover:underline dark:text-brand-300; }
-.detail-actions { @apply flex justify-end gap-2; }
-.detail-actions button { @apply h-8 cursor-pointer rounded-lg bg-success px-3 text-[10px] font-semibold text-white; }
-.detail-actions button:last-child { @apply bg-danger; }
-
-:host-context(.dark) .violation-filters,
-:host-context(.dark) .map-panel { background:var(--color-dark-surface);border-color:var(--color-dark-line);color:white; }
-:host-context(.dark) .filter-dropdown [dropdown-trigger] { background:var(--color-dark-canvas); }
-
-.violation-type-cell { @apply inline-flex items-center gap-2; }
-.type-icon-badge { @apply flex size-6 shrink-0 items-center justify-center rounded-lg text-white; }
-.type-icon-badge svg { @apply size-3; }
-.type-text { @apply flex flex-col leading-tight; }
-.type-text strong { @apply text-xs font-semibold text-ink dark:text-white; }
-.type-text small { @apply text-[9px] text-muted dark:text-brand-300; }
-
-.source-badge { @apply inline-flex items-center gap-1 rounded-full bg-canvas px-2 py-0.5 text-[10px] font-medium text-muted dark:bg-dark-canvas dark:text-brand-300; color: var(--src-color); background: color-mix(in srgb, var(--src-color) 10%, transparent); }
-.source-icon { @apply flex size-3 items-center justify-center; }
-.source-icon svg { @apply size-3; }
-
-.speed-cell { @apply text-xs font-medium; }
-.speed-exceeded { @apply font-bold text-danger; }
-
-.fine-cell { @apply text-xs; }
-.fine-cell.has-fine { @apply font-bold text-danger; }
-
-@media (max-width:1279px) { .map-panel { @apply h-[28rem]; } }
-@media (max-width:700px) { .detail-footer { @apply items-start; } .detail-footer { @apply flex-col; } }
+:host-context(.dark) .violation-controls,
+:host-context(.dark) .map-panel {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-line);
+  color: white;
+}
+:host-context(.dark) .map-panel > header,
+:host-context(.dark) .map-legend,
+:host-context(.dark) .filter-row {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-line);
+}
+:host-context(.dark) .map-panel h2,
+:host-context(.dark) .violation-cell strong,
+:host-context(.dark) .driver-cell strong,
+:host-context(.dark) .violation-details > strong {
+  color: white;
+}
+:host-context(.dark) .violation-cell small,
+:host-context(.dark) .driver-cell small,
+:host-context(.dark) .map-panel header span,
+:host-context(.dark) .map-legend,
+:host-context(.dark) .violation-details p,
+:host-context(.dark) .violation-details > span,
+:host-context(.dark) .violations-list footer {
+  color: var(--color-brand-300);
+}
+:host-context(.dark) .date-range,
+:host-context(.dark) .violation-search,
+:host-context(.dark) .filter-toggle,
+:host-context(.dark) .filter-dropdown [dropdown-trigger] {
+  background: var(--color-dark-canvas);
+  border-color: var(--color-dark-line);
+  color: white;
+}
+:host-context(.dark) .date-range button {
+  background: var(--color-dark-canvas);
+  color: var(--color-brand-300);
+}
+:host-context(.dark) .date-range button.active {
+  background: var(--color-brand-600);
+  color: white;
+}
+:host-context(.dark) .violation-details,
+:host-context(.dark) .violations-list footer {
+  background: var(--color-dark-canvas);
+  border-color: var(--color-dark-line);
+}
+:host-context(.dark) ::ng-deep .violations-list .table-card,
+:host-context(.dark) ::ng-deep .violations-list .table-bottom-panel {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-line);
+}
+:host-context(.dark) ::ng-deep .violations-list thead,
+:host-context(.dark) ::ng-deep .violations-list th {
+  background: var(--color-dark-canvas);
+  border-color: var(--color-dark-line);
+  color: var(--color-brand-300);
+}
+:host-context(.dark) ::ng-deep .violations-list td {
+  border-color: var(--color-dark-line);
+  color: var(--color-brand-300);
+}
+:host-context(.dark) ::ng-deep .violations-list tbody tr:hover {
+  background: color-mix(in srgb, var(--color-brand-600) 8%, var(--color-dark-surface));
+}
+:host-context(.dark) ::ng-deep .violations-list tbody tr.selected-row {
+  background: color-mix(in srgb, var(--color-brand-600) 15%, var(--color-dark-surface));
+}
+:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-content {
+  background: var(--color-dark-surface);
+  color: white;
+  border: 1px solid var(--color-dark-line);
+}
+:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-close-button {
+  color: var(--color-brand-300);
+}
+:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--color-dark-surface);
+}
+:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--color-dark-surface);
+}
+.map-panel,.violations-list{height:490px}
+.violations-list shared-data-table,
+:host ::ng-deep .violations-list .table-card{height:490px}
+@media(max-width:1279px){.map-panel,.violations-list,.violations-list shared-data-table,:host ::ng-deep .violations-list .table-card{height:30rem}}

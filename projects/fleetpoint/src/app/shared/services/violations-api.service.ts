@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { environment } from '../../../environments/environment';
 
@@ -8,19 +8,25 @@ const FLEET_API = `${environment.fleetBaseUrl}/api`;
 const DRIVER_API = `${environment.driverBaseUrl}/driver`;
 
 export interface ViolationRecord {
+  id?: string | number;
   vehicle_name: string;
   vehicle: string | number;
   vehicle_status: number;
   vehicle_allocation_status: boolean;
   violation_type: string;
-  speed: number;
-  speed_threshold: number;
+  speed: number | string;
+  speed_threshold?: number | string;
+  threshold?: number | string;
   event_generation_time: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | string;
+  longitude: number | string;
+  lat?: number | string;
+  long?: number | string;
+  lng?: number | string;
   location: string;
   description: string;
-  name: string;
+  name?: string | null;
+  driver_name?: string | null;
 }
 
 export interface DriverOption {
@@ -45,6 +51,11 @@ export interface ViolationFilters {
 
 @Injectable({ providedIn: 'root' })
 export class ViolationsApiService {
+  private readonly violationRequests = new Map<
+    string,
+    Observable<ApiResponse<{ count: number; data: ViolationRecord[] }>>
+  >();
+
   constructor(private readonly http: HttpClient) {}
 
   getViolations(filters: ViolationFilters): Observable<ApiResponse<{ count: number; data: ViolationRecord[] }>> {
@@ -60,10 +71,15 @@ export class ViolationsApiService {
       .set('end_datetime', filters.end_datetime)
       .set('time_zone', filters.time_zone)
       .set('group', filters.group);
-    return this.http.get<ApiResponse<{ count: number; data: ViolationRecord[] }>>(
+    const key = params.toString();
+    const cached = this.violationRequests.get(key);
+    if (cached) return cached;
+    const request = this.http.get<ApiResponse<{ count: number; data: ViolationRecord[] }>>(
       `${FLEET_API}/common/violation`,
       { params },
-    );
+    ).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+    this.violationRequests.set(key, request);
+    return request;
   }
 
   exportXls(filters: ViolationFilters): Observable<Blob> {
