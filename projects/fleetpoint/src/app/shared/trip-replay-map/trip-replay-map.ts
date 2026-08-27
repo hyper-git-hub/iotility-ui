@@ -49,6 +49,7 @@ const CAMERA_SETTLE_SECONDS = 1.25;
 const CAMERA_ZOOM_EPSILON = 0.008;
 const CAMERA_PITCH_EPSILON = 0.08;
 const OSRM_MIN_MATCH_CONFIDENCE = 0.3;
+const OSRM_MAX_DISTANCE_INFLATION = 2;
 const VEHICLE_LIGHTING = new LightingEffect({
   ambientLight: new AmbientLight({ color: [255, 255, 255], intensity: 2.2 }),
   directionalLight: new DirectionalLight({
@@ -151,6 +152,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private movementDuration = 1;
   private movementStartDistance = 0;
   private targetRoadDistance = 0;
+  private movementStartPosition: LatLng = [0, 0];
+  private targetPosition: LatLng = [0, 0];
+  private displayedPosition: LatLng = [0, 0];
   private displayedRoadDistance = 0;
   private displayedHeading?: number;
   private displayedCameraBearing?: number;
@@ -543,16 +547,19 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           throw new Error();
         const values = matching?.geometry?.coordinates ?? [];
         if (!values?.length) throw new Error();
-        matched.push(...values.map(([lng, lat]) => [lat, lng] as LatLng));
+        const matchedCoordinates = values.map(([lng, lat]) => [lat, lng] as LatLng);
+        const rawCoordinates = chunk.map(({ lat, lng }) => [lat, lng] as LatLng);
+        const rawDistance = this.pathDistance(rawCoordinates);
+        const matchedDistance = this.pathDistance(matchedCoordinates);
+        matched.push(
+          ...(matchedDistance > rawDistance * OSRM_MAX_DISTANCE_INFLATION
+            ? rawCoordinates
+            : matchedCoordinates),
+        );
       }
       return this.dedupeCoordinates(matched);
     } catch {
-      if (this.routeRequest.signal.aborted) return fallback;
-      try {
-        return await this.getOsrmRoute(cleanedPositions);
-      } catch {
-        return fallback;
-      }
+      return fallback;
     }
   }
 
@@ -587,6 +594,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       (point, index) =>
         index === 0 || point[0] !== points[index - 1][0] || point[1] !== points[index - 1][1],
     );
+  }
+
+  private pathDistance(points: LatLng[]): number {
+    let distance = 0;
+    for (let index = 1; index < points.length; index++)
+      distance += this.distanceBetweenCoordinates(points[index - 1], points[index]);
+    return distance;
   }
 
   private removeGpsSpikes(positions: TripPosition[]): TripPosition[] {
@@ -674,20 +688,28 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const positions = this.positions();
     const roadIndex = this.routeIndex(index, positions.length);
     const position = this.roadCoordinates[roadIndex];
+    const rawPosition: LatLng = [
+      positions[Math.max(0, Math.min(index, positions.length - 1))].lat,
+      positions[Math.max(0, Math.min(index, positions.length - 1))].lng,
+    ];
     const targetDistance = this.roadDistances[roadIndex] ?? 0;
     const heading = this.rawHeadingAtDistance(targetDistance);
     const clampedIndex = Math.max(0, Math.min(index, positions.length - 1));
     this.targetSpeedKph = positions[clampedIndex]?.speed ?? this.targetSpeedKph;
     if (this.vehicleVisible) {
-      if (this.playbackActive()) this.animateVehicleTo(targetDistance);
+      if (this.playbackActive()) this.animateVehicleTo(rawPosition, targetDistance);
       else {
         this.cancelMovement();
         this.targetRoadDistance = targetDistance;
         this.displayedRoadDistance = targetDistance;
         this.movementStartDistance = targetDistance;
+        this.movementStartPosition = rawPosition;
+        this.targetPosition = rawPosition;
         this.movementStartedAt = performance.now();
         this.displayedRoadProgress = roadIndex;
         this.displayedHeading = heading;
+        this.displayedPosition[0] = rawPosition[0];
+        this.displayedPosition[1] = rawPosition[1];
         this.renderVehicleModel(position, heading);
         this.renderRouteLayersIfNeeded(true);
         this.startCameraLoop();
@@ -697,20 +719,28 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.targetRoadDistance = targetDistance;
       this.displayedRoadDistance = targetDistance;
       this.movementStartDistance = targetDistance;
+      this.movementStartPosition = rawPosition;
+      this.targetPosition = rawPosition;
       this.movementStartedAt = performance.now();
       this.displayedRoadProgress = roadIndex;
       this.displayedHeading = heading;
       this.displayedSpeedKph = this.targetSpeedKph;
+      this.displayedPosition[0] = rawPosition[0];
+      this.displayedPosition[1] = rawPosition[1];
       this.renderVehicleModel(position, heading);
       this.renderRouteLayersIfNeeded(true);
       this.startCameraLoop();
     }
   }
 
-  private animateVehicleTo(targetDistance: number): void {
+  private animateVehicleTo(targetPosition: LatLng, targetDistance: number): void {
     if (!this.map || !this.vehicleOverlay || !this.vehicleVisible) return;
     this.movementStartDistance = this.displayedRoadDistance;
     this.targetRoadDistance = targetDistance;
+    this.movementStartPosition[0] = this.displayedPosition[0];
+    this.movementStartPosition[1] = this.displayedPosition[1];
+    this.targetPosition[0] = targetPosition[0];
+    this.targetPosition[1] = targetPosition[1];
     this.movementStartedAt = performance.now();
     this.movementDuration = Math.max(40, this.playbackStepDuration());
     this.movementFinished = false;
@@ -1052,6 +1082,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       dt,
     );
     this.renderVehicleModel(position, heading);
+    this.displayedPosition[0] = position[0];
+    this.displayedPosition[1] = position[1];
     if (progress >= 1 && !this.movementFinished) {
       this.movementFinished = true;
       this.renderRouteLayersIfNeeded();

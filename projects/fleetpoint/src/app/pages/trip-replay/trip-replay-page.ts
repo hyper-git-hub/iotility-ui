@@ -289,6 +289,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     const offsets = this.buildTimeOffsets(positions, startIdx);
     const totalTripMs = offsets[offsets.length - 1] || 1;
     const wallStart = performance.now();
+    let lastIdx = 0;
     this.zone.runOutsideAngular(() => {
       const advance = (now: number) => {
         if (!this.playing()) return;
@@ -299,11 +300,10 @@ export class TripReplayPage implements OnInit, OnDestroy {
         }
         const nextIndex = Math.min(startIdx + idx, lastIndex);
         if (nextIndex !== this.positionIndex()) {
-          const segmentDuration = idx > 0 ? offsets[idx] - offsets[idx - 1] : offsets[0];
+          const segmentDuration = offsets[idx] - offsets[lastIdx];
           this.stepDurationMs.set(Math.max(40, segmentDuration / speed));
           this.positionIndex.set(nextIndex);
-          const pos = positions[nextIndex];
-          console.log(`[Playback] idx=${nextIndex} lat=${pos.lat} lng=${pos.lng} speed=${pos.speed} km/h time=${pos.timestamp}`);
+          lastIdx = idx;
         }
         if (elapsedTripMs >= totalTripMs) { this.pause(); return; }
         this.playbackFrame = requestAnimationFrame(advance);
