@@ -62,6 +62,13 @@ const EMPTY_TRIP: ReplayTrip = {
   stops: [],
   statistics: [],
 };
+const PLAYBACK_RATE_MULTIPLIERS: Record<number, number> = {
+  1: 2,
+  2: 5,
+  3: 9,
+  4: 16,
+  5: 25,
+};
 
 @Component({
   selector: 'app-trip-replay-page',
@@ -283,7 +290,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.clearPlaybackFrame();
     this.playing.set(true);
     const positions = this.trip().positions;
-    const speed = this.speed();
+    const speed = PLAYBACK_RATE_MULTIPLIERS[this.speed()] ?? 2;
     const startIdx = this.positionIndex();
     const lastIndex = positions.length - 1;
     const offsets = this.buildTimeOffsets(positions, startIdx);

@@ -125,6 +125,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   });
   private eventCardHideTimer?: number;
   private roadCoordinates: LatLng[] = [];
+  private roadSegments: LatLng[][] = [];
   private roadDistances: number[] = [];
   private positionRoadIndexes: number[] = [];
   private routeRequest?: AbortController;
@@ -232,6 +233,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.routeLoadingChange.emit(false);
       this.clearMarkers();
       this.roadCoordinates = [];
+      this.roadSegments = [];
       this.roadDistances = [];
       this.positionRoadIndexes = [];
       if (this.map.isStyleLoaded())
@@ -258,6 +260,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     if (!this.map || version !== this.routeVersion) return;
     this.clearMarkers();
     this.roadCoordinates = coordinates;
+    if (!this.roadSegments.length) this.roadSegments = [coordinates];
     this.roadDistances = this.buildRoadDistances(coordinates);
     this.positionRoadIndexes = this.mapPositionsToRoad(positions, coordinates);
     this.displayedHeading = undefined;
@@ -328,7 +331,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     if (!this.map?.isStyleLoaded() || this.roadCoordinates.length < 2) return;
     const completedIndex = Math.max(0, Math.round(this.displayedRoadProgress));
     const recentStart = Math.max(0, completedIndex - RECENT_TRAIL_POINTS);
-    const features = [lineFeature(this.roadCoordinates, { kind: 'route' })];
+    const features = this.roadSegments.flatMap((segment) =>
+      segment.length > 1 ? [lineFeature(segment, { kind: 'route' })] : [],
+    );
     if (completedIndex > 0)
       features.push(
         lineFeature(this.roadCoordinates.slice(0, completedIndex + 1), { kind: 'completed' }),
@@ -512,6 +517,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.routeRequest = new AbortController();
     try {
       const matched: LatLng[] = [];
+      const segments: LatLng[][] = [];
       for (const chunk of this.positionChunks(cleanedPositions, 95)) {
         const coordinates = chunk.map(({ lng, lat }) => `${lng},${lat}`).join(';');
         const timestamps = chunk
@@ -551,14 +557,17 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         const rawCoordinates = chunk.map(({ lat, lng }) => [lat, lng] as LatLng);
         const rawDistance = this.pathDistance(rawCoordinates);
         const matchedDistance = this.pathDistance(matchedCoordinates);
-        matched.push(
-          ...(matchedDistance > rawDistance * OSRM_MAX_DISTANCE_INFLATION
+        const segment =
+          matchedDistance > rawDistance * OSRM_MAX_DISTANCE_INFLATION
             ? rawCoordinates
-            : matchedCoordinates),
-        );
+            : matchedCoordinates;
+        segments.push(segment);
+        matched.push(...segment);
       }
+      this.roadSegments = segments;
       return this.dedupeCoordinates(matched);
     } catch {
+      this.roadSegments = [fallback];
       return fallback;
     }
   }
