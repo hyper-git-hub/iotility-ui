@@ -105,6 +105,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       (vehicle) => Number.isFinite(vehicle.lat) && Number.isFinite(vehicle.lng),
     ),
   );
+  protected readonly onlineVehicleCount = computed(
+    () => this.mapVehicles().filter((vehicle) => vehicle.status !== 'Offline').length,
+  );
   private readonly subscription = new Subscription();
   private readonly apiSnapshots = new Map<number, LiveVehicle>();
   private readonly realtimeVehicles = new Set<number>();
@@ -119,7 +122,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly feedback: FeedbackDialogBridgeService,
     private readonly fullscreenUi: FullscreenUiService,
-    private readonly fleetStatus: FleetStatusService,
+    protected readonly fleetStatus: FleetStatusService,
     route: ActivatedRoute,
   ) {
     const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
@@ -242,6 +245,10 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     return 'All locations';
   }
   protected selectVehicle(vehicle: TrackedVehicle): void {
+    if (this.selectedVehicle()?.id === vehicle.id) {
+      this.clearSelectedVehicle();
+      return;
+    }
     const previousId = this.selectedVehicle()?.numericId;
     if (previousId !== undefined) this.restoreApiVehicle(previousId);
     const selected =
@@ -293,6 +300,12 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.fullscreenTrackingTimeout = setTimeout(() => {
       this.fullscreenTrackingState.set(this.selectedVehicle()?.lastSignalAt ? 'active' : 'waiting');
     }, 800);
+  }
+
+  protected onFullscreenChanged(entering: boolean): void {
+    if (entering) {
+      if (this.selectedVehicle()) this.enableLiveTracking();
+    }
   }
 
   protected stopLiveTracking(): void {
@@ -437,20 +450,26 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {
     if (update.rtp !== undefined && Number(update.rtp) !== 1) return;
     const activeVehicle = this.selectedVehicle();
-    if (!activeVehicle || !this.liveTrackingEnabled()) return;
     const updateId = String(update.vehicle_id ?? update.id ?? '');
     const packetDeviceId = String(update.device_id ?? update.id ?? '');
     const registration = update.registration?.toLowerCase();
     let selected: LiveVehicle | undefined;
+    let matched = false;
     this.vehicles.update((vehicles) =>
       vehicles.map((vehicle) => {
-        if (vehicle.numericId !== activeVehicle.numericId) return vehicle;
+        if (
+          activeVehicle &&
+          this.liveTrackingEnabled() &&
+          vehicle.numericId !== activeVehicle.numericId
+        )
+          return vehicle;
         if (
           String(vehicle.numericId) !== updateId &&
           (!vehicle.deviceId || vehicle.deviceId !== packetDeviceId) &&
           vehicle.id.toLowerCase() !== registration
         )
           return vehicle;
+        matched = true;
         const speed = this.numberValue(update.speed ?? update.spd ?? vehicle.speed);
         const lat = this.numberValue(update.latitude ?? update.lat, vehicle.lat);
         const lng = this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng);
@@ -460,8 +479,10 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
           speed,
           lat,
           lng,
-          status: speed > 8 ? 'Moving' : ignition ? 'Idling' : 'Offline',
+          status: speed > 8 ? 'Moving' : 'Idling',
+          ignition,
           updated: this.updateTime(update.updated_time ?? update.t),
+          lastSignalAt: Date.now(),
         };
         this.realtimeVehicles.add(vehicle.numericId);
         if (this.selectedVehicle()?.numericId === vehicle.numericId) selected = changed;
@@ -469,6 +490,13 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       }),
     );
     if (selected) this.selectedVehicle.set(selected);
+    if (matched) {
+      const vehicles = this.vehicles();
+      this.fleetStatus.update(
+        vehicles.length,
+        vehicles.filter((vehicle) => vehicle.status !== 'Offline').length,
+      );
+    }
   }
 
   private restoreApiVehicle(vehicleId: number): void {

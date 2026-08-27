@@ -8,7 +8,7 @@
         @if (loading()) {
           <span class="tracked-count-skeleton"><ui-skeleton width="5.25rem" height="0.6rem" radius="0.25rem" /></span>
         } @else {
-          <span>{{ vehicles().length }} tracked vehicles</span>
+          <span>{{ fleetStatus.totalCount() }} vehicles · {{ fleetStatus.onlineCount() }} online</span>
         }
       </p>
     </div>
@@ -101,6 +101,7 @@
       (ready)="onMapReady(fleetMap)"
       (vehicleSelected)="selectVehicle($event)"
       (fullscreenVehicleClick)="onFullscreenVehicleClick($event)"
+      (fullscreenChanged)="onFullscreenChanged($event)"
     />
     @if (isFullscreen() && isFullscreenTrackingEnabling()) {
       <div class="fullscreen-tracking-notice enabling">
@@ -131,7 +132,7 @@
     }
     <div class="map-status">
       <app-live-badge
-        [vehicleCount]="mapVehicles().length"
+        [vehicleCount]="fleetStatus.onlineCount()"
         [isLive]="!loading()"
         [loading]="loading()"
       />

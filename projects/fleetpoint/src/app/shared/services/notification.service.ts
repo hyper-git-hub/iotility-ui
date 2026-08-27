@@ -1,7 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { initializeApp, getApps } from 'firebase/app';
 import { getDatabase, onValue, ref } from 'firebase/database';
+import { interval } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface FleetNotification {
@@ -42,6 +44,7 @@ export class NotificationService {
 
   constructor() {
     this.load();
+    interval(30_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.load());
     this.listenForFirebaseUpdates();
     this.destroyRef.onDestroy(() => {
       this.firebaseUnsubscribe?.();

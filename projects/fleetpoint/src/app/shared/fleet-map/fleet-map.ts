@@ -43,12 +43,15 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly detailsPanelOpen = input(false);
   readonly vehicleSelected = output<TrackedVehicle>();
   readonly fullscreenVehicleClick = output<TrackedVehicle>();
+  readonly fullscreenChanged = output<boolean>();
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly fullscreenUi = inject(FullscreenUiService);
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
   private fittedVehicleSet = '';
+  private initialFitPending = true;
+  private resizeObserver?: ResizeObserver;
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
 
@@ -89,6 +92,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.map = createIotMap(this.mapElement().nativeElement, [25.2854, 51.531], 11);
+    this.resizeObserver = new ResizeObserver(() => {
+      this.map?.resize();
+      if (this.initialFitPending && this.vehicles().length)
+        this.renderMarkers(this.vehicles(), true, this.showMarkers(), this.clusterMarkers());
+    });
+    this.resizeObserver.observe(this.mapElement().nativeElement);
     this.map.on('style.load', () => {
       this.renderMarkers(this.vehicles(), false, this.showMarkers(), this.clusterMarkers());
       this.renderZones(this.zones());
@@ -146,7 +155,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   onFullscreenToggle(): void {
+    const entering = !this.isFullscreen();
     this.fullscreenUi.toggle();
+    this.fullscreenChanged.emit(entering);
     requestAnimationFrame(() => requestAnimationFrame(() => this.map?.resize()));
   }
 
@@ -187,9 +198,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       });
       this.markers.set(vehicle.id, item);
     }
+    const selected = vehicles.find(({ id }) => id === selectedId);
+    if (selected && this.markers.has(selected.id)) this.updateMarkerSelection(selected.id);
     if (fit && vehicles.length) {
       fitLatLngs(this.map, vehicles.map(({ lat, lng }) => [lat, lng]), 48, 15 + this.fitZoomOffset());
-      this.fittedVehicleSet = this.vehicleSetKey(vehicles);
+      if (this.map.getContainer().clientWidth > 0 && this.map.getContainer().clientHeight > 0) {
+        this.fittedVehicleSet = this.vehicleSetKey(vehicles);
+        this.initialFitPending = false;
+      }
     }
   }
 
@@ -391,6 +407,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   private focusVehicle(vehicle: TrackedVehicle): void {
     if (!this.map) return;
+    const panelPadding = this.detailsPanelOpen() && !this.isFullscreen() &&
+      !matchMedia('(max-width: 900px)').matches ? 320 : 0;
     this.map.flyTo({
       center: [vehicle.lng, vehicle.lat],
       zoom: 16,
@@ -398,6 +416,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       bearing: -18,
       duration: 1200,
       essential: true,
+      padding: { top: 0, bottom: 0, left: 0, right: panelPadding },
     });
     const marker = this.markers.get(vehicle.id);
     if (marker && marker.getPopup() && !marker.getPopup()?.isOpen()) marker.togglePopup();
@@ -413,6 +432,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.readyFallback);
+    this.resizeObserver?.disconnect();
     this.map?.remove();
   }
 }
