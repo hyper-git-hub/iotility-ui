@@ -45,7 +45,7 @@
             ></span>
             <span class="nav-label">{{ item.label }}</span>
             @if (item.route === '/live-tracking') {
-              <span class="live-status-dot" title="Realtime tracking" aria-label="Realtime tracking"></span>
+              <span class="live-status-dot" [class.offline]="!fleetStatus.hasOnlineVehicles()" [title]="fleetStatus.hasOnlineVehicles() ? 'Realtime tracking active' : 'All vehicles offline'" [attr.aria-label]="fleetStatus.hasOnlineVehicles() ? 'Realtime tracking active' : 'All vehicles offline'"></span>
             }
             @if (item.badgeKey && badgeCounts[item.badgeKey]) {
               <em>{{ badgeCounts[item.badgeKey] }}</em>

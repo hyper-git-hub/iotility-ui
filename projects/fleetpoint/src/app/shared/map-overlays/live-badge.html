@@ -1,16 +1,16 @@
-<div class="live-badge" [attr.aria-live]="isLive() ? 'polite' : 'off'" [class.loading]="loading()">
-  <span class="live-dot" [class.inactive]="!isLive()" aria-hidden="true"></span>
+<div class="live-badge" [attr.aria-live]="isLive() ? 'polite' : 'off'" [class.loading]="loading()" [class.offline]="isOffline()">
+  <span class="live-dot" [class.inactive]="!isLive() || isOffline()" aria-hidden="true"></span>
   @if (loading()) {
     <span class="badge-skeleton">
       <span class="badge-skeleton-copy" aria-hidden="true">
-        {{ isLive() ? 'Live' : 'Offline' }} · 00:00:00 · {{ vehicleCount() }}
+        {{ isOffline() ? 'Offline' : 'Live' }} · 00:00:00 · {{ vehicleCount() }}
         {{ vehicleCount() === 1 ? 'vehicle' : 'vehicles' }}
       </span>
       <ui-skeleton width="100%" height="0.75rem" radius="0.25rem" />
     </span>
   } @else {
     <span class="badge-text">
-      {{ isLive() ? 'Live' : 'Offline' }} · {{ currentTime() }} · {{ vehicleCount() }}
+      {{ isOffline() ? 'Offline' : 'Live' }} · {{ currentTime() }} · {{ vehicleCount() }}
       {{ vehicleCount() === 1 ? 'vehicle' : 'vehicles' }}
     </span>
   }

@@ -2,6 +2,7 @@ import { Component, computed, HostListener, isDevMode, output, signal } from '@a
 import { Router } from '@angular/router';
 import { DropdownOption, PlatformHeader, SmoothHeight } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
+import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { FleetNotification, NotificationService } from '../../shared/services/notification.service';
 import { SIDEBAR_MENU } from '../sidebar/menu.config';
 
@@ -32,10 +33,13 @@ export class FleetpointHeader {
   private readonly showAllDevelopmentItems = isDevMode();
   private searchCloseTimer?: number;
 
+  protected readonly liveOffline = computed(() => !this.fleetStatus.hasOnlineVehicles());
+
   constructor(
     private readonly router: Router,
     private readonly features: FeatureAccessService,
     protected readonly notificationService: NotificationService,
+    protected readonly fleetStatus: FleetStatusService,
   ) {}
 
   protected toggleNotifications(event: MouseEvent): void {

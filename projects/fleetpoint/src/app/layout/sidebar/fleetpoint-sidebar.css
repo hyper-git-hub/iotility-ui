@@ -168,6 +168,13 @@ nav .active {
   content: '';
   @apply absolute inset-0 animate-ping rounded-full bg-success opacity-60;
 }
+.live-status-dot.offline {
+  @apply bg-muted;
+}
+.live-status-dot.offline::after {
+  animation: none;
+  opacity: 0;
+}
 .trip-replay-icon {
   @apply text-sm;
 }

@@ -1,5 +1,6 @@
 <shared-platform-header
   [showLive]="true"
+  [liveOffline]="liveOffline()"
   [userName]="identity.name"
   [userInitials]="identity.initials"
   (profileAction)="handleProfileAction($event)"

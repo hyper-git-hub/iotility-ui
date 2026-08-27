@@ -3,6 +3,7 @@ import { Component, computed, Inject, Input, isDevMode, signal } from '@angular/
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Logo, Tooltip } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
+import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { MenuGroup, SIDEBAR_MENU } from './menu.config';
 
 interface HostDialogRequest {
@@ -34,6 +35,7 @@ export class FleetpointSidebar {
     @Inject(DOCUMENT) private readonly document: Document,
     private readonly router: Router,
     private readonly features: FeatureAccessService,
+    protected readonly fleetStatus: FleetStatusService,
   ) {}
 
   protected readonly visibleMenu = computed<MenuGroup[]>(() =>

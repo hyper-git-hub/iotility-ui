@@ -161,6 +161,12 @@
   border-left: 4px solid var(--color-danger);
   animation: event-alert-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+.map-event-alert.type-dashcam {
+  border-left-color: var(--color-warning);
+}
+.map-event-alert.type-stop {
+  border-left-color: var(--color-info);
+}
 .map-event-alert svg {
   width: 16px;
   height: 16px;
@@ -171,6 +177,14 @@
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+.map-event-alert.type-dashcam svg {
+  fill: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  stroke: var(--color-warning);
+}
+.map-event-alert.type-stop svg {
+  fill: color-mix(in srgb, var(--color-info) 15%, transparent);
+  stroke: var(--color-info);
 }
 .map-event-alert strong {
   display: block;
@@ -188,6 +202,12 @@
   border-color: var(--color-dark-line);
   border-left-color: var(--color-danger);
   background: color-mix(in srgb, var(--color-dark-surface) 95%, transparent);
+}
+:host-context(.dark) .map-event-alert.type-dashcam {
+  border-left-color: var(--color-warning);
+}
+:host-context(.dark) .map-event-alert.type-stop {
+  border-left-color: var(--color-info);
 }
 :host-context(.dark) .map-event-alert strong {
   color: white;

@@ -26,6 +26,7 @@ import {
   LiveTrackingApiService,
   RealtimeVehicleRecord,
 } from '../../shared/services/live-tracking-api.service';
+import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import {
   VehicleRealtimeService,
   VehicleRealtimeUpdate,
@@ -118,6 +119,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly feedback: FeedbackDialogBridgeService,
     private readonly fullscreenUi: FullscreenUiService,
+    private readonly fleetStatus: FleetStatusService,
     route: ActivatedRoute,
   ) {
     const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
@@ -218,6 +220,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
         : snapshot;
     });
     this.vehicles.set(vehicles);
+    const onlineCount = vehicles.filter((v) => v.status !== 'Offline').length;
+    this.fleetStatus.update(vehicles.length, onlineCount);
     if (selectedId !== undefined) {
       this.selectedVehicle.set(
         vehicles.find((vehicle) => vehicle.numericId === selectedId) ?? null,

@@ -58,6 +58,13 @@
 :host ::ng-deep .trip-event-popup {
   display: grid;
   gap: 2px;
+  border-left: 3px solid var(--color-danger);
+}
+:host ::ng-deep .trip-event-popup.type-dashcam {
+  border-left-color: var(--color-warning);
+}
+:host ::ng-deep .trip-event-popup.type-stop {
+  border-left-color: var(--color-info);
 }
 :host ::ng-deep .trip-event-popup header {
   display: flex;
@@ -66,10 +73,14 @@
 }
 :host ::ng-deep .trip-event-popup header i {
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
   background: var(--color-danger);
+  color: #fff;
+  font: 700 10px/1 sans-serif;
 }
 :host ::ng-deep .trip-event-popup.type-dashcam header i {
   background: var(--color-warning);

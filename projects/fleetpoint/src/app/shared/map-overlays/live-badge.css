@@ -16,6 +16,10 @@
   @apply bg-muted;
   animation: none;
 }
+.live-badge.offline .live-dot {
+  @apply bg-muted;
+  animation: none;
+}
 .badge-text,
 .badge-skeleton {
   @apply whitespace-nowrap flex items-center;

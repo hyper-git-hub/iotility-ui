@@ -120,13 +120,23 @@
           (displayedSpeedChange)="displayedSpeed.set($event)"
         />
         @if (currentEvent(); as alert) {
-          <div class="map-event-alert" role="status">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M10.3 4.5 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.5a2 2 0 0 0-3.4 0Z"
-              />
-              <path d="M12 9v4M12 17h.01" />
-            </svg>
+          <div class="map-event-alert" [class]="'type-' + alert.type" role="status">
+            @if (alert.type === 'violation') {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10.3 4.5 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.5a2 2 0 0 0-3.4 0Z" />
+                <path d="M12 9v4M12 17h.01" />
+              </svg>
+            } @else if (alert.type === 'dashcam') {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v4M12 16h.01" />
+              </svg>
+            }
             <div>
               <strong>{{ alert.label }}</strong>
               <small>

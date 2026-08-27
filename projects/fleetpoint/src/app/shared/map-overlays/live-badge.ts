@@ -8,6 +8,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
 import { Skeleton } from '@iotility/shared-ui';
+import { FleetStatusService } from '../services/fleet-status.service';
 
 @Component({
   selector: 'app-live-badge',
@@ -27,8 +28,9 @@ export class LiveBadge {
     const pad = (value: number) => String(value).padStart(2, '0');
     return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   });
+  readonly isOffline = computed(() => !this.fleetStatus.hasOnlineVehicles());
 
-  constructor() {
+  constructor(private readonly fleetStatus: FleetStatusService) {
     interval(1_000)
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.now.set(Date.now()));

@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, Inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, input, output } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
 import { Tooltip } from '../tooltip/tooltip';
 const THEME_KEY = 'iotility-theme';
@@ -8,9 +8,12 @@ const THEME_KEY = 'iotility-theme';
   imports: [Dropdown, Tooltip],
   templateUrl: './platform-header.html',
   styleUrl: './platform-header.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlatformHeader {
   readonly showLive = input(false);
+  readonly liveVehicleCount = input(0);
+  readonly liveOffline = input(false);
   readonly userName = input('Haris Khan');
   readonly userInitials = input('HK');
   readonly profileAction = output<DropdownOption>();

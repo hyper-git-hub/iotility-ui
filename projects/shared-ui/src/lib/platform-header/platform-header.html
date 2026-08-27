@@ -3,7 +3,9 @@
   <div class="actions">
     <ng-content select="[header-actions]" />
     @if (showLive()) {
-      <span class="live"><i></i>Live</span>
+      <span class="live" [class.offline]="liveOffline()" [attr.title]="liveOffline() ? 'All vehicles offline' : 'Realtime tracking active'">
+        <i [class.offline-dot]="liveOffline()"></i>Live
+      </span>
     }
     <button class="theme" type="button" (click)="toggleTheme()" [tooltip]="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
       @if (isDark) {
