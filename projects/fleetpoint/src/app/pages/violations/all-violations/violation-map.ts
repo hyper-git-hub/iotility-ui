@@ -63,9 +63,20 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     const element = this.mapElement().nativeElement;
-    this.instance = createIotMap(element, [52.45, -1.6], 6);
+    // Default map center to Pakistan; will override if geolocation succeeds
+    this.instance = createIotMap(element, [30.3753, 69.3451], 6);
     this.resizeObserver = new ResizeObserver(() => this.instance?.resize());
     this.resizeObserver.observe(element);
+    // Attempt live geolocation, overriding the default on success
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.instance!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 10, duration: 700 });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    }
     this.instance.once('load', () => this.render(this.violations()));
   }
 

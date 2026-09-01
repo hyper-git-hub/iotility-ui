@@ -143,7 +143,6 @@ nav .active {
   will-change: opacity, transform;
 }
 .fleet-sidebar.collapsed .nav-label,
-.fleet-sidebar.collapsed .live-status-dot,
 .fleet-sidebar.collapsed nav em {
   flex: 0 0 0;
   width: 0;
@@ -155,6 +154,21 @@ nav .active {
   opacity: 0;
   transform: translateX(-8px) scale(0.85);
   pointer-events: none;
+}
+.fleet-sidebar.collapsed .live-status-dot {
+  position: absolute;
+  right: -16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  max-width: 8px;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  opacity: 1;
+  pointer-events: auto;
 }
 .live-status-dot {
   @apply relative ml-auto size-2 shrink-0 rounded-full bg-success;

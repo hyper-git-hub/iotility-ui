@@ -7,7 +7,6 @@ export const environment = {
   userMsBaseUrl: 'https://devgateway.hypernymbiz.com/user-ms',
   cobPackagesBaseUrl: 'https://devgateway.hypernymbiz.com/cob-packages',
   osrmBaseUrl: 'https://devgateway.hypernymbiz.com/osrm-pakistan',
-  osrmFallbackUrl: 'https://router.project-osrm.org',
   mapLightStyleUrl: 'https://tiles.openfreemap.org/styles/liberty',
   mapDarkStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
   nominatimBaseUrl: 'https://devgateway.hypernymbiz.com/nominatim-pakistan',

@@ -48,8 +48,41 @@ const CAMERA_MAX_ROTATION_SPEED = 100;
 const CAMERA_SETTLE_SECONDS = 1.25;
 const CAMERA_ZOOM_EPSILON = 0.008;
 const CAMERA_PITCH_EPSILON = 0.08;
-const OSRM_MIN_MATCH_CONFIDENCE = 0.3;
-const OSRM_MAX_DISTANCE_INFLATION = 2;
+// The OSRM trail is rebuilt into uniformly spaced waypoints that act as the
+// authoritative path for marker movement. Playback then steps along that path
+// instead of along raw-sample density, so sparse GPS no longer produces fast
+// jumps and dense clusters no longer freeze the marker.
+const OSRM_RESAMPLE_STEP_M = 8;
+// A raw run is treated as a genuine vehicle stop (marker held in place) when
+// it is moving at or below this speed for at least this many consecutive
+// samples. Matches the stationary-point condenser floor (STATIONARY_SPEED_KPH).
+const STOP_SPEED_KPH = 3;
+const STOP_MIN_SAMPLES = 4;
+const OSRM_MAX_DISTANCE_INFLATION = 3;
+const OSRM_MATCH_RADIUS = 200;
+// OSRM backends can hang (upstream returns 524 only after a long wait, or
+// 503s). A per-request timeout stops a stuck server from freezing the whole
+// trail and forces the raw-GPS fallback instead.
+const OSRM_REQUEST_TIMEOUT_MS = 10000;
+// GPS receivers keep reporting while the vehicle is parked, and the jittering
+// cloud of points around a stop can straddle nearby streets. OSRM then matches
+// the cloud as if the vehicle drove around the block, producing the square
+// detour artefact. Stationary points inside this radius collapse to one.
+const STATIONARY_SPEED_KPH = 3;
+const STATIONARY_COLLAPSE_RADIUS_M = 25;
+// Matched geometry can still double back on itself (out-and-back artefacts
+// from redundant coordinates). A loop is excised when the path returns close
+// to a recent vertex after having travelled a meaningful distance — tight
+// enough to catch city blocks, loose enough to keep legitimate hairpins.
+const LOOP_WINDOW_POINTS = 60;
+const LOOP_CLOSE_RADIUS_M = 18;
+const LOOP_MIN_TRAVELLED_M = 150;
+// Chunks share their boundary sample, but OSRM snaps it to the road once per
+// chunk — up to a few metres apart. Leading vertices of the next segment that
+// sit within this radius of the running end are dropped so joins stay
+// seamless; keeping both copies painted the boundary twice (redundant trail)
+// and made the marker step backwards before advancing at the same points.
+const BOUNDARY_STITCH_RADIUS_M = 12;
 const VEHICLE_LIGHTING = new LightingEffect({
   ambientLight: new AmbientLight({ color: [255, 255, 255], intensity: 2.2 }),
   directionalLight: new DirectionalLight({
@@ -126,8 +159,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private eventCardHideTimer?: number;
   private roadCoordinates: LatLng[] = [];
   private roadSegments: LatLng[][] = [];
+  private roadSegmentRanges: Array<[number, number]> = [];
   private roadDistances: number[] = [];
+  private resampledRoadCoordinates: LatLng[] = [];
+  private resampledRoadDistances: number[] = [];
+  private lastVehicleIndex = -1;
   private positionRoadIndexes: number[] = [];
+  private positionRoadDistances: number[] = [];
   private routeRequest?: AbortController;
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
@@ -234,8 +272,12 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.clearMarkers();
       this.roadCoordinates = [];
       this.roadSegments = [];
+      this.roadSegmentRanges = [];
       this.roadDistances = [];
+      this.resampledRoadCoordinates = [];
+      this.resampledRoadDistances = [];
       this.positionRoadIndexes = [];
+      this.positionRoadDistances = [];
       if (this.map.isStyleLoaded())
         removeGeoJson(this.map, 'trip-route', [
           'trip-route-casing',
@@ -250,6 +292,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       return;
     }
     const version = ++this.routeVersion;
+    this.roadSegments = [];
     this.routeLoadingChange.emit(true);
     let coordinates: LatLng[];
     try {
@@ -261,13 +304,24 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.clearMarkers();
     this.roadCoordinates = coordinates;
     if (!this.roadSegments.length) this.roadSegments = [coordinates];
+    this.roadSegmentRanges = [];
+    let segmentStart = 0;
+    for (const segment of this.roadSegments) {
+      const segmentEnd = Math.min(coordinates.length - 1, segmentStart + segment.length - 1);
+      if (segmentEnd > segmentStart) this.roadSegmentRanges.push([segmentStart, segmentEnd]);
+      segmentStart = segmentEnd + 1;
+    }
     this.roadDistances = this.buildRoadDistances(coordinates);
+    this.resampledRoadCoordinates = this.resampleTrail(coordinates, this.roadDistances);
+    this.resampledRoadDistances = this.buildRoadDistances(this.resampledRoadCoordinates);
     this.positionRoadIndexes = this.mapPositionsToRoad(positions, coordinates);
+    this.positionRoadDistances = this.buildSyncedRoadDistances(positions);
     this.displayedHeading = undefined;
     this.displayedRoadDistance = 0;
     this.targetRoadDistance = 0;
     this.displayedRoadProgress = 0;
     this.lastRenderedRouteIndex = -1;
+    this.lastVehicleIndex = -1;
     this.renderRouteLayers();
     const colors = getComputedStyle(document.documentElement);
     const css = (name: string, fallback: string) =>
@@ -335,15 +389,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       segment.length > 1 ? [lineFeature(segment, { kind: 'route' })] : [],
     );
     if (completedIndex > 0)
-      features.push(
-        lineFeature(this.roadCoordinates.slice(0, completedIndex + 1), { kind: 'completed' }),
-      );
+      features.push(...this.rangeFeatures(0, completedIndex, 'completed'));
     if (completedIndex > recentStart)
-      features.push(
-        ...this.buildFadedTrailFeatures(
-          this.roadCoordinates.slice(recentStart, completedIndex + 1),
-        ),
-      );
+      features.push(...this.rangeFeatures(recentStart, completedIndex, 'recent', true));
     // MapLibre's color parser does not reliably support the oklch() value
     // returned by our Tailwind CSS variable, so use equivalent concrete colors.
     const routeColor = document.documentElement.classList.contains('dark')
@@ -407,6 +455,24 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       features.push(
         lineFeature([coordinates[index], coordinates[index + 1]], { kind: 'recent', fade }),
       );
+    }
+    return features;
+  }
+
+  private rangeFeatures(
+    start: number,
+    end: number,
+    kind: 'completed' | 'recent',
+    fade = false,
+  ): GeoJSON.Feature[] {
+    const features: GeoJSON.Feature[] = [];
+    for (const [segmentStart, segmentEnd] of this.roadSegmentRanges) {
+      const from = Math.max(start, segmentStart);
+      const to = Math.min(end, segmentEnd);
+      if (to <= from) continue;
+      const points = this.roadCoordinates.slice(from, to + 1);
+      if (!fade) features.push(lineFeature(points, { kind }));
+      else features.push(...this.buildFadedTrailFeatures(points));
     }
     return features;
   }
@@ -511,7 +577,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   }
 
   private async getRoadCoordinates(positions: TripPosition[]): Promise<LatLng[]> {
-    const cleanedPositions = this.removeGpsSpikes(positions);
+    const cleanedPositions = this.condenseStationaryPoints(this.removeGpsSpikes(positions));
     const fallback = cleanedPositions.map(({ lat, lng }) => [lat, lng] as LatLng);
     this.routeRequest?.abort();
     this.routeRequest = new AbortController();
@@ -519,76 +585,113 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       const matched: LatLng[] = [];
       const segments: LatLng[][] = [];
       for (const chunk of this.positionChunks(cleanedPositions, 95)) {
-        const coordinates = chunk.map(({ lng, lat }) => `${lng},${lat}`).join(';');
-        const timestamps = chunk
-          .map((point, index) => {
-            const parsed = point.timestamp ? new Date(point.timestamp).getTime() : NaN;
-            return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : index;
-          })
-          .join(';');
-        const response = await fetch(
-          `${environment.osrmBaseUrl}/match/v1/driving/${coordinates}?timestamps=${timestamps}&radiuses=${chunk.map(() => '50').join(';')}&overview=full&geometries=geojson`,
-          { signal: this.routeRequest.signal },
-        );
-        if (!response.ok) throw new Error();
-        const result = (await response.json()) as {
-          code?: string;
-          matchings?: Array<{
-            confidence?: number;
-            geometry?: { coordinates?: Array<[number, number]> };
-          }>;
-        };
-        // A split match means OSRM could not produce one continuous trace. Do
-        // not discard one part while retaining all playback samples: they would
-        // collapse onto the retained route endpoint and make the vehicle pause.
-        // Falling back to /route keeps every sample represented by a continuous,
-        // road-following geometry without drawing straight joins between matches.
-        const matching = result.code === 'Ok' && result.matchings?.length === 1
-          ? result.matchings[0]
-          : undefined;
-        if (
-          (matching?.confidence ?? 0) < OSRM_MIN_MATCH_CONFIDENCE ||
-          (matching?.geometry?.coordinates?.length ?? 0) < 2
+        let segment = await this.matchChunk(chunk);
+        // Stitch the chunk join: drop the next segment's leading vertices that
+        // sit within BOUNDARY_STITCH_RADIUS_M of the running end. Segments are
+        // internally de-duplicated, so this keeps every segment an exact 1:1
+        // slice of the flattened route (roadSegmentRanges depends on that).
+        while (
+          matched.length &&
+          segment.length > 1 &&
+          this.distanceBetweenCoordinates(matched[matched.length - 1], segment[0]) <=
+            BOUNDARY_STITCH_RADIUS_M
         )
-          throw new Error();
-        const values = matching?.geometry?.coordinates ?? [];
-        if (!values?.length) throw new Error();
-        const matchedCoordinates = values.map(([lng, lat]) => [lat, lng] as LatLng);
-        const rawCoordinates = chunk.map(({ lat, lng }) => [lat, lng] as LatLng);
-        const rawDistance = this.pathDistance(rawCoordinates);
-        const matchedDistance = this.pathDistance(matchedCoordinates);
-        const segment =
-          matchedDistance > rawDistance * OSRM_MAX_DISTANCE_INFLATION
-            ? rawCoordinates
-            : matchedCoordinates;
+          segment = segment.slice(1);
+        if (!segment.length) continue;
         segments.push(segment);
         matched.push(...segment);
       }
       this.roadSegments = segments;
-      return this.dedupeCoordinates(matched);
+      return matched;
     } catch {
-      this.roadSegments = [fallback];
+      // A superseded request (a newer route started) must not overwrite the
+      // segment state the newer run is about to publish.
+      if (!this.routeRequest?.signal.aborted) this.roadSegments = [fallback];
       return fallback;
     }
   }
 
-  private async getOsrmRoute(positions: TripPosition[]): Promise<LatLng[]> {
-    const routed: LatLng[] = [];
-    for (const chunk of this.positionChunks(positions, 95)) {
-      const coordinates = chunk.map(({ lng, lat }) => `${lng},${lat}`).join(';');
-      const response = await fetch(
-        `${environment.osrmBaseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`,
-        { signal: this.routeRequest?.signal },
+  private async matchChunk(chunk: TripPosition[]): Promise<LatLng[]> {
+    const coordinates = chunk.map(({ lng, lat }) => `${lng},${lat}`).join(';');
+    const timestamps = chunk
+      .map((point, index) => {
+        const parsed = point.timestamp ? new Date(point.timestamp).getTime() : NaN;
+        return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : index;
+      })
+      .join(';');
+    const rawCoordinates = chunk.map(({ lat, lng }) => [lat, lng] as LatLng);
+    const rawDistance = this.pathDistance(rawCoordinates);
+    const accepted = (matched: LatLng[] | null): LatLng[] | null =>
+      matched && this.pathDistance(matched) <= rawDistance * OSRM_MAX_DISTANCE_INFLATION
+        ? matched
+        : null;
+
+    // Attempt 1: OSRM /match with standard parameters.
+    const matchResult = accepted(
+      await this.tryOsrmMatch(environment.osrmBaseUrl, coordinates, timestamps, OSRM_MATCH_RADIUS),
+    );
+    if (matchResult) return this.removeTrailLoops(this.dedupeCoordinates(matchResult));
+
+    // Attempt 2: OSRM /match with double radius — GPS drift in urban canyons
+    // or poor-signal areas can exceed 200m.
+    const looseResult = accepted(
+      await this.tryOsrmMatch(
+        environment.osrmBaseUrl,
+        coordinates,
+        timestamps,
+        OSRM_MATCH_RADIUS * 2,
+      ),
+    );
+    if (looseResult) return this.removeTrailLoops(this.dedupeCoordinates(looseResult));
+
+    // Final fallback: raw GPS with backtracking cleanup. Raw GPS is at least
+    // accurate to the vehicle's reported position — better than a square detour.
+    return this.removeTrailLoops(this.cleanRawCoordinates(rawCoordinates));
+  }
+
+  private async tryOsrmMatch(
+    baseUrl: string,
+    coordinates: string,
+    timestamps: string,
+    radius: number,
+  ): Promise<LatLng[] | null> {
+    try {
+      const radiuses = coordinates.split(';').map(() => String(radius)).join(';');
+      const url =
+        `${baseUrl}/match/v1/driving/${coordinates}` +
+        `?timestamps=${timestamps}&radiuses=${radiuses}&overview=full&geometries=geojson`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), OSRM_REQUEST_TIMEOUT_MS);
+      this.routeRequest?.signal.addEventListener(
+        'abort',
+        () => controller.abort(),
+        { once: true },
       );
-      if (!response.ok) throw new Error();
+      let response: Response;
+      try {
+        response = await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
+      if (!response.ok) return null;
       const result = (await response.json()) as {
-        routes?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
+        code?: string;
+        matchings?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
       };
-      const route = result.routes?.[0]?.geometry?.coordinates;
-      if (!route?.length) throw new Error();
-      routed.push(...route.map(([lng, lat]) => [lat, lng] as LatLng));
+      if (result.code !== 'Ok') return null;
+      // OSRM may split a chunk into several sequential matchings; they arrive
+      // in travel order, so concatenation preserves the driven path. Each
+      // matching is road-following by construction.
+      const merged: LatLng[] = [];
+      for (const matching of result.matchings ?? []) {
+        const coords = matching.geometry?.coordinates ?? [];
+        if (coords.length < 2) continue;
+        merged.push(...coords.map(([lng, lat]) => [lat, lng] as LatLng));
+      }
+      return merged.length >= 2 ? merged : null;
+    } catch {
+      return null;
     }
-    return this.dedupeCoordinates(routed);
   }
 
   private positionChunks(positions: TripPosition[], size: number): TripPosition[][] {
@@ -601,8 +704,91 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private dedupeCoordinates(points: LatLng[]): LatLng[] {
     return points.filter(
       (point, index) =>
-        index === 0 || point[0] !== points[index - 1][0] || point[1] !== points[index - 1][1],
+        index === 0 || this.distanceBetweenCoordinates(point, points[index - 1]) > 0.5,
     );
+  }
+
+  private cleanRawCoordinates(points: LatLng[]): LatLng[] {
+    if (points.length < 3) return points;
+    // Pass 1: Remove points that cause backtracking — where the next point
+    // moves back toward a recent point instead of continuing forward. This
+    // eliminates the "thick trail" caused by redundant overlapping segments.
+    const forward: LatLng[] = [points[0]];
+    for (let i = 1; i < points.length; i++) {
+      const prev = forward.at(-1)!;
+      const curr = points[i];
+      if (curr[0] === prev[0] && curr[1] === prev[1]) continue;
+      // Check if this point backtracks toward any recent forward point.
+      const backtrackThreshold = 30; // metres
+      let backtracks = false;
+      for (let j = Math.max(0, forward.length - 4); j < forward.length; j++) {
+        if (this.distanceBetweenCoordinates(curr, forward[j]) < backtrackThreshold) {
+          backtracks = true;
+          break;
+        }
+      }
+      if (!backtracks) forward.push(curr);
+    }
+    // Pass 2: Remove near-duplicate consecutive points (within 2m).
+    return this.dedupeCoordinates(
+      forward.filter(
+        (point, index) =>
+          index === 0 ||
+          this.distanceBetweenCoordinates(point, forward[index - 1]) > 2,
+      ),
+    );
+  }
+
+  // Collapses the GPS jitter cloud recorded while the vehicle is parked into a
+  // single point per stop. Without this, the map matcher reads the scattered
+  // stationary points as a detour onto surrounding streets — the "square"
+  // artefact in the trail — and the extra fake distance then makes the marker
+  // speed up while crossing it.
+  private condenseStationaryPoints(positions: TripPosition[]): TripPosition[] {
+    if (positions.length < 3) return positions;
+    const condensed: TripPosition[] = [positions[0]];
+    let anchor = positions[0];
+    for (let index = 1; index < positions.length; index++) {
+      const point = positions[index];
+      const isStationary = (point.speed ?? 0) <= STATIONARY_SPEED_KPH;
+      if (isStationary && this.distanceMetres(anchor, point) < STATIONARY_COLLAPSE_RADIUS_M)
+        continue;
+      condensed.push(point);
+      anchor = point;
+    }
+    return condensed;
+  }
+
+  // Excises double-back loops from trail geometry: when the path returns to
+  // within LOOP_CLOSE_RADIUS_M of a recent vertex after travelling at least
+  // LOOP_MIN_TRAVELLED_M, everything between the two visits is redundant
+  // back-and-forth trace that paints the thick overlapping band and can walk
+  // the marker backwards along the same street.
+  private removeTrailLoops(points: LatLng[]): LatLng[] {
+    if (points.length < 4) return points;
+    const result: LatLng[] = [points[0]];
+    const travelled: number[] = [0];
+    for (let index = 1; index < points.length; index++) {
+      const point = points[index];
+      const windowStart = Math.max(0, result.length - LOOP_WINDOW_POINTS);
+      let loopStart = -1;
+      for (let j = result.length - 2; j >= windowStart; j--) {
+        if (this.distanceBetweenCoordinates(point, result[j]) >= LOOP_CLOSE_RADIUS_M) continue;
+        if (travelled[result.length - 1] - travelled[j] < LOOP_MIN_TRAVELLED_M) continue;
+        loopStart = j;
+        break;
+      }
+      if (loopStart >= 0) {
+        result.length = loopStart + 1;
+        travelled.length = loopStart + 1;
+      }
+      const previous = result[result.length - 1];
+      const step = this.distanceBetweenCoordinates(previous, point);
+      if (step <= 0.5) continue;
+      result.push(point);
+      travelled.push(travelled[travelled.length - 1] + step);
+    }
+    return result;
   }
 
   private pathDistance(points: LatLng[]): number {
@@ -649,6 +835,39 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return distances;
   }
 
+  // Rebuilds the OSRM trail into uniformly spaced waypoints (OSRM_RESAMPLE_STEP_M
+  // apart). The result is the authoritative path for playback: stepping along it
+  // decouples marker movement from raw-sample density, so sparse GPS no longer
+  // produces fast leaps and dense clusters no longer hold the marker still.
+  private resampleTrail(
+    coordinates: LatLng[],
+    distances: number[],
+    stepMetres: number = OSRM_RESAMPLE_STEP_M,
+  ): LatLng[] {
+    if (coordinates.length < 2) return coordinates.slice();
+    const total = distances.at(-1) ?? 0;
+    if (total <= 0 || stepMetres <= 0) return coordinates.slice();
+    const resampled: LatLng[] = [coordinates[0].slice() as LatLng];
+    let nextDist = stepMetres;
+    let index = 1;
+    while (nextDist < total && index < coordinates.length) {
+      while (index < coordinates.length && distances[index] < nextDist) index++;
+      if (index >= coordinates.length) break;
+      const d0 = distances[index - 1];
+      const d1 = distances[index];
+      const fraction = d1 === d0 ? 0 : (nextDist - d0) / (d1 - d0);
+      const lat = coordinates[index - 1][0] + (coordinates[index][0] - coordinates[index - 1][0]) * fraction;
+      const lng = coordinates[index - 1][1] + (coordinates[index][1] - coordinates[index - 1][1]) * fraction;
+      resampled.push([lat, lng]);
+      nextDist += stepMetres;
+    }
+    const last = coordinates[coordinates.length - 1];
+    const lastResampled = resampled[resampled.length - 1];
+    if (this.distanceBetweenCoordinates(lastResampled, last) > 1)
+      resampled.push(last.slice() as LatLng);
+    return resampled;
+  }
+
   private routeIndex(positionIndex: number, count: number): number {
     const mapped = this.positionRoadIndexes[Math.max(0, Math.min(positionIndex, count - 1))];
     if (mapped !== undefined) return mapped;
@@ -686,6 +905,42 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     });
   }
 
+  // Synchronises marker progress with the OSRM trail. The position→road
+  // mapping can compress a run of consecutive samples onto the same road
+  // vertex (the matcher clips corners, and dedupe/condense shorten the trail),
+  // which used to freeze the marker for the whole duration of those samples.
+  // Each compressed run is decided by comparing the raw coordinates against
+  // the OSRM progress: if the raw GPS actually travelled (net displacement
+  // beyond jitter), the samples are spread across the road stretch up to the
+  // next advancing anchor, proportional to raw travel; if the raw points
+  // barely moved, it is a genuine stop and the marker holds its position.
+  private buildSyncedRoadDistances(positions: TripPosition[]): number[] {
+    const result = this.positionRoadIndexes.map((index) => this.roadDistances[index] ?? 0);
+    if (result.length < 2) return result;
+    const raw = positions.map(({ lat, lng }) => [lat, lng] as LatLng);
+    const roadTotal = this.roadDistances.at(-1) ?? 0;
+    const RAW_STOP_JITTER_M = 10;
+    let start = 0;
+    while (start < result.length) {
+      let end = start;
+      while (end + 1 < result.length && result[end + 1] <= result[start]) end++;
+      if (end > start) {
+        const spreadEnd = end + 1 < result.length ? result[end + 1] : roadTotal;
+        const spread = spreadEnd - result[start];
+        const drift = this.distanceBetweenCoordinates(raw[start], raw[end]);
+        if (spread > 0 && drift > RAW_STOP_JITTER_M) {
+          for (let k = start; k <= end; k++) {
+            const progressed =
+              this.distanceBetweenCoordinates(raw[start], raw[Math.min(k, raw.length - 1)]);
+            result[k] = result[start] + spread * Math.min(1, progressed / (drift || 1));
+          }
+        }
+      }
+      start = end + 1;
+    }
+    return result;
+  }
+
   private updateVehicle(index: number): void {
     if (
       !this.map ||
@@ -695,30 +950,40 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     )
       return;
     const positions = this.positions();
-    const roadIndex = this.routeIndex(index, positions.length);
-    const position = this.roadCoordinates[roadIndex];
-    const rawPosition: LatLng = [
-      positions[Math.max(0, Math.min(index, positions.length - 1))].lat,
-      positions[Math.max(0, Math.min(index, positions.length - 1))].lng,
-    ];
-    const targetDistance = this.roadDistances[roadIndex] ?? 0;
-    const heading = this.rawHeadingAtDistance(targetDistance);
+    // Distance along the resampled (uniformly spaced) trail. Moving along
+    // fixed-spacing waypoints in step with playback time fixes both "fast
+    // jump" (sparse GPS spanning a long road gap) and "frozen marker" (dense
+    // GPS compressed onto one vertex) artefacts.
     const clampedIndex = Math.max(0, Math.min(index, positions.length - 1));
+    const targetDistance = this.targetDistanceForIndex(clampedIndex, positions.length);
+    const position = this.coordinateAtDistance(targetDistance);
+    const heading = this.rawHeadingAtDistance(targetDistance);
     this.targetSpeedKph = positions[clampedIndex]?.speed ?? this.targetSpeedKph;
+    // Forward playback must never walk the marker backwards: residual
+    // geometry back-steps (chunk joins, loop excision) hold the marker in
+    // place instead of retracing. Scrubbing backwards is untouched.
+    const forwardStep = index >= this.lastVehicleIndex;
+    this.lastVehicleIndex = index;
     if (this.vehicleVisible) {
-      if (this.playbackActive()) this.animateVehicleTo(rawPosition, targetDistance);
+      if (this.playbackActive())
+        this.animateVehicleTo(
+          position,
+          forwardStep ? Math.max(targetDistance, this.displayedRoadDistance) : targetDistance,
+        );
       else {
         this.cancelMovement();
         this.targetRoadDistance = targetDistance;
         this.displayedRoadDistance = targetDistance;
         this.movementStartDistance = targetDistance;
-        this.movementStartPosition = rawPosition;
-        this.targetPosition = rawPosition;
+        this.movementStartPosition[0] = position[0];
+        this.movementStartPosition[1] = position[1];
+        this.targetPosition[0] = position[0];
+        this.targetPosition[1] = position[1];
         this.movementStartedAt = performance.now();
-        this.displayedRoadProgress = roadIndex;
+        this.displayedRoadProgress = this.progressAtDistance(targetDistance);
         this.displayedHeading = heading;
-        this.displayedPosition[0] = rawPosition[0];
-        this.displayedPosition[1] = rawPosition[1];
+        this.displayedPosition[0] = position[0];
+        this.displayedPosition[1] = position[1];
         this.renderVehicleModel(position, heading);
         this.renderRouteLayersIfNeeded(true);
         this.startCameraLoop();
@@ -728,18 +993,49 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.targetRoadDistance = targetDistance;
       this.displayedRoadDistance = targetDistance;
       this.movementStartDistance = targetDistance;
-      this.movementStartPosition = rawPosition;
-      this.targetPosition = rawPosition;
+      this.movementStartPosition[0] = position[0];
+      this.movementStartPosition[1] = position[1];
+      this.targetPosition[0] = position[0];
+      this.targetPosition[1] = position[1];
       this.movementStartedAt = performance.now();
-      this.displayedRoadProgress = roadIndex;
+      this.displayedRoadProgress = this.progressAtDistance(targetDistance);
       this.displayedHeading = heading;
       this.displayedSpeedKph = this.targetSpeedKph;
-      this.displayedPosition[0] = rawPosition[0];
-      this.displayedPosition[1] = rawPosition[1];
+      this.displayedPosition[0] = position[0];
+      this.displayedPosition[1] = position[1];
       this.renderVehicleModel(position, heading);
       this.renderRouteLayersIfNeeded(true);
       this.startCameraLoop();
     }
+  }
+
+  // Maps a raw position index to metres travelled along the resampled trail,
+  // in proportion to playback progress (index / total). During a genuine
+  // stationary run the marker is held at the run's starting distance instead
+  // of gliding forward, matching real-world behaviour.
+  private targetDistanceForIndex(index: number, count: number): number {
+    const last = count - 1;
+    const lastDistance = this.resampledRoadDistances.at(-1) ?? 0;
+    if (last <= 0 || lastDistance <= 0) return 0;
+    const clamped = Math.max(0, Math.min(index, last));
+    const stopStart = this.stationaryRunStart(count, clamped);
+    const effectiveIndex = stopStart >= 0 ? Math.max(0, stopStart - 1) : clamped;
+    return (Math.max(0, Math.min(effectiveIndex, last)) / last) * lastDistance;
+  }
+
+  // Returns the index of the first sample of a genuine stationary run that
+  // contains `index`, or -1 when the vehicle was moving at that sample.
+  private stationaryRunStart(count: number, index: number): number {
+    const positions = this.positions();
+    if (count < STOP_MIN_SAMPLES || index >= count) return -1;
+    let runStart = index;
+    while (runStart > 0 && (positions[runStart - 1]?.speed ?? 0) <= STOP_SPEED_KPH)
+      runStart--;
+    let runEnd = index;
+    while (runEnd + 1 < count && (positions[runEnd + 1]?.speed ?? 0) <= STOP_SPEED_KPH)
+      runEnd++;
+    if (runEnd - runStart + 1 < STOP_MIN_SAMPLES) return -1;
+    return (positions[index]?.speed ?? 0) <= STOP_SPEED_KPH ? runStart : -1;
   }
 
   private animateVehicleTo(targetPosition: LatLng, targetDistance: number): void {

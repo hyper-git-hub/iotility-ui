@@ -30,7 +30,18 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
   private resizeObserver?: ResizeObserver;
 
   ngAfterViewInit(): void {
-    this.map = createIotMap(this.element().nativeElement, [52.4862, -1.8904], 6);
+    // Default map center to Pakistan; will override if geolocation succeeds
+    this.map = createIotMap(this.element().nativeElement, [30.3753, 69.3451], 6);
+    // Attempt live geolocation, overriding the default on success
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.map!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 700 });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    }
     this.map.on('click', ({ lngLat }) => this.addPoint(lngLat.lat, lngLat.lng));
     this.map.on('style.load', () => this.renderLine());
     this.resizeObserver = new ResizeObserver(() => this.map?.resize());
@@ -48,7 +59,7 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
   async calculateRoute(): Promise<boolean> {
     if (!this.map || this.points.length < 2) return false;
     const coordinates = this.points.map((point) => `${point.lng},${point.lat}`).join(';');
-    for (const baseUrl of [environment.osrmBaseUrl, environment.osrmFallbackUrl]) {
+    for (const baseUrl of [environment.osrmBaseUrl]) {
       try {
         const response = await fetch(`${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false`);
         if (!response.ok) continue;

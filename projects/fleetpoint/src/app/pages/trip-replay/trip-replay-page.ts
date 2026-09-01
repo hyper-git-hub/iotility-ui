@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
@@ -69,6 +69,10 @@ const PLAYBACK_RATE_MULTIPLIERS: Record<number, number> = {
   4: 16,
   5: 25,
 };
+// Real-time gaps between trail samples (tracking blackouts, parked periods)
+// are replayed at most this long, so playback slows across a data hole but
+// never appears to freeze for minutes.
+const MAX_PLAYBACK_GAP_MS = 5_000;
 
 @Component({
   selector: 'app-trip-replay-page',
@@ -93,6 +97,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly trailLoading = signal(false);
   protected readonly routeLoading = signal(false);
   protected readonly mapLoaded = signal(false);
+  protected readonly mapFallbackToRaw = signal(false);
   protected readonly displayedSpeed = signal(0);
   protected readonly error = signal('');
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
@@ -140,6 +145,13 @@ export class TripReplayPage implements OnInit, OnDestroy {
     const id = this.selectedEventId();
     return id ? this.trip().events.find((event) => event.id === id) ?? null : null;
   });
+  protected readonly playbackEvent = computed(() => {
+    const idx = this.positionIndex();
+    const events = this.trip().events;
+    if (!events.length) return null;
+    const threshold = Math.max(3, Math.floor(events.length * 0.02));
+    return events.find((e) => Math.abs(e.positionIndex - idx) <= threshold) ?? null;
+  });
   protected readonly tripStats = computed(() => {
     const trip = this.trip();
     const positions = trip.positions;
@@ -172,6 +184,16 @@ export class TripReplayPage implements OnInit, OnDestroy {
     start.setHours(0, 0, 0, 0);
     this.startDate.set(this.inputDate(start));
     this.endDate.set(this.inputDate(end));
+    effect(() => {
+      const playing = this.playing();
+      const playback = this.playbackEvent();
+      const selected = this.selectedEventId();
+      if (playing && playback && playback.id !== selected) {
+        this.selectedEventId.set(playback.id);
+      } else if (playing && !playback && selected) {
+        this.selectedEventId.set(null);
+      }
+    });
   }
   ngOnInit(): void {
     forkJoin({
@@ -246,6 +268,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.stop();
     this.error.set('');
     this.trailLoading.set(true);
+    this.routeLoading.set(true);
     const range = {
       vehicleId,
       start: this.apiDate(this.startDate()),
@@ -254,11 +277,21 @@ export class TripReplayPage implements OnInit, OnDestroy {
     forkJoin({
       detail: this.api.getDetailReport(range).pipe(catchError(() => of(null))),
       vehicleDetail: this.api.getVehicleDetail().pipe(catchError(() => of(null))),
-      trail: this.api.getMapTrail(range),
+      trail: this.api.getMapTrail(range).pipe(
+        catchError((err) => {
+          // OSRM service is down/crashed - use raw GPS data fallback
+          this.routeLoading.set(false);
+          this.mapFallbackToRaw.set(true);
+          return of({ data: { map_trail: [] } });
+        }),
+      ),
       stops: this.api.getStops(range).pipe(catchError(() => of(null))),
       statistics: this.api.getStatistics(range).pipe(catchError(() => of(null))),
     })
-      .pipe(finalize(() => this.trailLoading.set(false)))
+      .pipe(finalize(() => {
+        this.trailLoading.set(false);
+        this.routeLoading.set(false);
+      }))
       .subscribe({
         next: (result) =>
           this.buildTrip(
@@ -270,6 +303,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
           ),
         error: (response) => {
           this.trip.set(EMPTY_TRIP);
+          this.routeLoading.set(false);
+          this.mapFallbackToRaw.set(true);
           const message = response.error?.message || 'Trip replay data could not be loaded.';
           void this.feedback.open({
             type: 'error',
@@ -383,6 +418,122 @@ export class TripReplayPage implements OnInit, OnDestroy {
     statisticsPayload: { data?: PlaybackRecord[] } | PlaybackRecord[] | null | undefined,
     vehicleDetail: DetailReportRecord[] = [],
   ): void {
+    const imageRecord = vehicleDetail.find(
+      (record) => record.vehicle_id === this.selectedVehicleId(),
+    );
+    // If OSRM fallback is active, use raw trail data directly without filtering/matching
+    if (this.mapFallbackToRaw()) {
+      const rawPositions = trail
+        .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long)));
+      if (rawPositions.length < 2) {
+        this.trip.set({
+          ...EMPTY_TRIP,
+          vehicleId: this.selectedVehicleId(),
+          vehicle: this.vehicle()?.registration ?? 'Vehicle',
+          vehicleImage: this.vehicleImage(
+            this.vehicleImages()[this.selectedVehicleId()] || this.vehicle()?.vehicle_type_image,
+          ),
+        });
+        this.error.set('');
+        void this.feedback.open({
+          type: 'warning',
+          title: 'No trip data found',
+          message: `No trip data was found for this vehicle from ${this.selectedPeriod()}.`,
+          confirmText: 'Close',
+          showCancel: false,
+        });
+        this.positionIndex.set(0);
+        this.mapFallbackToRaw.set(false);
+        return;
+      }
+      let driver = rawPositions[0].driver_name || this.vehicle()?.vehicle_driver_name || 'Unassigned';
+      const positions = rawPositions.map((row, index): TripPosition => {
+        if (row.driver_name && row.driver_name !== '-') driver = row.driver_name;
+        const next = rawPositions[Math.min(index + 1, rawPositions.length - 1)];
+        return {
+          lat: Number(row.lat),
+          lng: Number(row.long),
+          speed: Math.round(Number(row.speed) || 0),
+          heading: this.bearing(
+            Number(row.lat),
+            Number(row.long),
+            Number(next.lat),
+            Number(next.long),
+          ),
+          time: this.formatTime(row.timestamp),
+          timestamp: row.timestamp,
+          location: row.location ?? 'Location unavailable',
+          driver,
+        };
+      });
+      const events: TripReplayEvent[] = [];
+      const replayStops = stops.map((stop, index) => {
+        const lat = Number(stop['lat'] ?? stop['latitude']);
+        const lng = Number(stop['lng'] ?? stop['long'] ?? stop['longitude']);
+        return {
+          location: String(stop['location'] ?? 'Unknown location'),
+          duration: String(stop['duration'] ?? '—'),
+          start: this.formatTime(String(stop['start_time'] ?? '')),
+          end: this.formatTime(String(stop['end_time'] ?? '')),
+          positionIndex: this.nearestPosition(positions, lat, lng),
+          id: index,
+        };
+      });
+      replayStops.forEach((stop, index) =>
+        events.push({
+          id: `stop-${index}`,
+          label: 'Vehicle stop',
+          type: 'stop',
+          positionIndex: stop.positionIndex,
+          detail: `${stop.duration} · ${stop.location}`,
+        }),
+      );
+      const detailRow = detail[0] ?? {};
+      const rawStats = Array.isArray(statisticsPayload)
+        ? statisticsPayload
+        : (statisticsPayload?.data ?? []);
+      const statRow = rawStats[0] ?? detailRow;
+      const statistics = Object.entries(statRow)
+        .filter(([, value]) => value !== null && typeof value !== 'object')
+        .slice(0, 12)
+        .map(([key, value]) => {
+          const raw = String(value ?? '—');
+          const isImage = key.toLowerCase().includes('image');
+          return {
+            label: this.label(key),
+            value: isImage ? this.vehicleImage(raw) : raw,
+            isImage,
+          };
+        });
+      this.trip.set({
+        id: String(this.selectedVehicleId()),
+        vehicleId: this.selectedVehicleId(),
+        vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
+        vehicleImage: this.vehicleImage(
+          imageRecord?.vehicle_image ??
+            (detailRow['vehicle_image'] as string | undefined) ??
+            this.vehicle()?.vehicle_type_image,
+        ),
+        driver: String(driver),
+        date: new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
+          new Date(rawPositions[0].timestamp),
+        ),
+        score: Number(detailRow['score'] ?? detailRow['driver_score'] ?? 0),
+        start: rawPositions[0].location || 'Starting point',
+        end: rawPositions.at(-1)?.location || 'Ending point',
+        distance: Number(detailRow['distance'] ?? detailRow['distance_travelled'] ?? 0),
+        duration: String(detailRow['duration'] ?? detailRow['total_duration'] ?? '—'),
+        fuel: Number(detailRow['fuel'] ?? detailRow['fuel_used'] ?? 0),
+        positions,
+        events,
+        stops: replayStops,
+        statistics,
+      });
+      this.positionIndex.set(0);
+      this.mapFallbackToRaw.set(false);
+      return;
+    }
+    // Normal OSRM-matched path
     const unique = this.longestContinuousTrail(
       trail
         .filter(
@@ -414,6 +565,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
         confirmText: 'Close',
         showCancel: false,
       });
+      this.positionIndex.set(0);
+      this.mapFallbackToRaw.set(false);
       return;
     }
     let driver = unique[0].driver_name || this.vehicle()?.vehicle_driver_name || 'Unassigned';
@@ -471,9 +624,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
       }),
     );
     const detailRow = detail[0] ?? {};
-    const imageRecord = vehicleDetail.find(
-      (record) => record.vehicle_id === this.selectedVehicleId(),
-    );
     const rawStats = Array.isArray(statisticsPayload)
       ? statisticsPayload
       : (statisticsPayload?.data ?? []);
@@ -622,7 +772,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       const curr = this.parseTimestamp(positions[i]?.timestamp);
       const gap =
         Number.isFinite(prev) && Number.isFinite(curr) && curr > prev
-          ? Math.min(curr - prev, 300_000)
+          ? Math.min(curr - prev, MAX_PLAYBACK_GAP_MS)
           : this.playbackStepDuration;
       offsets.push(offsets[offsets.length - 1] + gap);
     }
