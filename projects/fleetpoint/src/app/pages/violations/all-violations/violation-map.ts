@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
-import { createIotMap, fitLatLngs, markerElement, popup } from '../../../shared/maps/maplibre';
+import { createIotMap, fitLatLngs, markerElement, popupHtml } from '../../../shared/maps/maplibre';
 import { ViolationDisplay } from '../all-violations/all-violations';
 
 @Component({
@@ -101,7 +101,7 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
       element.addEventListener('click', () => this.violationSelected.emit(record));
       const item = new maplibregl.Marker({ element })
         .setLngLat([longitude, latitude])
-        .setPopup(popup(`${record.type} · ${record.location}`))
+        .setPopup(popupHtml(this.violationPopupHtml(record)))
         .addTo(this.instance!);
       this.markers.set(record.id, item);
     });
@@ -113,6 +113,25 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
         8,
       );
     requestAnimationFrame(() => this.instance?.resize());
+  }
+
+  private violationPopupHtml(record: ViolationDisplay): string {
+    const speedLine = record.thresholdKph > 0
+      ? `<span class="vio-popup-row"><span class="vio-popup-icon vio-popup-icon--speed">⚡</span><span class="vio-popup-text"><strong>${record.speedKph} km/h</strong> <small>(limit: ${record.thresholdKph} km/h)</small></span></span>`
+      : '';
+    const fineLine = record.fine > 0
+      ? `<span class="vio-popup-row"><span class="vio-popup-icon vio-popup-icon--fine">🔥</span><span class="vio-popup-text vio-popup-text--fine">Fine: ${record.fineDisplay || '£' + record.fine}</span></span>`
+      : '';
+    return `
+      <div class="vio-popup">
+        <strong class="vio-popup-title">${record.type}</strong>
+        <span class="vio-popup-row"><span class="vio-popup-icon">🚗</span><span class="vio-popup-text">${record.vehicle} · ${record.driver}</span></span>
+        <span class="vio-popup-row"><span class="vio-popup-icon">🕐</span><span class="vio-popup-text">${record.timestamp}</span></span>
+        <span class="vio-popup-row"><span class="vio-popup-icon">📍</span><span class="vio-popup-text vio-popup-text--location">${record.location}</span></span>
+        ${speedLine}
+        ${fineLine}
+      </div>
+    `;
   }
 
   private categoryColor(category: string): string {

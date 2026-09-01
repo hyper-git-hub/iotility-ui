@@ -12,6 +12,7 @@ import {
   PlaybackTrailRecord,
   TripReplayApiService,
 } from '../../shared/services/trip-replay-api.service';
+import { ViolationRecord } from '../../shared/services/violations-api.service';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 import {
   TripPosition,
@@ -113,6 +114,15 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
   private playbackFrame?: number;
+  // Playback timeline origin. Kept as instance state (not closure locals) so a
+  // mid-playback seek can re-anchor the wall clock and offset table to the new
+  // position, letting the marker keep advancing from where the user dropped it
+  // (like scrubbing a video player) instead of snapping back.
+  private playbackWallStart = 0;
+  private playbackStartIndex = 0;
+  private playbackOffsets: number[] = [];
+  private playbackTotalMs = 0;
+  private playbackSpeed = 1;
   private readonly requestedVehicleId: string;
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
@@ -285,6 +295,9 @@ export class TripReplayPage implements OnInit, OnDestroy {
           return of({ data: { map_trail: [] } });
         }),
       ),
+      violations: this.api
+        .getViolations(range, this.vehicle()?.registration ?? '')
+        .pipe(catchError(() => of(null))),
       stops: this.api.getStops(range).pipe(catchError(() => of(null))),
       statistics: this.api.getStatistics(range).pipe(catchError(() => of(null))),
     })
@@ -298,6 +311,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
             result.trail.data?.map_trail ?? [],
             result.detail?.data?.data ?? [],
             result.stops?.data?.data ?? [],
+            result.violations?.data?.data ?? [],
             result.statistics?.data,
             result.vehicleDetail?.data?.data ?? [],
           ),
@@ -325,16 +339,27 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.clearPlaybackFrame();
     this.playing.set(true);
     const positions = this.trip().positions;
-    const speed = PLAYBACK_RATE_MULTIPLIERS[this.speed()] ?? 2;
-    const startIdx = this.positionIndex();
+    this.playbackSpeed = PLAYBACK_RATE_MULTIPLIERS[this.speed()] ?? 2;
+    this.playbackStartIndex = this.positionIndex();
+    this.playbackOffsets = this.buildTimeOffsets(positions, this.playbackStartIndex);
+    this.playbackTotalMs = this.playbackOffsets[this.playbackOffsets.length - 1] || 1;
+    this.playbackWallStart = performance.now();
     const lastIndex = positions.length - 1;
-    const offsets = this.buildTimeOffsets(positions, startIdx);
-    const totalTripMs = offsets[offsets.length - 1] || 1;
-    const wallStart = performance.now();
+    const wallStart = this.playbackWallStart;
+    const startIdx = this.playbackStartIndex;
+    const speed = this.playbackSpeed;
+    const offsets = this.playbackOffsets;
+    const totalTripMs = this.playbackTotalMs;
     let lastIdx = 0;
     this.zone.runOutsideAngular(() => {
       const advance = (now: number) => {
         if (!this.playing()) return;
+        // If the user sought during playback, the timeline was re-anchored;
+        // retarget this frame's origin so it continues from the new position.
+        if (this.playbackWallStart !== wallStart || this.playbackStartIndex !== startIdx) {
+          this.playbackFrame = requestAnimationFrame(advance);
+          return;
+        }
         const elapsedTripMs = (now - wallStart) * speed;
         let idx = 0;
         for (let i = offsets.length - 1; i >= 0; i--) {
@@ -366,7 +391,23 @@ export class TripReplayPage implements OnInit, OnDestroy {
     if (this.playing()) this.play();
   }
   protected scrub(event: Event): void {
-    this.positionIndex.set(Number((event.target as HTMLInputElement).value));
+    const nextIndex = Number((event.target as HTMLInputElement).value);
+    this.seekTo(nextIndex);
+  }
+
+  // Moves playback to an arbitrary index. While playing, the timeline is
+  // re-anchored to that index so the marker continues from where the user
+  // dropped it (VLC-style scrubbing) instead of jumping back to the old spot.
+  private seekTo(index: number): void {
+    const last = this.maxPosition();
+    const clamped = Math.max(0, Math.min(index, last));
+    if (clamped === last && this.playing()) {
+      this.positionIndex.set(clamped);
+      this.pause();
+      return;
+    }
+    this.positionIndex.set(clamped);
+    if (this.playing()) this.play();
   }
   protected markerPosition(event: TripReplayEvent): number {
     const last = this.maxPosition();
@@ -387,11 +428,14 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected isEventActive(event: TripReplayEvent): boolean {
     return this.selectedEventId() === event.id || this.currentEvent()?.id === event.id;
   }
+  protected jumpToEventFromMap(event: TripReplayEvent): void {
+    this.jumpToEvent(event);
+    this.activeTab.set('events');
+  }
   protected jumpToEvent(event: TripReplayEvent): void {
     this.pause();
     this.positionIndex.set(event.positionIndex);
     this.selectedEventId.set(event.id);
-    this.activeTab.set('events');
   }
   protected jumpToStop(stop: ReplayStop): void {
     this.pause();
@@ -415,6 +459,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     trail: PlaybackTrailRecord[],
     detail: PlaybackRecord[],
     stops: PlaybackRecord[],
+    violations: ViolationRecord[],
     statisticsPayload: { data?: PlaybackRecord[] } | PlaybackRecord[] | null | undefined,
     vehicleDetail: DetailReportRecord[] = [],
   ): void {
@@ -467,6 +512,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
         };
       });
       const events: TripReplayEvent[] = [];
+      events.push(...this.violationEvents(violations, positions));
       const replayStops = stops.map((stop, index) => {
         const lat = Number(stop['lat'] ?? stop['latitude']);
         const lng = Number(stop['lng'] ?? stop['long'] ?? stop['longitude']);
@@ -602,6 +648,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
           ]
         : [],
     );
+    events.push(...this.violationEvents(violations, positions));
     const replayStops = stops.map((stop, index) => {
       const lat = Number(stop['lat'] ?? stop['latitude']);
       const lng = Number(stop['lng'] ?? stop['long'] ?? stop['longitude']);
@@ -713,6 +760,44 @@ export class TripReplayPage implements OnInit, OnDestroy {
   private vehicle(): RealtimeVehicleRecord | undefined {
     return this.vehicles().find((item) => item.id === this.selectedVehicleId());
   }
+  // Maps violation rows (from /common/violation) into trail events so they
+  // appear as markers on the route and in the Events list, alongside stops.
+  // Near-identical duplicates (same position, same type, seconds apart) are
+  // collapsed so the trail stays readable instead of piling up dots.
+  private violationEvents(
+    violations: ViolationRecord[],
+    positions: TripPosition[],
+  ): TripReplayEvent[] {
+    const seen = new Set<string>();
+    return violations
+      .filter((record) => Number.isFinite(Number(record.latitude)) && Number.isFinite(Number(record.longitude)))
+      .flatMap((record, index): TripReplayEvent[] => {
+        const lat = Number(record.latitude);
+        const lng = Number(record.longitude);
+        const label = record.name || record.violation_type || 'Violation';
+        const positionIndex = record.event_generation_time
+          ? this.nearestTimePosition(positions, record.event_generation_time)
+          : this.nearestPosition(positions, lat, lng);
+        const bucket = `${label}|${positionIndex}|${Math.floor(
+          new Date(record.event_generation_time ?? '').getTime() / 15_000,
+        )}`;
+        if (seen.has(bucket)) return [];
+        seen.add(bucket);
+        const speed = Number(record.speed);
+        const when = record.event_generation_time
+          ? ` · ${this.clockTime(record.event_generation_time)}`
+          : '';
+        return [
+          {
+            id: `violation-${index}`,
+            label,
+            type: 'violation' as const,
+            positionIndex,
+            detail: `${record.description || label}${speed ? ` · ${speed} km/h` : ''}${when}`,
+          },
+        ];
+      });
+  }
   private nearestPosition(positions: TripPosition[], lat: number, lng: number): number {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return 0;
     return positions.reduce(
@@ -723,6 +808,27 @@ export class TripReplayPage implements OnInit, OnDestroy {
           : best,
       0,
     );
+  }
+  // Playback is time-driven, so an event marker must sit at the sample whose
+  // timestamp matches the event time; a purely geographic match can land on an
+  // earlier (or later) sample and desynchronise the timeline dot from the map.
+  private nearestTimePosition(positions: TripPosition[], value: string): number {
+    const target = new Date(value).getTime();
+    if (!Number.isFinite(target)) return 0;
+    let best = 0;
+    let bestDiff = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < positions.length; index++) {
+      const raw = positions[index].timestamp ?? positions[index].time;
+      if (!raw) continue;
+      const parsed = new Date(raw).getTime();
+      if (!Number.isFinite(parsed)) continue;
+      const diff = Math.abs(parsed - target);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = index;
+      }
+    }
+    return best;
   }
   private bearing(aLat: number, aLng: number, bLat: number, bLng: number): number {
     const y = Math.sin(((bLng - aLng) * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180);

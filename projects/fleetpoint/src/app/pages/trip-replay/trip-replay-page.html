@@ -115,7 +115,7 @@
           [playbackStepDuration]="stepDurationMs()"
           [selectedEventId]="selectedEventId()"
           (ready)="mapLoaded.set(true)"
-          (eventSelected)="jumpToEvent($event)"
+          (eventSelected)="jumpToEventFromMap($event)"
           (routeLoadingChange)="updateRouteLoading($event)"
           (displayedSpeedChange)="displayedSpeed.set($event)"
         />
@@ -441,32 +441,47 @@
           }
         } @else if (activeTab() === 'events') {
           @for (event of selectedTrip().events; track event.id) {
-            <button
-              type="button"
-              class="event-row"
-              [class.active]="isEventActive(event)"
-              (click)="jumpToEvent(event)"
-            >
-              <span [class]="'event-icon ' + event.type">{{
-                event.type === 'stop' ? '●' : '!'
-              }}</span
-              ><span
-                ><strong>{{ event.label }}</strong
-                ><small
-                  >{{ selectedTrip().positions[event.positionIndex].time }} ·
-                  {{ event.detail }}</small
-                ></span
-              ><b>›</b>
-            </button>
+            @if (event.type !== 'stop') {
+              <button
+                type="button"
+                class="event-row"
+                [class.active]="isEventActive(event)"
+                (click)="jumpToEvent(event)"
+              >
+                <span [class]="'event-icon ' + event.type">{{
+                  event.type === 'violation' ? '!' : '●'
+                }}</span
+                ><span
+                  ><strong>{{ event.label }}</strong
+                  ><small
+                    >{{ selectedTrip().positions[event.positionIndex].time }} ·
+                    {{ event.detail }}</small
+                  ></span
+                ><b>›</b>
+              </button>
+            }
           } @empty {
             <p class="detail-empty">No events found.</p>
           }
         } @else if (activeTab() === 'stops') {
-          @for (stop of selectedTrip().stops; track $index) {
-            <button type="button" class="stop-card" (click)="jumpToStop(stop)">
-              <strong>{{ stop.location }}</strong
-              ><small>{{ stop.duration }} · {{ stop.start }} – {{ stop.end }}</small>
-            </button>
+          @for (event of selectedTrip().events; track event.id) {
+            @if (event.type === 'stop') {
+              <button
+                type="button"
+                class="event-row"
+                [class.active]="isEventActive(event)"
+                (click)="jumpToEvent(event)"
+              >
+                <span class="event-icon stop">●</span
+                ><span
+                  ><strong>{{ event.label }}</strong
+                  ><small
+                    >{{ selectedTrip().positions[event.positionIndex].time }} ·
+                    {{ event.detail }}</small
+                  ></span
+                ><b>›</b>
+              </button>
+            }
           } @empty {
             <p class="detail-empty">No stops found.</p>
           }

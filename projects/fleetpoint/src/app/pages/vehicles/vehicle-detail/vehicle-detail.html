@@ -27,7 +27,7 @@
   } @else if (record(); as vehicle) {
     <header class="detail-heading smooth-reveal">
       <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p>Vehicles / {{ registration() }}</p><h1>{{ registration() }}</h1><span>{{ text(vehicle.year) }} {{ text(vehicle.make) }} {{ text(vehicle.model) }} · {{ text(vehicle.fleet_name, 'Unassigned fleet') }}</span></div></div>
-      <div class="heading-actions"><span class="offline-status" [class.online]="vehicle.online_status"><i></i>{{ vehicle.online_status ? 'Online' : 'Offline' }}</span><button type="button" class="secondary-action" (click)="tripReplay()">Trip Replay</button><button type="button" class="primary-action">Edit Vehicle</button></div>
+      <div class="heading-actions"><span class="offline-status" [class.online]="vehicle.online_status"><i></i>{{ vehicle.online_status ? 'Online' : 'Offline' }}</span><button type="button" class="secondary-action" (click)="tripReplay()">Trip Replay</button><button type="button" class="primary-action" (click)="openEdit()">Edit Vehicle</button></div>
     </header>
     <section class="metric-grid smooth-reveal reveal-metrics">
       @for (metric of metrics(); track metric.code; let index = $index) { <app-stat-card [label]="metric.name" [value]="metricValue(metric)" [tone]="metricTone(index)" [compact]="true" [showIcon]="false" /> }
@@ -53,4 +53,11 @@
       <article class="detail-card smooth-reveal operation-three"><header><h2>Activity & Service</h2><span>Latest records</span></header><div class="activity-columns"><section><h3>Violations</h3><div class="activity-row"><span>Returned records</span><strong>{{ count(violations()) }}</strong></div><div class="activity-row"><span>Violation alerts</span><strong>{{ violationMetric() }}</strong></div></section><section><h3>Maintenance</h3><div class="activity-row"><span>Recent records</span><strong>{{ count(maintenance()) }}</strong></div><div class="activity-row"><span>Next maintenance</span><strong>{{ text(vehicle.next_maintenance) }}</strong></div></section></div></article>
     </section>
   }
+
+  <app-vehicle-form
+    [open]="formOpen()"
+    [vehicle]="editVehicle()"
+    (cancelled)="closeForm()"
+    (created)="saveVehicle($event)"
+  />
 </main>

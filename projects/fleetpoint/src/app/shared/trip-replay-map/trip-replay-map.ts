@@ -60,6 +60,20 @@ const STOP_SPEED_KPH = 3;
 const STOP_MIN_SAMPLES = 4;
 const OSRM_MAX_DISTANCE_INFLATION = 3;
 const OSRM_MATCH_RADIUS = 200;
+// Second-tier road matching: when the primary OSRM server (osrmBaseUrl) fails
+// or times out, fall back to the public OSRM demo server so trails stay
+// road-snapped during outages. It is only used after the primary has failed a
+// few consecutive chunks (PUBLIC_OSRM_FAIL_THRESHOLD) to avoid hammering the
+// shared server when the primary is merely flaky, and its radius is capped low
+// because the demo instance rejects large radiuses ("TooBig").
+const PUBLIC_OSRM_MATCH_RADIUS = 40;
+const PUBLIC_OSRM_FAIL_THRESHOLD = 2;
+// The public OSRM demo server rejects /match traces above a small coordinate
+// budget with "TooBig" — measured ceiling is 10 trace points. Since primary
+// chunks are far larger, the fallback splits each chunk into sub-traces at
+// most this size before matching. Each sub-trace is internally road-following,
+// so concatenating them preserves the driven path.
+const PUBLIC_OSRM_MAX_TRACE = 10;
 // OSRM backends can hang (upstream returns 524 only after a long wait, or
 // 503s). A per-request timeout stops a stuck server from freezing the whole
 // trail and forces the raw-GPS fallback instead.
@@ -166,10 +180,19 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private lastVehicleIndex = -1;
   private positionRoadIndexes: number[] = [];
   private positionRoadDistances: number[] = [];
+  // Road-coordinate indices that the trail bridges over a raw GSP dropout or
+  // teleport (an impossible jump between consecutive samples). Wherever the
+  // raw trail is absent the segment renders dotted instead of a solid line
+  // over territory with no recorded position.
+  private jumpRoadIndices: Set<number> = new Set();
   private routeRequest?: AbortController;
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
   private routeVersion = 0;
+  // Tracks consecutive primary-OSRM failures so the public fallback is only
+  // engaged after the primary has clearly gone down this trip, and is reset
+  // whenever a new route starts or a primary call succeeds.
+  private primaryOsrmFailCount = 0;
   private cameraFrame?: number;
   private lastCameraFrameTime?: number;
   private cameraSettledFor = 0;
@@ -278,12 +301,14 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.resampledRoadDistances = [];
       this.positionRoadIndexes = [];
       this.positionRoadDistances = [];
+      this.jumpRoadIndices = new Set();
       if (this.map.isStyleLoaded())
         removeGeoJson(this.map, 'trip-route', [
           'trip-route-casing',
           'trip-route-line',
           'trip-route-completed',
           'trip-route-recent',
+          'trip-route-jump',
         ]);
       this.map.jumpTo({
         center: [DEFAULT_MAP_CENTER[1], DEFAULT_MAP_CENTER[0]],
@@ -293,6 +318,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     }
     const version = ++this.routeVersion;
     this.roadSegments = [];
+    this.primaryOsrmFailCount = 0;
     this.routeLoadingChange.emit(true);
     let coordinates: LatLng[];
     try {
@@ -316,6 +342,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.resampledRoadDistances = this.buildRoadDistances(this.resampledRoadCoordinates);
     this.positionRoadIndexes = this.mapPositionsToRoad(positions, coordinates);
     this.positionRoadDistances = this.buildSyncedRoadDistances(positions);
+    this.jumpRoadIndices = this.buildJumpRoadIndices(positions);
     this.displayedHeading = undefined;
     this.displayedRoadDistance = 0;
     this.targetRoadDistance = 0;
@@ -327,8 +354,16 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const css = (name: string, fallback: string) =>
       colors.getPropertyValue(name).trim() || fallback;
     this.endpointMarkers = [
-      this.circleMarker(coordinates[0], css('--color-success', '#20a77d'), 'Trip start'),
-      this.circleMarker(coordinates.at(-1)!, css('--color-danger', '#df405e'), 'Trip end'),
+      this.circleMarker(
+        this.roadSegments[0]?.[0] ?? coordinates[0],
+        css('--color-success', '#20a77d'),
+        'Trip start',
+      ),
+      this.circleMarker(
+        this.roadSegments.at(-1)?.at(-1) ?? coordinates.at(-1)!,
+        css('--color-danger', '#df405e'),
+        'Trip end',
+      ),
     ];
     for (const event of events) {
       const point = coordinates[this.routeIndex(event.positionIndex, positions.length)];
@@ -385,9 +420,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     if (!this.map?.isStyleLoaded() || this.roadCoordinates.length < 2) return;
     const completedIndex = Math.max(0, Math.round(this.displayedRoadProgress));
     const recentStart = Math.max(0, completedIndex - RECENT_TRAIL_POINTS);
-    const features = this.roadSegments.flatMap((segment) =>
-      segment.length > 1 ? [lineFeature(segment, { kind: 'route' })] : [],
-    );
+    const features = this.roadSegments
+      .map((segment, segmentIndex) => [segment, this.roadSegmentRanges[segmentIndex]?.[0] ?? 0] as const)
+      .flatMap(([segment, base]) => this.baseRouteFeatures(segment, base));
     if (completedIndex > 0)
       features.push(...this.rangeFeatures(0, completedIndex, 'completed'));
     if (completedIndex > recentStart)
@@ -404,6 +439,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       'trip-route-line',
       'trip-route-completed',
       'trip-route-recent',
+      'trip-route-jump',
     ];
     if (source && layerIds.every((id) => this.map?.getLayer(id))) {
       // Updating source data preserves the existing GPU layers and avoids a visible
@@ -442,6 +478,20 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         paint: { 'line-color': routeColor, 'line-width': 5.5, 'line-opacity': ['get', 'fade'] },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
+      {
+        // Dropouts and teleports are drawn as a dotted line so the trail reads
+        // as discontinuous rather than a solid line over territory with no road.
+        id: 'trip-route-jump',
+        type: 'line',
+        filter: ['==', ['get', 'kind'], 'jump'],
+        paint: {
+          'line-color': routeColor,
+          'line-width': 4,
+          'line-opacity': 0.9,
+          'line-dasharray': [1, 2],
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
     ]);
   }
 
@@ -474,6 +524,30 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       if (!fade) features.push(lineFeature(points, { kind }));
       else features.push(...this.buildFadedTrailFeatures(points));
     }
+    return features;
+  }
+
+  // Splits a matched segment into contiguous solid (kind 'route') and dotted
+  // (kind 'jump') features. A segment's coordinates are flattened into
+  // roadCoordinates at renderRoute; `base` is that segment's starting index
+  // within roadCoordinates, so every segment vertex resolves a global index
+  // into jumpRoadIndices (indexes OSRM bridged over a raw GPS dropout).
+  private baseRouteFeatures(segment: LatLng[], base: number): GeoJSON.Feature[] {
+    if (segment.length < 2) return [];
+    const features: GeoJSON.Feature[] = [];
+    let runKind: 'route' | 'jump' | null = null;
+    let runStart = 0;
+    for (let index = 0; index < segment.length - 1; index++) {
+      const kind: 'route' | 'jump' = this.jumpRoadIndices.has(base + index) ? 'jump' : 'route';
+      if (runKind !== kind) {
+        if (runKind && index > runStart)
+          features.push(lineFeature(segment.slice(runStart, index + 1), { kind: runKind }));
+        runKind = kind;
+        runStart = index;
+      }
+    }
+    if (runKind && segment.length - 1 > runStart)
+      features.push(lineFeature(segment.slice(runStart, segment.length), { kind: runKind }));
     return features;
   }
 
@@ -554,6 +628,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const header = document.createElement('header');
     const dot = document.createElement('i');
     dot.setAttribute('aria-hidden', 'true');
+    dot.textContent = event.type === 'violation' ? '!' : event.type === 'dashcam' ? '\u25CF' : '\u25CF';
     const title = document.createElement('strong');
     title.textContent = event.label;
     header.append(dot, title);
@@ -626,14 +701,17 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         ? matched
         : null;
 
-    // Attempt 1: OSRM /match with standard parameters.
+    // Attempt 1: OSRM /match with standard parameters on the primary server.
     const matchResult = accepted(
       await this.tryOsrmMatch(environment.osrmBaseUrl, coordinates, timestamps, OSRM_MATCH_RADIUS),
     );
-    if (matchResult) return this.removeTrailLoops(this.dedupeCoordinates(matchResult));
+    if (matchResult) {
+      this.primaryOsrmFailCount = 0;
+      return this.removeTrailLoops(this.dedupeCoordinates(matchResult));
+    }
 
-    // Attempt 2: OSRM /match with double radius — GPS drift in urban canyons
-    // or poor-signal areas can exceed 200m.
+    // Attempt 2: OSRM /match with double radius on the primary server — GPS
+    // drift in urban canyons or poor-signal areas can exceed 200m.
     const looseResult = accepted(
       await this.tryOsrmMatch(
         environment.osrmBaseUrl,
@@ -642,7 +720,23 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         OSRM_MATCH_RADIUS * 2,
       ),
     );
-    if (looseResult) return this.removeTrailLoops(this.dedupeCoordinates(looseResult));
+    if (looseResult) {
+      this.primaryOsrmFailCount = 0;
+      return this.removeTrailLoops(this.dedupeCoordinates(looseResult));
+    }
+
+    // The primary server rejected both radiuses for this chunk. Only once it
+    // has failed a few consecutive chunks (clear outage, not a one-off flake)
+    // do we engage the public OSRM server as a second road-matched tier.
+    this.primaryOsrmFailCount++;
+    if (this.primaryOsrmFailCount >= PUBLIC_OSRM_FAIL_THRESHOLD) {
+      // The public demo server enforces a small matching budget, so the chunk
+      // is split into sub-traces and the matched geometries are concatenated.
+      const publicResult = accepted(
+        await this.tryOsrmMatchSubChunks(chunk, PUBLIC_OSRM_MATCH_RADIUS),
+      );
+      if (publicResult) return this.removeTrailLoops(this.dedupeCoordinates(publicResult));
+    }
 
     // Final fallback: raw GPS with backtracking cleanup. Raw GPS is at least
     // accurate to the vehicle's reported position — better than a square detour.
@@ -682,16 +776,70 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       // OSRM may split a chunk into several sequential matchings; they arrive
       // in travel order, so concatenation preserves the driven path. Each
       // matching is road-following by construction.
+      // Splitting a chunk into several matchings (or the fallback into
+      // sub-traces) re-snaps each piece independently, so the pieces can begin
+      // with a short double-back over the previous piece's tail. Dropping each
+      // piece's leading vertices that sit within BOUNDARY_STITCH_RADIUS_M of
+      // the running end removes those loop artefacts.
       const merged: LatLng[] = [];
       for (const matching of result.matchings ?? []) {
-        const coords = matching.geometry?.coordinates ?? [];
+        let coords = (matching.geometry?.coordinates ?? []).map(([lng, lat]) => [lat, lng] as LatLng);
         if (coords.length < 2) continue;
-        merged.push(...coords.map(([lng, lat]) => [lat, lng] as LatLng));
+        while (
+          merged.length &&
+          coords.length > 1 &&
+          this.distanceBetweenCoordinates(merged[merged.length - 1], coords[0]) <=
+            BOUNDARY_STITCH_RADIUS_M
+        )
+          coords = coords.slice(1);
+        if (!coords.length) continue;
+        merged.push(...coords);
       }
       return merged.length >= 2 ? merged : null;
     } catch {
       return null;
     }
+  }
+
+  // Matches a chunk against the public OSRM fallback by splitting it into
+  // sub-traces within the demo server's coordinate budget and concatenating
+  // the matched geometries. Every sub-trace uses the same radius and each is
+  // internally road-following, so concatenation preserves the driven path.
+  private async tryOsrmMatchSubChunks(
+    chunk: TripPosition[],
+    radius: number,
+  ): Promise<LatLng[] | null> {
+    const merged: LatLng[] = [];
+    for (const subChunk of this.positionChunks(chunk, PUBLIC_OSRM_MAX_TRACE)) {
+      const coordinates = subChunk.map(({ lng, lat }) => `${lng},${lat}`).join(';');
+      const timestamps = subChunk
+        .map((point, index) => {
+          const parsed = point.timestamp ? new Date(point.timestamp).getTime() : NaN;
+          return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : index;
+        })
+        .join(';');
+      const matched = await this.tryOsrmMatch(
+        environment.osrmFallbackUrl,
+        coordinates,
+        timestamps,
+        radius,
+      );
+      if (!matched) return null;
+      // Stitch the sub-chunk join: each sub-trace is independently snapped, so
+      // drop leading vertices overlapping the running end (same rule as the
+      // primary chunk stitching) to prevent double-back loops at the joins.
+      let coords = matched;
+      while (
+        merged.length &&
+        coords.length > 1 &&
+        this.distanceBetweenCoordinates(merged[merged.length - 1], coords[0]) <=
+          BOUNDARY_STITCH_RADIUS_M
+      )
+        coords = coords.slice(1);
+      if (!coords.length) continue;
+      merged.push(...coords);
+    }
+    return merged.length >= 2 ? merged : null;
   }
 
   private positionChunks(positions: TripPosition[], size: number): TripPosition[][] {
@@ -905,6 +1053,42 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     });
   }
 
+  // Marks the road-coordinate indices that bridge an impossible jump between
+// consecutive RAW samples (dropout, teleport, device switch). Every road
+// vertex from one sample's matched position to the next is flagged, so the
+// OSRM trail renders dotted exactly where no raw trail exists.
+  private buildJumpRoadIndices(positions: TripPosition[]): Set<number> {
+    const jump = new Set<number>();
+    for (let index = 0; index < positions.length - 1; index++) {
+      if (!this.isImpossibleRawJump(positions[index], positions[index + 1])) continue;
+      const fromRoad = this.positionRoadIndexes[index];
+      const toRoad = this.positionRoadIndexes[index + 1];
+      if (fromRoad === undefined || toRoad === undefined) continue;
+      for (
+        let roadIndex = Math.min(fromRoad, toRoad);
+        roadIndex < Math.max(fromRoad, toRoad);
+        roadIndex++
+      )
+        jump.add(roadIndex);
+    }
+    return jump;
+  }
+
+  // Same impossibility rule as TripReplayPage.isImpossibleTrailJump: permit a
+  // generous 198 km/h (55 m/s) between samples but never bridge a dropout or
+  // device switch spanning hundreds of metres in only a few seconds.
+  private isImpossibleRawJump(a: TripPosition, b: TripPosition): boolean {
+    const rawA = a.timestamp ?? a.time;
+    const rawB = b.timestamp ?? b.time;
+    if (!rawA || !rawB) return false;
+    const timeA = new Date(rawA).getTime();
+    const timeB = new Date(rawB).getTime();
+    if (!Number.isFinite(timeA) || !Number.isFinite(timeB)) return false;
+    const elapsedSeconds = Math.max(1, (timeB - timeA) / 1_000);
+    const distance = this.distanceMetres(a, b);
+    return distance > Math.max(300, elapsedSeconds * 55);
+  }
+
   // Synchronises marker progress with the OSRM trail. The position→road
   // mapping can compress a run of consecutive samples onto the same road
   // vertex (the matcher clips corners, and dedupe/condense shorten the trail),
@@ -961,33 +1145,23 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.targetSpeedKph = positions[clampedIndex]?.speed ?? this.targetSpeedKph;
     // Forward playback must never walk the marker backwards: residual
     // geometry back-steps (chunk joins, loop excision) hold the marker in
-    // place instead of retracing. Scrubbing backwards is untouched.
+    // place instead of retracing. Backward steps only occur on an explicit
+    // seek, which teleports straight to the target.
     const forwardStep = index >= this.lastVehicleIndex;
     this.lastVehicleIndex = index;
     if (this.vehicleVisible) {
-      if (this.playbackActive())
+      if (this.playbackActive() && forwardStep)
         this.animateVehicleTo(
           position,
-          forwardStep ? Math.max(targetDistance, this.displayedRoadDistance) : targetDistance,
+          Math.max(targetDistance, this.displayedRoadDistance),
         );
-      else {
-        this.cancelMovement();
-        this.targetRoadDistance = targetDistance;
-        this.displayedRoadDistance = targetDistance;
-        this.movementStartDistance = targetDistance;
-        this.movementStartPosition[0] = position[0];
-        this.movementStartPosition[1] = position[1];
-        this.targetPosition[0] = position[0];
-        this.targetPosition[1] = position[1];
-        this.movementStartedAt = performance.now();
-        this.displayedRoadProgress = this.progressAtDistance(targetDistance);
-        this.displayedHeading = heading;
-        this.displayedPosition[0] = position[0];
-        this.displayedPosition[1] = position[1];
-        this.renderVehicleModel(position, heading);
-        this.renderRouteLayersIfNeeded(true);
-        this.startCameraLoop();
-      }
+      else if (this.playbackActive())
+        // Backward playback never happens during normal playback, so a step
+        // backwards is always an explicit seek (scrub to an earlier point,
+        // event jump, restart). Teleport straight there instead of retracing
+        // the drawn trail in reverse at the forward step rate.
+        this.teleportVehicle(position, heading, targetDistance);
+      else this.teleportVehicle(position, heading, targetDistance);
     } else {
       this.vehicleVisible = true;
       this.targetRoadDistance = targetDistance;
@@ -1050,6 +1224,28 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.movementDuration = Math.max(40, this.playbackStepDuration());
     this.movementFinished = false;
     this.cameraSettledFor = 0;
+    this.startCameraLoop();
+  }
+
+  // Instantly places the marker at a target without animating along the trail.
+  // Used for paused scrubs and any seek/jump to an earlier point, where an
+  // animated move would visibly retrace the drawn route backwards.
+  private teleportVehicle(position: LatLng, heading: number, targetDistance: number): void {
+    this.cancelMovement();
+    this.targetRoadDistance = targetDistance;
+    this.displayedRoadDistance = targetDistance;
+    this.movementStartDistance = targetDistance;
+    this.movementStartPosition[0] = position[0];
+    this.movementStartPosition[1] = position[1];
+    this.targetPosition[0] = position[0];
+    this.targetPosition[1] = position[1];
+    this.movementStartedAt = performance.now();
+    this.displayedRoadProgress = this.progressAtDistance(targetDistance);
+    this.displayedHeading = heading;
+    this.displayedPosition[0] = position[0];
+    this.displayedPosition[1] = position[1];
+    this.renderVehicleModel(position, heading);
+    this.renderRouteLayersIfNeeded(true);
     this.startCameraLoop();
   }
 

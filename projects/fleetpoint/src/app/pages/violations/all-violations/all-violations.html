@@ -11,7 +11,10 @@
     </div>
   }
 </section>
-<section class="violations-workspace">
+<section class="violations-workspace" [class.refreshing]="loading()">
+  @if (loading()) {
+    <div class="violations-progress" role="progressbar" aria-label="Loading violations"><i></i></div>
+  }
   <article class="map-panel"><header><h2>Violation Map</h2><span>{{ filtered().length }} shown</span></header><div class="map-legend"><span><i class="speeding"></i>Speeding</span><span><i class="behaviour"></i>Behaviour</span><span><i class="safety"></i>Safety</span><span><i class="compliance"></i>Compliance</span><span><i class="geozone"></i>Geozone</span></div><app-violation-map [violations]="filtered()" [selectedId]="selected()?.id ?? null" (violationSelected)="selectViolation($event)" /></article>
   <div class="violations-list">
     <shared-data-table [showHeader]="false" [showToolbar]="false" [columns]="columns" [rows]="rows()" [clientSideSearch]="false" [rowsClickable]="true" [selectedRowId]="selected()?.id ?? null" [cardHeight]="490" [minTableWidth]="880" [showBottomPanel]="true" (rowSelected)="selectRow($event)" (scrollEnd)="loadMore()">
