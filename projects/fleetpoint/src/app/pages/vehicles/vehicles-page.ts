@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { BlockingLoader, DataTable, DataTableSkeleton, Dropdown, DropdownOption, Skeleton, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
+import { BlockingLoader, DataTable, DataTableSkeleton, Dropdown, DropdownOption, Skeleton, StatusBadge, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import { ProgressBar } from '../../shared/progress-bar/progress-bar';
 import {
@@ -9,12 +9,13 @@ import {
   VehicleInventoryFilters,
   VehicleInventoryRecord,
 } from '../../shared/services/vehicle-inventory-api.service';
+import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { VehicleForm, VehicleFormValue } from './vehicle-form/vehicle-form';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 
 @Component({
   selector: 'app-vehicles-page',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, ProgressBar, Skeleton, VehicleForm],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, ProgressBar, Skeleton, StatusBadge, VehicleForm],
   templateUrl: './vehicles-page.html',
   styleUrl: './vehicles-page.css',
 })
@@ -104,7 +105,12 @@ export class VehiclesPage implements OnInit {
   protected readonly pageStart = computed(() => this.total() ? this.offset() + 1 : 0);
   protected readonly pageEnd = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
-  constructor(private readonly api: VehicleInventoryApiService, private readonly router: Router, private readonly feedback: FeedbackDialogBridgeService) {}
+  constructor(
+    private readonly api: VehicleInventoryApiService,
+    private readonly router: Router,
+    private readonly feedback: FeedbackDialogBridgeService,
+    protected readonly fleetStatus: FleetStatusService,
+  ) {}
 
   ngOnInit(): void {
     forkJoin({ fleets: this.api.getFleetOptions(), categories: this.api.getCategoryOptions(), vehicleTypes: this.api.getVehicleTypeOptions() }).pipe(finalize(() => this.optionsLoading.set(false))).subscribe({

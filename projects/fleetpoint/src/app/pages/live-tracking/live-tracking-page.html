@@ -131,9 +131,10 @@
       </div>
     }
     <div class="map-status">
-      <app-live-badge
-        [vehicleCount]="fleetStatus.onlineCount()"
-        [isLive]="!loading()"
+      <shared-status-badge
+        variant="map"
+        [online]="fleetStatus.hasOnlineVehicles()"
+        [label]="liveBadgeLabel()"
         [loading]="loading()"
       />
     </div>

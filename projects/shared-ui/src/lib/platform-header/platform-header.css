@@ -7,47 +7,16 @@ header {
 .actions {
   @apply flex min-w-0 items-center gap-3;
 }
-.theme,
-.live {
+.theme {
   @apply flex w-16 items-center justify-center gap-2 rounded-full border border-line bg-transparent px-2 py-1.5 text-xs text-muted dark:border-dark-line;
 }
 .theme {
   @apply cursor-pointer gap-1.5 text-center leading-none dark:text-brand-300;
 }
 .theme img { @apply block size-3.5 shrink-0; }
-.live {
-  @apply text-xs font-medium text-success;
-}
-.live i {
-  @apply size-1.5 rounded-full bg-online;
-  animation: shared-live-pulse 1.8s ease-out infinite;
-}
-.live.offline {
-  @apply text-muted;
-}
-.live.offline i.offline-dot {
-  @apply bg-muted;
-  animation: none;
-}
 .profile-button { @apply flex items-center gap-2 rounded-full; }
 .profile-copy { @apply hidden text-right sm:block; }
 .profile-copy strong { @apply block text-sm leading-4 font-semibold text-ink dark:text-white; }
 .profile-copy small { @apply block text-[0.65rem] leading-3 text-muted dark:text-brand-300; }
 .profile-avatar { @apply relative grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white; }
 .profile-avatar i { @apply absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white bg-online dark:border-dark-surface; }
-@keyframes shared-live-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-online) 45%, transparent);
-  }
-  50% {
-    opacity: 0.75;
-    box-shadow: 0 0 0 0.3rem transparent;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .live i {
-    animation: none;
-  }
-}

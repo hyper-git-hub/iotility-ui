@@ -7,7 +7,7 @@
 .vehicle-description-skeleton ui-skeleton { transform: translateY(2px); }
 .detail-heading { @apply flex flex-col justify-between gap-4 sm:flex-row sm:items-center; }
 .heading-copy { @apply flex items-center gap-3; }.heading-copy > button { @apply grid size-9 cursor-pointer place-items-center rounded-xl border border-line bg-white text-lg text-muted hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface; }.heading-copy p { @apply text-[10px] text-muted dark:text-brand-300; }.heading-copy h1 { @apply text-xl font-bold; }.heading-copy div > span { @apply text-xs text-muted dark:text-brand-300; }
-.heading-actions { @apply flex flex-wrap items-center gap-2; }.offline-status { @apply inline-flex items-center gap-1.5 rounded-full bg-muted/10 px-2.5 py-1 text-[10px] font-medium text-muted; }.offline-status i { @apply size-2 rounded-full bg-muted; }.secondary-action,.primary-action { @apply h-9 cursor-pointer rounded-lg px-3 text-xs font-medium; }.secondary-action { @apply border border-line bg-white text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }.primary-action { @apply bg-brand-600 text-white; }
+.heading-actions { @apply flex flex-wrap items-center gap-2; }.secondary-action,.primary-action { @apply h-9 cursor-pointer rounded-lg px-3 text-xs font-medium; }.secondary-action { @apply border border-line bg-white text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }.primary-action { @apply bg-brand-600 text-white; }
 .metric-grid { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-4; }
 .overview-grid { @apply grid items-stretch gap-5 xl:grid-cols-[380px_1fr]; }
 .detail-card { @apply overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }.detail-card > header { @apply flex items-center justify-between gap-3 border-b border-line px-5 py-4 dark:border-dark-line; }.detail-card h2 { @apply text-sm font-bold; }.detail-card header p,.detail-card header > span { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }.signal-pill { @apply rounded-full bg-success/10 px-2 py-1 text-success; }
@@ -34,15 +34,9 @@
 .trip-link-skeleton { @apply mt-4; }
 .sensor-list { @apply grid gap-2 p-4; }.sensor-list > div { @apply flex items-center gap-3 rounded-xl bg-canvas p-3 dark:bg-dark-canvas; }.sensor-icon { @apply grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-dark-surface; }.sensor-list small { @apply block text-[10px] text-muted dark:text-brand-300; }.sensor-list strong { @apply mt-1 block text-xs; }
 .sensor-icon img { @apply size-[18px]; }
-.live-sensor { @apply inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-1 text-success!; }.live-sensor i { @apply size-1.5 rounded-full bg-success; animation: live-sensor-pulse 1.8s ease-in-out infinite; }
-.live-sensor.offline { @apply bg-muted/10 text-muted!; }
-.live-sensor.offline i { @apply bg-muted; animation: none; }
 .activity-columns { @apply grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2; }.activity-columns section { @apply rounded-xl bg-canvas p-3 dark:bg-dark-canvas; }.activity-columns h3 { @apply mb-2 text-xs font-semibold; }.activity-row { @apply flex items-center justify-between gap-3 border-t border-line py-2 text-[10px] first:border-0 dark:border-dark-line; }.activity-row span { @apply text-muted dark:text-brand-300; }.activity-row strong { @apply text-right; }
-@keyframes live-sensor-pulse { 50% { opacity:.3;transform:scale(.7); } }
 @media (max-width: 640px) { .vehicle-detail-page { @apply p-3; }.vehicle-map { @apply min-h-[360px]; }.map-card { @apply min-h-[440px]; } }
 
-.offline-status.online { @apply bg-success/10 text-success; }
-.offline-status.online i { @apply bg-success; }
 .vehicle-illustration { @apply overflow-hidden; }
 .vehicle-illustration img { @apply size-16 object-contain; }
 .location-unavailable { @apply flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center; }

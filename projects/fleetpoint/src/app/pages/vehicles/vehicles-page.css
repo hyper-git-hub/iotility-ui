@@ -28,10 +28,6 @@
 .status-title small {
   @apply text-muted dark:text-brand-300;
 }
-.live-dot {
-  @apply size-2 rounded-full bg-success;
-  animation: live-pulse 1.8s ease-in-out infinite;
-}
 .status-bar {
   @apply mt-3 flex h-2 overflow-hidden rounded-full bg-canvas dark:bg-dark-canvas;
 }
@@ -194,10 +190,4 @@
 }
 .vehicles-table {
   contain: layout paint style;
-}
-@keyframes live-pulse {
-  50% {
-    opacity: 0.35;
-    transform: scale(0.75);
-  }
 }

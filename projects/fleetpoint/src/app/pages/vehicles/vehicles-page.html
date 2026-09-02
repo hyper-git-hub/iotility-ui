@@ -33,7 +33,7 @@
   } @else {
     <section class="fleet-status-card">
       <div class="status-title">
-        <i class="live-dot"></i><strong>Live Fleet Status</strong
+        <shared-status-badge variant="dot" [online]="fleetStatus.hasOnlineVehicles()" /><strong>Live Fleet Status</strong
         ><small>{{ records().length }} loaded of {{ total() }} vehicles</small>
       </div>
       <div class="status-bar">

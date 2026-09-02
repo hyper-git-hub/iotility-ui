@@ -2,10 +2,11 @@ import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Inject, input, output } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
 import { Tooltip } from '../tooltip/tooltip';
+import { StatusBadge } from '../status-badge/status-badge';
 const THEME_KEY = 'iotility-theme';
 @Component({
   selector: 'shared-platform-header',
-  imports: [Dropdown, Tooltip],
+  imports: [Dropdown, Tooltip, StatusBadge],
   templateUrl: './platform-header.html',
   styleUrl: './platform-header.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DropdownOption, Skeleton } from '@iotility/shared-ui';
+import { DropdownOption, Skeleton, StatusBadge } from '@iotility/shared-ui';
 import { EMPTY, Subscription, catchError, finalize, interval, switchMap, timer } from 'rxjs';
 import {
   FleetMap,
@@ -17,7 +17,6 @@ import {
   TrackedVehicle,
   VehicleStatus,
 } from '../../shared/fleet-map/fleet-map';
-import { LiveBadge } from '../../shared/map-overlays/live-badge';
 import { SearchOverlay } from '../../shared/map-overlays/search-overlay';
 import { VehicleLegend } from '../../shared/map-overlays/vehicle-legend';
 import { FullscreenUiService } from '../../shared/services/fullscreen-ui.service';
@@ -48,7 +47,7 @@ interface LiveVehicle extends TrackedVehicle {
 
 @Component({
   selector: 'app-live-tracking-page',
-  imports: [Skeleton, FleetMap, AllocationForm, LiveBadge, SearchOverlay, VehicleLegend],
+  imports: [Skeleton, FleetMap, AllocationForm, SearchOverlay, StatusBadge, VehicleLegend],
   templateUrl: './live-tracking-page.html',
   styleUrl: './live-tracking-page.css',
 })
@@ -108,6 +107,18 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly onlineVehicleCount = computed(
     () => this.mapVehicles().filter((vehicle) => vehicle.status !== 'Offline').length,
   );
+  protected readonly badgeClock = computed(() => {
+    const date = new Date(this.now());
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  });
+  protected readonly liveBadgeLabel = computed(() => {
+    const base = `${this.fleetStatus.hasOnlineVehicles() ? 'Live' : 'Offline'} · ${this.badgeClock()}`;
+    const count = this.fleetStatus.onlineCount();
+    return this.fleetStatus.hasOnlineVehicles() && count > 0
+      ? `${base} · ${count} ${count === 1 ? 'vehicle' : 'vehicles'}`
+      : base;
+  });
   private readonly subscription = new Subscription();
   private readonly apiSnapshots = new Map<number, LiveVehicle>();
   private readonly realtimeVehicles = new Set<number>();

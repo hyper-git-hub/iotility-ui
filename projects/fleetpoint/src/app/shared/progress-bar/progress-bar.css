@@ -13,6 +13,17 @@
   - auto-invert for `dark` (same CSS, brand-500 is theme-aware via the token)
 */
 
+/*
+  Host must not generate a box: when placed inside grid/flex containers the
+  host element would otherwise become an extra item (adding a grid/flex gap)
+  and push the content below it down while loading. `display: contents` lets
+  the absolutely-positioned .progress-bar overlay the nearest positioned
+  ancestor without taking part in layout.
+*/
+:host {
+  display: contents;
+}
+
 .progress-bar {
   @apply absolute inset-x-0 top-0 z-[550] h-0 overflow-visible;
 }

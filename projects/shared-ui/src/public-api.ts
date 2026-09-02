@@ -1,6 +1,7 @@
 export * from './lib/dropdown/dropdown';
 export * from './lib/data-table/data-table';
 export * from './lib/platform-header/platform-header';
+export * from './lib/status-badge/status-badge';
 export * from './lib/blocking-loader/blocking-loader';
 export * from './lib/smooth-height/smooth-height';
 export * from './lib/date-time-picker/date-time-picker';

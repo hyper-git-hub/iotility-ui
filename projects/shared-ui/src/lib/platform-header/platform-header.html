@@ -3,9 +3,15 @@
   <div class="actions">
     <ng-content select="[header-actions]" />
     @if (showLive()) {
-      <span class="live" [class.offline]="liveOffline()" [attr.title]="liveOffline() ? 'All vehicles offline' : 'Realtime tracking active'">
-        <i [class.offline-dot]="liveOffline()"></i>Live
-      </span>
+      <shared-status-badge
+        variant="header"
+        [online]="!liveOffline()"
+        onlineLabel="Live"
+        offlineLabel="Live"
+        [onlineTitle]="'Realtime tracking active'"
+        [offlineTitle]="'All vehicles offline'"
+        [attr.aria-label]="liveOffline() ? 'All vehicles offline' : 'Realtime tracking active'"
+      />
     }
     <button class="theme" type="button" (click)="toggleTheme()" [tooltip]="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
       @if (isDark) {

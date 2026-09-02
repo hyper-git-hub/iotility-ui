@@ -160,10 +160,6 @@ nav .active {
   right: -16px;
   top: 50%;
   transform: translateY(-50%);
-  width: 8px;
-  height: 8px;
-  min-width: 8px;
-  max-width: 8px;
   flex: none;
   margin: 0;
   padding: 0;
@@ -171,23 +167,11 @@ nav .active {
   pointer-events: auto;
 }
 .live-status-dot {
-  @apply relative ml-auto size-2 shrink-0 rounded-full bg-success;
+  @apply relative ml-auto shrink-0;
   transition:
-    width var(--sidebar-motion),
     margin var(--sidebar-motion),
     opacity 140ms ease,
     transform var(--sidebar-motion);
-}
-.live-status-dot::after {
-  content: '';
-  @apply absolute inset-0 animate-ping rounded-full bg-success opacity-60;
-}
-.live-status-dot.offline {
-  @apply bg-muted;
-}
-.live-status-dot.offline::after {
-  animation: none;
-  opacity: 0;
 }
 .trip-replay-icon {
   @apply text-sm;

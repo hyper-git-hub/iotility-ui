@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Skeleton, StatCardSkeleton } from '@iotility/shared-ui';
+import { Skeleton, StatCardSkeleton, StatusBadge } from '@iotility/shared-ui';
 import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
 import { FleetMap, TrackedVehicle } from '../../../shared/fleet-map/fleet-map';
 import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../../../shared/services/vehicle-detail-api.service';
@@ -12,7 +12,7 @@ import { VehicleInventoryRecord } from '../../../shared/services/vehicle-invento
 
 interface DetailItem { label: string; value: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [FleetMap, Skeleton, StatCard, StatCardSkeleton, VehicleForm], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
+@Component({ selector: 'app-vehicle-detail', imports: [FleetMap, Skeleton, StatCard, StatCardSkeleton, StatusBadge, VehicleForm], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
