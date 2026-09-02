@@ -1,1 +1,9 @@
 <div #map class="trip-map" aria-label="Trip replay map"></div>
+<div class="map-overlays">
+  <app-map-controls
+    class="overlay-controls"
+    [zoomOnly]="true"
+    (zoomIn)="zoomIn()"
+    (zoomOut)="zoomOut()"
+  />
+</div>

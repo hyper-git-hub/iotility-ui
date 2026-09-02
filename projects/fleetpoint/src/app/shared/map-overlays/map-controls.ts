@@ -9,6 +9,7 @@ export class MapControls implements AfterViewInit, OnDestroy {
   private readonly element = inject(ElementRef<HTMLElement>);
   private readonly detachTooltips: Array<() => void> = [];
   readonly fullscreen = input(false);
+  readonly zoomOnly = input(false);
   readonly zoomIn = output<void>();
   readonly zoomOut = output<void>();
   readonly toggle3D = output<void>();

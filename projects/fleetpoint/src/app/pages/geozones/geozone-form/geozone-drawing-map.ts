@@ -64,7 +64,12 @@ export class GeozoneDrawingMap implements AfterViewInit, OnDestroy {
         this.renderShape();
       }
     });
-    this.map.on('style.load', () => this.renderShape());
+    this.map.on('style.load', () => {
+      this.map?.resize();
+      this.renderShape();
+    });
+    // Ensure the map resizes correctly after initial load
+    this.map.once('load', () => this.map?.resize());
     if (this.active()) this.startDrawing();
     this.resizeObserver = new ResizeObserver(() => this.map?.resize());
     this.resizeObserver.observe(this.mapElement().nativeElement);

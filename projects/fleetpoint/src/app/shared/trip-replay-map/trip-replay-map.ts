@@ -25,6 +25,7 @@ import {
   upsertGeoJson,
 } from '../maps/maplibre';
 import { attachTooltip } from '@iotility/shared-ui';
+import { MapControls } from '../map-overlays/map-controls';
 import { environment } from '../../../environments/environment';
 
 const VEHICLE_MODEL_PATHS = [
@@ -141,6 +142,7 @@ interface EventMarkerRecord {
   selector: 'app-trip-replay-map',
   templateUrl: './trip-replay-map.html',
   styleUrl: './trip-replay-map.css',
+  imports: [MapControls],
 })
 export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly positions = input.required<TripPosition[]>();
@@ -284,6 +286,14 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.readyEmitted = true;
     clearTimeout(this.readyFallback);
     this.ready.emit();
+  }
+
+  zoomIn(): void {
+    this.map?.zoomIn();
+  }
+
+  zoomOut(): void {
+    this.map?.zoomOut();
   }
 
   private async renderRoute(positions: TripPosition[], events: TripReplayEvent[]): Promise<void> {

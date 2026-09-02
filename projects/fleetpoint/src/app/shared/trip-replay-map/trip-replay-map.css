@@ -8,6 +8,16 @@
   min-height: 360px;
 }
 
+:host {
+  position: relative;
+}
+.map-overlays {
+  @apply pointer-events-none absolute inset-0 z-[500];
+}
+.overlay-controls {
+  @apply pointer-events-auto absolute right-4 top-4;
+}
+
 :host ::ng-deep .iotility-map-marker.event-dot span {
   transition:
     transform 150ms ease,
