@@ -15,6 +15,17 @@
 .password-label { @apply mt-4; }
 .form-control { @apply flex items-center rounded-lg border border-line bg-white px-3 py-2.5 transition focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 dark:border-dark-line dark:bg-dark-canvas; }
 .form-control input { @apply min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted/60 dark:text-white; }
+:host-context(.dark) .form-control input,
+:host-context(.dark) .form-control input:focus {
+  color: white;
+  -webkit-text-fill-color: white;
+  caret-color: white;
+}
+:host-context(.dark) .form-control input::selection {
+  color: white;
+  background: color-mix(in srgb, var(--color-brand-600) 55%, transparent);
+  -webkit-text-fill-color: white;
+}
 .form-control input:-webkit-autofill,
 .form-control input:-webkit-autofill:hover,
 .form-control input:-webkit-autofill:focus {
@@ -24,7 +35,8 @@
 }
 :host-context(.dark) .form-control input:-webkit-autofill,
 :host-context(.dark) .form-control input:-webkit-autofill:hover,
-:host-context(.dark) .form-control input:-webkit-autofill:focus {
+:host-context(.dark) .form-control input:-webkit-autofill:focus,
+:host-context(.dark) .form-control input:autofill {
   -webkit-text-fill-color: white;
   box-shadow: 0 0 0 1000px var(--color-dark-canvas) inset;
   caret-color: white;
