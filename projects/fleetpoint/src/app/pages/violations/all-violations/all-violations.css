@@ -86,28 +86,16 @@
   min-width: 14rem;
   max-width: 18rem;
   border-radius: 0.75rem;
-  padding: 0.75rem 0.875rem;
+  padding: 0.75rem;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   background: var(--vio-popup-surface);
   color: var(--color-ink);
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
   margin-bottom: 8px;
 }
-:host ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
-:host ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
-:host ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-  border-top-color: var(--vio-popup-surface);
-}
-:host ::ng-deep app-violation-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
-:host ::ng-deep app-violation-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
-:host ::ng-deep app-violation-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-  border-bottom-color: var(--vio-popup-surface);
-}
-:host ::ng-deep app-violation-map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: var(--vio-popup-surface);
-}
-:host ::ng-deep app-violation-map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: var(--vio-popup-surface);
+/* Circle markers need no pointer arrow — hide the popup tip entirely */
+:host ::ng-deep app-violation-map .maplibregl-popup-tip {
+  display: none;
 }
 :host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-content {
   --vio-popup-surface: var(--color-dark-surface);

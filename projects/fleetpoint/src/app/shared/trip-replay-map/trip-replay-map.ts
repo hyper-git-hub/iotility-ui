@@ -181,7 +181,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private resampledRoadDistances: number[] = [];
   private lastVehicleIndex = -1;
   private positionRoadIndexes: number[] = [];
-  private positionRoadDistances: number[] = [];
   // Road-coordinate indices that the trail bridges over a raw GSP dropout or
   // teleport (an impossible jump between consecutive samples). Wherever the
   // raw trail is absent the segment renders dotted instead of a solid line
@@ -310,7 +309,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.resampledRoadCoordinates = [];
       this.resampledRoadDistances = [];
       this.positionRoadIndexes = [];
-      this.positionRoadDistances = [];
       this.jumpRoadIndices = new Set();
       if (this.map.isStyleLoaded())
         removeGeoJson(this.map, 'trip-route', [
@@ -351,7 +349,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.resampledRoadCoordinates = this.resampleTrail(coordinates, this.roadDistances);
     this.resampledRoadDistances = this.buildRoadDistances(this.resampledRoadCoordinates);
     this.positionRoadIndexes = this.mapPositionsToRoad(positions, coordinates);
-    this.positionRoadDistances = this.buildSyncedRoadDistances(positions);
     this.jumpRoadIndices = this.buildJumpRoadIndices(positions);
     this.displayedHeading = undefined;
     this.displayedRoadDistance = 0;
@@ -1097,42 +1094,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const elapsedSeconds = Math.max(1, (timeB - timeA) / 1_000);
     const distance = this.distanceMetres(a, b);
     return distance > Math.max(300, elapsedSeconds * 55);
-  }
-
-  // Synchronises marker progress with the OSRM trail. The position→road
-  // mapping can compress a run of consecutive samples onto the same road
-  // vertex (the matcher clips corners, and dedupe/condense shorten the trail),
-  // which used to freeze the marker for the whole duration of those samples.
-  // Each compressed run is decided by comparing the raw coordinates against
-  // the OSRM progress: if the raw GPS actually travelled (net displacement
-  // beyond jitter), the samples are spread across the road stretch up to the
-  // next advancing anchor, proportional to raw travel; if the raw points
-  // barely moved, it is a genuine stop and the marker holds its position.
-  private buildSyncedRoadDistances(positions: TripPosition[]): number[] {
-    const result = this.positionRoadIndexes.map((index) => this.roadDistances[index] ?? 0);
-    if (result.length < 2) return result;
-    const raw = positions.map(({ lat, lng }) => [lat, lng] as LatLng);
-    const roadTotal = this.roadDistances.at(-1) ?? 0;
-    const RAW_STOP_JITTER_M = 10;
-    let start = 0;
-    while (start < result.length) {
-      let end = start;
-      while (end + 1 < result.length && result[end + 1] <= result[start]) end++;
-      if (end > start) {
-        const spreadEnd = end + 1 < result.length ? result[end + 1] : roadTotal;
-        const spread = spreadEnd - result[start];
-        const drift = this.distanceBetweenCoordinates(raw[start], raw[end]);
-        if (spread > 0 && drift > RAW_STOP_JITTER_M) {
-          for (let k = start; k <= end; k++) {
-            const progressed =
-              this.distanceBetweenCoordinates(raw[start], raw[Math.min(k, raw.length - 1)]);
-            result[k] = result[start] + spread * Math.min(1, progressed / (drift || 1));
-          }
-        }
-      }
-      start = end + 1;
-    }
-    return result;
   }
 
   private updateVehicle(index: number): void {

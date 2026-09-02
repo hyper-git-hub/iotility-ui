@@ -5,7 +5,7 @@
 
   Variants:
   - .shimmer (default, used by map/trail loaders): brand-500 bar animates
-    left→right; the optional <span> label sits top-left over the bar.
+    left→right; the optional <span> label sits centered over the bar.
   - .bar (plain): same brand-500 bar, no label.
 
   All variants:
@@ -34,9 +34,9 @@
   animation: progress-bar-shimmer 1.1s ease-in-out infinite;
 }
 
-/* Optional inline label — shimmer style (top-left over the bar) */
+/* Optional inline label — centered over the bar */
 .progress-bar span {
-  @apply absolute left-3 top-0 rounded-full border border-line bg-white/95 px-2.5 py-0.5 text-[9px] font-medium text-ink shadow-md backdrop-blur dark:border-dark-line dark:bg-dark-surface/95 dark:text-brand-300;
+  @apply absolute left-1/2 top-1.5 -translate-x-1/2 rounded-full border border-line bg-white/95 px-3 py-1 text-[9px] font-medium text-ink shadow-md backdrop-blur dark:border-dark-line dark:bg-dark-surface/95 dark:text-brand-300;
 }
 
 /* Plain bar variant (no label, no shimmer glow) */
