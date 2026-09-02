@@ -12,11 +12,8 @@
   }
 </section>
 <section class="violations-workspace" [class.refreshing]="loading()">
-  @if (loading()) {
-    <app-progress-bar />
-  }
   <article class="map-panel"><header><h2>Violation Map</h2><span>{{ filtered().length }} shown</span></header><div class="map-legend"><span><i class="speeding"></i>Speeding</span><span><i class="behaviour"></i>Behaviour</span><span><i class="safety"></i>Safety</span><span><i class="compliance"></i>Compliance</span><span><i class="geozone"></i>Geozone</span></div><app-violation-map [violations]="filtered()" [selectedId]="selected()?.id ?? null" (violationSelected)="selectViolation($event)" /></article>
-  <div class="violations-list">
+  <div class="violations-list">@if (loading()) {<app-progress-bar />}
     <shared-data-table [showHeader]="false" [showToolbar]="false" [columns]="columns" [rows]="rows()" [clientSideSearch]="false" [rowsClickable]="true" [selectedRowId]="selected()?.id ?? null" [cardHeight]="490" [minTableWidth]="880" [showBottomPanel]="true" (rowSelected)="selectRow($event)" (scrollEnd)="loadMore()">
       <ng-template tableCell="type" let-row><span class="violation-cell"><span class="type-icon-badge" [style.background]="violationIconBackground(row['type'])" [style.color]="violationIconColor(row['type'])" [innerHTML]="violationIcon(row['type'])"></span><span><strong>{{row['type']}}</strong><small>{{row['location']}}</small></span></span></ng-template>
       <ng-template tableCell="driver" let-row><span class="driver-cell"><i>{{initials(row['driver'])}}</i><span><strong>{{firstName(row['driver'])}}</strong><small>{{row['vehicle']}}</small></span></span></ng-template>
