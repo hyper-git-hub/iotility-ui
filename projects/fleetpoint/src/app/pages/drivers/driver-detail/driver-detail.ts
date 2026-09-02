@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, Observable, of } from 'rxjs';
+import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import { DriverRecord } from '../../../shared/services/driver-api.service';
 import { DashboardCard } from '../../../shared/services/fleet-dashboard-api.service';
 import {
@@ -30,6 +31,7 @@ import { StatCard } from '../../../shared/stat-card/stat-card';
     DataTableSkeleton,
     DateTimePicker,
     Dropdown,
+    ProgressBar,
     Skeleton,
     StatCard,
   ],

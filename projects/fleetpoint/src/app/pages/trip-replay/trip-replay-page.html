@@ -100,10 +100,7 @@
     <div class="replay-center">
       <div class="map-shell">
         @if (routeLoading()) {
-          <div class="route-progress" role="progressbar" aria-label="Matching trip route">
-            <i></i>
-            <span>Matching trip to roads…</span>
-          </div>
+          <app-progress-bar label="Matching trip to roads" />
         }
         <app-trip-replay-map
           [class.map-loaded]="mapLoaded()"

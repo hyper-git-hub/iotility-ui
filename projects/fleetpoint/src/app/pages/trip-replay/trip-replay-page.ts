@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
+import { ProgressBar } from '../../shared/progress-bar/progress-bar';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 import {
   DetailReportRecord,
@@ -77,7 +78,7 @@ const MAX_PLAYBACK_GAP_MS = 5_000;
 
 @Component({
   selector: 'app-trip-replay-page',
-  imports: [DateTimePicker, DecimalPipe, Skeleton, Tooltip, TripReplayMap],
+  imports: [DateTimePicker, DecimalPipe, ProgressBar, Skeleton, Tooltip, TripReplayMap],
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
 })

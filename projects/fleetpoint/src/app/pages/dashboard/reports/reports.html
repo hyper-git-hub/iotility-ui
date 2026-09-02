@@ -145,7 +145,7 @@
     } @else {
       <div class="reports-table-wrap" [class.refreshing]="refreshing()">
         @if (refreshing()) {
-          <div class="report-refresh-progress"><i></i></div>
+          <app-progress-bar />
         }
         <shared-data-table
           class="reports-table"

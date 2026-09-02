@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { finalize } from 'rxjs';
+import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import {
   DataTable,
   DataTableBottomPanel,
@@ -95,7 +96,7 @@ const SOURCE_OPTIONS: DropdownOption[] = [
 
 @Component({
   selector: 'app-all-violations',
-  imports: [DataTable, DataTableBottomPanel, DataTableCellTemplate, Dropdown, ViolationMap],
+  imports: [DataTable, DataTableBottomPanel, DataTableCellTemplate, Dropdown, ProgressBar, ViolationMap],
   templateUrl: './all-violations.html',
   styleUrl: './all-violations.css',
 })

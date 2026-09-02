@@ -2,6 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal }
 import { Router } from '@angular/router';
 import { Dropdown, DropdownOption, Skeleton, StatCardSkeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
+import { ProgressBar } from '../../shared/progress-bar/progress-bar';
 import {
   FleetInventoryApiService,
   FleetInventoryRecord,
@@ -29,7 +30,7 @@ interface FleetSummary {
 
 @Component({
   selector: 'app-fleets-page',
-  imports: [Dropdown, FleetForm, Skeleton, StatCard, StatCardSkeleton],
+  imports: [Dropdown, FleetForm, ProgressBar, Skeleton, StatCard, StatCardSkeleton],
   templateUrl: './fleets-page.html',
   styleUrl: './fleets-page.css',
 })

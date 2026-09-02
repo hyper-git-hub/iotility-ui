@@ -2,6 +2,7 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { BlockingLoader, DataTable, DataTableSkeleton, Dropdown, DropdownOption, Skeleton, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
+import { ProgressBar } from '../../shared/progress-bar/progress-bar';
 import {
   InventoryOption,
   VehicleInventoryApiService,
@@ -13,7 +14,7 @@ import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dial
 
 @Component({
   selector: 'app-vehicles-page',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, Skeleton, VehicleForm],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, ProgressBar, Skeleton, VehicleForm],
   templateUrl: './vehicles-page.html',
   styleUrl: './vehicles-page.css',
 })

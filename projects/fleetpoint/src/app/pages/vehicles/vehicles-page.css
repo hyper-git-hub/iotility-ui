@@ -171,13 +171,6 @@
 .vehicles-table-wrap {
   @apply relative min-w-0 overflow-hidden rounded-2xl;
 }
-.vehicle-refresh-progress {
-  @apply absolute inset-x-0 top-0 z-20 h-0 overflow-visible;
-}
-.vehicle-refresh-progress i {
-  @apply absolute inset-x-0 top-0 block h-[3px] origin-left rounded-t-2xl bg-brand-500 shadow-[0_1px_5px_rgba(124,58,237,0.35)];
-  animation: vehicle-refresh-progress 1.1s ease-in-out infinite;
-}
 .vehicles-table-wrap.refreshing .vehicles-table {
   @apply pointer-events-none opacity-[0.65];
   transition: opacity 160ms ease;
@@ -206,24 +199,5 @@
   50% {
     opacity: 0.35;
     transform: scale(0.75);
-  }
-}
-@keyframes vehicle-refresh-progress {
-  0% {
-    transform: scaleX(0.12);
-    opacity: 0.55;
-  }
-  50% {
-    transform: scaleX(0.72);
-    opacity: 1;
-  }
-  100% {
-    transform: scaleX(1);
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .vehicle-refresh-progress i {
-    animation: none;
   }
 }

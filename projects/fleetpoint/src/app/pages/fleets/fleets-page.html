@@ -63,7 +63,7 @@
     </div>
   }
   @if (refreshing()) {
-    <div class="fleet-refresh-progress" role="progressbar" aria-label="Refreshing fleets"><i></i></div>
+    <app-progress-bar label="Refreshing fleets" />
   }
 
   <div class="fleet-grid" [class.refreshing]="refreshing()" [attr.aria-busy]="loading()">

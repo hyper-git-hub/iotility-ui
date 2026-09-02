@@ -1,8 +1,6 @@
 <main class="driver-detail-page">
   @if (dataLoading()) {
-    <div class="driver-detail-progress" role="progressbar" aria-label="Updating driver details">
-      <i></i>
-    </div>
+    <app-progress-bar label="Updating driver details" />
   }
 
   @if (error()) {

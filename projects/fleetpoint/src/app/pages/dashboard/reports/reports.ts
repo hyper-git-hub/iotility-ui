@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
+import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import {
   ReportDateFilter,
@@ -31,7 +32,7 @@ const JOB_STATUS: Record<string, string> = {
 
 @Component({
   selector: 'app-dashboard-reports',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, Skeleton],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, ProgressBar, Skeleton],
   templateUrl: './reports.html',
   styleUrl: './reports.css',
 })

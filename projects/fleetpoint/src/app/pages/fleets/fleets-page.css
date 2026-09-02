@@ -67,13 +67,6 @@
 .fleet-card > footer .vehicle-pill-alert { @apply border-danger/20 bg-danger/10 text-danger; }
 .fleet-card > footer .vehicle-pill-offline { @apply border-line bg-canvas text-muted dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300; }
 .fleet-card > footer small { @apply text-[10px] text-muted dark:text-brand-300; }
-.fleet-refresh-progress {
-  @apply relative z-20 h-0 overflow-visible;
-}
-.fleet-refresh-progress i {
-  @apply absolute inset-x-0 top-0 block h-0.5 origin-left rounded-full bg-brand-500;
-  animation: fleet-refresh-progress 1.1s ease-in-out infinite;
-}
 .fleet-grid.refreshing {
   @apply pointer-events-none opacity-[0.65];
   transition: opacity 160ms ease;
@@ -83,14 +76,8 @@
 .empty-fleets { @apply col-span-full rounded-2xl border border-line bg-white p-10 text-center text-xs text-muted dark:border-dark-line dark:bg-dark-surface; }
 .fleet-load-sentinel { @apply mt-2 flex h-10 items-center justify-center gap-2 text-xs text-muted dark:text-brand-300; }
 .fleet-load-spinner { @apply size-3.5 rounded-full border-2 border-brand-500/25 border-t-brand-600; animation: fleet-load-spin 700ms linear infinite; }
-@keyframes fleet-refresh-progress {
-  0% { transform: scaleX(0.12); opacity: 0.55; }
-  50% { transform: scaleX(0.72); opacity: 1; }
-  100% { transform: scaleX(1); opacity: 0; }
-}
 @keyframes fleet-load-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .fleet-refresh-progress i { animation: none; }
   .fleet-load-spinner { animation: none; }
 }
 @media (min-width: 640px) {

@@ -187,10 +187,7 @@
 }
 .map-panel,.violations-list{height:490px}
 .violations-workspace{@apply relative}
-.violations-progress{@apply absolute inset-x-0 top-0 z-20 h-0 overflow-visible}
-.violations-progress i{@apply absolute inset-x-0 top-0 block h-[3px] origin-left rounded-t-2xl bg-brand-500 shadow-[0_1px_5px_rgba(124,58,237,0.35)];animation:violations-progress 1.1s ease-in-out infinite}
 .violations-workspace.refreshing .map-panel,.violations-workspace.refreshing .violations-list{@apply pointer-events-none opacity-[0.65];transition:opacity 160ms ease}
-@keyframes violations-progress{0%{transform:scaleX(0);transform-origin:left}50%{transform:scaleX(.6);transform-origin:left}100%{transform:scaleX(0);transform-origin:right}}
 .violations-list shared-data-table,
 :host ::ng-deep .violations-list .table-card{height:490px}
 @media(max-width:1279px){.map-panel,.violations-list,.violations-list shared-data-table,:host ::ng-deep .violations-list .table-card{height:30rem}}

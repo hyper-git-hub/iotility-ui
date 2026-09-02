@@ -46,16 +46,23 @@ export class GeozoneDrawingMap implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.previousShape = this.shape();
     // Default map center to Pakistan; will override if geolocation succeeds
-    this.map = createIotMap(this.mapElement().nativeElement, [30.3753, 69.3451], 12);
+    this.map = createIotMap(this.mapElement().nativeElement, [30.3753, 69.3451], 5, {
+      canvasContextAttributes: { antialias: false },
+      renderWorldCopies: false,
+      maxBounds: [[60, 23], [78, 38]],
+      minZoom: 4,
+      maxZoom: 18,
+      dragRotate: false,
+      touchPitch: false,
+    });
     this.map.on('click', ({ lngLat }) => this.onMapClick([lngLat.lat, lngLat.lng]));
-    // Attempt live geolocation, overriding the default on success
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          this.map!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 700 });
+          this.map!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 10, duration: 700 });
         },
         () => {},
-        { enableHighAccuracy: true, timeout: 8000 },
+        { enableHighAccuracy: false, timeout: 5000 },
       );
     }
     this.map.on('mousemove', ({ lngLat }) => {

@@ -177,9 +177,7 @@
   } @else {
     <div class="vehicles-table-wrap" [class.refreshing]="refreshing()">
       @if (refreshing()) {
-        <div class="vehicle-refresh-progress" role="progressbar" aria-label="Refreshing vehicles">
-          <i></i>
-        </div>
+        <app-progress-bar label="Refreshing vehicles" />
       }
       <shared-data-table
         class="vehicles-table"
