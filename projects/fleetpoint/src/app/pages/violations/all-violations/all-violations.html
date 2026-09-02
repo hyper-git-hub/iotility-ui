@@ -13,7 +13,7 @@
 </section>
 <section class="violations-workspace" [class.refreshing]="loading()">
   @if (loading()) {
-    <app-progress-bar label="Loading violations" />
+    <app-progress-bar />
   }
   <article class="map-panel"><header><h2>Violation Map</h2><span>{{ filtered().length }} shown</span></header><div class="map-legend"><span><i class="speeding"></i>Speeding</span><span><i class="behaviour"></i>Behaviour</span><span><i class="safety"></i>Safety</span><span><i class="compliance"></i>Compliance</span><span><i class="geozone"></i>Geozone</span></div><app-violation-map [violations]="filtered()" [selectedId]="selected()?.id ?? null" (violationSelected)="selectViolation($event)" /></article>
   <div class="violations-list">
