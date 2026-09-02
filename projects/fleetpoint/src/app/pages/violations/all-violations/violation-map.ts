@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
-import { createIotMap, fitLatLngs, markerElement, popup } from '../../../shared/maps/maplibre';
+import { createIotMap, fitLatLngs, markerElement, popupHtml } from '../../../shared/maps/maplibre';
 import { ViolationDisplay } from '../all-violations/all-violations';
 
 @Component({
@@ -63,9 +63,20 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     const element = this.mapElement().nativeElement;
-    this.instance = createIotMap(element, [52.45, -1.6], 6);
+    // Default map center to Pakistan; will override if geolocation succeeds
+    this.instance = createIotMap(element, [30.3753, 69.3451], 6);
     this.resizeObserver = new ResizeObserver(() => this.instance?.resize());
     this.resizeObserver.observe(element);
+    // Attempt live geolocation, overriding the default on success
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.instance!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 10, duration: 700 });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    }
     this.instance.once('load', () => this.render(this.violations()));
   }
 
@@ -90,7 +101,7 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
       element.addEventListener('click', () => this.violationSelected.emit(record));
       const item = new maplibregl.Marker({ element })
         .setLngLat([longitude, latitude])
-        .setPopup(popup(`${record.type} · ${record.location}`))
+        .setPopup(popupHtml(this.violationPopupHtml(record)))
         .addTo(this.instance!);
       this.markers.set(record.id, item);
     });
@@ -102,6 +113,25 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
         8,
       );
     requestAnimationFrame(() => this.instance?.resize());
+  }
+
+  private violationPopupHtml(record: ViolationDisplay): string {
+    const speedLine = record.thresholdKph > 0
+      ? `<span class="vio-popup-row"><span class="vio-popup-icon vio-popup-icon--speed">⚡</span><span class="vio-popup-text"><strong>${record.speedKph} km/h</strong> <small>(limit: ${record.thresholdKph} km/h)</small></span></span>`
+      : '';
+    const fineLine = record.fine > 0
+      ? `<span class="vio-popup-row"><span class="vio-popup-icon vio-popup-icon--fine">🔥</span><span class="vio-popup-text vio-popup-text--fine">Fine: ${record.fineDisplay || '£' + record.fine}</span></span>`
+      : '';
+    return `
+      <div class="vio-popup">
+        <strong class="vio-popup-title">${record.type}</strong>
+        <span class="vio-popup-row"><span class="vio-popup-icon">🚗</span><span class="vio-popup-text">${record.vehicle} · ${record.driver}</span></span>
+        <span class="vio-popup-row"><span class="vio-popup-icon">🕐</span><span class="vio-popup-text">${record.timestamp}</span></span>
+        <span class="vio-popup-row"><span class="vio-popup-icon">📍</span><span class="vio-popup-text vio-popup-text--location">${record.location}</span></span>
+        ${speedLine}
+        ${fineLine}
+      </div>
+    `;
   }
 
   private categoryColor(category: string): string {

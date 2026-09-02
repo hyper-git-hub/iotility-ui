@@ -58,13 +58,6 @@
 :host ::ng-deep .trip-event-popup {
   display: grid;
   gap: 2px;
-  border-left: 3px solid var(--color-danger);
-}
-:host ::ng-deep .trip-event-popup.type-dashcam {
-  border-left-color: var(--color-warning);
-}
-:host ::ng-deep .trip-event-popup.type-stop {
-  border-left-color: var(--color-info);
 }
 :host ::ng-deep .trip-event-popup header {
   display: flex;

@@ -24,7 +24,19 @@ export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
     const planned: LatLng[] = [[51.54, -.08], [51.52, -.1], [51.49, -.2], [51.8, -1.2], [52.05, -1.4], [52.26, -1.5], [52.455, -1.73]];
     const actual: LatLng[] = [[51.54, -.08], [51.515, -.095], [51.485, -.195], [51.81, -1.18], [52.06, -1.38], [52.27, -1.49], [52.46, -1.72]];
     const deviated: LatLng[] = [[51.81, -1.18], [51.84, -1.12], [51.86, -1.15], [52.06, -1.38]];
-    this.map = createIotMap(this.element().nativeElement, [52, -.8], 7);
+    // Default map center to Pakistan; will override if geolocation succeeds
+    this.map = createIotMap(this.element().nativeElement, [30.3753, 69.3451], 7);
+    this.map.on('click', () => {});
+    // Attempt live geolocation, overriding the default on success
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.map!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 700 });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    }
     const render = () => {
       if (!this.map) return;
       upsertGeoJson(this.map, 'adherence-routes', {

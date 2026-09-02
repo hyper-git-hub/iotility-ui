@@ -7,10 +7,12 @@ import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../
 import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/services/vehicle-realtime.service';
 import { StatCard } from '../../../shared/stat-card/stat-card';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { VehicleForm, VehicleFormValue } from '../vehicle-form/vehicle-form';
+import { VehicleInventoryRecord } from '../../../shared/services/vehicle-inventory-api.service';
 
 interface DetailItem { label: string; value: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [FleetMap, Skeleton, StatCard, StatCardSkeleton], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
+@Component({ selector: 'app-vehicle-detail', imports: [FleetMap, Skeleton, StatCard, StatCardSkeleton, VehicleForm], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
@@ -20,6 +22,11 @@ export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly violations = signal<unknown>(null);
   protected readonly maintenance = signal<unknown>(null);
   protected readonly lastJob = signal<unknown>(null);
+  protected readonly formOpen = signal(false);
+  protected readonly editVehicle = computed<VehicleInventoryRecord | null>(() => {
+    const vehicle = this.record();
+    return vehicle ? this.editableVehicle(vehicle) : null;
+  });
   protected readonly registration = computed(() => this.text(this.record()?.registration || this.record()?.name, `Vehicle ${this.vehicleId}`));
   protected readonly hasCoordinates = computed(() => Number.isFinite(this.coordinate(this.record()?.latitude)) && Number.isFinite(this.coordinate(this.record()?.longitude)));
   protected readonly mapVehicle = computed<TrackedVehicle>(() => ({
@@ -113,6 +120,9 @@ export class VehicleDetail implements OnInit, OnDestroy {
   protected image(): string { const value = String(this.record()?.image || '').trim(); return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase()) ? value : 'assets/fleetpoint/def-car.svg'; }
   protected useDefaultImage(event: Event): void { (event.target as HTMLImageElement).src = 'assets/fleetpoint/def-car.svg'; }
   protected back(): void { void this.router.navigateByUrl('/fleetpoint/vehicles'); }
+  protected openEdit(): void { this.formOpen.set(true); }
+  protected closeForm(): void { this.formOpen.set(false); }
+  protected saveVehicle(_: VehicleFormValue): void { this.closeForm(); this.load(); }
   protected tripReplay(): void { void this.router.navigateByUrl('/fleetpoint/trip-replay'); }
   protected text(value: unknown, fallback = 'Not available'): string { if (value === null || value === undefined || value === '' || ['none', 'null'].includes(String(value).toLowerCase())) return fallback; return String(value); }
   private unit(value: unknown, suffix: string): string { return this.text(value) === 'Not available' ? 'Not available' : `${value} ${suffix}`; }
@@ -176,6 +186,50 @@ export class VehicleDetail implements OnInit, OnDestroy {
       confirmText: 'Close',
       showCancel: false,
     });
+  }
+
+  // Bridges the detail record (VehicleDetailRecord) to the shape the shared
+  // vehicle form expects for editing, defaulting fields the detail endpoint
+  // does not surface so the form opens pre-filled and editable.
+  private editableVehicle(v: VehicleDetailRecord): VehicleInventoryRecord {
+    const pick = <T>(key: string, fallback: T): T => {
+      const value = v[key] as T | null | undefined;
+      return value === null || value === undefined ? fallback : value;
+    };
+    return {
+      id: v.id,
+      device_id: pick<string | null>('device_id', null),
+      odo_reading: pick<number | string | null>('odo_reading', '0'),
+      fleet_name: pick<string | null>('fleet_name', null),
+      name: v.name,
+      registration: v.registration,
+      make: v.make,
+      model: v.model,
+      year: v.year,
+      status: v.status,
+      date_commissioned: pick<string | null>('date_commissioned', null),
+      image: v.image,
+      engine_number: pick<string>('engine_number', ''),
+      chassis_number: pick<string>('chassis_number', ''),
+      color: pick<string>('color', ''),
+      engine_capacity: pick<string | number>('engine_capacity', 0),
+      wheels: pick<string | number>('wheels', 4),
+      fuel_tank_capacity: pick<string | number>('fuel_tank_capacity', 0),
+      purchase_type: pick<string | number>('purchase_type', '2'),
+      engine_type: pick<string | number>('engine_type', ''),
+      type: pick<string | number>('type', ''),
+      device: pick<string | number>('device', ''),
+      camera_device_id: pick<string | number | null>('camera_device_id', null),
+      camera_device_type: pick<string | null>('camera_device_type', null),
+      fleet: pick<string | number | null>('fleet', null),
+      fleet_category: pick<string | number | null>('fleet_category', null),
+      speed_threshold: pick<string | number>('speed_threshold', 0),
+      harsh_acceleration: pick<boolean>('harsh_acceleration', false),
+      harsh_braking: pick<boolean>('harsh_braking', false),
+      sharp_turning: pick<boolean>('sharp_turning', false),
+      geo_zone: pick<boolean>('geo_zone', false),
+      fuel_sensor: pick<boolean>('fuel_sensor', false),
+    };
   }
 
   private fallbackRecord(): VehicleDetailRecord {

@@ -337,7 +337,8 @@ export class AllViolations implements OnInit, OnDestroy {
   }
 
   private utcDateTime(date: Date): string {
-    return date.toISOString().slice(0, 19).replace('T', ' ');
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
   private mapRecord(record: ApiViolation, index: number): ViolationDisplay {

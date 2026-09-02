@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { DetailReportRecord, RealtimeVehicleRecord } from './live-tracking-api.service';
+import { ViolationRecord } from './violations-api.service';
 import { environment } from '../../../environments/environment';
 
 const FLEET_API = `${environment.fleetBaseUrl}/api`;
@@ -70,6 +71,28 @@ export class TripReplayApiService {
           .set('limit', '10')
           .set('offset', '0')
           .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone),
+      },
+    );
+  }
+  getViolations(
+    range: PlaybackRange,
+    searchText: string,
+  ): Observable<ApiResponse<{ count: number; data: ViolationRecord[] }>> {
+    return this.http.get<ApiResponse<{ count: number; data: ViolationRecord[] }>>(
+      `${FLEET_API}/common/violation`,
+      {
+        params: new HttpParams()
+          .set('offset', '0')
+          .set('limit', '20')
+          .set('order_by', '')
+          .set('order', '')
+          .set('search_text', searchText)
+          .set('violation_type', '')
+          .set('driver_id', '')
+          .set('start_datetime', range.start)
+          .set('end_datetime', range.end)
+          .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone)
+          .set('group', '0'),
       },
     );
   }

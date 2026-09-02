@@ -20,7 +20,18 @@ export class PoiLocationPicker implements AfterViewInit, OnDestroy {
   private resizeObserver?: ResizeObserver;
 
   ngAfterViewInit(): void {
-    this.map = createIotMap(this.mapElement().nativeElement, [52.4862, -1.8904], 6);
+    // Default map center to Pakistan; will override if geolocation succeeds
+    this.map = createIotMap(this.mapElement().nativeElement, [30.3753, 69.3451], 6);
+    // Attempt live geolocation, overriding the default on success
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.map!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 700 });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    }
     this.map.on('click', ({ lngLat }) => this.selectLocation(lngLat.lat, lngLat.lng));
     this.resizeObserver = new ResizeObserver(() => this.map?.resize());
     this.resizeObserver.observe(this.mapElement().nativeElement);
