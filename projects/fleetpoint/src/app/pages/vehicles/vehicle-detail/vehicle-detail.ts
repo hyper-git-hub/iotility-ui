@@ -129,6 +129,18 @@ export class VehicleDetail implements OnInit, OnDestroy {
     const normalized = Math.min(Math.max(speed / maxSpeed, 0), 1);
     return -90 + (normalized * 180);
   }
+
+  protected getArcDash(): string {
+    return '251.2';
+  }
+
+  protected getArcOffset(): string {
+    const speed = Number(this.record()?.speed || 0);
+    const maxSpeed = 160;
+    const normalized = Math.min(Math.max(speed / maxSpeed, 0), 1);
+    const arcLength = 251.2;
+    return String(arcLength - (normalized * arcLength));
+  }
   protected tripReplay(): void { void this.router.navigateByUrl('/fleetpoint/trip-replay'); }
   protected text(value: unknown, fallback = 'Not available'): string { if (value === null || value === undefined || value === '' || ['none', 'null'].includes(String(value).toLowerCase())) return fallback; return String(value); }
   private unit(value: unknown, suffix: string): string { return this.text(value) === 'Not available' ? 'Not available' : `${value} ${suffix}`; }

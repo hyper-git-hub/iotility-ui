@@ -101,23 +101,7 @@
   --vio-popup-surface: var(--color-dark-surface);
   color: #fff;
 }
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-  border-top-color: var(--color-dark-surface);
-}
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-  border-bottom-color: var(--color-dark-surface);
-}
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: var(--color-dark-surface);
-}
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: var(--color-dark-surface);
-}
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-close-button {
+:host ::ng-deep app-violation-map .maplibregl-popup-close-button {
   color: var(--color-brand-300);
 }
 :host ::ng-deep .vio-popup {
