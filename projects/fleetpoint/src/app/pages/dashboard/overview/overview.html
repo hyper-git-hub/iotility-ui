@@ -62,7 +62,7 @@
   } @else {
   <header class="fleet-status-heading">
     <h2>Live Fleet Status</h2>
-    <span><i></i> Live · {{ vehicles().length }} vehicles</span>
+    <shared-status-badge [variant]="'live-pill'" [online]="onlineVehicles() > 0" [onlineLabel]="'Live · ' + vehicles().length + ' vehicles'" [offlineLabel]="'Offline · ' + vehicles().length + ' vehicles'" />
   </header>
   <div class="fleet-status-bar" role="img" [attr.aria-label]="vehicles().length + ' vehicles by live status'">
     @for (item of fleetStatusItems(); track item.key) {

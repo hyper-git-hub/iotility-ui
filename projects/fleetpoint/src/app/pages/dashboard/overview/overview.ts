@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { Skeleton, StatCardSkeleton, TableColumn, TableRow } from '@iotility/shared-ui';
+import { Skeleton, StatCardSkeleton, StatusBadge, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCard, StatCardTone } from '../../../shared/stat-card/stat-card';
@@ -29,7 +29,7 @@ const EXPECTED_DASHBOARD_GRAPHS: DashboardGraph[] = [
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [Skeleton, StatCardSkeleton, DashboardGraphComponent, StatCard],
+  imports: [Skeleton, StatCardSkeleton, StatusBadge, DashboardGraphComponent, StatCard],
   templateUrl: './overview.html',
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })

@@ -1,0 +1,163 @@
+﻿@reference "../../../../../styles.css";
+
+:host { display: block; }
+
+.hud-number {
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  letter-spacing: -0.04em;
+}
+
+/* ── Ultra-wide cockpit shell ───────────────────────────────── */
+.vehicle-hud {
+  @apply relative flex h-full w-full flex-col overflow-hidden min-h-[520px] rounded-3xl border border-line bg-white lg:flex-row dark:border-dark-line dark:bg-[#04060b];
+  isolation: isolate;
+  box-shadow: 0 12px 32px rgb(30 20 60 / 0.08);
+}
+:host-context(.dark) .vehicle-hud { box-shadow: 0 20px 70px rgb(0 0 0 / 0.8); }
+
+/* ── Ambient glow overlays ──────────────────────────────────── */
+.vehicle-hud__ambient { @apply pointer-events-none absolute inset-0 z-0 overflow-hidden; }
+.vehicle-hud__ambient span { @apply absolute rounded-full blur-[110px]; }
+:host-context(:not(.dark)) .vehicle-hud__ambient span { opacity: 0.4; }
+.vehicle-hud__ambient--blue { @apply -bottom-24 -left-10 h-[350px] w-[500px]; background: rgb(30 58 138 / 0.2); }
+.vehicle-hud__ambient--purple { @apply -top-32 left-[32%] h-[350px] w-[450px]; background: rgb(88 28 135 / 0.3); }
+.vehicle-hud__ambient--magenta { @apply right-12 top-1/2 h-[500px] w-[600px] -translate-y-1/2; background: rgb(88 28 135 / 0.25); }
+.vehicle-hud__ambient--pink { @apply right-28 top-16 h-[320px] w-[320px]; background: rgb(112 26 117 / 0.2); }
+
+/* ── Left map / route panel ─────────────────────────────────── */
+.hud-map-panel {
+  @apply relative z-10 flex w-full flex-col justify-between overflow-hidden p-7 lg:w-[58%] lg:p-9;
+}
+
+.hud-map-overlay { @apply relative z-20 max-w-2xl select-none; }
+.hud-map-badge { @apply mb-3.5; }
+.hud-map-badge .status-badge { @apply text-[11px] font-bold uppercase tracking-widest backdrop-blur-sm; }
+.hud-map-place { @apply text-base font-semibold leading-snug tracking-tight text-ink drop-shadow-sm lg:text-[1.08rem] dark:text-neutral-100; }
+.hud-map-sub { @apply mt-1.5 text-xs font-medium tracking-wide text-muted dark:text-neutral-400; }
+
+.hud-map-canvas {
+  @apply absolute inset-0 z-0 pointer-events-none;
+  /* Map spans the whole HUD section. Left ~38% (map panel) stays fully
+     visible; the blur/dissolve ramps in leftward from there so the whole
+     speedometer side reads as sitting on top of the map. */
+  -webkit-mask-image: linear-gradient(to right, #000 38%, rgb(0 0 0 / 0.5) 66%, transparent 96%);
+  mask-image: linear-gradient(to right, #000 38%, rgb(0 0 0 / 0.5) 66%, transparent 96%);
+}
+/* Live MapLibre canvas fills the band; slightly dimmed so it never competes
+   with the gauge. MapLibre builds its DOM imperatively (no _ngcontent attr),
+   so every rule touching it must pierce view encapsulation. */
+.hud-maplibre { @apply absolute inset-0; }
+:host ::ng-deep .hud-maplibre .maplibregl-canvas { filter: brightness(0.8) saturate(0.85); }
+/* Keep the marker above the scrim so it stays crisp even where the map beneath
+   it is dimmed — the scrim is a ::after INSIDE the map container, and the
+   marker's z-index paints above it. */
+:host ::ng-deep .hud-maplibre .maplibregl-marker { z-index: 2; }
+/* Live marker blink: a soft brand halo under the arrow that pulses only while
+   the vehicle reports online (the coordinates effect toggles .hud-live). */
+:host ::ng-deep .hud-nav-marker { position: relative; }
+:host ::ng-deep .hud-nav-marker .hud-nav-marker-pulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 9999px;
+  background: rgb(82 93 247 / 0.4);
+  box-shadow: 0 0 18px rgb(82 93 247 / 0.5);
+  opacity: 0;
+  transform: scale(0.35);
+  pointer-events: none;
+}
+:host ::ng-deep .hud-nav-marker.hud-live .hud-nav-marker-pulse { animation: hud-marker-pulse 1.6s ease-out infinite; }
+@keyframes hud-marker-pulse {
+  0% { opacity: 0.6; transform: scale(0.35); }
+  70% { opacity: 0; transform: scale(1.7); }
+  100% { opacity: 0; transform: scale(1.7); }
+}
+/* MapLibre marker: the SVG-map nav arrow with its in-SVG glow filter, matching
+   the reference marker exactly. */
+:host ::ng-deep .hud-nav-marker svg {
+  @apply block overflow-visible;
+  width: 44px;
+  height: 45px;
+  fill: #525df7;
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.45));
+}
+/* Dark scrim + progressive blur over the map band — clear on the far left,
+   ramping in from ~35% so the entire speedometer side is darker AND blurrier.
+   Applied inside the map container (::after) so the nav marker stays above it.
+   Light theme dissolves into the white card instead of the dark cockpit. */
+.hud-maplibre::after {
+  content: '';
+  @apply absolute inset-0;
+  background:
+    linear-gradient(to right, transparent 30%, rgb(255 255 255 / 0.55) 55%, rgb(255 255 255 / 0.95) 82%),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.4), transparent 35%, rgb(255 255 255 / 0.35));
+  /* Blur ramps in over the same band; masked so the left edge is untouched. */
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  -webkit-mask-image: linear-gradient(to right, transparent 35%, rgb(0 0 0 / 0.6) 58%, #000 82%);
+  mask-image: linear-gradient(to right, transparent 35%, rgb(0 0 0 / 0.6) 58%, #000 82%);
+}
+:host-context(.dark) .hud-maplibre::after {
+  background:
+    linear-gradient(to right, transparent 30%, rgb(4 6 11 / 0.5) 55%, rgb(4 6 11 / 0.92) 82%),
+    linear-gradient(to bottom, rgb(4 6 11 / 0.45), transparent 35%, rgb(4 6 11 / 0.35));
+}
+
+.hud-map-distance { @apply relative z-20 mt-auto flex items-baseline gap-2 select-none; }
+.hud-map-distance strong { @apply text-5xl font-extrabold leading-none tracking-tight text-ink lg:text-6xl dark:text-white; }
+.hud-map-distance span { @apply text-sm font-semibold text-muted dark:text-neutral-400; }
+
+/* ── Vertical separator ─────────────────────────────────────── */
+.hud-divider {
+  @apply h-px w-full bg-gradient-to-r from-transparent via-line to-transparent lg:h-full lg:w-px lg:bg-gradient-to-b dark:via-white/10;
+}
+
+/* ── Right telemetry / speedometer panel ────────────────────── */
+.hud-gauge-panel {
+  @apply relative z-10 flex w-full flex-col items-center justify-between gap-4 py-4 lg:w-[42%];
+}
+
+.hud-speedo { @apply flex w-full max-w-[360px] flex-col items-center pt-1; }
+.hud-speedo__dial { @apply flex w-[280px] items-center justify-center; }
+.hud-gauge { @apply h-full w-full overflow-visible; }
+.hud-gauge text.hud-number { fill: var(--color-slate-500); }
+:host-context(.dark) .hud-gauge text.hud-number { fill: var(--color-slate-300); }
+
+/* Dial chrome (arc, mesh, base bar): slate hairlines in light theme,
+   white hairlines in dark — mirrors the reference gauges. */
+.hud-gauge__arc { stroke: rgb(15 23 42 / 0.18); }
+:host-context(.dark) .hud-gauge__arc { stroke: rgb(255 255 255 / 0.12); }
+.hud-gauge__mesh line { stroke: rgb(15 23 42 / 0.06); }
+:host-context(.dark) .hud-gauge__mesh line { stroke: rgb(255 255 255 / 0.05); }
+.hud-gauge__base { stroke: rgb(15 23 42 / 0.18); }
+:host-context(.dark) .hud-gauge__base { stroke: rgb(255 255 255 / 0.12); }
+
+.hud-reading { @apply -mt-2.5 flex items-center justify-center gap-3;}
+.hud-reading__value { @apply text-3xl font-extrabold tracking-tight text-ink dark:text-white; }
+.hud-reading__unit { @apply text-sm font-bold tracking-tight text-muted dark:text-neutral-300; }
+
+/* ── Telemetry stat cards (3 columns) ───────────────────────── */
+.hud-stats {
+  @apply grid w-full max-w-[440px] grid-cols-3 gap-2.5;
+}
+.hud-stats > div {
+  @apply min-h-[58px] flex flex-col items-center justify-center rounded-xl border border-line bg-white p-2.5 text-center dark:border-white/10 dark:bg-white/5 dark:backdrop-blur-sm;
+}
+.hud-stats > div:hover { border-color: var(--color-brand-300); }
+:host-context(.dark) .hud-stats > div:hover { border-color: rgb(255 255 255 / 0.18); }
+.hud-stats span { @apply text-[10px] font-medium tracking-wide text-muted dark:text-neutral-400; }
+.hud-stats strong { @apply mt-0.5 text-sm font-bold tracking-tight text-ink dark:text-white; }
+.hud-stats__truncate { @apply w-full truncate; }
+.hud-stats__driver { @apply col-span-2; }
+
+/* ── Loading skeleton: same shell, data slots shimmer ───────── */
+.hud-gauge--skeleton .hud-gauge__skeleton-ticks line { stroke: color-mix(in srgb, currentColor 25%, transparent); }
+.hud-stats__slot { @apply flex h-[1.25rem] items-center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vehicle-hud__ambient span { animation: none; }
+  :host ::ng-deep .hud-nav-marker .hud-nav-marker-pulse { animation: none; opacity: 0.3; transform: scale(1); }
+}

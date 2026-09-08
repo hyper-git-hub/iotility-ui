@@ -3,6 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
 import { LiveTrackingApiService } from './live-tracking-api.service';
 
+const hasSessionToken = () =>
+  Boolean(localStorage.getItem('userMS-token') || localStorage.getItem('token'));
+
 @Injectable({ providedIn: 'root' })
 export class FleetStatusService {
   readonly onlineCount = signal(0);
@@ -26,6 +29,12 @@ export class FleetStatusService {
   }
 
   private refresh(): void {
+    // Stop calling the backend once the session is gone (e.g. the same account
+    // was signed in elsewhere and the 401 interceptor cleared the token).
+    if (!hasSessionToken()) {
+      this.update(0, 0);
+      return;
+    }
     this.api.getVehicles().subscribe({
       next: (response) => {
         const vehicles = response.data?.data ?? [];

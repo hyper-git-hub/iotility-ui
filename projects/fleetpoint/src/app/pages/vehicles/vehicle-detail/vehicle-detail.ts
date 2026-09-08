@@ -8,11 +8,12 @@ import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/s
 import { StatCard } from '../../../shared/stat-card/stat-card';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { VehicleForm, VehicleFormValue } from '../vehicle-form/vehicle-form';
+import { VehicleHud } from './vehicle-hud/vehicle-hud';
 import { VehicleInventoryRecord } from '../../../shared/services/vehicle-inventory-api.service';
 
 interface DetailItem { label: string; value: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [FleetMap, Skeleton, StatCard, StatCardSkeleton, StatusBadge, VehicleForm], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
+@Component({ selector: 'app-vehicle-detail', imports: [FleetMap, Skeleton, StatCard, StatCardSkeleton, StatusBadge, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
@@ -45,13 +46,6 @@ export class VehicleDetail implements OnInit, OnDestroy {
       ['Odometer Reading', this.unit(v['odo_reading'], 'km')], ['Owner', v['owner']], ['Date Commissioned', v['date_commissioned']],
       ['Registration Expiry', v['expiry_date']], ['Customer', v['customer_name']],
     ].map(([label, value]) => ({ label: String(label), value: this.text(value) }));
-  });
-  protected readonly heavyEquipment = computed<DetailItem[]>(() => {
-    const h = this.record()?.heavy_equipment || {};
-    return [['Engine RPM', h['engine_rpm']], ['Engine Load', this.unit(h['engine_load'], '%')], ['Coolant Temperature', this.unit(h['coolant_temp'], '°C')],
-      ['Intake Air Temperature', this.unit(h['intake_air_temp'], '°C')], ['Throttle Position', this.unit(h['throttle_position'], '%')],
-      ['Fuel Level', this.unit(h['fuel_level'], '%')], ['Operating State', this.getHeavyEquipmentState()], ['Eye Movement', this.flag(h['eye_movement']) ? 'Detected' : 'Not detected']]
-      .map(([label, value]) => ({ label: String(label), value: this.text(value) }));
   });
 
   private readonly subscription = new Subscription();
@@ -95,24 +89,32 @@ export class VehicleDetail implements OnInit, OnDestroy {
   }
   protected metricTone(index: number): 'brand' | 'info' | 'success' | 'warning' | 'danger' { return ['danger', 'warning', 'info', 'success', 'brand', 'danger'][index % 6] as never; }
   protected metricValue(metric: VehicleMetric): string { return this.text(metric.data, '0'); }
+
+  // Icon paths + corner tag per fact for the telemetry-style spec tiles.
+  private static readonly SPEC_META: Record<string, { icon: string[]; tag: string; color: string; tagStyle?: string }> = {
+    'Vehicle Name / ID': { icon: ['M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'], tag: 'Primary', color: '#a78bfa', tagStyle: 'background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-color: rgba(139, 92, 246, 0.5);' },
+    'Record Status': { icon: ['M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'], tag: 'Operational', color: '#34d399', tagStyle: 'background: rgba(16, 185, 129, 0.1); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3);' },
+    'Fleet': { icon: ['M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'], tag: 'Metro Hub', color: '#818cf8', tagStyle: '' },
+    'Make': { icon: ['M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z'], tag: 'OEM', color: '#22d3ee', tagStyle: '' },
+    'Model': { icon: ['M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4'], tag: 'Sedan', color: '#60a5fa', tagStyle: '' },
+    'Year': { icon: ['M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'], tag: 'Next Gen', color: '#34d399', tagStyle: 'color: #34d399;' },
+    'Colour': { icon: ['M7 21a4 4 0 01-4-4 5 5 0 014-4h4a5 5 0 014 4 4 4 0 01-4 4H7zm0 0v-4'], tag: '#F472B6', color: '#f472b6', tagStyle: 'background: rgba(244, 114, 182, 0.1); color: #f9a8d4; border-color: rgba(244, 114, 182, 0.3);' },
+    'Engine Number': { icon: ['M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', 'M15 12a3 3 0 11-6 0 3 3 0 016 0z'], tag: 'BLOCK', color: '#fb7185', tagStyle: '' },
+    'Chassis Number': { icon: ['M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'], tag: 'MATCHED', color: '#c084fc', tagStyle: 'background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);' },
+    'Engine Capacity': { icon: ['M13 10V3L4 14h7v7l9-11h-7z'], tag: 'DISP', color: '#22d3ee', tagStyle: 'color: #22d3ee;' },
+    'Fuel Tank Capacity': { icon: ['M19 14l-7 7m0 0l-7-7m7 7V3'], tag: 'MAX', color: '#34d399', tagStyle: '' },
+    'Odometer Reading': { icon: ['M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'], tag: 'Fresh', color: '#2dd4bf', tagStyle: 'background: rgba(6, 182, 212, 0.1); color: #22d3ee; border-color: rgba(6, 182, 212, 0.3);' },
+    'Owner': { icon: ['M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'], tag: 'OWN', color: '#a78bfa', tagStyle: '' },
+    'Date Commissioned': { icon: ['M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'], tag: 'COMM', color: '#fbbf24', tagStyle: '' },
+    'Registration Expiry': { icon: ['M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'], tag: 'EXPIRY', color: '#fb7185', tagStyle: '' },
+    'Customer': { icon: ['M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'], tag: 'CUST', color: '#818cf8', tagStyle: '' },
+  };
+  protected specMeta(label: string): { icon: string[]; tag: string; color: string; tagStyle?: string } {
+    return VehicleDetail.SPEC_META[label] ?? { icon: ['M4 6h16M4 12h16M4 18h16'], tag: 'SPEC', color: '#94a3b8', tagStyle: '' };
+  }
   protected violationMetric(): string { return this.metricValue(this.metrics().find((metric) => metric.code === 'VA') || { code: 'VA', name: '', data: 0 }); }
   protected isMoving(): boolean { return Number(this.record()?.speed || 0) > 0; }
   protected hasAssignedRoute(): boolean { const routes = this.record()?.['attached_routes_list']; return Array.isArray(routes) && routes.length > 0; }
-  protected getHeavyEquipmentState(): string {
-    const vehicle = this.record();
-    const equipment = vehicle?.heavy_equipment;
-    if (!equipment) return '-';
-
-    const idleStatus = this.flag(equipment['idle_status']);
-    const notIdleStatus = this.falseFlag(equipment['idle_status']);
-    const eyeMovement = this.flag(equipment['eye_movement']);
-    const speed = Number(vehicle?.speed ?? 0);
-
-    if (idleStatus && eyeMovement) return 'Productive';
-    if (idleStatus && !eyeMovement) return 'Idle';
-    if (notIdleStatus && speed > 8) return 'Traveling';
-    return '-';
-  }
   protected deviceDetails(): DetailItem[] { const v = this.record(); return [['Device ID', v?.['device_id']], ['SIM Number', v?.['sim_no']], ['Vehicle Type', v?.['vehicle_type']], ['RFID Tag', v?.['rfid_tag']], ['Immobilizer', v?.['is_immobilization_enabled'] ? 'Enabled' : 'Disabled'], ['Ignition', v?.['ignition_status'] ? 'On' : 'Off']].map(([label, value]) => ({ label: String(label), value: this.text(value) })); }
   protected monitoring(): { label: string; enabled: boolean }[] { const v = this.record(); return [['Harsh acceleration', v?.['harsh_acceleration']], ['Harsh braking', v?.['harsh_braking']], ['Geo zone', v?.['geo_zone']], ['Sharp turning', v?.['sharp_turning']], ['Seat belt monitoring', v?.['seat_belt']], ['Immobilization', v?.['is_immobilization_enabled']]].map(([label, enabled]) => ({ label: String(label), enabled: Boolean(enabled) })); }
   protected count(value: unknown): number { const data = value as { count?: number; data?: unknown[] } | null; return Number(data?.count ?? data?.data?.length ?? (Array.isArray(value) ? value.length : 0)); }
@@ -131,14 +133,14 @@ export class VehicleDetail implements OnInit, OnDestroy {
   }
 
   protected getArcDash(): string {
-    return '251.2';
+    return '502.65';
   }
 
   protected getArcOffset(): string {
     const speed = Number(this.record()?.speed || 0);
     const maxSpeed = 160;
     const normalized = Math.min(Math.max(speed / maxSpeed, 0), 1);
-    const arcLength = 251.2;
+    const arcLength = 502.65;
     return String(arcLength - (normalized * arcLength));
   }
   protected tripReplay(): void { void this.router.navigateByUrl('/fleetpoint/trip-replay'); }
@@ -146,7 +148,6 @@ export class VehicleDetail implements OnInit, OnDestroy {
   private unit(value: unknown, suffix: string): string { return this.text(value) === 'Not available' ? 'Not available' : `${value} ${suffix}`; }
   private coordinate(value: unknown): number { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : Number.NaN; }
   private flag(value: unknown): boolean { return value === true || value === 1 || value === '1'; }
-  private falseFlag(value: unknown): boolean { return value === false || value === 0 || value === '0'; }
 
   private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {
     const vehicle = this.record();
@@ -165,12 +166,14 @@ export class VehicleDetail implements OnInit, OnDestroy {
     const seatBelt = update.sbStatus === undefined
       ? vehicle['seat_belt']
       : Number(update.sbStatus) === 0;
+    const rawHeading = update['course'] ?? update['heading'] ?? update['cog'] ?? update['dir'];
 
     this.record.set({
       ...vehicle,
       latitude,
       longitude,
       speed,
+      heading: rawHeading === undefined ? vehicle['heading'] : Number(rawHeading),
       ignition_status: ignition === undefined ? vehicle.ignition_status : this.flag(ignition),
       online_status: true,
       updated_time: timestamp,

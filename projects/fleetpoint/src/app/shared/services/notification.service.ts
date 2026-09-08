@@ -53,6 +53,9 @@ export class NotificationService {
   }
 
   load(markViewed = false): void {
+    // Stop hitting the API once the session is gone (e.g. the same account was
+    // signed in elsewhere and the 401 interceptor cleared the token).
+    if (!this.hasSession()) return;
     this.loading.set(true);
     this.error.set(false);
     const url = `${environment.notificationsUrl}?limit=100&offset=0`;
@@ -73,6 +76,7 @@ export class NotificationService {
   }
 
   private markAllViewed(): void {
+    if (!this.hasSession()) return;
     this.http.patch(environment.notificationsUrl, {}).subscribe({
       next: () => {
         this.unreadCount.set(0);
@@ -107,5 +111,9 @@ export class NotificationService {
     } catch {
       return '';
     }
+  }
+
+  private hasSession(): boolean {
+    return Boolean(localStorage.getItem('userMS-token') || localStorage.getItem('token'));
   }
 }
