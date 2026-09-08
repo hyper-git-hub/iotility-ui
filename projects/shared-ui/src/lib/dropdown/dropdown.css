@@ -60,6 +60,10 @@
 }
 .option-icon {
   @apply grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700;
+  :host-context(.dark) & {
+    background: color-mix(in srgb, var(--color-brand-500) 12%, transparent);
+    color: var(--color-brand-300);
+  }
 }
 .option-icon img {
   @apply size-4;
