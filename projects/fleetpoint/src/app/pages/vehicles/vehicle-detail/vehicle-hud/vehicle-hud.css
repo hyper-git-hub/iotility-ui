@@ -9,7 +9,7 @@
 
 /* ── Ultra-wide cockpit shell ───────────────────────────────── */
 .vehicle-hud {
-  @apply relative flex h-full w-full flex-col overflow-hidden min-h-[520px] rounded-3xl border border-line bg-white lg:flex-row dark:border-dark-line dark:bg-[#04060b];
+  @apply relative flex h-full w-full flex-col overflow-hidden min-h-[540px] rounded-3xl border border-line bg-white lg:flex-row dark:border-dark-line dark:bg-[#04060b];
   isolation: isolate;
   box-shadow: 0 12px 32px rgb(30 20 60 / 0.08);
 }

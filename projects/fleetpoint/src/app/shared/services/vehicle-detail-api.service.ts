@@ -44,10 +44,10 @@ export class VehicleDetailApiService {
     const end = new Date(); const start = new Date(end); start.setDate(start.getDate() - 14);
     const format = (date: Date) => date.toISOString().slice(0, 19).replace('T', ' ');
     const params = new HttpParams().set('limit', 10).set('offset', 0).set('vehicle_id', id).set('start_date', format(start)).set('end_date', format(end));
-    return this.http.get<ApiResponse<unknown>>(`${this.gateway}/fmsmaintenance/api/maintenance`, { params });
+    return this.http.get<ApiResponse<unknown>>(`${environment.maintenanceBaseUrl}/api/maintenance`, { params });
   }
 
   getLastJob(id: string): Observable<ApiResponse<unknown>> {
-    return this.http.get<ApiResponse<unknown>>(`${this.gateway}/fmsdrivers/jobs/last-job-summary`, { params: { vehicle_id: id } });
+    return this.http.get<ApiResponse<unknown>>(`${environment.driverBaseUrl}/jobs/last-job-summary`, { params: { vehicle_id: id } });
   }
 }

@@ -3,6 +3,7 @@ export const environment = {
   apiBaseUrl: 'https://devgateway.hypernymbiz.com',
   fleetBaseUrl: 'https://devgateway.hypernymbiz.com/fms-fleet',
   driverBaseUrl: 'https://devgateway.hypernymbiz.com/fms-driver',
+  maintenanceBaseUrl: 'https://devgateway.hypernymbiz.com/fms-maintenance',
   reportsBaseUrl: 'https://devgateway.hypernymbiz.com/fms-reports',
   userMsBaseUrl: 'https://devgateway.hypernymbiz.com/user-ms',
   cobPackagesBaseUrl: 'https://devgateway.hypernymbiz.com/cob-packages',
@@ -14,6 +15,7 @@ export const environment = {
   useCaseId: 6,
   signalRUrl: 'https://func-stag-all.azurewebsites.net',
   notificationsUrl: 'https://devgateway.hypernymbiz.com/fms-fleet/api/notification',
+  overpassApiUrl: 'https://overpass-api.de/api/interpreter',
   firebase: {
     apiKey: 'AIzaSyDybdUp0Ue3yuPS5XQfGMxXeBq0CzQ-cME',
     authDomain: 'fmsnewpackage.firebaseapp.com',

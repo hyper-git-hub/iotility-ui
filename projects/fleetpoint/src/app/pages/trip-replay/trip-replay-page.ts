@@ -134,6 +134,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     );
   });
   protected readonly selectedTrip = computed(() => this.trip());
+  protected readonly stopEvents = computed(() => this.trip().events.filter((e) => e.type === 'stop'));
   protected readonly currentPosition = computed(
     () =>
       this.trip().positions[this.positionIndex()] ?? {
@@ -763,8 +764,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
   }
   // Maps violation rows (from /common/violation) into trail events so they
   // appear as markers on the route and in the Events list, alongside stops.
-  // Near-identical duplicates (same position, same type, seconds apart) are
-  // collapsed so the trail stays readable instead of piling up dots.
+  // Uses geographic matching (lat/lng → nearest trail sample) so violations
+  // with identical timestamps still land on distinct spots along the route.
   private violationEvents(
     violations: ViolationRecord[],
     positions: TripPosition[],
@@ -776,12 +777,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
         const lat = Number(record.latitude);
         const lng = Number(record.longitude);
         const label = record.name || record.violation_type || 'Violation';
-        const positionIndex = record.event_generation_time
-          ? this.nearestTimePosition(positions, record.event_generation_time)
-          : this.nearestPosition(positions, lat, lng);
-        const bucket = `${label}|${positionIndex}|${Math.floor(
-          new Date(record.event_generation_time ?? '').getTime() / 15_000,
-        )}`;
+        const positionIndex = this.nearestPosition(positions, lat, lng);
+        const bucket = `${label}|${positionIndex}`;
         if (seen.has(bucket)) return [];
         seen.add(bucket);
         const speed = Number(record.speed);

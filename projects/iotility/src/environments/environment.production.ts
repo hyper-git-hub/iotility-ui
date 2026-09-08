@@ -6,6 +6,7 @@ export const environment = {
   cobConsumerAppSecret: 'G;6{l?5]V@p5@2~<f%PFJ+W4k@-H?s',
   fleetBaseUrl: 'https://devgateway.hypernymbiz.com/fms-fleet',
   signalRUrl: 'https://func-vfq-dev.azurewebsites.net',
+  overpassApiUrl: 'https://overpass-api.de/api/interpreter',
   useCaseId: 6,
   firebase: {
     apiKey: 'AIzaSyDybdUp0Ue3yuPS5XQfGMxXeBq0CzQ-cME',

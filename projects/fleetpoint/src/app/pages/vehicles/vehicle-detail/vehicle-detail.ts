@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Skeleton, StatCardSkeleton, StatusBadge } from '@iotility/shared-ui';
 import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
@@ -49,6 +49,16 @@ export class VehicleDetail implements OnInit, OnDestroy {
   });
 
   private readonly subscription = new Subscription();
+  /* Realtime self-healing: SignalR callbacks run outside the Angular zone and
+     can go quiet on backend hiccups, so the HUD would otherwise stay frozen
+     until a manual reload. Track the last applied update and, if none arrives
+     within the poll window, refresh the telemetry straight from the API so
+     speed/needle/stat tiles stay live without a page reload. */
+  private lastRealtimeAt = 0;
+  private pollRefreshing = false;
+  private pollTimer?: ReturnType<typeof setInterval>;
+  private static readonly POLL_INTERVAL_MS = 20_000;
+  private static readonly REALTIME_STALE_MS = 15_000;
 
   constructor(
     route: ActivatedRoute,
@@ -56,6 +66,7 @@ export class VehicleDetail implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly realtime: VehicleRealtimeService,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly zone: NgZone,
   ) {
     this.vehicleId = route.snapshot.paramMap.get('registration') || route.snapshot.paramMap.get('id') || '';
     this.record.set(this.fallbackRecord());
@@ -67,9 +78,41 @@ export class VehicleDetail implements OnInit, OnDestroy {
   }
   ngOnInit(): void {
     this.subscription.add(
-      this.realtime.updates$.subscribe((update) => this.applyRealtimeUpdate(update)),
+      this.realtime.updates$.subscribe((update) =>
+        this.zone.run(() => {
+          this.lastRealtimeAt = Date.now();
+          this.applyRealtimeUpdate(update);
+        }),
+      ),
     );
     this.load();
+    this.pollTimer = setInterval(() => {
+      if (this.pollRefreshing || this.loading()) return;
+      if (Date.now() - this.lastRealtimeAt < VehicleDetail.REALTIME_STALE_MS) return;
+      this.lastRealtimeAt = Date.now();
+      this.refreshTelemetry();
+    }, VehicleDetail.POLL_INTERVAL_MS);
+  }
+  /* Silent-fallback refresh: re-fetches just the live telemetry (vehicle +
+     metrics) from the API while realtime is quiet, so the HUD keeps updating
+     responsively even when the push channel is down. Never shows loaders. */
+  private refreshTelemetry(): void {
+    if (this.pollRefreshing) return;
+    this.pollRefreshing = true;
+    forkJoin({
+      vehicle: this.api.getVehicle(this.vehicleId),
+      metrics: this.api.getMetrics(this.vehicleId),
+    })
+      .pipe(finalize(() => (this.pollRefreshing = false)))
+      .subscribe({
+        next: (result) => {
+          const vehicle = result.vehicle.data?.data?.[0];
+          if (!vehicle) return;
+          this.record.set(vehicle);
+          this.metrics.set(result.metrics.data ?? []);
+        },
+        error: () => (this.pollRefreshing = false),
+      });
   }
   protected load(): void {
     this.loading.set(true); this.error.set('');
@@ -285,6 +328,7 @@ export class VehicleDetail implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.pollTimer) clearInterval(this.pollTimer);
     this.subscription.unsubscribe();
     void this.realtime.disconnect();
   }

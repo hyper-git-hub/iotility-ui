@@ -13,6 +13,7 @@ import {
 import maplibregl from 'maplibre-gl';
 import { createIotMap } from '../../../../shared/maps/maplibre';
 import { Skeleton, StatusBadge } from '@iotility/shared-ui';
+import { environment } from '../../../../../environments/environment';
 import { VehicleDetailRecord, VehicleMetric } from '../../../../shared/services/vehicle-detail-api.service';
 
 /**
@@ -117,10 +118,10 @@ const HUD_BEARING = -18;
 const HUD_MARKER_X = 0.18;
 /* Fallback camera until live coordinates arrive (marker hidden meanwhile). */
 const HUD_FALLBACK = { lat: 25.2854, lng: 51.531 } as const;
-/* The nav-arrow SVG points ~22.8° east of north at rotation 0 (tip ≈ (68, 11),
-   base midpoint ≈ (44, 67) in the 89×92 viewBox), so marker rotation =
-   road bearing − this offset lays the arrow exactly along the street. */
-const ARROW_BEARING_OFFSET = 22.8;
+/* The nav-arrow SVG's tip sits at ≈(68, 11) of the 89×92 viewBox (center ≈(44,44)),
+   so at rotation 0 the arrow points ~56° below the +x axis. To make rotation 0 mean
+   "point straight up" (along the road bearing), the offset must be that angle. */
+const ARROW_BEARING_OFFSET = -56;
 
 /* Bearing of the road segment nearest to the vehicle (OSM), so the marker can
    sit exactly along the street instead of a noisy GPS heading. */
@@ -137,7 +138,7 @@ function bearingBetween(a: { lat: number; lon: number }, b: { lat: number; lon: 
 
 async function fetchRoadBearing(lat: number, lng: number): Promise<RoadBearingResult> {
   const query = `[out:json][timeout:10];way(around:60,${lat},${lng})["highway"];out geometry;`;
-  const res = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
+  const res = await fetch(environment.overpassApiUrl + '?data=' + encodeURIComponent(query));
   if (!res.ok) throw new Error(`Overpass ${res.status}`);
   const json = (await res.json()) as {
     elements?: Array<{ geometry?: Array<{ lat: number; lon: number }> }>;
@@ -352,7 +353,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     const heading = Number(this.vehicle()?.['heading']);
     const fallback = Number.isFinite(heading) ? heading : 0;
     const bearing = this.roadBearing ?? fallback;
-    this.marker.setRotation((bearing - ARROW_BEARING_OFFSET + 360) % 360);
+    this.marker.setRotation((bearing + 360) % 360);
   }
 
   private loadRoadBearing(coords: { lat: number; lng: number }): void {

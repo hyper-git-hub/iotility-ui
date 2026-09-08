@@ -461,8 +461,7 @@
             <p class="detail-empty">No events found.</p>
           }
         } @else if (activeTab() === 'stops') {
-          @for (event of selectedTrip().events; track event.id) {
-            @if (event.type === 'stop') {
+          @for (event of stopEvents(); track event.id) {
               <button
                 type="button"
                 class="event-row"
@@ -478,7 +477,6 @@
                   ></span
                 ><b>›</b>
               </button>
-            }
           } @empty {
             <p class="detail-empty">No stops found.</p>
           }
