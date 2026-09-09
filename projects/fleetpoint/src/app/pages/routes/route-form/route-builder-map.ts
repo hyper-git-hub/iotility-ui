@@ -3,6 +3,7 @@ import maplibregl, { Map } from 'maplibre-gl';
 import {
   LatLng,
   createIotMap,
+  timezoneCenter,
   fitLatLngs,
   lineFeature,
   markerElement,
@@ -31,7 +32,7 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     // Default map center to Pakistan; will override if geolocation succeeds
-    this.map = createIotMap(this.element().nativeElement, [30.3753, 69.3451], 6);
+    this.map = createIotMap(this.element().nativeElement, timezoneCenter(), 6);
     // Attempt live geolocation, overriding the default on success
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(

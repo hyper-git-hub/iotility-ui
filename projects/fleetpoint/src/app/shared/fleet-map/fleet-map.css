@@ -66,6 +66,23 @@
   transform: scale(1.08);
 }
 
+:host ::ng-deep .vehicle-cluster,
+.vehicle-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #7c3aed;
+  border-radius: 50%;
+  box-sizing: border-box;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  user-select: none;
+  transition: transform 200ms ease;
+}
+:host ::ng-deep .vehicle-cluster:hover,
+.vehicle-cluster:hover {
+  transform: scale(1.08);
+}
+
 :host ::ng-deep .maplibregl-popup-content {
   --vehicle-popup-surface: #fff;
   min-width: 11rem;

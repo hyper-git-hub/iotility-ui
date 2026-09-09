@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
-import { createIotMap, fitLatLngs, markerElement, popupHtml } from '../../../shared/maps/maplibre';
+import { createIotMap, fitLatLngs, markerElement, popupHtml, timezoneCenter } from '../../../shared/maps/maplibre';
 import { ViolationDisplay } from '../all-violations/all-violations';
 
 @Component({
@@ -64,7 +64,7 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const element = this.mapElement().nativeElement;
     // Default map center to Pakistan; will override if geolocation succeeds
-    this.instance = createIotMap(element, [30.3753, 69.3451], 6);
+    this.instance = createIotMap(element, timezoneCenter(), 6);
     this.resizeObserver = new ResizeObserver(() => this.instance?.resize());
     this.resizeObserver.observe(element);
     // Attempt live geolocation, overriding the default on success

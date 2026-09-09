@@ -3,6 +3,50 @@ import { attachTooltip } from '@iotility/shared-ui';
 import { environment } from '../../../environments/environment';
 
 export type LatLng = [number, number];
+
+// Timezone-driven default map center: resolves the user's IANA timezone to a
+// geographic [lat, lng] so maps open on their region (no hardcoded country).
+export function timezoneCenter(): LatLng {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const byName: Record<string, LatLng> = {
+    'Europe/London': [51.507, -0.127],
+    'Europe/Paris': [48.857, 2.352],
+    'Europe/Berlin': [52.52, 13.405],
+    'Europe/Madrid': [40.416, -3.703],
+    'Europe/Rome': [41.902, 12.453],
+    'Asia/Karachi': [24.861, 67.01],
+    'Asia/Dubai': [25.204, 55.27],
+    'Asia/Tehran': [35.689, 51.389],
+    'Asia/Kolkata': [22.572, 88.364],
+    'Asia/Dhaka': [23.685, 90.356],
+    'Asia/Shanghai': [31.23, 121.47],
+    'Asia/Hong_Kong': [22.319, 114.169],
+    'Asia/Singapore': [1.352, 103.82],
+    'Asia/Tokyo': [35.676, 139.65],
+    'Asia/Seoul': [37.566, 126.978],
+    'America/New_York': [40.713, -74.006],
+    'America/Chicago': [41.878, -87.63],
+    'America/Denver': [39.739, -104.99],
+    'America/Los_Angeles': [34.052, -118.24],
+    'America/Toronto': [43.653, -79.383],
+    'America/Mexico_City': [19.432, -99.133],
+    'Africa/Cairo': [30.044, 31.236],
+    'Africa/Johannesburg': [-26.204, 28.047],
+    'Australia/Sydney': [-33.868, 151.209],
+    'Australia/Perth': [-31.952, 115.86],
+    'UTC': [51.507, -0.127],
+    'Etc/UTC': [51.507, -0.127],
+    'Etc/GMT': [51.507, -0.127],
+  };
+  const named = byName[zone];
+  if (named) return named;
+
+  // Fallback: derive longitude from the timezone's UTC offset (15° per hour).
+  const offsetMinutes = -new Date().getTimezoneOffset();
+  const lng = (offsetMinutes / 60) * 15;
+  const lat = offsetMinutes >= 0 ? 25 : 40;
+  return [lat, lng];
+}
 type LayerWithoutSource<T = maplibregl.LayerSpecification> = T extends { source: unknown }
   ? Omit<T, 'source'>
   : T;

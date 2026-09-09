@@ -1,10 +1,10 @@
 import {
   AfterViewInit, Component, ElementRef, OnDestroy, effect, inject, input, output, signal, viewChild,
 } from '@angular/core';
-import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
 import {
   LatLng, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
-  polygonFeature, popupHtml, removeGeoJson, upsertGeoJson,
+  polygonFeature, popupHtml, removeGeoJson, timezoneCenter, upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
 import { FullscreenUiService } from '../services/fullscreen-ui.service';
@@ -35,7 +35,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly vehicles = input.required<TrackedVehicle[]>();
   readonly zones = input<MapZoneOverlay[]>([]);
   readonly showMarkers = input(true);
-  readonly clusterMarkers = input(false);
+  readonly clusterMarkers = input(true);
   readonly fitZoomOffset = input(0);
   readonly selectedVehicleId = input<string | null>(null);
   readonly showOverlays = input(true);
@@ -49,6 +49,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private readonly fullscreenUi = inject(FullscreenUiService);
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
+  private clusterEnabled = false;
+  private readonly clusterBadges = new Map<string, maplibregl.Marker>();
+  private readonly clusterBadgeDivs = new Map<string, HTMLElement>();
+  private clusterMoveBound = false;
+  private clusterSyncFrame?: number;
+  private readonly onClusterMove = () => this.queueClusterRerender();
   private fittedVehicleSet = '';
   private initialFitPending = true;
   private resizeObserver?: ResizeObserver;
@@ -59,8 +65,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     effect(() => {
       const vehicles = this.vehicles(), showMarkers = this.showMarkers(), clusterMarkers = this.clusterMarkers();
       if (this.map) {
-        const vehicleSet = this.vehicleSetKey(vehicles);
-        this.renderMarkers(vehicles, vehicleSet !== this.fittedVehicleSet, showMarkers, clusterMarkers);
+        // Data membership updates must NOT re-fit the camera (a re-fit would
+        // drop the zoom low enough to collapse everything into one cluster).
+        // Initial fit is owned by the load/resize path via `initialFitPending`.
+        this.renderMarkers(vehicles, false, showMarkers, clusterMarkers);
       }
     });
     effect(() => {
@@ -91,7 +99,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.map = createIotMap(this.mapElement().nativeElement, [25.2854, 51.531], 11);
+    this.map = createIotMap(this.mapElement().nativeElement, timezoneCenter(), 11);
     this.resizeObserver = new ResizeObserver(() => {
       this.map?.resize();
       if (this.initialFitPending && this.vehicles().length)
@@ -175,8 +183,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     if (!this.map) return;
     this.markers.forEach((item) => item.remove());
     this.markers.clear();
-    if (cluster) this.renderClusteredMarkers(show ? vehicles : []);
-    else for (const vehicle of show ? vehicles : []) {
+    this.clusterEnabled = cluster;
+    if (!cluster) {
+      this.clearClusterBadges();
+      this.unbindClusterMove();
+    }
+    for (const vehicle of show ? vehicles : []) {
       const element = this.createVehicleMarker(vehicle, selectedId);
       element.addEventListener('click', () => {
         this.focusVehicle(vehicle);
@@ -197,6 +209,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         if (item.getPopup()?.isOpen()) item.togglePopup();
       });
       this.markers.set(vehicle.id, item);
+    }
+    if (cluster) {
+      this.bindClusterMove();
+      this.recomputeClusters();
     }
     const selected = vehicles.find(({ id }) => id === selectedId);
     if (selected && this.markers.has(selected.id)) this.updateMarkerSelection(selected.id);
@@ -279,87 +295,168 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       : 'assets/fleetpoint/def-car.svg';
   }
 
-  private renderClusteredMarkers(vehicles: TrackedVehicle[]): void {
-    if (!this.map?.isStyleLoaded()) return;
-    const sourceId = 'fleet-vehicles';
-    const data: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: vehicles.map((vehicle) => ({
-        type: 'Feature',
-        properties: { id: vehicle.id, label: vehicle.id.slice(-2), status: vehicle.status },
-        geometry: { type: 'Point', coordinates: [vehicle.lng, vehicle.lat] },
-      })),
-    };
-    const source = this.map.getSource(sourceId) as GeoJSONSource | undefined;
-    if (source) {
-      source.setData(data);
-      return;
-    }
-    this.map.addSource(sourceId, { type: 'geojson', data, cluster: true, clusterMaxZoom: 14, clusterRadius: 52 });
-    this.map.addLayer({
-      id: 'vehicle-cluster-shadows', type: 'circle', source: sourceId, filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': '#000000',
-        'circle-radius': ['step', ['get', 'point_count'], 20, 10, 25, 50, 31],
-        'circle-opacity': .28, 'circle-blur': .65, 'circle-translate': [0, 5],
-      },
+  // ── Custom zoom-aware clustering ─────────────────────────────
+  // Keeps the original sedan vehicle markers: nearby markers collapse
+  // into a single themed count badge, and zooming in returns them to
+  // individual markers. Grouping is driven purely by map zoom level so
+  // it is stable (no flicker between group/single while panning).
+  private static readonly CLUSTER_ZOOM_THRESHOLD = 14;
+  private static readonly CLUSTER_WORLD_DISTANCE = 0.02;
+  private clusterWorldDistance(): number {
+    const zoom = this.map?.getZoom() ?? 0;
+    return FleetMap.CLUSTER_WORLD_DISTANCE * Math.pow(2, FleetMap.CLUSTER_ZOOM_THRESHOLD - zoom);
+  }
+
+  private bindClusterMove(): void {
+    if (!this.map || this.clusterMoveBound) return;
+    this.clusterMoveBound = true;
+    this.map.on('zoom', this.onClusterMove);
+    this.map.on('moveend', this.onClusterMove);
+  }
+
+  private unbindClusterMove(): void {
+    if (!this.map || !this.clusterMoveBound) return;
+    this.clusterMoveBound = false;
+    this.map.off('zoom', this.onClusterMove);
+    this.map.off('moveend', this.onClusterMove);
+  }
+
+  private queueClusterRerender(): void {
+    // Grouping is purely zoom-driven: run once per animation frame and
+    // once more when the gesture settles so markers/badges swap instantly
+    // without churn or overlap.
+    if (this.clusterSyncFrame !== undefined) return;
+    this.clusterSyncFrame = requestAnimationFrame(() => {
+      this.clusterSyncFrame = undefined;
+      this.recomputeClusters();
     });
-    this.map.addLayer({
-      id: 'vehicle-clusters', type: 'circle', source: sourceId, filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': '#8347f5', 'circle-radius': ['step', ['get', 'point_count'], 20, 10, 25, 50, 31],
-        'circle-stroke-color': '#ffffff', 'circle-stroke-width': 3,
-      },
+  }
+
+  private clearClusterBadges(): void {
+    this.clusterBadges.forEach((marker) => marker.remove());
+    this.clusterBadges.clear();
+    this.clusterBadgeDivs.clear();
+    this.markers.forEach((marker) => {
+      marker.getElement().style.display = '';
     });
-    this.map.addLayer({
-      id: 'vehicle-cluster-count', type: 'symbol', source: sourceId, filter: ['has', 'point_count'],
-      layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': 12 },
-      paint: { 'text-color': '#ffffff' },
-    });
-    this.map.addLayer({
-      id: 'vehicle-point-shadows', type: 'circle', source: sourceId, filter: ['!', ['has', 'point_count']],
-      paint: {
-        'circle-color': '#000000', 'circle-radius': 17, 'circle-opacity': .28,
-        'circle-blur': .65, 'circle-translate': [0, 5],
-      },
-    });
-    this.map.addLayer({
-      id: 'vehicle-points', type: 'circle', source: sourceId, filter: ['!', ['has', 'point_count']],
-      paint: {
-        'circle-color': ['match', ['get', 'status'], 'Moving', '#10b981', 'Idling', '#f59e0b', 'Alert', '#ef4444', '#64748b'],
-        'circle-radius': 17, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 3,
-      },
-    });
-    this.map.addLayer({
-      id: 'vehicle-point-label', type: 'symbol', source: sourceId, filter: ['!', ['has', 'point_count']],
-      layout: { 'text-field': ['get', 'label'], 'text-size': 10 },
-      paint: { 'text-color': '#ffffff' },
-    });
-    this.map.on('click', 'vehicle-clusters', (event) => {
-      const feature = this.map?.queryRenderedFeatures(event.point, { layers: ['vehicle-clusters'] })[0];
-      const clusterId = Number(feature?.properties?.['cluster_id']);
-      if (!this.map || !feature || !Number.isFinite(clusterId) || feature.geometry.type !== 'Point') return;
-      const clusterSource = this.map.getSource(sourceId) as GeoJSONSource;
-      clusterSource.getClusterExpansionZoom(clusterId).then((zoom) => {
-        if (feature.geometry.type === 'Point') this.map?.easeTo({ center: feature.geometry.coordinates as [number, number], zoom, duration: 500 });
-      });
-    });
-    this.map.on('click', 'vehicle-points', (event) => {
-      const id = String(event.features?.[0]?.properties?.['id'] ?? '');
+  }
+
+  private recomputeClusters(): void {
+    if (!this.map?.isStyleLoaded() || !this.clusterEnabled) return;
+    const distance = this.clusterWorldDistance();
+
+    interface ClusterGroup { lng: number; lat: number; ids: string[]; key: string; color: string; }
+    const groups: ClusterGroup[] = [];
+    this.markers.forEach((_marker, id) => {
       const vehicle = this.vehicles().find((item) => item.id === id);
-      if (vehicle) {
-        this.focusVehicle(vehicle);
-        if (this.isFullscreen()) {
-          this.fullscreenVehicleClick.emit(vehicle);
-        } else {
-          this.vehicleSelected.emit(vehicle);
+      if (!vehicle) return;
+      let placed = false;
+      for (const group of groups) {
+        const span = Math.hypot(group.lng - vehicle.lng, group.lat - vehicle.lat);
+        if (span > distance) continue;
+        group.ids.push(id);
+        group.key = [...group.ids].sort().join('|');
+        group.color = this.badgeColor(group.ids);
+        let lng = 0, lat = 0;
+        for (const memberId of group.ids) {
+          const member = this.vehicles().find((item) => item.id === memberId);
+          if (member) { lng += member.lng; lat += member.lat; }
         }
+        group.lng = lng / group.ids.length;
+        group.lat = lat / group.ids.length;
+        placed = true;
+        break;
       }
+      if (!placed) groups.push({ lng: vehicle.lng, lat: vehicle.lat, ids: [id], key: id, color: this.badgeColor([id]) });
     });
-    for (const layer of ['vehicle-clusters', 'vehicle-points']) {
-      this.map.on('mouseenter', layer, () => { if (this.map) this.map.getCanvas().style.cursor = 'pointer'; });
-      this.map.on('mouseleave', layer, () => { if (this.map) this.map.getCanvas().style.cursor = ''; });
+
+    // 1) Hide grouped vehicle markers and reveal ungrouped ones instantly.
+    const groupedAtLeastTwo = new Set<string>();
+    for (const group of groups) {
+      if (group.ids.length > 1) group.ids.forEach((id) => groupedAtLeastTwo.add(id));
     }
+    this.markers.forEach((marker, id) => {
+      marker.getElement().style.display = groupedAtLeastTwo.has(id) ? 'none' : '';
+    });
+
+    // 2) Remove stale cluster badges first (immediate, no overlap).
+    const activeKeys = new Set<string>();
+    for (const group of groups) {
+      if (group.ids.length > 1) activeKeys.add(group.key);
+    }
+    for (const key of this.clusterBadges.keys()) {
+      if (activeKeys.has(key)) continue;
+      this.clusterBadges.get(key)?.remove();
+      this.clusterBadges.delete(key);
+      this.clusterBadgeDivs.delete(key);
+    }
+
+    // 3) Reuse existing badges (update position/count/ring) or create new ones.
+    for (const group of groups) {
+      if (group.ids.length < 2) continue;
+      let marker = this.clusterBadges.get(group.key);
+      if (!marker) {
+        const div = document.createElement('div');
+        div.className = 'vehicle-cluster';
+        div.setAttribute('role', 'button');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'center';
+        div.style.borderRadius = '50%';
+        div.style.boxSizing = 'border-box';
+        div.style.color = '#fff';
+        div.style.fontWeight = '700';
+        div.style.cursor = 'pointer';
+        div.style.fontFamily = 'Inter, ui-sans-serif, system-ui, sans-serif';
+        div.style.userSelect = 'none';
+        div.addEventListener('click', () => this.expandCluster([group.lng, group.lat], group.ids.length));
+        marker = new maplibregl.Marker({ element: div, anchor: 'center' }).setLngLat([group.lng, group.lat]).addTo(this.map!);
+        this.clusterBadges.set(group.key, marker);
+        this.clusterBadgeDivs.set(group.key, div);
+      }
+      const div = this.clusterBadgeDivs.get(group.key)!;
+      const count = group.ids.length;
+      const size = count >= 100 ? 48 : count >= 50 ? 44 : count >= 10 ? 40 : 36;
+      const label = count >= 100 ? '99+' : String(count);
+      div.style.width = `${size}px`;
+      div.style.height = `${size}px`;
+      div.style.lineHeight = `${size}px`;
+      div.style.fontSize = `${Math.round(size * 0.42)}px`;
+      div.style.background = `linear-gradient(135deg,#a78bfa,${this.brandColor()})`;
+      div.style.borderColor = group.color;
+      div.style.boxShadow = `0 0 0 3px #c4b5fd,0 4px 12px rgb(0 0 0 / .28)`;
+      div.textContent = label;
+      div.setAttribute('aria-label', `${count} vehicles`);
+      marker.setLngLat([group.lng, group.lat]);
+    }
+  }
+
+  // Highest-severity status among the grouped vehicles → badge ring color:
+  // Alert > Moving (online) > Idling > Offline.
+  private badgeColor(ids: string[]): string {
+    const rank: Record<string, number> = { Alert: 3, Moving: 2, Idling: 1, Offline: 0 };
+    let best = 'Offline';
+    for (const id of ids) {
+      const vehicle = this.vehicles().find((item) => item.id === id);
+      const status = vehicle?.status ?? 'Offline';
+      if ((rank[status] ?? 0) > (rank[best] ?? 0)) best = status;
+    }
+    return this.statusColor(best as VehicleStatus);
+  }
+
+  private expandCluster(center: [number, number], count: number): void {
+    if (!this.map) return;
+    this.map.easeTo({
+      center,
+      zoom: Math.min(this.map.getZoom() + 3, count >= 50 ? 18 : 21),
+      duration: 500,
+    });
+  }
+
+  private brandColor(): string {
+    const styles = getComputedStyle(document.documentElement);
+    const value = styles.getPropertyValue('--color-brand-600').trim();
+    return value || '#7c3aed';
   }
 
   private vehicleSetKey(vehicles: TrackedVehicle[]): string {
@@ -431,6 +528,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.clusterSyncFrame !== undefined) cancelAnimationFrame(this.clusterSyncFrame);
     clearTimeout(this.readyFallback);
     this.resizeObserver?.disconnect();
     this.map?.remove();

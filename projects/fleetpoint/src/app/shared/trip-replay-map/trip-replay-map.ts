@@ -22,6 +22,7 @@ import {
   markerElement,
   popup,
   removeGeoJson,
+  timezoneCenter,
   upsertGeoJson,
 } from '../maps/maplibre';
 import { attachTooltip } from '@iotility/shared-ui';
@@ -33,7 +34,7 @@ const VEHICLE_MODEL_PATHS = [
   '/assets/models-trip-vehicle.glb',
 ];
 const VEHICLE_MODEL_YAW_OFFSET = 180;
-const DEFAULT_MAP_CENTER: LatLng = [30.3753, 69.3451];
+const DEFAULT_MAP_CENTER: LatLng = timezoneCenter();
 const DEFAULT_MAP_ZOOM = 5;
 const NAVIGATION_PITCH = 52;
 const NAVIGATION_ZOOM = 16.5;

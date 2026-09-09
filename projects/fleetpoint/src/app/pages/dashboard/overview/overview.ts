@@ -16,6 +16,7 @@ import {
   mergeDashboardGraphs,
 } from '../../../shared/services/dashboard-graphs';
 import { DashboardWidgetsService } from '../../../shared/services/dashboard-widgets.service';
+import { NotificationService } from '../../../shared/services/notification.service';
 
 @Component({
   selector: 'app-dashboard-overview',
@@ -68,11 +69,11 @@ export class Overview implements OnInit {
     const status = { moving: 0, idling: 0, stopped: 0, alert: 0, offline: 0 };
     for (const vehicle of this.vehicles()) {
       if (!vehicle.online_status) status.offline++;
-      else if (Number(vehicle.total_violations) > 0) status.alert++;
       else if (Number(vehicle.speed) > 0) status.moving++;
       else if (vehicle.ignition_status) status.idling++;
       else status.stopped++;
     }
+    status.alert = this.notificationService.last24hCount();
     return status;
   });
   protected readonly fleetStatusItems = computed(() => {
@@ -110,7 +111,10 @@ export class Overview implements OnInit {
     alerts: camera.notifications ? `${camera.notifications} alerts` : 'Active',
   })));
 
-  constructor(private readonly api: FleetDashboardApiService) {}
+  constructor(
+    private readonly api: FleetDashboardApiService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   ngOnInit(): void { this.loadDashboard(); }
 

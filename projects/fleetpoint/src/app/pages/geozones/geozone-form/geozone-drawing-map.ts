@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, signal, viewChild } from '@angular/core';
 import { Map } from 'maplibre-gl';
 import {
-  LatLng, circlePolygon, createIotMap, polygonFeature, removeGeoJson, upsertGeoJson,
+  LatLng, circlePolygon, createIotMap, timezoneCenter, polygonFeature, removeGeoJson, upsertGeoJson,
 } from '../../../shared/maps/maplibre';
 
 export interface GeozoneGeometry {
@@ -46,7 +46,7 @@ export class GeozoneDrawingMap implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.previousShape = this.shape();
     // Default map center to Pakistan; will override if geolocation succeeds
-    this.map = createIotMap(this.mapElement().nativeElement, [30.3753, 69.3451], 5, {
+    this.map = createIotMap(this.mapElement().nativeElement, timezoneCenter(), 5, {
       canvasContextAttributes: { antialias: false },
       renderWorldCopies: false,
       maxBounds: [[60, 23], [78, 38]],

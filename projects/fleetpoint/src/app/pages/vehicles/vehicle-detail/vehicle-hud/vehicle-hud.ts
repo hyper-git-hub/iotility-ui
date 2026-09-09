@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import maplibregl from 'maplibre-gl';
-import { createIotMap } from '../../../../shared/maps/maplibre';
+import { createIotMap, timezoneCenter } from '../../../../shared/maps/maplibre';
 import { Skeleton, StatusBadge } from '@iotility/shared-ui';
 import { environment } from '../../../../../environments/environment';
 import { VehicleDetailRecord, VehicleMetric } from '../../../../shared/services/vehicle-detail-api.service';
@@ -117,7 +117,7 @@ const HUD_BEARING = -18;
    camera offset so it stays exact under pitch/bearing. */
 const HUD_MARKER_X = 0.18;
 /* Fallback camera until live coordinates arrive (marker hidden meanwhile). */
-const HUD_FALLBACK = { lat: 25.2854, lng: 51.531 } as const;
+const HUD_FALLBACK = { lat: timezoneCenter()[0], lng: timezoneCenter()[1] } as const;
 /* The nav-arrow SVG's tip sits at ≈(68, 11) of the 89×92 viewBox (center ≈(44,44)),
    so at rotation 0 the arrow points ~56° below the +x axis. To make rotation 0 mean
    "point straight up" (along the road bearing), the offset must be that angle. */

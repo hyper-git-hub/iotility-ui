@@ -3,6 +3,7 @@ import maplibregl, { Map } from 'maplibre-gl';
 import {
   LatLng,
   createIotMap,
+  timezoneCenter,
   fitLatLngs,
   lineFeature,
   markerElement,
@@ -25,7 +26,7 @@ export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
     const actual: LatLng[] = [[51.54, -.08], [51.515, -.095], [51.485, -.195], [51.81, -1.18], [52.06, -1.38], [52.27, -1.49], [52.46, -1.72]];
     const deviated: LatLng[] = [[51.81, -1.18], [51.84, -1.12], [51.86, -1.15], [52.06, -1.38]];
     // Default map center to Pakistan; will override if geolocation succeeds
-    this.map = createIotMap(this.element().nativeElement, [30.3753, 69.3451], 7);
+    this.map = createIotMap(this.element().nativeElement, timezoneCenter(), 7);
     this.map.on('click', () => {});
     // Attempt live geolocation, overriding the default on success
     if (navigator.geolocation) {
