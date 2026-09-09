@@ -71,7 +71,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #7c3aed;
+  border: 2px solid var(--color-brand-600);
   border-radius: 50%;
   box-sizing: border-box;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;

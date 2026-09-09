@@ -4,7 +4,7 @@ import {
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
 import {
   LatLng, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
-  polygonFeature, popupHtml, removeGeoJson, timezoneCenter, upsertGeoJson,
+  polygonFeature, popupHtml, removeGeoJson, timezoneCountryCenter, upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
 import { FullscreenUiService } from '../services/fullscreen-ui.service';
@@ -99,7 +99,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.map = createIotMap(this.mapElement().nativeElement, timezoneCenter(), 11);
+    this.map = createIotMap(this.mapElement().nativeElement, timezoneCountryCenter(), 4);
     this.resizeObserver = new ResizeObserver(() => {
       this.map?.resize();
       if (this.initialFitPending && this.vehicles().length)
@@ -422,9 +422,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       div.style.height = `${size}px`;
       div.style.lineHeight = `${size}px`;
       div.style.fontSize = `${Math.round(size * 0.42)}px`;
-      div.style.background = `linear-gradient(135deg,#a78bfa,${this.brandColor()})`;
+      div.style.background = `linear-gradient(135deg,color-mix(in srgb,${this.brandColor()} 50%,white),${this.brandColor()})`;
       div.style.borderColor = group.color;
-      div.style.boxShadow = `0 0 0 3px #c4b5fd,0 4px 12px rgb(0 0 0 / .28)`;
+      div.style.boxShadow = `0 0 0 3px ${this.brandColor()},0 4px 12px rgb(0 0 0 / .28)`;
       div.textContent = label;
       div.setAttribute('aria-label', `${count} vehicles`);
       marker.setLngLat([group.lng, group.lat]);

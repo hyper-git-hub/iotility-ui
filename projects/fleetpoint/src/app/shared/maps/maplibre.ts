@@ -47,6 +47,50 @@ export function timezoneCenter(): LatLng {
   const lat = offsetMinutes >= 0 ? 25 : 40;
   return [lat, lng];
 }
+
+// Returns the geographic center of the country associated with the user's IANA
+// timezone. Used as the default map center when no markers are present.
+export function timezoneCountryCenter(): LatLng {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const byName: Record<string, LatLng> = {
+    'Europe/London': [54.0, -2.0],        // United Kingdom
+    'Europe/Paris': [46.6, 2.2],          // France
+    'Europe/Berlin': [51.1, 10.4],        // Germany
+    'Europe/Madrid': [40.0, -4.0],        // Spain
+    'Europe/Rome': [42.8, 12.8],          // Italy
+    'Asia/Karachi': [30.4, 69.3],         // Pakistan
+    'Asia/Dubai': [23.4, 53.8],           // UAE
+    'Asia/Tehran': [32.4, 53.7],          // Iran
+    'Asia/Kolkata': [22.0, 78.0],         // India
+    'Asia/Dhaka': [23.7, 90.4],           // Bangladesh
+    'Asia/Shanghai': [35.0, 103.0],       // China
+    'Asia/Hong_Kong': [22.3, 114.2],      // Hong Kong (China)
+    'Asia/Singapore': [1.35, 103.8],      // Singapore
+    'Asia/Tokyo': [36.2, 138.3],          // Japan
+    'Asia/Seoul': [35.9, 127.8],          // South Korea
+    'America/New_York': [40.0, -74.0],    // United States (East Coast representative)
+    'America/Chicago': [39.8, -98.5],     // United States (geographic center)
+    'America/Denver': [39.8, -98.5],      // United States (geographic center)
+    'America/Los_Angeles': [39.8, -98.5], // United States (geographic center)
+    'America/Toronto': [45.0, -79.0],     // Canada (Ontario representative)
+    'America/Mexico_City': [23.6, -102.5],// Mexico
+    'Africa/Cairo': [26.8, 30.8],         // Egypt
+    'Africa/Johannesburg': [-28.5, 24.7], // South Africa
+    'Australia/Sydney': [-25.3, 133.8],   // Australia
+    'Australia/Perth': [-25.3, 133.8],    // Australia
+    'UTC': [54.0, -2.0],                  // United Kingdom
+    'Etc/UTC': [54.0, -2.0],              // United Kingdom
+    'Etc/GMT': [54.0, -2.0],              // United Kingdom
+  };
+  const named = byName[zone];
+  if (named) return named;
+
+  // Fallback: derive longitude from the timezone's UTC offset (15° per hour).
+  const offsetMinutes = -new Date().getTimezoneOffset();
+  const lng = (offsetMinutes / 60) * 15;
+  const lat = offsetMinutes >= 0 ? 25 : 40;
+  return [lat, lng];
+}
 type LayerWithoutSource<T = maplibregl.LayerSpecification> = T extends { source: unknown }
   ? Omit<T, 'source'>
   : T;

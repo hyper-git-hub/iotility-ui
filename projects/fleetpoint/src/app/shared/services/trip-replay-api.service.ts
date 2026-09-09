@@ -29,7 +29,7 @@ export class TripReplayApiService {
   getVehicles(): Observable<ApiResponse<{ count: number; data: RealtimeVehicleRecord[] }>> {
     return this.http.get<ApiResponse<{ count: number; data: RealtimeVehicleRecord[] }>>(
       `${FLEET_API}/fleet/vehicle`,
-      { params: { status: '1', page_category: 'vehicle_real_time_tracking' } },
+      // { params: { status: '1', page_category: 'vehicle_real_time_tracking' } },
     );
   }
   getVehicleDetail(): Observable<
