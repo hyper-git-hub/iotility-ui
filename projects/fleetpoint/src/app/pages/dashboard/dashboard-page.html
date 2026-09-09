@@ -7,16 +7,42 @@
         {{ todayLabel }}</p>
     </div>
     <!-- <button type="button" class="customise-button">Customise Dashboard</button> -->
+    <button type="button" class="customise-button" (click)="openCustomise()">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M14 17H5" />
+        <path d="M19 7h-9" />
+        <circle cx="17" cy="17" r="3" />
+        <circle cx="7" cy="7" r="3" />
+      </svg>
+      Customise Dashboard
+    </button>
   </header>
+  @if (customiseOpen()) {
+    <app-customise-modal [tab]="activeTab()" [tabLabel]="activeTabLabel()" (closed)="closeCustomise()" />
+  }
   <nav class="dashboard-tabs smooth-reveal dashboard-reveal-tabs" aria-label="Dashboard sections">
     @for (tab of tabs; track tab.path) {
-      <a
-        [routerLink]="tab.path"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: tab.exact }"
-        >{{ tab.label }}</a
-      >
+      @if (tab.placeholder) {
+        <button type="button" [class.active]="activeTab() === tab.path" (click)="activeTab.set(tab.path)">
+          <span aria-hidden="true">{{ tab.emoji }}</span>{{ tab.label }}
+        </button>
+      } @else {
+        <a
+          [routerLink]="tab.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: tab.exact }"
+          ><span aria-hidden="true">{{ tab.emoji }}</span>{{ tab.label }}</a
+        >
+      }
     }
   </nav>
-  <router-outlet />
+  @if (activeTab() === 'reports') {
+    <section class="dashboard-coming-soon">
+      <span class="coming-soon-icon" aria-hidden="true">📈</span>
+      <h2>Reports Coming Soon</h2>
+      <p>Scheduled reports, exports and the custom report builder will be available here.</p>
+    </section>
+  } @else {
+    <router-outlet />
+  }
 </div>

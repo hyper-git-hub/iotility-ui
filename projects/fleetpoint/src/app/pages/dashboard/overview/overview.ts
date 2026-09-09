@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Skeleton, StatCardSkeleton, StatusBadge, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
@@ -15,6 +15,7 @@ import {
   emptyDashboardGraphs,
   mergeDashboardGraphs,
 } from '../../../shared/services/dashboard-graphs';
+import { DashboardWidgetsService } from '../../../shared/services/dashboard-widgets.service';
 
 @Component({
   selector: 'app-dashboard-overview',
@@ -23,16 +24,23 @@ import {
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })
 export class Overview implements OnInit {
+  private readonly widgetService = inject(DashboardWidgetsService);
+  protected readonly fleetStatusVisible = computed(() => this.widgetService.isVisible('overview', 'fleet-status'));
+  protected readonly visibleGraphs = computed(() =>
+    this.displayedGraphs().filter((graph) => this.widgetService.isVisible('overview', graph.code)),
+  );
+
   protected readonly cardsLoading = signal(true);
   protected readonly graphsLoading = signal(true);
   protected readonly fleetLoading = signal(true);
   protected readonly cardsError = signal('');
   protected readonly metricSkeletons = Array.from({ length: 8 });
-  protected readonly graphSkeletons = [
-    { code: 'DA', type: 'allocation' },
-    { code: 'RS', type: 'vertical' },
-    { code: 'VS', type: 'vertical' },
-  ] as const;
+  protected readonly loadingSkeletons = computed(() =>
+    this.widgetService
+      .widgetsForTab('overview')
+      .filter((widget) => widget.id !== 'fleet-status' && this.widgetService.isVisible('overview', widget.id))
+      .map((widget) => widget.id),
+  );
   protected readonly cards = signal<DashboardCard[]>([]);
   protected readonly displayedCards = computed(() => {
     const order = ['DVC', 'J', 'MD', 'MOD', 'TD', 'TDC', 'TF', 'VIM'];

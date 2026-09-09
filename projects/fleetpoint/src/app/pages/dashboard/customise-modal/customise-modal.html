@@ -1,0 +1,38 @@
+<div class="customise-overlay" role="dialog" aria-modal="true" aria-label="Customise Dashboard">
+  <div class="customise-panel">
+    <header class="customise-header">
+      <div>
+        <h2>Customise Dashboard</h2>
+        <p>Toggle widgets for the {{ tabLabel() }} tab</p>
+      </div>
+      <button type="button" class="customise-close" aria-label="Close" (click)="cancel()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </header>
+    <div class="customise-list">
+      @for (widget of allWidgets(); track widget.id) {
+        <button
+          type="button"
+          class="customise-item"
+          [class.selected]="isChecked(widget.id)"
+          (click)="toggle(widget.id)"
+        >
+          <span class="customise-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10" /></svg>
+          </span>
+          <span class="customise-meta">
+            <strong>{{ widget.name }}</strong>
+            <small>{{ widget.description }}</small>
+          </span>
+        </button>
+      }
+    </div>
+    <footer class="customise-footer">
+      <button type="button" class="customise-select-all" (click)="selectAll()">Select all</button>
+      <div class="customise-footer-actions">
+        <button type="button" class="customise-cancel" (click)="cancel()">Cancel</button>
+        <button type="button" class="customise-save" (click)="save()">Save Changes</button>
+      </div>
+    </footer>
+  </div>
+</div>
