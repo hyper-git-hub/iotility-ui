@@ -1,8 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { Skeleton, StatCardSkeleton, StatusBadge, TableColumn, TableRow } from '@iotility/shared-ui';
+import { Skeleton, StatusBadge, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
-import { StatCard, StatCardTone } from '../../../shared/stat-card/stat-card';
+import { StatCardTone } from '../../../shared/stat-card/stat-card';
 import {
   DashboardCard,
   DashboardGraph,
@@ -19,7 +19,7 @@ import { DashboardWidgetsService } from '../../../shared/services/dashboard-widg
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [Skeleton, StatCardSkeleton, StatusBadge, DashboardGraphComponent, StatCard],
+  imports: [Skeleton, StatusBadge, DashboardGraphComponent],
   templateUrl: './overview.html',
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })
