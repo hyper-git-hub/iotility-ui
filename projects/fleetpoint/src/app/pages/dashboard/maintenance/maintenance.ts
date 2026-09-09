@@ -2,6 +2,7 @@ import { Component, computed } from '@angular/core';
 import { DataTable, TableColumn, TableRow } from '@iotility/shared-ui';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { FleetDashboardApiService } from '../../../shared/services/fleet-dashboard-api.service';
+import { emptyDashboardGraphs } from '../../../shared/services/dashboard-graphs';
 
 @Component({
   selector: 'app-dashboard-maintenance',
@@ -10,9 +11,11 @@ import { FleetDashboardApiService } from '../../../shared/services/fleet-dashboa
   styleUrl: './maintenance.css',
 })
 export class Maintenance {
-  protected readonly maintenanceGraphs = computed(() =>
-    this.api.cachedGraphs().filter((graph) => ['MS', 'POVM'].includes(graph.code)),
-  );
+  protected readonly maintenanceGraphs = computed(() => {
+    const codes = ['MS', 'POVM'];
+    const cached = this.api.cachedGraphs().filter((graph) => codes.includes(graph.code));
+    return cached.length ? cached : emptyDashboardGraphs().filter((graph) => codes.includes(graph.code));
+  });
 
   protected readonly columns: TableColumn[] = [
     { key: 'vehicle', label: 'Vehicle' },

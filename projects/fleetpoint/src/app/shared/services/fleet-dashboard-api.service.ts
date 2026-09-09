@@ -85,20 +85,20 @@ export class FleetDashboardApiService {
     }
   }
 
-  getCards(): Observable<ApiResponse<DashboardCard[]>> {
-    return this.http.get<ApiResponse<DashboardCard[]>>(`${FLEET_API}/dashboard/cards`, {
-      params: new HttpParams().set('dashboard_id', DASHBOARD_ID).set('date', 'all'),
-    });
-  }
+  // getCards(): Observable<ApiResponse<DashboardCard[]>> {
+  //   return this.http.get<ApiResponse<DashboardCard[]>>(`${FLEET_API}/dashboard/graph-cards`, {
+  //     params: new HttpParams().set('dashboard_id', DASHBOARD_ID).set('date', 'all'),
+  //   });
+  // }
 
   getFilteredCards(date: string): Observable<ApiResponse<DashboardCard[]>> {
-    return this.http.get<ApiResponse<DashboardCard[]>>(`${FLEET_API}/dashboard/cards`, {
+    return this.http.get<ApiResponse<DashboardCard[]>>(`${FLEET_API}/dashboard/graphs-cards/`, {
       params: new HttpParams().set('dashboard_id', DASHBOARD_ID).set('date', date),
     });
   }
 
   getGraphs(): Observable<ApiResponse<DashboardGraph[]>> {
-    return this.http.get<ApiResponse<DashboardGraph[]>>(`${FLEET_API}/dashboard/graphs`, {
+    return this.http.get<ApiResponse<DashboardGraph[]>>(`${FLEET_API}/dashboard/graphs-cards/`, {
       params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
     });
   }

@@ -148,26 +148,6 @@
   @apply h-2 w-12 rounded bg-slate-200/65 dark:bg-slate-700/45;
 }
 
-.dashboard-inline-error {
-  @apply flex min-h-24 items-center justify-between gap-4 rounded-2xl border border-danger/20 bg-danger/5 px-4 py-3 text-xs text-danger;
-}
-
-.dashboard-inline-error.analytics-error {
-  @apply min-h-48;
-}
-
-.dashboard-inline-error strong {
-  @apply block text-sm;
-}
-
-.dashboard-inline-error p {
-  @apply mt-1 text-xs opacity-80;
-}
-
-.dashboard-inline-error button {
-  @apply shrink-0 cursor-pointer rounded-lg border border-danger/25 bg-white px-3 py-2 text-xs font-medium transition hover:border-danger/50 dark:bg-dark-surface;
-}
-
 .skeleton-report-count {
   @apply overflow-hidden rounded-full;
 }

@@ -11,21 +11,10 @@ import {
   FleetDashboardApiService,
   Vehicle,
 } from '../../../shared/services/fleet-dashboard-api.service';
-
-const EXPECTED_DASHBOARD_GRAPHS: DashboardGraph[] = [
-  { code: 'ADF', name: 'Aggressively Driven Fleets', chart_type: 'line_area_chart', data: { categories: ['Fleet 01', 'Fleet 02', 'Fleet 03', 'Fleet 04'], series: [{ name: 'Harsh Acceleration', data: [12, 7, 16, 9] }, { name: 'Harsh Braking', data: [8, 14, 6, 11] }, { name: 'Sharp Turning', data: [5, 9, 12, 7] }] } },
-  { code: 'DA', name: 'Driver Allocations', chart_type: null, data: { fleets: [{ name: 'Fleet 01', data: [{ vehicle: 'FLT-101', driver: 'Richard' }, { vehicle: 'FLT-102', driver: 'Rebecca' }] }, { name: 'Fleet 02', data: [{ vehicle: 'FLT-204', driver: 'Henry' }] }] } },
-  { code: 'DSS', name: 'Driver Safety Scorecard', chart_type: 'piechart', data: { categories: ['Geozone Violation', 'Harsh Acceleration', 'Harsh Braking', 'Speed'], values: [18, 24, 13, 31] } },
-  { code: 'DTS', name: 'Driver Tasks Status', chart_type: 'piechart', data: { categories: ['Completed', 'Pending', 'In Progress', 'Aborted'], values: [42, 18, 27, 6] } },
-  { code: 'DVG', name: 'Driver Violations', chart_type: 'horizontal_bar_chart', data: { categories: ['Richard', 'Rebecca', 'Henry', 'John'], series: [{ name: 'Violations', data: [12, 8, 15, 6] }] } },
-  { code: 'JJ', name: 'Jobs', chart_type: 'bar_chart', data: { categories: ['Islamabad', 'Rawalpindi', 'Lahore'], series: [{ name: 'Adhoc', data: [18, 11, 15] }, { name: 'Scheduled', data: [9, 14, 12] }] } },
-  { code: 'JSJ', name: 'Statistics of Jobs', chart_type: 'piechart', data: { categories: ['Pending', 'Completed', 'Cancelled'], values: [14, 38, 5] } },
-  { code: 'JSS', name: 'Staff Statistics', chart_type: 'horizontal_stackbar_chart', data: { categories: ['Staff'], series: [{ name: 'On job', data: [18] }, { name: 'On bench', data: [6] }, { name: 'Available', data: [11] }] } },
-  { code: 'MS', name: 'Maintenance status', chart_type: 'piechart', data: { categories: ['Oil Change', 'Tire Rotation', 'Air Filter', 'Transmission'], values: [12, 8, 5, 3] } },
-  { code: 'POVM', name: 'Probability of Vehicle Maintenance', chart_type: 'bar_chart', data: { categories: ['Fleet 01', 'Fleet 02', 'Fleet 03'], series: [{ name: 'Maintenance', data: [7, 11, 5] }, { name: 'Replace', data: [2, 4, 1] }, { name: 'No Maintenance', data: [18, 14, 21] }] } },
-  { code: 'RS', name: 'Route Statistics', chart_type: 'bar_chart', data: { categories: ['ISB–RWP', 'I-9 ISB', 'Ring Road', 'M-2'], values: [22, 16, 13, 28] } },
-  { code: 'VS', name: 'Vehicle Statistics', chart_type: 'bar_chart', data: [{ fleet_name: 'Fleet 01', vehicle_count: 18 }, { fleet_name: 'Fleet 02', vehicle_count: 13 }, { fleet_name: 'Fleet 03', vehicle_count: 21 }] },
-];
+import {
+  emptyDashboardGraphs,
+  mergeDashboardGraphs,
+} from '../../../shared/services/dashboard-graphs';
 
 @Component({
   selector: 'app-dashboard-overview',
@@ -38,7 +27,6 @@ export class Overview implements OnInit {
   protected readonly graphsLoading = signal(true);
   protected readonly fleetLoading = signal(true);
   protected readonly cardsError = signal('');
-  protected readonly graphsError = signal('');
   protected readonly metricSkeletons = Array.from({ length: 8 });
   protected readonly graphSkeletons = [
     { code: 'DA', type: 'allocation' },
@@ -58,19 +46,11 @@ export class Overview implements OnInit {
       .slice(0, 8);
   });
   protected readonly graphs = signal<DashboardGraph[]>([]);
-  protected readonly displayedGraphs = computed<DashboardGraph[]>(() => {
-    const received = new Map(
-      this.graphs()
-        .filter((graph) => Boolean(graph?.code))
-        .map((graph) => [graph.code, graph]),
-    );
-    return EXPECTED_DASHBOARD_GRAPHS.map((fallback) => {
-      const graph = received.get(fallback.code);
-      return graph && this.hasBackendGraphPayload(graph) ? graph : fallback;
-    }).filter((graph) =>
+  protected readonly displayedGraphs = computed<DashboardGraph[]>(() =>
+    mergeDashboardGraphs(this.graphs()).filter((graph) =>
       !['ADF', 'DSS', 'DVG', 'MS', 'POVM', 'DTS', 'JJ', 'JSJ', 'JSS'].includes(graph.code),
-    );
-  });
+    ),
+  );
   protected readonly fleets = signal<Fleet[]>([]);
   protected readonly dashcams = signal<DashcamDevice[]>([]);
   protected readonly vehicles = computed(() => this.fleets().flatMap((fleet) => fleet.assigned_vehicles ?? []));
@@ -128,50 +108,49 @@ export class Overview implements OnInit {
 
   protected loadDashboard(): void {
     this.loadFleetData();
-    this.loadCards();
+    // this.loadCards();
     this.loadGraphs();
     this.dashcams.set([]);
   }
 
-  protected loadCards(): void {
-    this.cardsLoading.set(true);
-    this.cardsError.set('');
-    this.api.getCards().pipe(finalize(() => this.cardsLoading.set(false))).subscribe({
-      next: (cards) => {
-        if (cards.status !== 1000) {
-          this.cardsError.set(cards.message || 'Fleet metrics could not be loaded.');
-          this.cards.set([]);
-          return;
-        }
-        this.cards.set(Array.isArray(cards.data) ? cards.data : []);
-      },
-      error: (response) => {
-        this.cardsError.set(response.error?.message || 'Fleet metrics could not be loaded.');
-      },
-    });
-  }
+  // protected loadCards(): void {
+  //   this.cardsLoading.set(true);
+  //   this.cardsError.set('');
+  //   this.api.getCards().pipe(finalize(() => this.cardsLoading.set(false))).subscribe({
+  //     next: (cards) => {
+  //       if (cards.status !== 1000) {
+  //         this.cardsError.set(cards.message || 'Fleet metrics could not be loaded.');
+  //         this.cards.set([]);
+  //         return;
+  //       }
+  //       this.cards.set(Array.isArray(cards.data) ? cards.data : []);
+  //     },
+  //     error: (response) => {
+  //       this.cardsError.set(response.error?.message || 'Fleet metrics could not be loaded.');
+  //     },
+  //   });
+  // }
 
   protected loadGraphs(): void {
     this.graphsLoading.set(true);
-    this.graphsError.set('');
     this.api.getGraphs().pipe(finalize(() => this.graphsLoading.set(false))).subscribe({
       next: (graphs) => {
         if (graphs.status !== 1000) {
-          this.graphsError.set(graphs.message || 'Dashboard analytics could not be loaded.');
-          this.graphs.set([]);
+          this.showGraphsWithoutData();
           return;
         }
-        this.graphs.set(Array.isArray(graphs.data) ? graphs.data : []);
-        const received = new Map(this.graphs().map((graph) => [graph.code, graph]));
-        this.api.cacheGraphs(EXPECTED_DASHBOARD_GRAPHS.map((fallback) => {
-          const graph = received.get(fallback.code);
-          return graph && this.hasBackendGraphPayload(graph) ? graph : fallback;
-        }));
+        const received = Array.isArray(graphs.data) ? graphs.data : [];
+        this.graphs.set(received);
+        this.api.cacheGraphs(mergeDashboardGraphs(received));
       },
-      error: (response) => {
-        this.graphsError.set(response.error?.message || 'Dashboard analytics could not be loaded.');
-      },
+      error: () => this.showGraphsWithoutData(),
     });
+  }
+
+  private showGraphsWithoutData(): void {
+    const graphs = emptyDashboardGraphs();
+    this.graphs.set(graphs);
+    this.api.cacheGraphs(graphs);
   }
 
   private loadFleetData(): void {
@@ -219,19 +198,6 @@ export class Overview implements OnInit {
 
   protected statusPercentage(value: number): number {
     return this.vehicles().length ? (value / this.vehicles().length) * 100 : 0;
-  }
-
-  private hasBackendGraphPayload(graph: DashboardGraph): boolean {
-    const data = graph?.data;
-    if (!data) return false;
-    if (Array.isArray(data)) return data.length > 0;
-    if (graph.code === 'DA') {
-      return (data.fleets ?? []).some((fleet) => Array.isArray(fleet?.data) && fleet.data.length > 0);
-    }
-    const hasCategories = Array.isArray(data.categories) && data.categories.length > 0;
-    const hasValues = Array.isArray(data.values) && data.values.length > 0;
-    const hasSeries = Array.isArray(data.series) && data.series.length > 0;
-    return hasCategories && (hasValues || hasSeries);
   }
 
 }
