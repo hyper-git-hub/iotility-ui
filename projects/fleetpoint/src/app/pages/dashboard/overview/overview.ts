@@ -119,7 +119,10 @@ export class Overview implements OnInit {
   ngOnInit(): void {
     this.loadDashboard();
     this.loadViolationCount();
-    interval(30_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadViolationCount());
+    interval(30_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.loadFleetData();
+      this.loadViolationCount();
+    });
   }
 
   protected loadDashboard(): void {
@@ -170,7 +173,7 @@ export class Overview implements OnInit {
   }
 
   private loadFleetData(): void {
-    this.fleetLoading.set(true);
+    if (!this.fleets().length) this.fleetLoading.set(true);
     this.api.getFleets().pipe(finalize(() => this.fleetLoading.set(false))).subscribe({
       next: (fleets) => this.fleets.set(fleets.data?.data ?? []),
       error: () => this.fleets.set([]),

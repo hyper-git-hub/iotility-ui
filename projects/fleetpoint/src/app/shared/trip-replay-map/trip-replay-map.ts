@@ -60,6 +60,9 @@ const LEG_GAP_DISTANCE_M = 100;
 const TELEPORT_MPS = 45;
 // Moderate impossible transitions usually mean missed packets: retain the new
 // point as a new leg. Only extreme excursions are treated as corrupt fixes.
+// The 100 m floor matters: with sparse reporting (multi-day trails), a fast
+// driven loop's consecutive fixes can imply > 45 m/s over 50–100 m — splitting
+// those shatters a real loop into 2-point straight-chord fragments.
 const TELEPORT_DROP_DISTANCE_M = 20_000;
 const MATCH_CONFIDENCE_MIN = 0.1;
 const MATCH_BATCH_SIZE = 100;
@@ -68,15 +71,16 @@ const MATCH_BATCH_OVERLAP = 3;
 // coverage in industrial/desert areas needs more room to find a mapped road).
 const MATCH_RADIUS_M = 15;
 const MATCH_RADIUS_WIDE_M = 30;
+// Last-resort radius before the raw fallback — sparse industrial/desert road
+// networks sometimes need this much room to anchor the leg onto a mapped road
+// (legacy OsrmTrailUtils tunables used 60 m as the wide radius).
+const MATCH_RADIUS_LAST_M = 60;
 const DETOUR_RATIO_MAX = 1.35;
 // A match must stay inside the raw GPS corridor: matched vertices that drift
 // off the recorded fix polyline mean OSRM invented a shortcut/detour.
 const MATCH_CORRIDOR_MAX_M = 45;
 const MATCH_CORRIDOR_P95_M = 30;
 const MATCH_CORRIDOR_OUTLIER_FRACTION = 0.08;
-const ESTIMATED_GAP_MAX_SPEED_KPH = 160;
-const ESTIMATED_ROUTE_MAX_SPEED_KPH = 160;
-const ESTIMATED_ROUTE_MAX_DETOUR_RATIO = 2;
 
 interface OsrmTrailPoint {
   lat: number;
@@ -461,7 +465,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         type: 'line',
         filter: ['==', ['get', 'kind'], 'estimated'],
         paint: {
-          'line-color': '#d99000',
+          // Same colour as the main trail — the dash pattern alone separates
+          // estimated from recorded segments.
+          'line-color': routeColor,
           'line-width': 3,
           'line-opacity': 0.9,
           'line-dasharray': [1.2, 1.6],
@@ -591,9 +597,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         const segment = await this.matchLegToRoad(leg, run.signal);
         if (!segment.length) continue;
         if (this.legEnds.length) {
-          // Gap estimation between legs: an estimatable gap (real road path,
-          // plausible implied speed) is bridged with an OSRM /route drawn as a
-          // DASHED estimate; anything else stays an unbridged break.
+          // Gap estimation between legs: EVERY gap is bridged with the OSRM
+          // /route road path, rendered as a DASHED estimate.
           const estimated = await this.estimateGap(
             this.legEnds.at(-1)![1],
             leg[0],
@@ -632,23 +637,19 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return trimmed;
   }
 
-  // Gap classification (QE-demo-fixes describeTrailGap/canEstimateGap):
-  // - < LEG_GAP_DISTANCE_M or no elapsed time: negligible, straight join;
-  // - implied speed above ESTIMATED_GAP_MAX_SPEED_KPH: teleport-grade jump,
-  //   don't pretend there is a road (unbridged break);
-  // - otherwise: ask OSRM /route for the estimated road path.
+  // Gap classification: the fixes are always chronological, so ANY gap between
+  // two consecutive legs — close or far, regardless of implied speed — is
+  // bridged with the OSRM /route road path (the shortest drivable connection
+  // between the two points). Never a straight line, never a hole. Only a
+  // degenerate zero-length gap skips the request.
   private async estimateGap(
     from: OsrmTrailPoint,
     to: OsrmTrailPoint,
     runSignal: AbortSignal | undefined,
   ): Promise<LatLng[]> {
-    const distance = this.haversine(from.lat, from.lng, to.lat, to.lng);
-    if (distance < LEG_GAP_DISTANCE_M) return [];
-    const elapsedSeconds = (to._ts - from._ts) / 1000;
-    const impliedSpeedKph =
-      elapsedSeconds > 0 ? (distance / elapsedSeconds) * 3.6 : Number.POSITIVE_INFINITY;
-    if (impliedSpeedKph > ESTIMATED_GAP_MAX_SPEED_KPH) return [];
-    return (await this.sendSnapToRoadRequestRoute(from, to, elapsedSeconds, runSignal)) ?? [];
+    if (this.haversine(from.lat, from.lng, to.lat, to.lng) < 1) return [];
+    if ((to._ts - from._ts) / 1000 <= 0) return [];
+    return (await this.sendSnapToRoadRequestRoute(from, to, runSignal)) ?? [];
   }
 
   // Cleans + segments the raw fix stream into independent legs before OSRM
@@ -673,6 +674,10 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       // parseable timestamp never enter the pipeline.
       if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) continue;
       if (!Number.isFinite(ts)) continue;
+      // Exact duplicate fixes (QE-demo-fixes createSnapToRoad dedupe) would
+      // skew /match's timestamp interpolation.
+      const prev = parsed.at(-1);
+      if (prev && prev.lat === lat && prev.lng === lng && prev._ts === ts) continue;
       parsed.push({ lat, lng, _ts: ts, speed: Number(p.speed) || 0 });
     }
     parsed.sort((a, b) => a._ts - b._ts);
@@ -822,7 +827,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   ): Promise<LatLng[]> {
     const geometry =
       (await this.attemptMatch(leg, MATCH_RADIUS_M, runSignal)) ??
-      (await this.attemptMatch(leg, MATCH_RADIUS_WIDE_M, runSignal));
+      (await this.attemptMatch(leg, MATCH_RADIUS_WIDE_M, runSignal)) ??
+      (await this.attemptMatch(leg, MATCH_RADIUS_LAST_M, runSignal));
     return geometry ?? leg.map((p) => [p.lat, p.lng] as LatLng);
   }
 
@@ -920,20 +926,18 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     });
   }
 
-  // Bridges an estimatable gap between two legs with the actual road path from
-  // the OSRM /route service, rejected when it detours beyond
-  // ESTIMATED_ROUTE_MAX_DETOUR_RATIO of the straight-line distance.
+  // Bridges a gap between two legs with the actual road path from the OSRM
+  // /route service. No speed/detour rejection: the fixes are chronological, so
+  // whatever drivable path OSRM returns IS the estimate.
   private async sendSnapToRoadRequestRoute(
     from: OsrmTrailPoint,
     to: OsrmTrailPoint,
-    elapsedSeconds: number,
     runSignal: AbortSignal | undefined,
   ): Promise<LatLng[] | null> {
     const coords = `${from.lng},${from.lat};${to.lng},${to.lat}`;
     const url =
       `${environment.osrmBaseUrl}/route/v1/driving/${coords}` +
       `?overview=full&geometries=geojson&alternatives=false&steps=false`;
-    const straight = this.haversine(from.lat, from.lng, to.lat, to.lng);
     return this.osrmGeometryRequest<{
       code?: string;
       routes?: Array<{
@@ -949,14 +953,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       if (routeCoords.length < 2) return null;
       const routeDistance = route?.distance ?? 0;
       if (!Number.isFinite(routeDistance) || routeDistance <= 0) return null;
-      // Reject the estimate when driving it would imply an impossible speed,
-      // or when it detours beyond ESTIMATED_ROUTE_MAX_DETOUR_RATIO of the
-      // straight-line distance (QE-demo-fixes evaluateEstimatedRoute).
-      const routeSpeedKph =
-        elapsedSeconds > 0 ? (routeDistance / elapsedSeconds) * 3.6 : Number.POSITIVE_INFINITY;
-      if (routeSpeedKph > ESTIMATED_ROUTE_MAX_SPEED_KPH) return null;
-      const detourRatio = straight > 0 ? routeDistance / straight : 1;
-      if (detourRatio > ESTIMATED_ROUTE_MAX_DETOUR_RATIO) return null;
       return routeCoords;
     });
   }
