@@ -115,4 +115,26 @@ export class FleetDashboardApiService {
       { params: new HttpParams().set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone) },
     );
   }
+
+  getTodayViolationCount(): Observable<ApiResponse<{ count: number }>> {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    return this.http.get<ApiResponse<{ count: number }>>(
+      `${FLEET_API}/common/violation`,
+      {
+        params: new HttpParams()
+          .set('offset', '0')
+          .set('limit', '0')
+          .set('order_by', '')
+          .set('order', '')
+          .set('start_datetime', fmt(start))
+          .set('end_datetime', fmt(now))
+          .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone)
+          .set('group', '0'),
+      },
+    );
+  }
 }

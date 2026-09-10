@@ -471,7 +471,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
     // If OSRM fallback is active, use raw trail data directly without filtering/matching
     if (this.mapFallbackToRaw()) {
       const rawPositions = trail
-        .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long)));
+        .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long)))
+        .sort((a, b) => this.trailTimestampMs(a) - this.trailTimestampMs(b));
       if (rawPositions.length < 2) {
         this.trip.set({
           ...EMPTY_TRIP,
@@ -594,7 +595,11 @@ export class TripReplayPage implements OnInit, OnDestroy {
                 item.timestamp === row.timestamp,
             ),
         )
-        .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long))),
+        .filter((row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.long)))
+        // Chronological order: the map sorts trail points by timestamp, so the
+        // page's positions/events/playback indices must follow the same order
+        // or markers and event dots land at the wrong trail locations.
+        .sort((a, b) => this.trailTimestampMs(a) - this.trailTimestampMs(b)),
     );
     if (unique.length < 2) {
       this.trip.set({
@@ -716,6 +721,12 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.positionIndex.set(0);
   }
 
+  // Stable sort key for trail rows: unparseable timestamps keep API order
+  // (Array.prototype.sort is stable) instead of jumping to the front.
+  private trailTimestampMs(row: PlaybackTrailRecord): number {
+    const ms = new Date(row.timestamp).getTime();
+    return Number.isFinite(ms) ? ms : 0;
+  }
   private longestContinuousTrail(trail: PlaybackTrailRecord[]): PlaybackTrailRecord[] {
     if (trail.length < 2) return trail;
     const segments: PlaybackTrailRecord[][] = [[]];

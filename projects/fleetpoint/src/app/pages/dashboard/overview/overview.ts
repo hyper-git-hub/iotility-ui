@@ -1,6 +1,7 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Skeleton, StatusBadge, TableColumn, TableRow } from '@iotility/shared-ui';
-import { finalize } from 'rxjs';
+import { finalize, interval } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCardTone } from '../../../shared/stat-card/stat-card';
 import {
@@ -16,7 +17,6 @@ import {
   mergeDashboardGraphs,
 } from '../../../shared/services/dashboard-graphs';
 import { DashboardWidgetsService } from '../../../shared/services/dashboard-widgets.service';
-import { NotificationService } from '../../../shared/services/notification.service';
 
 @Component({
   selector: 'app-dashboard-overview',
@@ -73,7 +73,7 @@ export class Overview implements OnInit {
       else if (vehicle.ignition_status) status.idling++;
       else status.stopped++;
     }
-    status.alert = this.notificationService.last24hCount();
+    status.alert = this.violationCount();
     return status;
   });
   protected readonly fleetStatusItems = computed(() => {
@@ -111,12 +111,16 @@ export class Overview implements OnInit {
     alerts: camera.notifications ? `${camera.notifications} alerts` : 'Active',
   })));
 
-  constructor(
-    private readonly api: FleetDashboardApiService,
-    private readonly notificationService: NotificationService,
-  ) {}
+  protected readonly violationCount = signal(0);
+  private readonly destroyRef = inject(DestroyRef);
 
-  ngOnInit(): void { this.loadDashboard(); }
+  constructor(private readonly api: FleetDashboardApiService) {}
+
+  ngOnInit(): void {
+    this.loadDashboard();
+    this.loadViolationCount();
+    interval(30_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadViolationCount());
+  }
 
   protected loadDashboard(): void {
     this.loadFleetData();
@@ -170,6 +174,13 @@ export class Overview implements OnInit {
     this.api.getFleets().pipe(finalize(() => this.fleetLoading.set(false))).subscribe({
       next: (fleets) => this.fleets.set(fleets.data?.data ?? []),
       error: () => this.fleets.set([]),
+    });
+  }
+
+  private loadViolationCount(): void {
+    this.api.getTodayViolationCount().subscribe({
+      next: (res) => this.violationCount.set(res.data?.count ?? 0),
+      error: () => this.violationCount.set(0),
     });
   }
 

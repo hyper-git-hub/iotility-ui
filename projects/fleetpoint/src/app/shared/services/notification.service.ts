@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { initializeApp, getApps } from 'firebase/app';
 import { getDatabase, onValue, ref } from 'firebase/database';
@@ -39,14 +39,6 @@ export class NotificationService {
 
   readonly notifications = signal<FleetNotification[]>([]);
   readonly unreadCount = signal(0);
-  readonly last24hCount = computed(() => {
-    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-    return this.notifications().filter((n) => {
-      const ts = n.notf_created_at || n.event_generation_time;
-      if (!ts) return false;
-      return new Date(ts).getTime() >= cutoff;
-    }).length;
-  });
   readonly loading = signal(false);
   readonly error = signal(false);
 
