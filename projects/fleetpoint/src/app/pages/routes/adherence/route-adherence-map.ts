@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild } from '@angular/core';
 import maplibregl, { Map } from 'maplibre-gl';
 import {
   LatLng,
@@ -10,10 +10,27 @@ import {
   popup,
   upsertGeoJson,
 } from '../../../shared/maps/maplibre';
+import { MapControls } from '../../../shared/map-overlays/map-controls';
 
 @Component({
   selector: 'app-route-adherence-map',
-  template: '<div #map class="map-host" aria-label="Route adherence map"></div>',
+  imports: [MapControls],
+  host: { '[class.is-fullscreen]': 'isFullscreen()' },
+  template: `
+    <div #map class="map-host" aria-label="Route adherence map"></div>
+    <div class="map-overlays">
+      <app-map-controls
+        class="overlay-controls"
+        [fullscreen]="isFullscreen()"
+        (zoomIn)="zoomIn()"
+        (zoomOut)="zoomOut()"
+        (toggle3D)="onToggle3D()"
+        (resetNorth)="onResetNorth()"
+        (rotate)="onRotate()"
+        (fullscreenToggle)="onFullscreenToggle()"
+      />
+    </div>
+  `,
   styleUrl: './route-adherence-map.css',
 })
 export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
@@ -73,6 +90,38 @@ export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
       render();
       fitLatLngs(this.map!, [...planned, ...actual, ...deviated], 35);
     });
+  }
+
+  protected readonly isFullscreen = signal(false);
+
+  protected zoomIn(): void {
+    this.map?.zoomIn();
+  }
+
+  protected zoomOut(): void {
+    this.map?.zoomOut();
+  }
+
+  // Button behaviour mirrors the shared fleet map so every map in the app
+  // responds to the overlay identically.
+  protected onToggle3D(): void {
+    if (!this.map) return;
+    this.map.easeTo({ pitch: this.map.getPitch() > 0 ? 0 : 60, duration: 500 });
+  }
+
+  protected onResetNorth(): void {
+    this.map?.easeTo({ bearing: 0, duration: 500 });
+  }
+
+  protected onRotate(): void {
+    if (!this.map) return;
+    this.map.easeTo({ bearing: this.map.getBearing() + 90, duration: 500 });
+  }
+
+  protected onFullscreenToggle(): void {
+    this.isFullscreen.update((value) => !value);
+    // The host changes size, so MapLibre must re-measure after layout.
+    requestAnimationFrame(() => requestAnimationFrame(() => this.map?.resize()));
   }
 
   private endpoint(point: LatLng, color: string, label: string): maplibregl.Marker {

@@ -1,2 +1,2 @@
 @reference "../../../../styles.css";
-:host,.map-host{@apply block h-full w-full;}.map-host{@apply bg-brand-50;}
+:host,.map-host{@apply block h-full w-full;}:host{@apply relative;}:host(.is-fullscreen){position:fixed;inset:0;z-index:1200;}.map-host{@apply bg-brand-50;}.map-overlays{@apply pointer-events-none absolute inset-0 z-[500];}.overlay-controls{@apply pointer-events-auto absolute right-4 top-4;}

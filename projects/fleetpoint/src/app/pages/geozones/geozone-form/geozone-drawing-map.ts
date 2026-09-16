@@ -3,6 +3,7 @@ import { Map } from 'maplibre-gl';
 import {
   LatLng, circlePolygon, createIotMap, timezoneCenter, polygonFeature, removeGeoJson, upsertGeoJson,
 } from '../../../shared/maps/maplibre';
+import { MapControls } from '../../../shared/map-overlays/map-controls';
 
 export interface GeozoneGeometry {
   shape: 'circle' | 'polygon';
@@ -13,6 +14,7 @@ export interface GeozoneGeometry {
 
 @Component({
   selector: 'app-geozone-drawing-map',
+  imports: [MapControls],
   templateUrl: './geozone-drawing-map.html',
   styleUrl: './geozone-drawing-map.css',
 })
@@ -80,6 +82,16 @@ export class GeozoneDrawingMap implements AfterViewInit, OnDestroy {
     if (this.active()) this.startDrawing();
     this.resizeObserver = new ResizeObserver(() => this.map?.resize());
     this.resizeObserver.observe(this.mapElement().nativeElement);
+  }
+
+  // Zoom-only overlay handlers (see the template comment): rotation and pitch
+  // are switched off in this map's options, so only zoom is offered.
+  protected zoomIn(): void {
+    this.map?.zoomIn();
+  }
+
+  protected zoomOut(): void {
+    this.map?.zoomOut();
   }
 
   protected startDrawing(): void {

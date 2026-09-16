@@ -127,12 +127,19 @@
 .map-shell app-trip-replay-map.map-loaded {
   opacity: 1;
 }
+/* Anchored to the top centre of the map. Centring uses left/right zero plus a
+   fit-content width and auto margins (not translateX(-50%)) so the
+   event-alert-in keyframes stay free of horizontal translation and the toast
+   animates straight down onto its centred resting position. */
 .map-event-alert {
   position: absolute;
-  right: 16px;
+  left: 0;
+  right: 0;
   top: 16px;
   z-index: 500;
   display: flex;
+  width: fit-content;
+  margin-inline: auto;
   max-width: min(24rem, calc(100% - 2rem));
   align-items: flex-start;
   gap: 10px;

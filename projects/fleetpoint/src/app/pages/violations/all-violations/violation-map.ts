@@ -6,16 +6,41 @@ import {
   effect,
   input,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
 import { createIotMap, fitLatLngs, markerElement, popupHtml, timezoneCenter } from '../../../shared/maps/maplibre';
+import { MapControls } from '../../../shared/map-overlays/map-controls';
 import { ViolationDisplay } from '../all-violations/all-violations';
 
 @Component({
   selector: 'app-violation-map',
-  template: '<div #map class="map" aria-label="Violation locations"></div>',
-  styles: ':host,.map{display:block;width:100%;height:100%;min-height:0}.map{background:var(--color-brand-50)}',
+  imports: [MapControls],
+  host: { '[class.is-fullscreen]': 'isFullscreen()' },
+  template: `
+    <div #map class="map" aria-label="Violation locations"></div>
+    <div class="map-overlays">
+      <app-map-controls
+        class="overlay-controls"
+        [fullscreen]="isFullscreen()"
+        (zoomIn)="zoomIn()"
+        (zoomOut)="zoomOut()"
+        (toggle3D)="onToggle3D()"
+        (resetNorth)="onResetNorth()"
+        (rotate)="onRotate()"
+        (fullscreenToggle)="onFullscreenToggle()"
+      />
+    </div>
+  `,
+  styles: `
+    :host,.map{display:block;width:100%;height:100%;min-height:0}
+    :host{position:relative}
+    :host(.is-fullscreen){position:fixed;inset:0;z-index:1200}
+    .map{background:var(--color-brand-50)}
+    .map-overlays{pointer-events:none;position:absolute;inset:0;z-index:500}
+    .overlay-controls{pointer-events:auto;position:absolute;right:1rem;top:1rem}
+  `,
 })
 export class ViolationMap implements AfterViewInit, OnDestroy {
   readonly violations = input.required<ViolationDisplay[]>();
@@ -63,21 +88,46 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     const element = this.mapElement().nativeElement;
-    // Default map center to Pakistan; will override if geolocation succeeds
+    // No device-location lookup: the viewport is driven only by the violations
+    // themselves, which render() frames with fitLatLngs below. This timezone
+    // centre is just the placeholder for the instant before that first fit
+    // (and the resting view when there are no plottable violations).
     this.instance = createIotMap(element, timezoneCenter(), 6);
     this.resizeObserver = new ResizeObserver(() => this.instance?.resize());
     this.resizeObserver.observe(element);
-    // Attempt live geolocation, overriding the default on success
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          this.instance!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 10, duration: 700 });
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 8000 },
-      );
-    }
     this.instance.once('load', () => this.render(this.violations()));
+  }
+
+  protected readonly isFullscreen = signal(false);
+
+  protected zoomIn(): void {
+    this.instance?.zoomIn();
+  }
+
+  protected zoomOut(): void {
+    this.instance?.zoomOut();
+  }
+
+  // Button behaviour mirrors the shared fleet map so every map in the app
+  // responds to the overlay identically.
+  protected onToggle3D(): void {
+    if (!this.instance) return;
+    this.instance.easeTo({ pitch: this.instance.getPitch() > 0 ? 0 : 60, duration: 500 });
+  }
+
+  protected onResetNorth(): void {
+    this.instance?.easeTo({ bearing: 0, duration: 500 });
+  }
+
+  protected onRotate(): void {
+    if (!this.instance) return;
+    this.instance.easeTo({ bearing: this.instance.getBearing() + 90, duration: 500 });
+  }
+
+  protected onFullscreenToggle(): void {
+    this.isFullscreen.update((value) => !value);
+    // The host changes size, so MapLibre must re-measure after layout.
+    requestAnimationFrame(() => requestAnimationFrame(() => this.instance?.resize()));
   }
 
   private render(records: ViolationDisplay[]): void {

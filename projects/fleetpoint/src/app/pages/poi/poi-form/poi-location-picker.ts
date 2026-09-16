@@ -1,6 +1,7 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, output, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, output, signal, viewChild } from '@angular/core';
 import maplibregl, { Map } from 'maplibre-gl';
 import { createIotMap, timezoneCenter, markerElement } from '../../../shared/maps/maplibre';
+import { MapControls } from '../../../shared/map-overlays/map-controls';
 
 export interface PoiCoordinates {
   latitude: number;
@@ -9,7 +10,23 @@ export interface PoiCoordinates {
 
 @Component({
   selector: 'app-poi-location-picker',
-  template: '<div #map class="location-map" aria-label="Choose POI location on map"></div>',
+  imports: [MapControls],
+  host: { '[class.is-fullscreen]': 'isFullscreen()' },
+  template: `
+    <div #map class="location-map" aria-label="Choose POI location on map"></div>
+    <div class="map-overlays">
+      <app-map-controls
+        class="overlay-controls"
+        [fullscreen]="isFullscreen()"
+        (zoomIn)="zoomIn()"
+        (zoomOut)="zoomOut()"
+        (toggle3D)="onToggle3D()"
+        (resetNorth)="onResetNorth()"
+        (rotate)="onRotate()"
+        (fullscreenToggle)="onFullscreenToggle()"
+      />
+    </div>
+  `,
   styleUrl: './poi-location-picker.css',
 })
 export class PoiLocationPicker implements AfterViewInit, OnDestroy {
@@ -35,6 +52,38 @@ export class PoiLocationPicker implements AfterViewInit, OnDestroy {
     this.map.on('click', ({ lngLat }) => this.selectLocation(lngLat.lat, lngLat.lng));
     this.resizeObserver = new ResizeObserver(() => this.map?.resize());
     this.resizeObserver.observe(this.mapElement().nativeElement);
+  }
+
+  protected readonly isFullscreen = signal(false);
+
+  protected zoomIn(): void {
+    this.map?.zoomIn();
+  }
+
+  protected zoomOut(): void {
+    this.map?.zoomOut();
+  }
+
+  // Button behaviour mirrors the shared fleet map so every map in the app
+  // responds to the overlay identically.
+  protected onToggle3D(): void {
+    if (!this.map) return;
+    this.map.easeTo({ pitch: this.map.getPitch() > 0 ? 0 : 60, duration: 500 });
+  }
+
+  protected onResetNorth(): void {
+    this.map?.easeTo({ bearing: 0, duration: 500 });
+  }
+
+  protected onRotate(): void {
+    if (!this.map) return;
+    this.map.easeTo({ bearing: this.map.getBearing() + 90, duration: 500 });
+  }
+
+  protected onFullscreenToggle(): void {
+    this.isFullscreen.update((value) => !value);
+    // The host changes size, so MapLibre must re-measure after layout.
+    requestAnimationFrame(() => requestAnimationFrame(() => this.map?.resize()));
   }
 
   private selectLocation(latitude: number, longitude: number): void {

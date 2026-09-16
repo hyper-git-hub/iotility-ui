@@ -1,5 +1,16 @@
 <div class="drawing-map-shell" [class.is-drawing]="drawingState()==='drawing'">
   <div #map class="drawing-map" aria-label="Draw the geozone boundary"></div>
+  <!-- Zoom-only overlay: this map deliberately disables rotation and pitch
+       (dragRotate/touchPitch false, bounded to the operating region), so the
+       3D/rotate controls would contradict its configured behaviour. -->
+  <div class="map-overlays">
+    <app-map-controls
+      class="overlay-controls"
+      [zoomOnly]="true"
+      (zoomIn)="zoomIn()"
+      (zoomOut)="zoomOut()"
+    />
+  </div>
   <div class="drawing-instruction" [class.complete]="drawingState()==='complete'">
     <span>
       @if(drawingState()==='complete'){
