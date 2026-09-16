@@ -44,6 +44,7 @@ interface GaugeLabel {
   y: number;
   value: number;
 }
+interface GaugeLine { x1: number; y1: number; x2: number; y2: number }
 
 function polar(value: number, radius: number): { x: number; y: number } {
   const radians = ((162 + value * DEG_PER_UNIT) * Math.PI) / 180;
@@ -57,45 +58,36 @@ function gaugePoint(value: number, radius: number, length: number): { p1: { x: n
 /* Dial tick + pin colors ride the theme ramp: cyan → blue → indigo → purple →
    fuchsia → pink → rose. Uses Tailwind theme tokens so it follows the palette. */
 const MAJOR_TICK_AT: Array<[number, string, number]> = [
-  [0, 'var(--color-sky-400)', 2.5],
-  [20, 'var(--color-sky-400)', 2.5],
-  [40, 'var(--color-blue-400)', 2],
-  [60, 'var(--color-indigo-400)', 2],
-  [80, 'var(--color-purple-400)', 1.8],
-  [100, 'var(--color-fuchsia-400)', 1.8],
-  [120, 'var(--color-pink-400)', 2],
-  [140, 'var(--color-rose-400)', 2],
-  [160, 'var(--color-rose-500)', 2.5],
-  [180, 'var(--color-rose-500)', 2.5],
+  [0, 'var(--color-sky-400)', 1],
+  [20, 'var(--color-sky-400)', 1],
+  [40, 'var(--color-blue-400)', 1],
+  [60, 'var(--color-indigo-400)', 1],
+  [80, 'var(--color-purple-400)', 1],
+  [100, 'var(--color-fuchsia-400)', 1],
+  [120, 'var(--color-pink-400)', 1],
+  [140, 'var(--color-rose-400)', 1],
+  [160, 'var(--color-rose-500)', 1],
+  [180, 'var(--color-rose-500)', 1],
 ];
 const TICKS: GaugeTick[] = MAJOR_TICK_AT.map(([value, stroke, width]) => {
   const { p1, p2 } = gaugePoint(value, 108, 98);
   return { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke, width };
 });
 
+/* Ten-kilometre subdivisions make the scale genuinely readable rather than
+   decorative. Major values keep the colour ramp; minor marks stay neutral. */
+const MINOR_TICKS: GaugeLine[] = Array.from({ length: 17 }, (_, index) => (index + 1) * 10)
+  .filter((value) => value % 20 !== 0)
+  .map((value) => {
+    const { p1, p2 } = gaugePoint(value, 106, 101);
+    return { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
+  });
+
 /* Printed numbers centered on each major tick's angle, just inside the ticks. */
 const LABEL_RADIUS = 86;
 const LABELS: GaugeLabel[] = MAJOR_TICK_AT.map(([value]) => {
   const { x, y } = polar(value, LABEL_RADIUS);
   return { x, y, value };
-});
-
-/* Fine radial mesh lines converging to the hub (static ambient detail). */
-const MESH_LINES: Array<{ x1: number; y1: number; x2: number; y2: number }> = [
-  { x1: 140, y1: 110, x2: 70, y2: 80 },
-  { x1: 140, y1: 110, x2: 88, y2: 60 },
-  { x1: 140, y1: 110, x2: 110, y2: 46 },
-  { x1: 140, y1: 110, x2: 140, y2: 40 },
-  { x1: 140, y1: 110, x2: 170, y2: 46 },
-  { x1: 140, y1: 110, x2: 192, y2: 60 },
-  { x1: 140, y1: 110, x2: 210, y2: 80 },
-];
-
-/* Colored pins sat exactly on the dial rim (r=108) at every major tick angle,
-   sharing the tick color ramp so all siblings match. */
-const RIM_MARKS: Array<{ cx: number; cy: number; fill: string }> = MAJOR_TICK_AT.map(([value, fill]) => {
-  const { x, y } = polar(value, 108);
-  return { cx: x, cy: y, fill };
 });
 
 /* ── Live map (MapLibre, fleet dark style) ────────────────────
@@ -118,10 +110,9 @@ const HUD_BEARING = -18;
 const HUD_MARKER_X = 0.18;
 /* Fallback camera until live coordinates arrive (marker hidden meanwhile). */
 const HUD_FALLBACK = { lat: timezoneCenter()[0], lng: timezoneCenter()[1] } as const;
-/* The nav-arrow SVG's tip sits at ≈(68, 11) of the 89×92 viewBox (center ≈(44,44)),
-   so at rotation 0 the arrow points ~56° below the +x axis. To make rotation 0 mean
-   "point straight up" (along the road bearing), the offset must be that angle. */
-const ARROW_BEARING_OFFSET = -56;
+/* Slight visual correction so the arrow reads more upward while preserving
+   the live road/GPS bearing as its source of truth. */
+const ARROW_BEARING_OFFSET = -10;
 
 /* Bearing of the road segment nearest to the vehicle (OSM), so the marker can
    sit exactly along the street instead of a noisy GPS heading. */
@@ -211,9 +202,8 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   private bearingToken = 0;
 
   protected readonly ticks = TICKS;
+  protected readonly minorTicks = MINOR_TICKS;
   protected readonly labels = LABELS;
-  protected readonly meshLines = MESH_LINES;
-  protected readonly rimMarks = RIM_MARKS;
 
   protected readonly speed = computed(() => {
     const value = Math.round(Number(this.vehicle()?.speed ?? 0));
@@ -296,7 +286,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
       this.mapHost().nativeElement,
       [anchor.lat, anchor.lng],
       HUD_ZOOM,
-      { interactive: false, pitch: HUD_PITCH, bearing: HUD_BEARING },
+      { interactive: true, pitch: HUD_PITCH, bearing: HUD_BEARING },
     );
     /* Off-center framing needs the pixel offset, which is applied via
        syncCamera once the container has a real width. */
@@ -353,7 +343,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     const heading = Number(this.vehicle()?.['heading']);
     const fallback = Number.isFinite(heading) ? heading : 0;
     const bearing = this.roadBearing ?? fallback;
-    this.marker.setRotation((bearing + 360) % 360);
+    this.marker.setRotation((bearing + ARROW_BEARING_OFFSET + 360) % 360);
   }
 
   private loadRoadBearing(coords: { lat: number; lng: number }): void {

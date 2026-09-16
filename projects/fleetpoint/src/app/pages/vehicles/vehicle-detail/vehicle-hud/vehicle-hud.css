@@ -26,7 +26,7 @@
 
 /* ── Left map / route panel ─────────────────────────────────── */
 .hud-map-panel {
-  @apply relative z-10 flex w-full flex-col justify-between overflow-hidden p-7 lg:w-[58%] lg:p-9;
+  @apply pointer-events-none relative z-10 flex w-full flex-col justify-between overflow-hidden p-7 lg:w-[58%] lg:p-9;
 }
 
 .hud-map-overlay { @apply relative z-20 max-w-2xl select-none; }
@@ -36,7 +36,7 @@
 .hud-map-sub { @apply mt-1.5 text-xs font-medium tracking-wide text-muted dark:text-neutral-400; }
 
 .hud-map-canvas {
-  @apply absolute inset-0 z-0 pointer-events-none;
+  @apply pointer-events-auto absolute inset-0 z-0;
   /* Map spans the whole HUD section. Left ~38% (map panel) stays fully
      visible; the blur/dissolve ramps in leftward from there so the whole
      speedometer side reads as sitting on top of the map. */
@@ -117,41 +117,52 @@
 
 /* ── Right telemetry / speedometer panel ────────────────────── */
 .hud-gauge-panel {
-  @apply relative z-10 flex w-full flex-col items-center justify-between gap-4 py-4 lg:w-[42%];
+  @apply relative z-10 flex w-full flex-col items-center justify-between gap-2 px-5 py-5 lg:w-[42%] lg:px-7;
 }
 
-.hud-speedo { @apply flex w-full max-w-[360px] flex-col items-center pt-1; }
-.hud-speedo__dial { @apply flex w-[280px] items-center justify-center; }
+.hud-speedo { @apply flex w-full flex-1 flex-col items-center justify-center; min-height: 0; transform: translateY(0.35rem); }
+.hud-speedo__eyebrow { @apply mb-3 flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.18em] text-muted dark:text-neutral-400; }
+.hud-speedo__live-dot { @apply size-1.5 rounded-full bg-success; box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 15%, transparent), 0 0 10px color-mix(in srgb, var(--color-success) 55%, transparent); }
+.hud-speedo__live-dot.is-offline { @apply bg-muted; box-shadow: none; }
+.hud-speedo__dial { @apply flex flex-col items-center justify-center; width: clamp(18.5rem, 29vw, 24.5rem); max-width: 100%; }
 .hud-gauge { @apply h-full w-full overflow-visible; }
 .hud-gauge text.hud-number { fill: var(--color-slate-500); }
 :host-context(.dark) .hud-gauge text.hud-number { fill: var(--color-slate-300); }
 
-/* Dial chrome (arc, mesh, base bar): slate hairlines in light theme,
-   white hairlines in dark — mirrors the reference gauges. */
+/* Restrained dial chrome: only the calibrated outer scale remains. */
 .hud-gauge__arc { stroke: rgb(15 23 42 / 0.18); }
 :host-context(.dark) .hud-gauge__arc { stroke: rgb(255 255 255 / 0.12); }
-.hud-gauge__mesh line { stroke: rgb(15 23 42 / 0.06); }
-:host-context(.dark) .hud-gauge__mesh line { stroke: rgb(255 255 255 / 0.05); }
-.hud-gauge__base { stroke: rgb(15 23 42 / 0.18); }
-:host-context(.dark) .hud-gauge__base { stroke: rgb(255 255 255 / 0.12); }
+.hud-gauge__progress { stroke-linecap: butt; filter: drop-shadow(0 0 3px rgb(139 92 246 / 0.35)); transition: stroke-dasharray 0.5s cubic-bezier(.22, 1, .36, 1); }
+.hud-gauge__minor-ticks line { stroke: rgb(100 116 139 / 0.45); stroke-width: 1; }
+:host-context(.dark) .hud-gauge__minor-ticks line { stroke: rgb(255 255 255 / 0.22); }
+.hud-gauge__needle { filter: drop-shadow(0 0 2px rgb(244 63 94 / 0.48)); transition: transform 80ms linear; }
 
-.hud-reading { @apply -mt-2.5 flex items-center justify-center gap-3;}
-.hud-reading__value { @apply text-3xl font-extrabold tracking-tight text-ink dark:text-white; }
-.hud-reading__unit { @apply text-sm font-bold tracking-tight text-muted dark:text-neutral-300; }
+.hud-reading { @apply -mt-2 flex items-baseline justify-center gap-2; }
+.hud-reading__value { @apply text-[2.65rem] font-extrabold leading-none tracking-[-0.055em] text-ink dark:text-white; text-shadow: 0 2px 18px rgb(139 92 246 / 0.2); }
+.hud-reading__unit { @apply text-[11px] font-bold uppercase tracking-wide text-muted dark:text-neutral-400; }
 
-/* ── Telemetry stat cards (3 columns) ───────────────────────── */
+/* A low-noise telemetry rail: the map remains the surface, while fine rules
+   provide hierarchy without eight competing cards. */
 .hud-stats {
-  @apply grid w-full max-w-[440px] grid-cols-3 gap-2.5;
+  @apply grid w-full grid-cols-2 border-y border-line/80 dark:border-white/10 sm:grid-cols-4;
 }
 .hud-stats > div {
-  @apply min-h-[58px] flex flex-col items-center justify-center rounded-xl border border-line bg-white p-2.5 text-center dark:border-white/10 dark:bg-white/5 dark:backdrop-blur-sm;
+  @apply relative flex min-w-0 flex-col justify-center px-3 py-3.5 text-left;
 }
-.hud-stats > div:hover { border-color: var(--color-brand-300); }
-:host-context(.dark) .hud-stats > div:hover { border-color: rgb(255 255 255 / 0.18); }
-.hud-stats span { @apply text-[10px] font-medium tracking-wide text-muted dark:text-neutral-400; }
-.hud-stats strong { @apply mt-0.5 text-sm font-bold tracking-tight text-ink dark:text-white; }
+.hud-stats > div::after { content: ''; @apply absolute bottom-2 right-0 top-2 w-px bg-line/80 dark:bg-white/10; }
+.hud-stats > div:nth-child(4n)::after { display: none; }
+.hud-stats > div:nth-child(n+5) { @apply border-t border-line/80 dark:border-white/10; }
+.hud-stats > div::before { content: ''; @apply absolute left-3 top-0 h-px w-5 bg-transparent; }
+.hud-stats > div[data-accent="blue"]::before { @apply bg-sky-400; }
+.hud-stats > div[data-accent="violet"]::before { @apply bg-violet-400; }
+.hud-stats > div[data-accent="cyan"]::before { @apply bg-cyan-400; }
+.hud-stats > div[data-accent="rose"]::before { @apply bg-rose-400; }
+.hud-stats span { @apply truncate text-[9px] font-semibold uppercase tracking-[0.12em] text-muted dark:text-neutral-500; }
+.hud-stats strong { @apply mt-1 flex items-center gap-1.5 text-[13px] font-semibold tracking-tight text-ink dark:text-neutral-100; }
+.hud-stats strong small { @apply text-[9px] font-semibold uppercase tracking-normal text-muted dark:text-neutral-500; }
 .hud-stats__truncate { @apply w-full truncate; }
-.hud-stats__driver { @apply col-span-2; }
+.hud-state-dot { @apply size-1.5 shrink-0 rounded-full bg-muted not-italic; }
+.hud-state-dot.is-on { @apply bg-success; box-shadow: 0 0 6px color-mix(in srgb, var(--color-success) 70%, transparent); }
 
 /* ── Loading skeleton: same shell, data slots shimmer ───────── */
 .hud-gauge--skeleton .hud-gauge__skeleton-ticks line { stroke: color-mix(in srgb, currentColor 25%, transparent); }
@@ -160,4 +171,11 @@
 @media (prefers-reduced-motion: reduce) {
   .vehicle-hud__ambient span { animation: none; }
   :host ::ng-deep .hud-nav-marker .hud-nav-marker-pulse { animation: none; opacity: 0.3; transform: scale(1); }
+}
+
+@media (max-width: 639px) {
+  .hud-speedo { transform: none; }
+  .hud-speedo__dial { width: min(19rem, 100%); }
+  .hud-stats > div:nth-child(2n)::after { display: none; }
+  .hud-stats > div:nth-child(3), .hud-stats > div:nth-child(4) { @apply border-t border-line/80 dark:border-white/10; }
 }

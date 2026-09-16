@@ -29,6 +29,10 @@
 
     <section class="hud-gauge-panel" aria-hidden="true">
       <div class="hud-speedo">
+        <div class="hud-speedo__eyebrow">
+          <span class="hud-speedo__live-dot"></span>
+          Live speed
+        </div>
         <div class="hud-speedo__dial">
           <svg class="hud-gauge hud-gauge--skeleton" viewBox="0 0 280 180">
             <defs>
@@ -39,11 +43,6 @@
               </radialGradient>
             </defs>
             <path class="hud-gauge__arc" d="M 37.3 143.4 A 108 108 0 1 1 242.7 143.4" fill="none" stroke-width="1.5"></path>
-            <g class="hud-gauge__mesh" stroke-width="1">
-              @for (line of meshLines; track $index) {
-                <line [attr.x1]="line.x1" [attr.y1]="line.y1" [attr.x2]="line.x2" [attr.y2]="line.y2"></line>
-              }
-            </g>
             <g class="hud-gauge__skeleton-ticks">
               @for (tick of ticks; track tick.x1 + '-' + tick.y1) {
                 <line [attr.stroke-width]="tick.width" [attr.x1]="tick.x1" [attr.y1]="tick.y1" [attr.x2]="tick.x2" [attr.y2]="tick.y2"></line>
@@ -54,9 +53,7 @@
             <circle cx="140" cy="110" fill="#ffffff" r="3"></circle>
             <line class="hud-gauge__base" stroke-linecap="round" stroke-width="2" x1="45" x2="235" y1="152" y2="152"></line>
           </svg>
-        </div>
-        <div class="hud-reading">
-          <ui-skeleton width="5.5rem" height="2rem" radius="0.5rem" />
+          <div class="hud-reading"><ui-skeleton width="5.5rem" height="2rem" radius="0.5rem" /></div>
         </div>
       </div>
 
@@ -70,7 +67,7 @@
       </div>
     </section>
   } @else {
-  <div class="hud-map-canvas" aria-hidden="true">
+  <div class="hud-map-canvas" aria-label="Interactive vehicle location map">
     <div #mapHost class="hud-maplibre"></div>
   </div>
 
@@ -100,13 +97,25 @@
   <!-- Right: Speedometer + telemetry (~42%) -->
   <section class="hud-gauge-panel" aria-label="Live speed gauge">
     <div class="hud-speedo">
+      <div class="hud-speedo__eyebrow">
+        <span class="hud-speedo__live-dot" [class.is-offline]="!online()"></span>
+        {{ online() ? 'Live speed' : 'Last reported speed' }}
+      </div>
       <div class="hud-speedo__dial">
-        <svg class="hud-gauge" viewBox="0 0 280 180" role="img" [attr.aria-label]="'Vehicle speed ' + shownSpeed() + ' kilometers per hour'">
+        <svg class="hud-gauge" viewBox="0 0 280 158" role="img" [attr.aria-label]="'Vehicle speed ' + shownSpeed() + ' kilometers per hour'">
           <defs>
             <linearGradient id="hudNeedleGradient" x1="0%" x2="100%" y1="0%" y2="0%">
               <stop offset="0%" style="stop-color: var(--color-rose-500)"></stop>
               <stop offset="85%" style="stop-color: var(--color-rose-400)"></stop>
               <stop offset="100%" stop-color="#ffffff"></stop>
+            </linearGradient>
+            <linearGradient id="hudSpeedProgressGradient" x1="37.3" y1="143.4" x2="242.7" y2="143.4" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" style="stop-color: var(--color-cyan-400)"></stop>
+              <stop offset="24%" style="stop-color: var(--color-blue-400)"></stop>
+              <stop offset="48%" style="stop-color: var(--color-violet-400)"></stop>
+              <stop offset="68%" style="stop-color: var(--color-fuchsia-400)"></stop>
+              <stop offset="84%" style="stop-color: var(--color-pink-400)"></stop>
+              <stop offset="100%" style="stop-color: var(--color-rose-500)"></stop>
             </linearGradient>
             <radialGradient id="hudHubGlow" cx="50%" cy="50%" r="50%">
               <stop offset="0%" style="stop-color: var(--color-purple-500)" stop-opacity="0.4"></stop>
@@ -116,33 +125,28 @@
           </defs>
 
           <!-- outer dial arch baseline -->
-          <path class="hud-gauge__arc" d="M 37.3 143.4 A 108 108 0 1 1 242.7 143.4" fill="none" stroke-width="1.5"></path>
+          <path class="hud-gauge__arc" d="M 37.3 143.4 A 108 108 0 1 1 242.7 143.4" fill="none" stroke-width="1.5" pathLength="180"></path>
+          <path class="hud-gauge__progress" d="M 37.3 143.4 A 108 108 0 1 1 242.7 143.4" fill="none" pathLength="180" stroke="url(#hudSpeedProgressGradient)" stroke-width="1.75" [attr.stroke-dasharray]="shownSpeed() + ' ' + (180 - shownSpeed())"></path>
 
-          <!-- fine radial mesh -->
-          <g class="hud-gauge__mesh" stroke-width="1">
-            @for (line of meshLines; track $index) {
-              <line [attr.x1]="line.x1" [attr.y1]="line.y1" [attr.x2]="line.x2" [attr.y2]="line.y2"></line>
+          <g class="hud-gauge__minor-ticks">
+            @for (tick of minorTicks; track tick.x1 + '-' + tick.y1) {
+              <line [attr.x1]="tick.x1" [attr.y1]="tick.y1" [attr.x2]="tick.x2" [attr.y2]="tick.y2"></line>
             }
           </g>
 
           <!-- major ticks -->
           @for (tick of ticks; track tick.x1 + '-' + tick.y1) {
-            <line [style.stroke]="tick.stroke" [attr.stroke-width]="tick.width" [attr.x1]="tick.x1" [attr.y1]="tick.y1" [attr.x2]="tick.x2" [attr.y2]="tick.y2"></line>
-          }
-
-          <!-- rim dots -->
-          @for (mark of rimMarks; track mark.cx + '-' + mark.cy) {
-            <circle [attr.cx]="mark.cx" [attr.cy]="mark.cy" [style.fill]="mark.fill" r="2.8"></circle>
+            <line stroke-linecap="butt" [style.stroke]="tick.stroke" [attr.stroke-width]="tick.width" [attr.x1]="tick.x1" [attr.y1]="tick.y1" [attr.x2]="tick.x2" [attr.y2]="tick.y2"></line>
           }
 
           <!-- printed numbers -->
           @for (label of labels; track label.value) {
-            <text dominant-baseline="central" font-size="8.5" font-weight="600" text-anchor="middle" [attr.x]="label.x" [attr.y]="label.y" class="hud-number">{{ label.value }}</text>
+            <text dominant-baseline="central" font-size="9" font-weight="600" text-anchor="middle" [attr.x]="label.x" [attr.y]="label.y" class="hud-number">{{ label.value }}</text>
           }
 
           <!-- needle -->
-          <g [style.transform]="'rotate(' + needleRotation() + 'deg)'" [style.transform-origin]="'140px 110px'">
-            <polygon fill="url(#hudNeedleGradient)" filter="drop-shadow(0 0 2px rgba(244,63,94,0.4))" points="45,110 140,108 140,112"></polygon>
+          <g class="hud-gauge__needle" [style.transform]="'rotate(' + needleRotation() + 'deg)'" [style.transform-origin]="'140px 110px'">
+            <polygon fill="url(#hudNeedleGradient)" points="48,110 136,107.8 146,110 136,112.2"></polygon>
           </g>
 
           <!-- hub -->
@@ -150,26 +154,23 @@
           <circle cx="140" cy="110" style="fill: var(--color-ink)" r="8" stroke-width="1.8" [style.stroke]="'var(--color-indigo-400)'"></circle>
           <circle cx="140" cy="110" fill="#ffffff" r="3"></circle>
 
-          <!-- dial base bar -->
-          <line class="hud-gauge__base" stroke-linecap="round" stroke-width="2" x1="45" x2="235" y1="152" y2="152"></line>
         </svg>
-      </div>
-
-      <div class="hud-reading">
-        <span class="hud-reading__value hud-number">{{ shownSpeed() }}</span>
-        <span class="hud-reading__unit">km/h</span>
+        <div class="hud-reading">
+          <span class="hud-reading__value hud-number">{{ shownSpeed() }}</span>
+          <span class="hud-reading__unit">km/h</span>
+        </div>
       </div>
     </div>
 
-    <div class="hud-stats">
-      <div><span>Distance today</span><strong class="hud-number">{{ distanceKm() }} km</strong></div>
-      <div><span>Total distance</span><strong class="hud-number">{{ totalDistanceText() }} km</strong></div>
-      <div><span>Fuel</span><strong class="hud-number">{{ fuelText() }}</strong></div>
-      <div><span>Violations</span><strong class="hud-number">{{ violationsText() }}</strong></div>
-      <div><span>Ignition</span><strong class="hud-number">{{ ignitionText() }}</strong></div>
-      <div><span>Next maintenance</span><strong class="hud-number">{{ nextMaintenanceText() }}</strong></div>
+    <div class="hud-stats" aria-label="Vehicle telemetry">
+      <div data-accent="blue"><span>Today</span><strong class="hud-number">{{ distanceKm() }} <small>km</small></strong></div>
+      <div data-accent="violet"><span>Odometer</span><strong class="hud-number">{{ totalDistanceText() }} <small>km</small></strong></div>
+      <div data-accent="cyan"><span>Fuel level</span><strong class="hud-number">{{ fuelText() }}</strong></div>
+      <div data-accent="rose"><span>Violations</span><strong class="hud-number">{{ violationsText() }}</strong></div>
+      <div><span>Ignition</span><strong class="hud-number"><i class="hud-state-dot" [class.is-on]="ignitionText() === 'On'"></i>{{ ignitionText() }}</strong></div>
+      <div><span>Maintenance</span><strong class="hud-number hud-stats__truncate">{{ nextMaintenanceText() }}</strong></div>
       <div><span>Last update</span><strong class="hud-number hud-stats__truncate">{{ updatedText() }}</strong></div>
-      <div class="hud-stats__driver"><span>Driver</span><strong class="hud-number hud-stats__truncate">{{ driverText() }}</strong></div>
+      <div><span>Driver</span><strong class="hud-number hud-stats__truncate">{{ driverText() }}</strong></div>
     </div>
   </section>
   }
