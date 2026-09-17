@@ -74,7 +74,7 @@
   <!-- Left: Map / route view (~58%) -->
   <section class="hud-map-panel" aria-label="Route overview">
     <div class="hud-map-overlay">
-      <div class="hud-position-title"><span class="hud-position-dot" [class.online]="online()"></span><strong>{{ online() ? 'Current position' : 'Last known position' }}</strong><span>({{ online() ? 'Live' : 'Offline' }})</span></div>
+      <div class="hud-position-title"><span class="hud-position-dot" [class.online]="online()"></span><strong>{{ online() ? 'Live GPS Tracking · En Route' : 'Last known position · Offline' }}</strong><span class="hud-map-speed">{{ shownSpeed() }} km/h</span></div>
       <h3 class="hud-map-place">{{ routeName() }}</h3>
       <p class="hud-coordinate-row"><span>Lat: {{ latitudeText() }}</span><span>Lon: {{ longitudeText() }}</span><span class="gps-state">GPS {{ online() ? 'connected' : 'last reported' }}</span><span>{{ updatedText() }}</span></p>
       <p class="hud-map-sub">{{ text(vehicle()?.registration, '—') }} · {{ text(vehicle()?.fleet_name, 'Unassigned fleet') }}</p>
@@ -95,69 +95,27 @@
       <div><h2>Live status</h2><span class="ignition-pill" [class.on]="ignitionText() === 'On'"><i></i>Ignition {{ ignitionText() }}</span></div>
       <small>{{ online() ? 'Live channel' : 'Last reported' }}</small>
     </header>
-    <div class="hud-speedo">
-      <div class="hud-speedo__eyebrow">
-        <span class="hud-speedo__live-dot" [class.is-offline]="!online()"></span>
-        {{ online() ? 'Live speed' : 'Last reported speed' }}
+    <div class="hud-speed-console">
+      <header><span><i></i>Current speed</span><small>Peak today: <strong>{{ shownSpeed() }} km/h</strong></small></header>
+      <div class="hud-speed-readout">
+        <div><strong class="hud-number">{{ shownSpeed() }}</strong><span>km/h</span></div>
+        <div class="hud-limit-state"><span>Limit {{ speedLimit }} km/h</span><em [class.over]="speedDelta() > 0">{{ speedDeltaText() }}</em></div>
       </div>
-      <div class="hud-speedo__dial">
-        <svg class="hud-gauge" viewBox="0 0 280 158" role="img" [attr.aria-label]="'Vehicle speed ' + shownSpeed() + ' kilometers per hour'">
-          <defs>
-            <linearGradient id="hudNeedleGradient" x1="0%" x2="100%" y1="0%" y2="0%">
-              <stop offset="0%" style="stop-color: var(--color-rose-500)"></stop>
-              <stop offset="85%" style="stop-color: var(--color-rose-400)"></stop>
-              <stop offset="100%" stop-color="#ffffff"></stop>
-            </linearGradient>
-            <linearGradient id="hudSpeedProgressGradient" x1="37.3" y1="143.4" x2="242.7" y2="143.4" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" style="stop-color: var(--color-cyan-400)"></stop>
-              <stop offset="24%" style="stop-color: var(--color-blue-400)"></stop>
-              <stop offset="48%" style="stop-color: var(--color-violet-400)"></stop>
-              <stop offset="68%" style="stop-color: var(--color-fuchsia-400)"></stop>
-              <stop offset="84%" style="stop-color: var(--color-pink-400)"></stop>
-              <stop offset="100%" style="stop-color: var(--color-rose-500)"></stop>
-            </linearGradient>
-            <radialGradient id="hudHubGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" style="stop-color: var(--color-purple-500)" stop-opacity="0.4"></stop>
-              <stop offset="50%" style="stop-color: var(--color-indigo-500)" stop-opacity="0.22"></stop>
-              <stop offset="100%" style="stop-color: var(--color-sky-400)" stop-opacity="0"></stop>
-            </radialGradient>
-          </defs>
-
-          <!-- outer dial arch baseline -->
-          <path class="hud-gauge__arc" d="M 37.3 143.4 A 108 108 0 1 1 242.7 143.4" fill="none" stroke-width="1.5" pathLength="180"></path>
-          <path class="hud-gauge__progress" d="M 37.3 143.4 A 108 108 0 1 1 242.7 143.4" fill="none" pathLength="180" stroke="url(#hudSpeedProgressGradient)" stroke-width="1.75" [attr.stroke-dasharray]="shownSpeed() + ' ' + (180 - shownSpeed())"></path>
-
-          <g class="hud-gauge__minor-ticks">
-            @for (tick of minorTicks; track tick.x1 + '-' + tick.y1) {
-              <line [attr.x1]="tick.x1" [attr.y1]="tick.y1" [attr.x2]="tick.x2" [attr.y2]="tick.y2"></line>
-            }
-          </g>
-
-          <!-- major ticks -->
-          @for (tick of ticks; track tick.x1 + '-' + tick.y1) {
-            <line stroke-linecap="butt" [style.stroke]="tick.stroke" [attr.stroke-width]="tick.width" [attr.x1]="tick.x1" [attr.y1]="tick.y1" [attr.x2]="tick.x2" [attr.y2]="tick.y2"></line>
-          }
-
-          <!-- printed numbers -->
-          @for (label of labels; track label.value) {
-            <text dominant-baseline="central" font-size="9" font-weight="600" text-anchor="middle" [attr.x]="label.x" [attr.y]="label.y" class="hud-number">{{ label.value }}</text>
-          }
-
-          <!-- needle -->
-          <g class="hud-gauge__needle" [style.transform]="'rotate(' + needleRotation() + 'deg)'" [style.transform-origin]="'140px 110px'">
-            <polygon fill="url(#hudNeedleGradient)" points="48,110 136,107.8 146,110 136,112.2"></polygon>
-          </g>
-
-          <!-- hub -->
-          <circle cx="140" cy="110" fill="url(#hudHubGlow)" r="14"></circle>
-          <circle cx="140" cy="110" style="fill: var(--color-ink)" r="8" stroke-width="1.8" [style.stroke]="'var(--color-indigo-400)'"></circle>
-          <circle cx="140" cy="110" fill="#ffffff" r="3"></circle>
-
+      <div class="hud-speed-tape" role="meter" aria-label="Current speed" aria-valuemin="0" aria-valuemax="180" [attr.aria-valuenow]="shownSpeed()">
+        @for (segment of speedSegments; track segment) {
+          <i [class.active]="segment <= shownSpeed()" [class.warning]="segment > speedLimit && segment <= shownSpeed()"></i>
+        }
+      </div>
+      <div class="hud-speed-scale"><span>0</span><span>30</span><b>• 60</b><span>90</span><span>120</span><span>150</span><span>180</span></div>
+      <div class="hud-speed-trend">
+        <header><span><i></i>Last 15 min trend</span><small>Live speed · {{ shownSpeed() }} km/h</small></header>
+        <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="hudTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".35"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+          <line class="trend-limit" x1="0" y1="24" x2="320" y2="24"/><text x="8" y="20">LIMIT 60</text>
+          <path class="trend-area" d="M0 38 Q28 35 50 32 T100 28 T150 36 T200 18 T245 27 T285 14 T320 19 L320 50 L0 50Z"/>
+          <path class="trend-line" d="M0 38 Q28 35 50 32 T100 28 T150 36 T200 18 T245 27 T285 14 T320 19"/>
+          <circle class="trend-dot-ring" cx="318" cy="19" r="6"/><circle class="trend-dot" cx="318" cy="19" r="3"/>
         </svg>
-        <div class="hud-reading">
-          <span class="hud-reading__value hud-number">{{ shownSpeed() }}</span>
-          <span class="hud-reading__unit">km/h</span>
-        </div>
       </div>
     </div>
 

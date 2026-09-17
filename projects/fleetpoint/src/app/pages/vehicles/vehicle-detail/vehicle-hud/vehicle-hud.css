@@ -188,7 +188,7 @@
 @media (max-width:640px) { .hud-map-overlay { width:100%; } .hud-map-footer > span { @apply w-full justify-center; } .hud-status-header { @apply items-start; } .hud-status-header > div { @apply flex-wrap; } }
 
 @media (min-width:1024px) {
-  .vehicle-hud { min-height: 460px; height: 460px; }
+  .vehicle-hud { min-height: 620px; height: auto; }
   .hud-map-panel { width: 66%; padding: 24px; }
   .hud-map-overlay { width: min(52%, 34rem); }
   .hud-gauge-panel { width: 34%; padding: 20px; gap: 8px; }
@@ -261,4 +261,106 @@
   .hud-speedo__dial { width: min(19rem, 100%); }
   .hud-stats > div:nth-child(2n)::after { display: none; }
   .hud-stats > div:nth-child(3), .hud-stats > div:nth-child(4) { @apply border-t border-line/80 dark:border-white/10; }
+}
+
+/* Reference cockpit: compact digital speed console. All surfaces use theme
+   tokens in light mode and the supplied charcoal/violet palette in dark mode. */
+.hud-map-speed {
+  margin-left: auto;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--color-success) 32%, transparent);
+  border-radius: 999px;
+  color: var(--color-success) !important;
+  background: color-mix(in srgb, var(--color-success) 11%, transparent);
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.hud-speed-console {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-canvas) 72%, white);
+}
+:host-context(.dark) .hud-speed-console {
+  border-color: #3a3443;
+  background: #0d0b14;
+}
+.hud-speed-console > header,
+.hud-speed-trend > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-muted);
+  font-size: 9px;
+}
+.hud-speed-console > header {
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--color-line);
+}
+:host-context(.dark) .hud-speed-console > header { border-color: rgb(58 52 67 / .65); }
+.hud-speed-console > header span,
+.hud-speed-trend header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.hud-speed-console > header span i {
+  width: 13px;
+  height: 9px;
+  border: 2px solid var(--color-brand-500);
+  border-radius: 9px 9px 3px 3px;
+  transform: skew(-12deg);
+}
+.hud-speed-console > header strong { color: var(--color-ink); }
+:host-context(.dark) .hud-speed-console > header strong { color: #f8fafc; }
+.hud-speed-readout { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.hud-speed-readout > div:first-child { display: flex; align-items: baseline; gap: 8px; }
+.hud-speed-readout > div:first-child strong { color: var(--color-ink); font-size: 46px; line-height: 1; font-weight: 900; }
+:host-context(.dark) .hud-speed-readout > div:first-child strong { color: #fff; }
+.hud-speed-readout > div:first-child span { color: var(--color-brand-500); font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.hud-limit-state { display: flex; align-items: flex-end; flex-direction: column; gap: 6px; }
+.hud-limit-state span,
+.hud-limit-state em { padding: 4px 7px; border: 1px solid var(--color-line); border-radius: 4px; font-size: 9px; font-style: normal; font-weight: 650; }
+.hud-limit-state span { color: var(--color-muted); background: var(--color-canvas); }
+.hud-limit-state em { color: var(--color-success); border-color: color-mix(in srgb,var(--color-success) 35%,transparent); background: color-mix(in srgb,var(--color-success) 10%,transparent); }
+.hud-limit-state em.over { color: var(--color-danger); border-color: color-mix(in srgb,var(--color-danger) 38%,transparent); background: color-mix(in srgb,var(--color-danger) 12%,transparent); }
+:host-context(.dark) .hud-limit-state span { border-color: #3a3443; background: #17131f; }
+.hud-speed-tape { display: grid; grid-template-columns: repeat(36,minmax(0,1fr)); gap: 2px; height: 11px; padding: 3px; border: 1px solid var(--color-line); border-radius: 4px; background: var(--color-canvas); }
+:host-context(.dark) .hud-speed-tape { border-color: #3a3443; background: #09090f; }
+.hud-speed-tape i { min-width: 0; border-radius: 2px; background: color-mix(in srgb,var(--color-muted) 18%,transparent); }
+.hud-speed-tape i.active { background: var(--color-brand-500); box-shadow: 0 0 5px color-mix(in srgb,var(--color-brand-500) 55%,transparent); }
+.hud-speed-tape i.warning { background: var(--color-warning); box-shadow: 0 0 5px color-mix(in srgb,var(--color-warning) 55%,transparent); }
+.hud-speed-scale { display: flex; justify-content: space-between; color: var(--color-muted); font-family: monospace; font-size: 8px; }
+.hud-speed-scale b { color: var(--color-warning); }
+.hud-speed-trend { padding-top: 8px; border-top: 1px solid color-mix(in srgb,var(--color-line) 65%,transparent); }
+.hud-speed-trend header span { letter-spacing: 0; text-transform: none; }
+.hud-speed-trend header i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-brand-500); }
+.hud-speed-trend svg { display: block; width: 100%; height: 52px; margin-top: 6px; padding: 4px; overflow: visible; border: 1px solid var(--color-line); border-radius: 7px; background: color-mix(in srgb,var(--color-canvas) 70%,transparent); }
+:host-context(.dark) .hud-speed-trend svg { border-color: rgb(58 52 67 / .7); background: rgb(9 9 15 / .7); }
+.trend-limit { stroke: var(--color-warning); stroke-width: 1; stroke-dasharray: 3 3; opacity: .5; }
+.hud-speed-trend text { fill: var(--color-warning); font: 7px monospace; opacity: .8; }
+.trend-area { fill: url(#hudTrendFill); }
+.trend-line { fill: none; stroke: var(--color-brand-500); stroke-width: 2; stroke-linecap: round; }
+.trend-dot-ring { fill: color-mix(in srgb,var(--color-brand-500) 28%,transparent); }
+.trend-dot { fill: #c084fc; stroke: #fff; stroke-width: 1; }
+
+@media (min-width:1024px) {
+  .hud-gauge-panel { justify-content: space-between; }
+  .hud-speed-console { flex: 1 1 auto; justify-content: center; }
+}
+@media (max-width:480px) {
+  .hud-speed-readout { align-items: flex-start; }
+  .hud-speed-readout > div:first-child strong { font-size: 38px; }
+  .hud-limit-state { max-width: 48%; }
+  .hud-speed-scale span:nth-of-type(even) { display: none; }
 }

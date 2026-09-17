@@ -439,6 +439,13 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     const value = Number(this.vehicle()?.latitude);
     return Number.isFinite(value) ? value.toFixed(5) + '°' : '—';
   });
+  protected readonly speedLimit = 60;
+  protected readonly speedSegments = Array.from({ length: 36 }, (_, index) => (index + 1) * 5);
+  protected readonly speedDelta = computed(() => this.shownSpeed() - this.speedLimit);
+  protected readonly speedDeltaText = computed(() => {
+    const delta = this.speedDelta();
+    return delta > 0 ? `+${delta} km/h Over limit` : `${Math.abs(delta)} km/h below limit`;
+  });
   protected readonly longitudeText = computed(() => {
     const value = Number(this.vehicle()?.longitude);
     return Number.isFinite(value) ? value.toFixed(5) + '°' : '—';
