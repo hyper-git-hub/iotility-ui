@@ -1,10 +1,11 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, computed, Inject, Input, isDevMode, signal } from '@angular/core';
+import { Component, computed, effect, Inject, Input, isDevMode, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Logo, StatusBadge, Tooltip } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
 import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { MenuGroup, SIDEBAR_MENU } from './menu.config';
+import { SidebarBadgeService } from '../../shared/services/sidebar-badge.service';
 
 interface HostDialogRequest {
   handled: boolean;
@@ -36,7 +37,11 @@ export class FleetpointSidebar {
     private readonly router: Router,
     private readonly features: FeatureAccessService,
     protected readonly fleetStatus: FleetStatusService,
-  ) {}
+    private readonly sidebarBadgeService: SidebarBadgeService,
+  ) {
+    // Sync badge counts from service whenever they change
+    effect(() => { this.badgeCounts = this.sidebarBadgeService.badgeCounts(); });
+  }
 
   protected readonly visibleMenu = computed<MenuGroup[]>(() =>
     SIDEBAR_MENU.map((group) => ({

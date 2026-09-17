@@ -33,7 +33,7 @@
           <a
             [routerLink]="routeFor(item.route)"
             routerLinkActive="active"
-            [tooltip]="item.label"
+            [tooltip]="collapsed() && item.badgeKey && badgeCounts[item.badgeKey] > 0 ? item.label + ' · ' + badgeCounts[item.badgeKey] : item.label"
             [position]="'right'"
             [disabled]="!collapsed()"
           >
@@ -53,7 +53,7 @@
                 [offlineTitle]="'All vehicles offline'"
               />
             }
-            @if (item.badgeKey && badgeCounts[item.badgeKey]) {
+            @if (item.badgeKey && badgeCounts[item.badgeKey] && badgeCounts[item.badgeKey] > 0) {
               <em>{{ badgeCounts[item.badgeKey] }}</em>
             }
           </a>

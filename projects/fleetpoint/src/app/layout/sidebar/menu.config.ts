@@ -3,7 +3,7 @@ export interface MenuItem {
   route: string;
   icon: string;
   featureId: number;
-  badgeKey?: 'jobs' | 'maintenance';
+  badgeKey?: 'jobs' | 'maintenance' | 'violations' | 'dashcam';
 }
 
 export interface MenuGroup {
@@ -91,6 +91,7 @@ export const SIDEBAR_MENU: MenuGroup[] = [
         route: '/dashcam',
         icon: 'assets/fleetpoint/sidebar-icons/dashcam.svg',
         featureId: 151,
+        badgeKey: 'dashcam',
       },
       {
         label: 'Maintenance',
@@ -104,6 +105,7 @@ export const SIDEBAR_MENU: MenuGroup[] = [
         route: '/violations',
         icon: 'assets/fleetpoint/sidebar-icons/violations.svg',
         featureId: 21,
+        badgeKey: 'violations',
       },
       {
         label: 'Geozones',

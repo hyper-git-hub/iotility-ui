@@ -142,8 +142,7 @@ nav .active {
     transform var(--sidebar-motion);
   will-change: opacity, transform;
 }
-.fleet-sidebar.collapsed .nav-label,
-.fleet-sidebar.collapsed nav em {
+.fleet-sidebar.collapsed .nav-label {
   flex: 0 0 0;
   width: 0;
   min-width: 0;
@@ -154,6 +153,25 @@ nav .active {
   opacity: 0;
   transform: translateX(-8px) scale(0.85);
   pointer-events: none;
+}
+/* Collapsed: badge pill morphs into a dot pinned beside the icon,
+   mirroring the live-status-dot placement; the count stays in the tooltip. */
+.fleet-sidebar.collapsed nav em {
+  position: absolute;
+  right: -16px;
+  top: 50%;
+  width: 8px;
+  min-width: 8px;
+  height: 8px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  opacity: 1;
+  transform: translateY(-50%);
+  pointer-events: auto;
 }
 .fleet-sidebar.collapsed .live-status-dot {
   position: absolute;
