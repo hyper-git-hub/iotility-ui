@@ -168,8 +168,12 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private roadCoordinates: LatLng[] = [];
   private roadSegments: LatLng[][] = [];
   private legEnds: Array<[OsrmTrailPoint, OsrmTrailPoint]> = [];
-  // OSRM /route bridges across leg gaps — drawn dashed, never part of the
-  // solid trail or the playback coordinate stream (QE-demo-fixes parity).
+  // Chronological leg records [startTs, endTs, startIndex, endIndex] — used to
+  // align raw GPS positions to their own leg's segment of the merged road
+  // coordinates (which now interleaves the estimated gap trails between legs).
+  private legTimeRanges: Array<[number, number, number, number]> = [];
+  // OSRM /route bridges across leg gaps — drawn dashed, and interleaved into
+  // the marker's coordinate stream so playback drives over the gaps too.
   private estimatedGapSegments: LatLng[][] = [];
   private roadSegmentRanges: Array<[number, number]> = [];
   private roadDistances: number[] = [];
@@ -290,6 +294,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.roadCoordinates = [];
       this.roadSegments = [];
       this.estimatedGapSegments = [];
+      this.legTimeRanges = [];
       this.roadSegmentRanges = [];
       this.roadDistances = [];
       this.positionRoadIndexes = [];
@@ -319,13 +324,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.clearMarkers();
     this.roadCoordinates = coordinates;
     if (!this.roadSegments.length) this.roadSegments = [coordinates];
-    this.roadSegmentRanges = [];
-    let segmentStart = 0;
-    for (const segment of this.roadSegments) {
-      const segmentEnd = Math.min(coordinates.length - 1, segmentStart + segment.length - 1);
-      if (segmentEnd > segmentStart) this.roadSegmentRanges.push([segmentStart, segmentEnd]);
-      segmentStart = segmentEnd + 1;
-    }
+    // Solid trail segments are the matched legs; the interleaved gap bridges
+    // live between them in `roadCoordinates` but are never drawn solid. Ranges
+    // come from the recorded leg indices because cumulative segment lengths no
+    // longer line up once gap geometry sits between legs.
+    this.roadSegmentRanges = this.legTimeRanges.map(([, , start, end]) => [
+      start,
+      end,
+    ] as [number, number]);
+    if (!this.roadSegmentRanges.length) this.roadSegmentRanges = [[0, coordinates.length - 1]];
     this.roadDistances = this.buildRoadDistances(coordinates);
     this.positionRoadIndexes = this.mapPositionsToRoad(positions, coordinates);
     this.displayedHeading = undefined;
@@ -593,31 +600,48 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       const segments: LatLng[][] = [];
       this.estimatedGapSegments = [];
       this.legEnds = [];
+      this.legTimeRanges = [];
+      const merged: LatLng[] = [];
       for (const leg of legs) {
         const segment = await this.matchLegToRoad(leg, run.signal);
         if (!segment.length) continue;
         if (this.legEnds.length) {
           // Gap estimation between legs: EVERY gap is bridged with the OSRM
-          // /route road path, rendered as a DASHED estimate.
+          // /route road path, rendered as a DASHED estimate. The bridge is
+          // also spliced into the marker coordinate stream between the two
+          // legs so playback drives over the gap instead of teleporting.
           const estimated = await this.estimateGap(
             this.legEnds.at(-1)![1],
             leg[0],
             run.signal,
           );
-          if (estimated.length >= 2) this.estimatedGapSegments.push(estimated);
+          if (estimated.length >= 2) {
+            this.estimatedGapSegments.push(estimated);
+            this.appendGeometry(merged, estimated);
+          }
         }
+        const segmentStart = merged.length;
         segments.push(this.trimSeam(segments.at(-1), segment));
+        const appended = segments.at(-1)!;
+        for (const point of appended) this.appendGeometry(merged, [point]);
+        this.legTimeRanges.push([
+          leg[0]._ts,
+          leg.at(-1)!._ts,
+          segmentStart,
+          merged.length - 1,
+        ]);
         this.legEnds.push([leg[0], leg.at(-1)!]);
       }
-      const matched: LatLng[] = [];
-      for (const segment of segments) for (const point of segment) matched.push(point);
-      if (!matched.length) {
+      if (!merged.length) {
         this.roadSegments = [fallback];
         return fallback;
       }
       this.roadSegments = segments;
-      return matched;
+      return merged;
     } catch {
+      // Fallback road has no leg ranges — stale ones would misplace the solid
+      // segment ranges, so drop them with the rest of the run's state.
+      this.legTimeRanges = [];
       if (!run.signal.aborted) this.roadSegments = [fallback];
       return fallback;
     }
