@@ -74,20 +74,15 @@
   <!-- Left: Map / route view (~58%) -->
   <section class="hud-map-panel" aria-label="Route overview">
     <div class="hud-map-overlay">
-      <shared-status-badge
-        variant="pill"
-        [online]="online()"
-        [onlineLabel]="routeCode()"
-        offlineLabel="Offline"
-        class="hud-map-badge"
-      />
+      <div class="hud-position-title"><span class="hud-position-dot" [class.online]="online()"></span><strong>{{ online() ? 'Current position' : 'Last known position' }}</strong><span>({{ online() ? 'Live' : 'Offline' }})</span></div>
       <h3 class="hud-map-place">{{ routeName() }}</h3>
+      <p class="hud-coordinate-row"><span>Lat: {{ latitudeText() }}</span><span>Lon: {{ longitudeText() }}</span><span class="gps-state">GPS {{ online() ? 'connected' : 'last reported' }}</span><span>{{ updatedText() }}</span></p>
       <p class="hud-map-sub">{{ text(vehicle()?.registration, '—') }} · {{ text(vehicle()?.fleet_name, 'Unassigned fleet') }}</p>
     </div>
 
-    <div class="hud-map-distance">
-      <strong class="hud-number">{{ distanceKm() }}</strong>
-      <span>km</span>
+    <div class="hud-map-footer">
+      <span><img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" />Vehicle odometer: <strong>{{ totalDistanceText() }} km</strong></span>
+      <span><img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />Device: <strong>{{ deviceText() }}</strong></span>
     </div>
   </section>
 
@@ -96,6 +91,10 @@
 
   <!-- Right: Speedometer + telemetry (~42%) -->
   <section class="hud-gauge-panel" aria-label="Live speed gauge">
+    <header class="hud-status-header">
+      <div><h2>Live status</h2><span class="ignition-pill" [class.on]="ignitionText() === 'On'"><i></i>Ignition {{ ignitionText() }}</span></div>
+      <small>{{ online() ? 'Live channel' : 'Last reported' }}</small>
+    </header>
     <div class="hud-speedo">
       <div class="hud-speedo__eyebrow">
         <span class="hud-speedo__live-dot" [class.is-offline]="!online()"></span>
@@ -169,9 +168,8 @@
       <div data-accent="rose"><span>Violations</span><strong class="hud-number">{{ violationsText() }}</strong></div>
       <div><span>Ignition</span><strong class="hud-number"><i class="hud-state-dot" [class.is-on]="ignitionText() === 'On'"></i>{{ ignitionText() }}</strong></div>
       <div><span>Maintenance</span><strong class="hud-number hud-stats__truncate">{{ nextMaintenanceText() }}</strong></div>
-      <div><span>Last update</span><strong class="hud-number hud-stats__truncate">{{ updatedText() }}</strong></div>
-      <div><span>Driver</span><strong class="hud-number hud-stats__truncate">{{ driverText() }}</strong></div>
     </div>
+    <footer class="hud-status-footer"><span><i class="driver-avatar">{{ driverInitials() }}</i><span><small>Driver</small><strong>{{ driverText() }}</strong></span></span><span><small>Last update</small><strong>{{ updatedText() }}</strong></span></footer>
   </section>
   }
 </article>

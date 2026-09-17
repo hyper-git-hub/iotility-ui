@@ -32,6 +32,7 @@ export interface ManagedUser {
   permissions?: { code: string }[];
   date_joined?: string;
   write?: boolean;
+  workshop?: boolean;
   work_location?: string | null;
   internal_role?: string | null;
   group?: string | null;
@@ -93,6 +94,7 @@ export interface UserPayload {
   internal_role: string;
   date_joined: string;
   write: boolean;
+  workshop?: boolean;
   status?: number;
   image?: File | null;
 }
@@ -215,6 +217,7 @@ export class UsersRolesApiService {
     formData.set('internal_role', payload.internal_role.trim());
     formData.set('date_joined', payload.date_joined);
     formData.set('write', String(payload.write));
+    if (payload.workshop !== undefined) formData.set('workshop', String(payload.workshop));
     if (payload.status) formData.set('status', String(payload.status));
     if (payload.image) formData.set('image', payload.image);
     return formData;

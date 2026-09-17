@@ -196,6 +196,7 @@ export class UsersRolesPage implements OnInit {
       dateJoined: [this.today(), Validators.required],
       status: [1],
       write: [false],
+      workshop: [false],
     });
     this.roleForm = formBuilder.nonNullable.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
@@ -271,6 +272,7 @@ export class UsersRolesPage implements OnInit {
       dateJoined: this.today(),
       status: 1,
       write: false,
+      workshop: false,
     });
     this.selectedImage.set(null);
     this.userImagePreview.set('');
@@ -320,6 +322,7 @@ export class UsersRolesPage implements OnInit {
       date_joined: value.dateJoined,
       status: value.status,
       write: value.write,
+      workshop: this.selectedUser() ? value.workshop : undefined,
       image: this.selectedImage(),
     };
     const editing = !!this.selectedUser();
@@ -538,6 +541,7 @@ export class UsersRolesPage implements OnInit {
       dateJoined: (user.date_joined || '').slice(0, 10),
       status: Number(user.status ?? (user.is_active === false ? 2 : 1)),
       write: !!user.write,
+      workshop: !!user.workshop,
     });
     this.selectedImage.set(null);
     this.userImagePreview.set(user.user_image || user.image || '');

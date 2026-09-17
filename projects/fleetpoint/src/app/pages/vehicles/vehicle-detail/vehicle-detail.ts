@@ -2,18 +2,17 @@ import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular
 import { ActivatedRoute, Router } from '@angular/router';
 import { Skeleton, StatCardSkeleton, StatusBadge } from '@iotility/shared-ui';
 import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
-import { FleetMap, TrackedVehicle } from '../../../shared/fleet-map/fleet-map';
 import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../../../shared/services/vehicle-detail-api.service';
 import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/services/vehicle-realtime.service';
-import { StatCard } from '../../../shared/stat-card/stat-card';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { VehicleForm, VehicleFormValue } from '../vehicle-form/vehicle-form';
 import { VehicleHud } from './vehicle-hud/vehicle-hud';
 import { VehicleInventoryRecord } from '../../../shared/services/vehicle-inventory-api.service';
 
 interface DetailItem { label: string; value: string; }
+interface SummaryCard { label: string; value: string; suffix: string; tone: 'brand' | 'info' | 'success' | 'warning' | 'danger'; icon: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [FleetMap, Skeleton, StatCard, StatCardSkeleton, StatusBadge, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
+@Component({ selector: 'app-vehicle-detail', imports: [Skeleton, StatCardSkeleton, StatusBadge, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
@@ -29,14 +28,6 @@ export class VehicleDetail implements OnInit, OnDestroy {
     return vehicle ? this.editableVehicle(vehicle) : null;
   });
   protected readonly registration = computed(() => this.text(this.record()?.registration || this.record()?.name, `Vehicle ${this.vehicleId}`));
-  protected readonly hasCoordinates = computed(() => Number.isFinite(this.coordinate(this.record()?.latitude)) && Number.isFinite(this.coordinate(this.record()?.longitude)));
-  protected readonly mapVehicle = computed<TrackedVehicle>(() => ({
-    id: this.vehicleId, model: `${this.text(this.record()?.make)} ${this.text(this.record()?.model)}`.trim(),
-    driver: this.text(this.record()?.vehicle_driver_name, 'Unassigned'), status: this.record()?.online_status ? (Number(this.record()?.speed || 0) > 5 ? 'Moving' : 'Idling') : 'Offline',
-    speed: Number(this.record()?.speed || 0), fuel: Number(this.record()?.heavy_equipment?.['fuel_level'] || 0),
-    location: this.text(this.record()?.location), updated: this.text(this.record()?.updated_time || this.record()?.updated_at),
-    lat: this.coordinate(this.record()?.latitude) || 0, lng: this.coordinate(this.record()?.longitude) || 0,
-  }));
   protected readonly details = computed<DetailItem[]>(() => {
     const v = this.record(); if (!v) return [];
     return [
@@ -46,6 +37,25 @@ export class VehicleDetail implements OnInit, OnDestroy {
       ['Odometer Reading', this.unit(v['odo_reading'], 'km')], ['Owner', v['owner']], ['Date Commissioned', v['date_commissioned']],
       ['Registration Expiry', v['expiry_date']], ['Customer', v['customer_name']],
     ].map(([label, value]) => ({ label: String(label), value: this.text(value) }));
+  });
+  protected readonly summaryCards = computed<SummaryCard[]>(() => {
+    const vehicle = this.record();
+    const metric = (code: string): unknown => this.metrics().find((item) => item.code === code)?.data;
+    const totalDistance = Number(vehicle?.total_distance_traveled ?? 0);
+    const dailyDistance = metric('DS') ?? vehicle?.km_per_day ?? 0;
+    const fuel = metric('FS') ?? vehicle?.heavy_equipment?.['fuel_level'];
+    const fuelText = this.text(fuel, '—');
+    const enabledRules = this.monitoring().filter((item) => item.enabled).length;
+    return [
+      { label: 'Total distance', value: Number.isFinite(totalDistance) ? Math.round(totalDistance).toLocaleString() : '0', suffix: 'km', tone: 'info', icon: 'assets/fleetpoint/icons/route.svg' },
+      { label: 'Distance today', value: this.text(dailyDistance, '0').replace(/\s*km$/i, ''), suffix: 'km', tone: 'brand', icon: 'assets/fleetpoint/icons/map-pin-brand.svg' },
+      { label: 'Current speed', value: this.text(vehicle?.speed, '0'), suffix: 'km/h', tone: Number(vehicle?.speed ?? 0) > 80 ? 'danger' : 'success', icon: 'assets/fleetpoint/icons/speedometer.svg' },
+      { label: 'Violations', value: this.violationMetric(), suffix: 'total', tone: 'danger', icon: 'assets/fleetpoint/icons/warning.svg' },
+      { label: 'Fuel status', value: fuelText, suffix: fuelText === '—' || fuelText.includes('%') ? '' : '%', tone: fuelText === '—' ? 'warning' : Number(String(fuel).replace(/[^0-9.]/g, '')) < 20 ? 'danger' : 'warning', icon: 'assets/fleetpoint/icons/fuel-sensor.svg' },
+      { label: 'Ignition', value: vehicle?.ignition_status ? 'On' : 'Off', suffix: vehicle?.online_status ? 'live' : 'reported', tone: vehicle?.ignition_status ? 'success' : 'warning', icon: 'assets/fleetpoint/icons/ignition.svg' },
+      { label: 'Safety rules', value: String(enabledRules), suffix: 'enabled', tone: 'success', icon: 'assets/fleetpoint/icons/shield-check.svg' },
+      { label: 'Maintenance', value: String(this.count(this.maintenance())), suffix: 'records', tone: 'brand', icon: 'assets/fleetpoint/icons/wrench.svg' },
+    ];
   });
 
   private readonly subscription = new Subscription();
@@ -156,8 +166,6 @@ export class VehicleDetail implements OnInit, OnDestroy {
     return VehicleDetail.SPEC_META[label] ?? { icon: ['M4 6h16M4 12h16M4 18h16'], tag: 'SPEC', color: '#94a3b8', tagStyle: '' };
   }
   protected violationMetric(): string { return this.metricValue(this.metrics().find((metric) => metric.code === 'VA') || { code: 'VA', name: '', data: 0 }); }
-  protected isMoving(): boolean { return Number(this.record()?.speed || 0) > 0; }
-  protected hasAssignedRoute(): boolean { const routes = this.record()?.['attached_routes_list']; return Array.isArray(routes) && routes.length > 0; }
   protected deviceDetails(): DetailItem[] { const v = this.record(); return [['Device ID', v?.['device_id']], ['SIM Number', v?.['sim_no']], ['Vehicle Type', v?.['vehicle_type']], ['RFID Tag', v?.['rfid_tag']], ['Immobilizer', v?.['is_immobilization_enabled'] ? 'Enabled' : 'Disabled'], ['Ignition', v?.['ignition_status'] ? 'On' : 'Off']].map(([label, value]) => ({ label: String(label), value: this.text(value) })); }
   protected monitoring(): { label: string; enabled: boolean }[] { const v = this.record(); return [['Harsh acceleration', v?.['harsh_acceleration']], ['Harsh braking', v?.['harsh_braking']], ['Geo zone', v?.['geo_zone']], ['Sharp turning', v?.['sharp_turning']], ['Seat belt monitoring', v?.['seat_belt']], ['Immobilization', v?.['is_immobilization_enabled']]].map(([label, enabled]) => ({ label: String(label), enabled: Boolean(enabled) })); }
   protected count(value: unknown): number { const data = value as { count?: number; data?: unknown[] } | null; return Number(data?.count ?? data?.data?.length ?? (Array.isArray(value) ? value.length : 0)); }
@@ -168,28 +176,9 @@ export class VehicleDetail implements OnInit, OnDestroy {
   protected openEdit(): void { this.formOpen.set(true); }
   protected closeForm(): void { this.formOpen.set(false); }
   protected saveVehicle(_: VehicleFormValue): void { this.closeForm(); this.load(); }
-  protected getNeedleRotation(): number {
-    const speed = Number(this.record()?.speed || 0);
-    const maxSpeed = 160;
-    const normalized = Math.min(Math.max(speed / maxSpeed, 0), 1);
-    return -90 + (normalized * 180);
-  }
-
-  protected getArcDash(): string {
-    return '502.65';
-  }
-
-  protected getArcOffset(): string {
-    const speed = Number(this.record()?.speed || 0);
-    const maxSpeed = 160;
-    const normalized = Math.min(Math.max(speed / maxSpeed, 0), 1);
-    const arcLength = 502.65;
-    return String(arcLength - (normalized * arcLength));
-  }
   protected tripReplay(): void { void this.router.navigateByUrl('/fleetpoint/trip-replay'); }
   protected text(value: unknown, fallback = 'Not available'): string { if (value === null || value === undefined || value === '' || ['none', 'null'].includes(String(value).toLowerCase())) return fallback; return String(value); }
   private unit(value: unknown, suffix: string): string { return this.text(value) === 'Not available' ? 'Not available' : `${value} ${suffix}`; }
-  private coordinate(value: unknown): number { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : Number.NaN; }
   private flag(value: unknown): boolean { return value === true || value === 1 || value === '1'; }
 
   private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {

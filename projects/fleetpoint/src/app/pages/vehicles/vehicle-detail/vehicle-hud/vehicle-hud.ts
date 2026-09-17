@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { createIotMap, timezoneCenter } from '../../../../shared/maps/maplibre';
-import { Skeleton, StatusBadge } from '@iotility/shared-ui';
+import { Skeleton } from '@iotility/shared-ui';
 import { environment } from '../../../../../environments/environment';
 import { VehicleDetailRecord, VehicleMetric } from '../../../../shared/services/vehicle-detail-api.service';
 
@@ -99,15 +99,15 @@ const LABELS: GaugeLabel[] = MAJOR_TICK_AT.map(([value]) => {
 /* FleetMap (the "Current Location" card) centers a selected vehicle with
    flyTo({ zoom: 16 }) — the HUD mirrors that zoom so both maps read at the
    same street scale. */
-const HUD_ZOOM = 16;
+const HUD_ZOOM = 14.5;
 /* 3D camera: pitched down toward the horizon with a slight bearing so the
    dark style's 3D buildings read as depth behind the route. */
-const HUD_PITCH = 62;
-const HUD_BEARING = -18;
+const HUD_PITCH = 0;
+const HUD_BEARING = 0;
 /* Horizontal placement of the vehicle on the HUD band: 18% from the left
    border (well clear of the speedometer). Implemented as a screen-space
    camera offset so it stays exact under pitch/bearing. */
-const HUD_MARKER_X = 0.18;
+const HUD_MARKER_X = 0.32;
 /* Fallback camera until live coordinates arrive (marker hidden meanwhile). */
 const HUD_FALLBACK = { lat: timezoneCenter()[0], lng: timezoneCenter()[1] } as const;
 /* Slight visual correction so the arrow reads more upward while preserving
@@ -169,7 +169,7 @@ async function fetchRoadBearing(lat: number, lng: number): Promise<RoadBearingRe
 
 @Component({
   selector: 'app-vehicle-hud',
-  imports: [Skeleton, StatusBadge],
+  imports: [Skeleton],
   templateUrl: './vehicle-hud.html',
   styleUrl: './vehicle-hud.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -434,6 +434,16 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   protected readonly driverText = computed(() =>
     this.text(this.vehicle()?.vehicle_driver_name, 'Unassigned'),
   );
+  protected readonly driverInitials = computed(() => this.driverText().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase());
+  protected readonly latitudeText = computed(() => {
+    const value = Number(this.vehicle()?.latitude);
+    return Number.isFinite(value) ? value.toFixed(5) + '°' : '—';
+  });
+  protected readonly longitudeText = computed(() => {
+    const value = Number(this.vehicle()?.longitude);
+    return Number.isFinite(value) ? value.toFixed(5) + '°' : '—';
+  });
+  protected readonly deviceText = computed(() => this.text(this.vehicle()?.device_id, 'Not allocated'));
 
   protected readonly totalDistanceText = computed(() => {
     const value = Number(this.vehicle()?.total_distance_traveled ?? 0);

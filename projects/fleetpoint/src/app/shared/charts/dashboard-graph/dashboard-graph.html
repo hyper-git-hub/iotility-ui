@@ -1,6 +1,6 @@
 @if (graph().code === 'DA') {
   <article class="graph-card">
-    <header><div><h2>{{ graph().name }}</h2><p>Live dashboard analytics</p></div></header>
+    <header><div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div></header>
     @if (allocations().length) {
       <div class="allocation-list">
         @for (fleet of allocations(); track fleet.name) {
@@ -20,19 +20,19 @@
             <path d="M13 30v-6M20 30V18M27 30v-9M34 30V14" />
           </svg>
         </span>
-        <p>No data available</p>
+        <p>{{ emptyMessage() }}</p>
       </div>
     }
   </article>
 } @else if (hasChartData() && isDoughnut()) {
-  <app-fleet-doughnut-chart [title]="graph().name" subtitle="Live dashboard analytics" [height]="380" [data]="doughnutData()" [options]="doughnutOptions" />
+  <app-fleet-doughnut-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [height]="380" [data]="doughnutData()" [options]="doughnutOptions()" />
 } @else if (hasChartData() && isLine()) {
-  <app-fleet-line-chart [title]="graph().name" subtitle="Live dashboard analytics" [height]="380" [data]="lineData()" [options]="lineOptions" />
+  <app-fleet-line-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [height]="380" [data]="lineData()" [options]="lineOptions" />
 } @else if (hasChartData()) {
-  <app-fleet-bar-chart [title]="graph().name" subtitle="Live dashboard analytics" [height]="380" [data]="barData()" [options]="barOptions()" />
+  <app-fleet-bar-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [height]="380" [data]="barData()" [options]="barOptions()" />
 } @else {
   <article class="graph-card">
-    <header><div><h2>{{ graph().name }}</h2><p>Live dashboard analytics</p></div></header>
+    <header><div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div></header>
     <div class="empty">
       <span class="empty-icon" aria-hidden="true">
         <svg viewBox="0 0 48 48">
@@ -40,7 +40,7 @@
           <path d="M13 30v-6M20 30V18M27 30v-9M34 30V14" />
         </svg>
       </span>
-      <p>No data available</p>
+      <p>{{ emptyMessage() }}</p>
     </div>
   </article>
 }

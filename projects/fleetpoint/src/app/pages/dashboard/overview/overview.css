@@ -13,6 +13,30 @@
   @apply mt-2;
 }
 
+.graph-skeleton-list {
+  @apply grid flex-1 content-start gap-3;
+}
+
+.graph-skeleton-list > div {
+  @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-canvas/60 p-2 dark:bg-dark-canvas/50;
+}
+
+.graph-skeleton-list span {
+  @apply grid gap-1.5;
+}
+
+.graph-skeleton-profile {
+  @apply flex flex-1 flex-col items-center gap-3 pt-2;
+}
+
+.graph-skeleton-profile > ui-skeleton:nth-of-type(4) {
+  @apply mt-2;
+}
+
+.graph-skeleton-profile > div {
+  @apply mt-3 grid w-full grid-cols-3 gap-2;
+}
+
 .graph-skeleton-plot {
   @apply relative flex flex-1 items-end gap-5 overflow-hidden border-b border-l border-line/70 px-4 pb-0 pt-5 dark:border-dark-line;
 }

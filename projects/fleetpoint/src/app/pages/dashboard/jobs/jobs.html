@@ -1,11 +1,5 @@
 <section class="jobs-grid">
   @for (graph of jobGraphs(); track graph.code) {
-    <app-dashboard-graph
-      [graph]="graph"
-      [class.jobs-tasks]="graph.code === 'DTS'"
-      [class.jobs-chart]="graph.code === 'JJ'"
-      [class.jobs-statistics]="graph.code === 'JSJ'"
-      [class.staff-statistics]="graph.code === 'JSS'"
-    />
+    <app-dashboard-graph [graph]="graph" />
   }
 </section>

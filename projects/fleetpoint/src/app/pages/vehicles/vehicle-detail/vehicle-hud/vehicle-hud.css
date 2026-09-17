@@ -120,6 +120,89 @@
   @apply relative z-10 flex w-full flex-col items-center justify-between gap-2 px-5 py-5 lg:w-[42%] lg:px-7;
 }
 
+/* Desktop detail-page composition: preserve the existing FleetPoint map and
+   gauge components, but separate them into a clearer map/status split. */
+@media (min-width: 1024px) {
+  .vehicle-hud { @apply min-h-[460px]; }
+  .hud-map-canvas {
+    inset: 0 auto 0 0;
+    width: 66%;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .hud-maplibre::after {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+    background: linear-gradient(to bottom, rgb(9 9 15 / 0.08), rgb(9 9 15 / 0.34));
+  }
+  :host-context(.dark) .hud-maplibre::after {
+    background: linear-gradient(to bottom, rgb(9 9 15 / 0.08), rgb(9 9 15 / 0.38));
+  }
+  .hud-map-panel { width: 66%; }
+  .hud-gauge-panel {
+    width: 34%;
+    @apply bg-white dark:bg-dark-surface;
+  }
+  .hud-divider { @apply relative z-20 bg-line dark:bg-dark-line; }
+  .hud-stats { @apply grid-cols-2; }
+  .hud-stats > div:nth-child(2n)::after { display: none; }
+  .hud-stats > div:nth-child(3),
+  .hud-stats > div:nth-child(4) { @apply border-t-0; }
+  .hud-stats > div:nth-child(n+3) { @apply border-t border-line/80 dark:border-white/10; }
+  .hud-speedo__dial { width: min(100%, 20rem); }
+}
+
+.hud-map-overlay { @apply rounded-xl border border-line bg-white/95 p-4 shadow-lg backdrop-blur-md dark:border-dark-line dark:bg-dark-canvas/90; width:min(34rem,calc(100% - 1rem)); }
+.hud-position-title { @apply flex items-center gap-2 text-xs; }
+.hud-position-title > span:last-child { @apply text-muted dark:text-brand-300; }
+.hud-position-dot { @apply size-2 rounded-full bg-danger; }
+.hud-position-dot.online { @apply bg-success; }
+.hud-map-place { @apply mt-2 text-xs font-medium leading-relaxed; }
+.hud-map-sub { @apply mt-1; }
+.hud-coordinate-row { @apply mt-2 flex flex-wrap gap-x-2 gap-y-1 font-mono text-[9px] text-muted dark:text-brand-300; }
+.hud-coordinate-row span + span::before { content:'·'; @apply mr-2 text-muted; }
+.hud-coordinate-row .gps-state { @apply text-success; }
+.hud-map-footer { @apply relative z-20 mt-auto flex flex-wrap items-end justify-between gap-3; }
+.hud-map-footer > span { @apply flex items-center gap-2 rounded-lg border border-line bg-white/95 px-3 py-2 text-[10px] text-muted shadow-sm backdrop-blur-md dark:border-dark-line dark:bg-dark-canvas/90 dark:text-brand-300; }
+.hud-map-footer img { @apply size-4; }
+.hud-map-footer strong { @apply font-semibold text-ink dark:text-white; }
+.hud-gauge-panel { @apply items-stretch; }
+.hud-status-header { @apply flex w-full items-center justify-between border-b border-line pb-3 dark:border-dark-line; }
+.hud-status-header > div { @apply flex items-center gap-2; }
+.hud-status-header h2 { @apply text-sm font-bold capitalize text-ink dark:text-white; }
+.hud-status-header > small { @apply text-[9px] text-muted dark:text-brand-300; }
+.ignition-pill { @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-2 py-1 text-[9px] font-semibold text-muted dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300; }
+.ignition-pill i { @apply size-1.5 rounded-full bg-muted; }
+.ignition-pill.on { @apply border-success/30 bg-success/10 text-success; }
+.ignition-pill.on i { @apply bg-success; }
+.hud-stats { @apply rounded-xl border border-line bg-canvas/60 px-1 dark:border-dark-line dark:bg-dark-canvas/50; }
+.hud-status-footer { @apply mt-2 flex w-full items-center justify-between gap-4 border-t border-line pt-3 dark:border-dark-line; }
+.hud-status-footer > span { @apply flex min-w-0 items-center gap-2; }
+.hud-status-footer > span:last-child { @apply flex-col items-end gap-0 text-right; }
+.hud-status-footer small { @apply block text-[9px] text-muted dark:text-brand-300; }
+.hud-status-footer strong { @apply block max-w-36 truncate text-[10px] font-semibold text-ink dark:text-white; }
+.driver-avatar { @apply grid size-7 shrink-0 place-items-center rounded-full border border-info/30 bg-info/10 text-[9px] font-bold not-italic text-info; }
+@media (max-width:1023px) { .hud-map-footer { @apply mt-10; } }
+@media (max-width:640px) { .hud-map-overlay { width:100%; } .hud-map-footer > span { @apply w-full justify-center; } .hud-status-header { @apply items-start; } .hud-status-header > div { @apply flex-wrap; } }
+
+@media (min-width:1024px) {
+  .vehicle-hud { min-height: 460px; height: 460px; }
+  .hud-map-panel { width: 66%; padding: 24px; }
+  .hud-map-overlay { width: min(52%, 34rem); }
+  .hud-gauge-panel { width: 34%; padding: 20px; gap: 8px; }
+  .hud-speedo { min-height: 0; transform: none; }
+  .hud-speedo__eyebrow { margin-bottom: 4px; }
+  .hud-speedo__dial { width: min(100%, 17rem); }
+  .hud-reading__value { font-size: 2.25rem; }
+  .hud-stats { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .hud-stats > div { padding: 10px 12px; }
+  .hud-stats > div:nth-child(2n)::after { display: none; }
+  .hud-stats > div:nth-child(n+3) { border-top: 1px solid var(--color-line); }
+  :host-context(.dark) .hud-stats > div:nth-child(n+3) { border-color: rgb(255 255 255 / .1); }
+}
+
 .hud-speedo { @apply flex w-full flex-1 flex-col items-center justify-center; min-height: 0; transform: translateY(0.35rem); }
 .hud-speedo__eyebrow { @apply mb-3 flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.18em] text-muted dark:text-neutral-400; }
 .hud-speedo__live-dot { @apply size-1.5 rounded-full bg-success; box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 15%, transparent), 0 0 10px color-mix(in srgb, var(--color-success) 55%, transparent); }

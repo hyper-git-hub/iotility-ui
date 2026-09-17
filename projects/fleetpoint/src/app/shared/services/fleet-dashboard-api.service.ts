@@ -22,15 +22,31 @@ export interface DashboardCard {
 }
 
 export interface GraphSeries { name: string; data: number[]; }
+export interface DashboardGraphData {
+  categories?: string[];
+  values?: Array<number | string>;
+  series?: GraphSeries[] | number[];
+  fleets?: DriverAllocationFleet[];
+}
+export interface DashboardGraphRow {
+  [key: string]: string | number | null;
+}
 export interface DriverAllocationFleet {
   name: string;
   data: Array<{ vehicle: string; driver: string }>;
 }
 export interface DashboardGraph {
   code: string;
+  analytics_type?: string;
   name: string;
-  data: { categories?: string[]; values?: number[]; series?: GraphSeries[] | number[]; fleets?: DriverAllocationFleet[] } | Array<{ fleet_name: string; vehicle_count: number }>;
+  data: DashboardGraphData | DashboardGraphRow[] | null;
   chart_type: string | null;
+  filter_by?: string;
+}
+
+export interface DashboardAnalytics {
+  graphs: DashboardGraph[];
+  cards: DashboardCard[];
 }
 
 export interface Vehicle {
@@ -91,14 +107,14 @@ export class FleetDashboardApiService {
   //   });
   // }
 
-  getFilteredCards(date: string): Observable<ApiResponse<DashboardCard[]>> {
-    return this.http.get<ApiResponse<DashboardCard[]>>(`${FLEET_API}/dashboard/graphs-cards/`, {
+  getFilteredCards(date: string): Observable<ApiResponse<DashboardAnalytics>> {
+    return this.http.get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
       params: new HttpParams().set('dashboard_id', DASHBOARD_ID).set('date', date),
     });
   }
 
-  getGraphs(): Observable<ApiResponse<DashboardGraph[]>> {
-    return this.http.get<ApiResponse<DashboardGraph[]>>(`${FLEET_API}/dashboard/graphs-cards/`, {
+  getGraphs(): Observable<ApiResponse<DashboardAnalytics>> {
+    return this.http.get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
       params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
     });
   }

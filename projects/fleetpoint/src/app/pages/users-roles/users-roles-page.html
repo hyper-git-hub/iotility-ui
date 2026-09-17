@@ -313,6 +313,13 @@
           >Allow write access</span
         ></label
       >
+      @if (selectedUser()) {
+        <label class="check-field"
+          ><input class="fleet-checkbox" type="checkbox" formControlName="workshop" /><span
+            >Workshop Owner</span
+          ></label
+        >
+      }
     </div>
   </form>
   <div modal-footer class="modal-actions">

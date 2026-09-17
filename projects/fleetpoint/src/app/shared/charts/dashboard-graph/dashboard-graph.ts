@@ -26,22 +26,23 @@ export class DashboardGraphComponent {
 
   protected allocations() {
     const data = this.graph().data;
-    return !Array.isArray(data) ? (data.fleets ?? []) : [];
+    return data && !Array.isArray(data) ? (data.fleets ?? []) : [];
   }
 
   protected hasChartData(): boolean {
     const graph = this.graph();
     if (graph.code === 'DA') return false;
+    if (!graph.data) return false;
     if (Array.isArray(graph.data)) {
-      return graph.data.some((row) => Number.isFinite(row.vehicle_count) && row.vehicle_count !== 0);
+      return graph.data.some((row) => this.rowValue(row) !== 0);
     }
 
     if (!graph.data.categories?.length) return false;
 
     const values = [
-      ...(graph.data.values ?? []),
+      ...(graph.data.values ?? []).map((value) => this.numericValue(value)),
       ...this.numericSeries(graph.data.series),
-      ...this.namedSeries(graph.data.series).flatMap((series) => series.data),
+      ...this.chartSeries(graph.data.series).flatMap((series) => series.data),
     ];
 
     return values.some((value) => Number.isFinite(value) && value !== 0);
@@ -49,9 +50,19 @@ export class DashboardGraphComponent {
 
   protected isDoughnut(): boolean {
     const graph = this.graph();
-    if (['DSS', 'DTS', 'JSJ', 'MS'].includes(graph.code)) return true;
-    if (['JJ', 'RS', 'VS'].includes(graph.code)) return false;
-    return graph.chart_type === 'piechart';
+    if (graph.code === 'JJ') return false;
+    if (graph.chart_type) return graph.chart_type === 'piechart';
+    return ['JSJ', 'MS'].includes(graph.code);
+  }
+
+  protected graphTitle(): string {
+    return this.graph().code === 'JJ' ? 'Jobs by Location' : this.graph().name;
+  }
+
+  protected emptyMessage(): string {
+    return ['ANT', 'DOW', 'FUT', 'DCE'].includes(this.graph().code)
+      ? 'No record found'
+      : 'No data available';
   }
 
   protected isLine(): boolean {
@@ -60,33 +71,49 @@ export class DashboardGraphComponent {
 
   protected barData(): ChartData<'bar', number[], string> {
     const data = this.graph().data;
+    if (!data) return { labels: [], datasets: [] };
     if (Array.isArray(data)) {
+      const values = data.map((row) => this.rowValue(row));
       return {
-        labels: data.map((row) => row.fleet_name),
+        labels: data.map((row) => this.rowLabel(row)),
         datasets: [{
-          label: 'Vehicles',
-          data: data.map((row) => row.vehicle_count),
-          backgroundColor: this.colors.brand,
+          label: this.graph().name,
+          data: values,
+          backgroundColor: this.barColors(values),
           borderRadius: 5,
         }],
       };
     }
     if (data.values) {
+      const values = data.values.map((value) => this.numericValue(value));
       return {
         labels: data.categories ?? [],
         datasets: [{
           label: this.graph().name,
-          data: data.values,
-          backgroundColor: this.colors.brand,
+          data: values,
+          backgroundColor: this.barColors(values),
+          borderRadius: 5,
+        }],
+      };
+    }
+    const series = this.chartSeries(data.series);
+    if (series.length === (data.categories?.length ?? 0) && series.every((item) => item.data.length === 1)) {
+      const values = series.map((item) => item.data[0] ?? 0);
+      return {
+        labels: data.categories ?? [],
+        datasets: [{
+          label: this.graph().name,
+          data: values,
+          backgroundColor: this.barColors(values),
           borderRadius: 5,
         }],
       };
     }
     return {
       labels: data.categories ?? [],
-      datasets: this.namedSeries(data.series).map((series, index) => ({
-        label: this.readableLabel(series.name),
-        data: series.data,
+      datasets: series.map((item, index) => ({
+        label: this.readableLabel(item.name),
+        data: item.data,
         backgroundColor: this.palette[index % this.palette.length],
         borderRadius: 5,
       })),
@@ -95,10 +122,10 @@ export class DashboardGraphComponent {
 
   protected lineData(): ChartData<'line', number[], string> {
     const data = this.graph().data;
-    if (Array.isArray(data)) return { labels: [], datasets: [] };
+    if (!data || Array.isArray(data)) return { labels: [], datasets: [] };
     return {
       labels: data.categories ?? [],
-      datasets: this.namedSeries(data.series).map((series, index) => ({
+      datasets: this.chartSeries(data.series).map((series, index) => ({
         label: this.readableLabel(series.name),
         data: series.data,
         borderColor: this.palette[index % this.palette.length],
@@ -115,16 +142,17 @@ export class DashboardGraphComponent {
 
   protected doughnutData(): ChartData<'doughnut', number[], string> {
     const graph = this.graph();
+    if (!graph.data) return { labels: [], datasets: [] };
     if (Array.isArray(graph.data)) {
       return {
-        labels: graph.data.map((row) => row.fleet_name),
-        datasets: [{ data: graph.data.map((row) => row.vehicle_count), backgroundColor: this.palette, borderWidth: 0 }],
+        labels: graph.data.map((row) => this.rowLabel(row)),
+        datasets: [{ data: graph.data.map((row) => this.rowValue(row)), backgroundColor: this.palette, borderWidth: 0 }],
       };
     }
     if (graph.data.values) {
       return {
         labels: graph.data.categories ?? [],
-        datasets: [{ data: graph.data.values, backgroundColor: this.palette, borderWidth: 0 }],
+        datasets: [{ data: graph.data.values.map((value) => this.numericValue(value)), backgroundColor: this.palette, borderWidth: 0 }],
       };
     }
     if (this.numericSeries(graph.data.series).length) {
@@ -161,9 +189,9 @@ export class DashboardGraphComponent {
   protected barOptions(): ChartOptions<'bar'> {
     const graph = this.graph();
     const chartType = graph.chart_type;
-    const horizontal = ['DVG', 'JSS'].includes(graph.code) ||
+    const horizontal = ['DSS', 'JSS'].includes(graph.code) ||
       chartType === 'horizontal_stackbar_chart' || chartType === 'horizontal_bar_chart';
-    const stacked = graph.code === 'JSS' ||
+    const stacked = ['DSS', 'JSS'].includes(graph.code) ||
       chartType === 'horizontal_stackbar_chart' || chartType === 'stackbar_chart';
     return {
       indexAxis: horizontal ? 'y' : 'x',
@@ -191,10 +219,12 @@ export class DashboardGraphComponent {
     scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
   };
 
-  protected readonly doughnutOptions: ChartOptions<'doughnut'> = {
-    cutout: '60%',
-    plugins: { legend: { position: 'bottom' } },
-  };
+  protected doughnutOptions(): ChartOptions<'doughnut'> {
+    return {
+      cutout: this.graph().chart_type === 'piechart' ? '0%' : '60%',
+      plugins: { legend: { position: 'bottom' } },
+    };
+  }
 
   private readableLabel(value: string): string {
     return value
@@ -228,5 +258,40 @@ export class DashboardGraphComponent {
     return Array.isArray(series) && series.every((item) => typeof item === 'number')
       ? series as number[]
       : [];
+  }
+
+  private chartSeries(series: GraphSeries[] | number[] | undefined): GraphSeries[] {
+    const named = this.namedSeries(series);
+    return this.graph().code === 'DSS'
+      ? named.filter((item) => item.name.toLowerCase() !== 'total points')
+      : named;
+  }
+
+  private rowLabel(row: Record<string, string | number | null>): string {
+    const labelKey = Object.keys(row).find((key) => typeof row[key] === 'string');
+    return labelKey ? String(row[labelKey]) : '';
+  }
+
+  private rowValue(row: Record<string, string | number | null>): number {
+    const valueKey = Object.keys(row).find((key) => typeof row[key] === 'number');
+    return valueKey ? this.numericValue(row[valueKey]) : 0;
+  }
+
+  private numericValue(value: string | number | null): number {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    const parsed = Number.parseFloat(String(value ?? '').replace(/,/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private barColors(values: number[]): string[] {
+    const maximum = Math.max(...values.filter((value) => Number.isFinite(value)), 0);
+    if (maximum <= 0) return values.map(() => this.colors.danger);
+
+    return values.map((value) => {
+      const ratio = value / maximum;
+      if (ratio >= 0.8) return this.colors.success;
+      if (ratio >= 0.6) return this.colors.warning;
+      return this.colors.danger;
+    });
   }
 }

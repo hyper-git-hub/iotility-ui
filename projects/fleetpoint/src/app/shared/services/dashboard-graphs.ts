@@ -1,8 +1,13 @@
 import { DashboardGraph } from './fleet-dashboard-api.service';
 
 export const EXPECTED_DASHBOARD_GRAPHS: DashboardGraph[] = [
-  { code: 'ADF', name: 'Aggressively Driven Fleets', chart_type: 'line_area_chart', data: { categories: ['Fleet 01', 'Fleet 02', 'Fleet 03', 'Fleet 04'], series: [{ name: 'Harsh Acceleration', data: [12, 7, 16, 9] }, { name: 'Harsh Braking', data: [8, 14, 6, 11] }, { name: 'Sharp Turning', data: [5, 9, 12, 7] }] } },
+  { code: 'ADF', analytics_type: 'G', name: 'Aggressively Driven Fleets', chart_type: 'line_area_chart', data: { categories: ['Fleet 01', 'Fleet 02', 'Fleet 03', 'Fleet 04'], series: [{ name: 'Harsh Acceleration', data: [12, 7, 16, 9] }, { name: 'Harsh Braking', data: [8, 14, 6, 11] }, { name: 'Sharp Turning', data: [5, 9, 12, 7] }] } },
   { code: 'DA', name: 'Driver Allocations', chart_type: null, data: { fleets: [{ name: 'Fleet 01', data: [{ vehicle: 'FLT-101', driver: 'Richard' }, { vehicle: 'FLT-102', driver: 'Rebecca' }] }, { name: 'Fleet 02', data: [{ vehicle: 'FLT-204', driver: 'Henry' }] }] } },
+  { code: 'DP', name: 'Driver Performance', chart_type: null, data: [] },
+  { code: 'FC', name: 'Fleet Comparison', chart_type: null, data: [] },
+  { code: 'FE', name: 'Fuel Efficiency', chart_type: null, data: { categories: [], values: [] } },
+  { code: 'FEV', name: 'Fuel Efficient Vehicles', chart_type: null, data: { categories: [], values: [] } },
+  { code: 'FU', name: 'Fuel Usage', chart_type: null, data: null },
   { code: 'DSS', name: 'Driver Safety Scorecard', chart_type: 'piechart', data: { categories: ['Geozone Violation', 'Harsh Acceleration', 'Harsh Braking', 'Speed'], values: [18, 24, 13, 31] } },
   { code: 'DTS', name: 'Driver Tasks Status', chart_type: 'piechart', data: { categories: ['Completed', 'Pending', 'In Progress', 'Aborted'], values: [42, 18, 27, 6] } },
   { code: 'DVG', name: 'Driver Violations', chart_type: 'horizontal_bar_chart', data: { categories: ['Richard', 'Rebecca', 'Henry', 'John'], series: [{ name: 'Violations', data: [12, 8, 15, 6] }] } },
@@ -28,5 +33,7 @@ export function mergeDashboardGraphs(received: DashboardGraph[]): DashboardGraph
       .filter((graph) => Boolean(graph?.code))
       .map((graph) => [graph.code, graph]),
   );
-  return EXPECTED_DASHBOARD_GRAPHS.map((fallback) => byCode.get(fallback.code) ?? fallback);
+  const expected = EXPECTED_DASHBOARD_GRAPHS.map((fallback) => byCode.get(fallback.code) ?? fallback);
+  const knownCodes = new Set(EXPECTED_DASHBOARD_GRAPHS.map((graph) => graph.code));
+  return [...expected, ...received.filter((graph) => !knownCodes.has(graph.code))];
 }

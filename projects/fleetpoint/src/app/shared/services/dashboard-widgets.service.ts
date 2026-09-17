@@ -10,6 +10,11 @@ export interface DashboardWidget {
 export const DASHBOARD_WIDGETS: DashboardWidget[] = [
   { id: 'fleet-status', name: 'Live Fleet Status', description: 'Real-time count of moving, idling, stopped, alert and offline vehicles', tab: 'overview' },
   { id: 'DA', name: 'Driver Allocations', description: 'Vehicles and their assigned drivers per fleet', tab: 'overview' },
+  { id: 'DP', name: 'Driver Performance', description: 'Fuel consumption by driver', tab: 'overview' },
+  { id: 'FC', name: 'Fleet Comparison', description: 'Fuel consumption by fleet', tab: 'overview' },
+  { id: 'FE', name: 'Fuel Efficiency', description: 'Fuel efficiency by vehicle', tab: 'overview' },
+  { id: 'FEV', name: 'Fuel Efficient Vehicles', description: 'Fuel-efficient vehicle counts by fleet', tab: 'overview' },
+  { id: 'FU', name: 'Fuel Usage', description: 'Fuel usage analytics', tab: 'overview' },
   { id: 'RS', name: 'Route Statistics', description: 'Vehicle counts per route', tab: 'overview' },
   { id: 'VS', name: 'Vehicle Statistics', description: 'Vehicle distribution across fleets', tab: 'overview' },
   { id: 'ADF', name: 'Aggressively Driven Fleets', description: 'Aggressive driving events by fleet over time', tab: 'safety' },

@@ -18,6 +18,11 @@ import {
 } from '../../../shared/services/dashboard-graphs';
 import { DashboardWidgetsService } from '../../../shared/services/dashboard-widgets.service';
 
+interface OverviewSkeleton {
+  code: string;
+  type: 'list' | 'bar' | 'profile';
+}
+
 @Component({
   selector: 'app-dashboard-overview',
   imports: [Skeleton, StatusBadge, DashboardGraphComponent],
@@ -25,8 +30,16 @@ import { DashboardWidgetsService } from '../../../shared/services/dashboard-widg
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })
 export class Overview implements OnInit {
+  private readonly hiddenOverviewGraphCodes = ['DA', 'DP', 'FEV', 'FU', 'RS', 'VS'];
+  private readonly emptyOverviewGraphs: DashboardGraph[] = [
+    { code: 'ANT', name: 'Actions Needed Today', chart_type: null, data: null },
+    { code: 'DOW', name: 'Driver of the Week', chart_type: null, data: null },
+    { code: 'FUT', name: 'Fleet Utilisation', chart_type: null, data: null },
+  ];
   private readonly widgetService = inject(DashboardWidgetsService);
-  protected readonly fleetStatusVisible = computed(() => this.widgetService.isVisible('overview', 'fleet-status'));
+  protected readonly fleetStatusVisible = computed(() =>
+    this.widgetService.isVisible('overview', 'fleet-status'),
+  );
   protected readonly visibleGraphs = computed(() =>
     this.displayedGraphs().filter((graph) => this.widgetService.isVisible('overview', graph.code)),
   );
@@ -36,11 +49,14 @@ export class Overview implements OnInit {
   protected readonly fleetLoading = signal(true);
   protected readonly cardsError = signal('');
   protected readonly metricSkeletons = Array.from({ length: 8 });
-  protected readonly loadingSkeletons = computed(() =>
-    this.widgetService
-      .widgetsForTab('overview')
-      .filter((widget) => widget.id !== 'fleet-status' && this.widgetService.isVisible('overview', widget.id))
-      .map((widget) => widget.id),
+  protected readonly loadingSkeletons = computed<OverviewSkeleton[]>(() =>
+    [
+      { code: 'ANT', type: 'list' as const },
+      { code: 'FE', type: 'bar' as const },
+      { code: 'DOW', type: 'profile' as const },
+      { code: 'FUT', type: 'bar' as const },
+      { code: 'FC', type: 'bar' as const },
+    ].filter((item) => this.widgetService.isVisible('overview', item.code)),
   );
   protected readonly cards = signal<DashboardCard[]>([]);
   protected readonly displayedCards = computed(() => {
@@ -50,21 +66,50 @@ export class Overview implements OnInit {
       .sort((first, second) => {
         const firstIndex = order.indexOf(first.code);
         const secondIndex = order.indexOf(second.code);
-        return (firstIndex < 0 ? order.length : firstIndex) - (secondIndex < 0 ? order.length : secondIndex);
+        return (
+          (firstIndex < 0 ? order.length : firstIndex) -
+          (secondIndex < 0 ? order.length : secondIndex)
+        );
       })
       .slice(0, 8);
   });
   protected readonly graphs = signal<DashboardGraph[]>([]);
-  protected readonly displayedGraphs = computed<DashboardGraph[]>(() =>
-    mergeDashboardGraphs(this.graphs()).filter((graph) =>
-      !['ADF', 'DSS', 'DVG', 'MS', 'POVM', 'DTS', 'JJ', 'JSJ', 'JSS'].includes(graph.code),
-    ),
-  );
+  protected readonly displayedGraphs = computed<DashboardGraph[]>(() => {
+    const order = ['ANT', 'FE', 'DOW', 'FUT', 'FC'];
+    return [...mergeDashboardGraphs(this.graphs()), ...this.emptyOverviewGraphs]
+      .filter(
+        (graph) =>
+          ![
+            'ADF',
+            'DSS',
+            'DVG',
+            'MS',
+            'POVM',
+            'DTS',
+            'JJ',
+            'JSJ',
+            'JSS',
+            ...this.hiddenOverviewGraphCodes,
+          ].includes(graph.code),
+      )
+      .sort((first, second) => {
+        const firstIndex = order.indexOf(first.code);
+        const secondIndex = order.indexOf(second.code);
+        return (
+          (firstIndex < 0 ? order.length : firstIndex) -
+          (secondIndex < 0 ? order.length : secondIndex)
+        );
+      });
+  });
   protected readonly fleets = signal<Fleet[]>([]);
   protected readonly dashcams = signal<DashcamDevice[]>([]);
-  protected readonly vehicles = computed(() => this.fleets().flatMap((fleet) => fleet.assigned_vehicles ?? []));
+  protected readonly vehicles = computed(() =>
+    this.fleets().flatMap((fleet) => fleet.assigned_vehicles ?? []),
+  );
   protected readonly visibleVehicles = computed(() => this.vehicles());
-  protected readonly onlineVehicles = computed(() => this.vehicles().filter((vehicle) => vehicle.online_status).length);
+  protected readonly onlineVehicles = computed(
+    () => this.vehicles().filter((vehicle) => vehicle.online_status).length,
+  );
   protected readonly fleetStatus = computed(() => {
     const status = { moving: 0, idling: 0, stopped: 0, alert: 0, offline: 0 };
     for (const vehicle of this.vehicles()) {
@@ -97,19 +142,23 @@ export class Overview implements OnInit {
     { key: 'deviceId', label: 'Device ID' },
     { key: 'alerts', label: 'Alerts', type: 'status' },
   ];
-  protected readonly fleetRows = computed<TableRow[]>(() => this.vehicles().map((vehicle) => ({
-    vehicle: vehicle.name,
-    details: `${vehicle.make} ${vehicle.model} · ${vehicle.vehicle_driver_name || 'No driver assigned'}`,
-    location: vehicle.location || 'Location unavailable',
-    speed: `${vehicle.speed || 0} km/h`,
-    connection: vehicle.online_status ? 'Active' : 'Inactive',
-  })));
-  protected readonly dashcamRows = computed<TableRow[]>(() => this.dashcams().map((camera) => ({
-    camera: camera.name,
-    deviceType: camera.device_type,
-    deviceId: camera.device_id,
-    alerts: camera.notifications ? `${camera.notifications} alerts` : 'Active',
-  })));
+  protected readonly fleetRows = computed<TableRow[]>(() =>
+    this.vehicles().map((vehicle) => ({
+      vehicle: vehicle.name,
+      details: `${vehicle.make} ${vehicle.model} · ${vehicle.vehicle_driver_name || 'No driver assigned'}`,
+      location: vehicle.location || 'Location unavailable',
+      speed: `${vehicle.speed || 0} km/h`,
+      connection: vehicle.online_status ? 'Active' : 'Inactive',
+    })),
+  );
+  protected readonly dashcamRows = computed<TableRow[]>(() =>
+    this.dashcams().map((camera) => ({
+      camera: camera.name,
+      deviceType: camera.device_type,
+      deviceId: camera.device_id,
+      alerts: camera.notifications ? `${camera.notifications} alerts` : 'Active',
+    })),
+  );
 
   protected readonly violationCount = signal(0);
   private readonly destroyRef = inject(DestroyRef);
@@ -119,10 +168,12 @@ export class Overview implements OnInit {
   ngOnInit(): void {
     this.loadDashboard();
     this.loadViolationCount();
-    interval(30_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.loadFleetData();
-      this.loadViolationCount();
-    });
+    interval(30_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.loadFleetData();
+        this.loadViolationCount();
+      });
   }
 
   protected loadDashboard(): void {
@@ -152,18 +203,24 @@ export class Overview implements OnInit {
 
   protected loadGraphs(): void {
     this.graphsLoading.set(true);
-    this.api.getGraphs().pipe(finalize(() => this.graphsLoading.set(false))).subscribe({
-      next: (graphs) => {
-        if (graphs.status !== 1000) {
-          this.showGraphsWithoutData();
-          return;
-        }
-        const received = Array.isArray(graphs.data) ? graphs.data : [];
-        this.graphs.set(received);
-        this.api.cacheGraphs(mergeDashboardGraphs(received));
-      },
-      error: () => this.showGraphsWithoutData(),
-    });
+    this.api
+      .getGraphs()
+      .pipe(finalize(() => this.graphsLoading.set(false)))
+      .subscribe({
+        next: (graphs) => {
+          if (graphs.status !== 1000) {
+            this.showGraphsWithoutData();
+            return;
+          }
+          const received = Array.isArray(graphs.data?.graphs)
+            ? graphs.data.graphs.filter((graph) => graph.analytics_type === 'G')
+            : [];
+          this.cards.set(Array.isArray(graphs.data?.cards) ? graphs.data.cards : []);
+          this.graphs.set(received);
+          this.api.cacheGraphs(mergeDashboardGraphs(received));
+        },
+        error: () => this.showGraphsWithoutData(),
+      });
   }
 
   private showGraphsWithoutData(): void {
@@ -174,10 +231,13 @@ export class Overview implements OnInit {
 
   private loadFleetData(): void {
     if (!this.fleets().length) this.fleetLoading.set(true);
-    this.api.getFleets().pipe(finalize(() => this.fleetLoading.set(false))).subscribe({
-      next: (fleets) => this.fleets.set(fleets.data?.data ?? []),
-      error: () => this.fleets.set([]),
-    });
+    this.api
+      .getFleets()
+      .pipe(finalize(() => this.fleetLoading.set(false)))
+      .subscribe({
+        next: (fleets) => this.fleets.set(fleets.data?.data ?? []),
+        error: () => this.fleets.set([]),
+      });
   }
 
   private loadViolationCount(): void {
@@ -195,7 +255,9 @@ export class Overview implements OnInit {
     return 'info';
   }
 
-  protected cardValue(card: DashboardCard): number | string { return card.data ?? 0; }
+  protected cardValue(card: DashboardCard): number | string {
+    return card.data ?? 0;
+  }
 
   protected cardAccent(code: string): string {
     const accents: Record<string, string> = {
@@ -220,10 +282,11 @@ export class Overview implements OnInit {
     return accents[code] ?? 'var(--color-brand-500)';
   }
 
-  protected vehicleInitial(vehicle: Vehicle): string { return (vehicle.name || '?').charAt(0).toUpperCase(); }
+  protected vehicleInitial(vehicle: Vehicle): string {
+    return (vehicle.name || '?').charAt(0).toUpperCase();
+  }
 
   protected statusPercentage(value: number): number {
     return this.vehicles().length ? (value / this.vehicles().length) * 100 : 0;
   }
-
 }

@@ -103,16 +103,36 @@
 
   @if (graphsLoading()) {
     <div class="analytics-grid" aria-hidden="true">
-      @for (code of loadingSkeletons(); track code) {
+      @for (skeleton of loadingSkeletons(); track skeleton.code) {
         <article class="graph-skeleton">
           <header class="graph-skeleton-header">
             <ui-skeleton variant="text" width="55%" height="0.85rem" radius="0.3rem" />
             <ui-skeleton variant="text" width="28%" height="0.58rem" radius="0.25rem" />
           </header>
-          <div class="graph-skeleton-plot">
-            @for (_ of [1, 2, 3, 4, 5]; track $index) { <span class="graph-skeleton-bar"></span> }
-          </div>
-          <div class="graph-skeleton-legend"><span><i></i><b></b></span></div>
+          @switch (skeleton.type) {
+            @case ('list') {
+              <div class="graph-skeleton-list">
+                @for (_ of [1, 2, 3, 4, 5]; track $index) {
+                  <div><ui-skeleton variant="circle" width="2rem" height="2rem" /><span><ui-skeleton variant="text" width="65%" height="0.65rem" /><ui-skeleton variant="text" width="45%" height="0.5rem" /></span><ui-skeleton width="2.75rem" height="1.15rem" radius="9999px" /></div>
+                }
+              </div>
+            }
+            @case ('profile') {
+              <div class="graph-skeleton-profile">
+                <ui-skeleton variant="circle" width="4rem" height="4rem" />
+                <ui-skeleton variant="text" width="8rem" height="0.75rem" />
+                <ui-skeleton variant="text" width="11rem" height="0.55rem" />
+                <ui-skeleton width="100%" height="0.5rem" radius="9999px" />
+                <div>@for (_ of [1, 2, 3]; track $index) { <ui-skeleton height="3rem" radius="0.65rem" /> }</div>
+              </div>
+            }
+            @default {
+              <div class="graph-skeleton-plot">
+                @for (_ of [1, 2, 3, 4, 5]; track $index) { <span class="graph-skeleton-bar"></span> }
+              </div>
+              <div class="graph-skeleton-legend"><span><i></i><b></b></span></div>
+            }
+          }
         </article>
       }
     </div>

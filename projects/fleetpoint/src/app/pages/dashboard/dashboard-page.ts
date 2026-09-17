@@ -3,6 +3,8 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { DashboardWidgetsService } from '../../shared/services/dashboard-widgets.service';
+import { FleetDashboardApiService } from '../../shared/services/fleet-dashboard-api.service';
+import { mergeDashboardGraphs } from '../../shared/services/dashboard-graphs';
 import { CustomiseModal } from './customise-modal/customise-modal';
 
 @Component({
@@ -13,6 +15,7 @@ import { CustomiseModal } from './customise-modal/customise-modal';
 })
 export class DashboardPage {
   private readonly router = inject(Router);
+  private readonly dashboardApi = inject(FleetDashboardApiService);
   protected readonly widgets = inject(DashboardWidgetsService);
   protected readonly customiseOpen = signal(false);
   protected readonly activeTab = signal('overview');
@@ -36,12 +39,25 @@ export class DashboardPage {
 
   constructor() {
     this.activeTab.set(this.tabFromUrl());
+    this.loadGraphsForDirectTab();
     this.router.events
       .pipe(
         filter((event) => event instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
       .subscribe(() => this.activeTab.set(this.tabFromUrl()));
+  }
+
+  private loadGraphsForDirectTab(): void {
+    if (this.activeTab() === 'overview' || this.dashboardApi.cachedGraphs().length) return;
+
+    this.dashboardApi.getGraphs().subscribe({
+      next: (response) => {
+        if (response.status !== 1000 || !Array.isArray(response.data?.graphs)) return;
+        const graphs = response.data.graphs.filter((graph) => graph.analytics_type === 'G');
+        this.dashboardApi.cacheGraphs(mergeDashboardGraphs(graphs));
+      },
+    });
   }
 
   protected openCustomise(): void {
