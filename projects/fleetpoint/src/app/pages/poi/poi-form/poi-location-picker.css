@@ -1,5 +1,5 @@
 @reference "../../../../styles.css";
-:host { @apply block h-56 w-full overflow-hidden rounded-xl border border-line relative dark:border-dark-line; }
+:host { @apply block h-80 w-full overflow-hidden rounded-xl border border-line relative dark:border-dark-line; }
 :host(.is-fullscreen) { position: fixed; inset: 0; z-index: 1200; height: auto; border-radius: 0; }
 .location-map { @apply h-full w-full bg-brand-50; }
 .map-overlays { @apply pointer-events-none absolute inset-0 z-[500]; }

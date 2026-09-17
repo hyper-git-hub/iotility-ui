@@ -1,5 +1,5 @@
 <app-modal [open]="open()" size="lg" labelledBy="poi-form-title" (closed)="cancel()">
-  <div modal-header><h2 id="poi-form-title">Add Point of Interest</h2><p>Step {{ activeStep() + 1 }} of {{ steps.length }}</p></div>
+  <div modal-header><h2 id="poi-form-title">Add Point of Interest</h2></div>
   <div class="poi-form-layout">
     <app-stepper [steps]="steps" [activeIndex]="activeStep()" (stepSelected)="goToStep($event)"/>
     <shared-smooth-height>
