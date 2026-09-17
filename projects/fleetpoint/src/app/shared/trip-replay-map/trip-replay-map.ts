@@ -358,7 +358,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       ),
     ];
     for (const event of events) {
-      const point = coordinates[this.routeIndex(event.positionIndex, positions.length)];
+      // Distance-based placement (not the nearest-road-vertex lookup): the
+      // timeline dot and the vehicle marker both use index-proportional
+      // distance, so the map dot must use the same mapping or the three
+      // markers land at different spots along the trail.
+      const point = this.coordinateAtDistance(
+        this.targetDistanceForIndex(event.positionIndex, positions.length),
+      );
       if (!point) continue;
       const color =
         event.type === 'violation'
