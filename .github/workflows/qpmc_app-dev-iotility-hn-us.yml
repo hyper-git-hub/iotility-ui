@@ -108,14 +108,6 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_CFEDA71E3BCE4EC0B4D08A1E875979D4 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9148C1B0841A4EE29D58AC8EA3562462 }}
 
-      # --- ADDED RESTART STEP ---
-      - name: Restart Azure Web App
-        uses: azure/CLI@v2
-        with:
-          azcliversion: latest
-          inlineScript: |
-            az webapp restart --name "${{ env.AZURE_WEBAPP_NAME }}" --slot "Production"
-
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
