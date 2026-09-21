@@ -1,39 +1,48 @@
 ﻿<main class="vehicle-detail-page">
   @if (loading()) {
     <header class="detail-heading">
-      <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p class="vehicle-heading-line">Vehicles / <ui-skeleton width="6rem" height="0.625rem" /></p><h1 class="vehicle-title-skeleton"><ui-skeleton width="9rem" height="1.125rem" /></h1><span class="vehicle-heading-line vehicle-description-skeleton"><ui-skeleton width="15rem" height="0.75rem" /></span></div></div>
-      <div class="heading-actions"><ui-skeleton width="4rem" height="1.5rem" radius="999px" /><button type="button" class="secondary-action" disabled>Trip Replay</button><button type="button" class="primary-action" disabled>Edit Vehicle</button></div>
+      <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p>Vehicles / <ui-skeleton width="4.5rem" height="0.625rem" /></p><h1><ui-skeleton width="8.5rem" height="1.625rem" /></h1><span><ui-skeleton width="12rem" height="0.75rem" /></span></div></div>
+      <div class="heading-actions"><ui-skeleton width="4.5rem" height="1.5rem" radius="999px" /><button type="button" class="secondary-action" disabled>Trip Replay</button><button type="button" class="primary-action" disabled>Edit Vehicle</button></div>
     </header>
-    <section class="metric-grid">@for (item of [1, 2, 3, 4, 5, 6]; track item) { <ui-stat-card-skeleton [compact]="true" [showIcon]="false" /> }</section>
-    <nav class="detail-tabs" aria-label="Vehicle detail sections">
-      <a href="#vehicle-overview" class="active">Overview</a><a href="#vehicle-connectivity">Device &amp; monitoring</a><a href="#vehicle-operations">Activity &amp; service</a>
-    </nav>
-    <div class="section-heading overview-heading"><div><span>Vehicle profile</span><h2>Identity &amp; specifications</h2></div><p>Registration, ownership and technical information</p></div>
-    <section class="overview-grid" id="vehicle-overview">
-      <article class="detail-card identity-card vehicle-overview-skeleton">
-        <header><h2>Vehicle Overview</h2><ui-skeleton width="6rem" height="1.25rem" radius="999px" /></header>
-        <div class="vehicle-identity hidden"><span class="vehicle-illustration"><ui-skeleton width="4rem" height="4rem" radius="1rem" /></span><div><h3><ui-skeleton width="8rem" height="1.125rem" /></h3><p><ui-skeleton width="10rem" height="0.75rem" /></p><ui-skeleton width="4rem" height="1.5rem" radius="999px" /></div></div>
-        <dl class="details-list">@for (label of ['Vehicle Name / ID','Record Status','Fleet','Make','Model','Year','Colour','Engine Number','Chassis Number','Engine Capacity','Fuel Tank Capacity','Odometer Reading','Owner','Date Commissioned','Registration Expiry','Customer']; track label) { <div class="spec-item"><dt><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" [style.color]="specMeta(label).color">@for (path of specMeta(label).icon; track path) { <path [attr.d]="path" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" /> }</svg><span>{{ label }}</span><span class="spec-tag" [style]="specMeta(label).tagStyle">{{ specMeta(label).tag }}</span></dt><dd><ui-skeleton [width]="$index % 3 === 0 ? '7rem' : '5.5rem'" height="0.875rem" /></dd></div> }</dl>
-      </article>
+    <section class="metric-grid" aria-label="Vehicle summary loading" aria-busy="true">
+      @for (card of skeletonSummaryCards; track card.label) {
+        <article class="summary-card" [attr.data-tone]="card.tone" aria-hidden="true">
+          <header><span>{{ card.label }}</span><i><img [src]="card.icon" alt="" /></i></header>
+          <div><ui-skeleton [width]="card.valueWidth" height="1rem" />@if (card.suffix) { <small>{{ card.suffix }}</small> }</div>
+        </article>
+      }
     </section>
-    <div class="section-heading"><div><span>Connected vehicle</span><h2>Device &amp; monitoring</h2></div><p>Connectivity, safety rules and the latest sensor state</p></div>
-    <section class="information-grid" id="vehicle-connectivity">
-      <article class="detail-card"><header><h2>Device &amp; Connectivity</h2></header><dl class="compact-list">@for (label of ['Device ID','SIM Number','Vehicle Type','RFID Tag','Immobilizer','Ignition']; track label) { <div><dt>{{ label }}</dt><dd><ui-skeleton width="5.5rem" height="0.75rem" /></dd></div> }</dl></article>
-      <article class="detail-card"><header><h2>Monitoring &amp; Safety</h2></header><div class="monitoring-list">@for (label of ['Harsh acceleration','Harsh braking','Geo zone','Sharp turning','Seat belt monitoring','Immobilization']; track label) { <div><span>{{ label }}</span><ui-skeleton width="3.75rem" height="1.25rem" radius="999px" /></div> }</div></article>
-      <article class="detail-card"><header><h2>Live Sensor Readings</h2><ui-skeleton width="4.5rem" height="1.25rem" radius="999px" /></header><div class="sensor-list">@for (label of ['Last updated','Location','Vehicle status','Current speed']; track label) { <div><ui-skeleton width="2.25rem" height="2.25rem" radius="0.5rem" /><span><small>{{ label }}</small><strong><ui-skeleton width="8rem" height="0.75rem" /></strong></span></div> }</div></article>
-    </section>
-    <div class="section-heading"><div><span>Operations</span><h2>Performance &amp; service</h2></div><p>Recent activity and maintenance at a glance</p></div>
-    <section class="operations-grid" id="vehicle-operations">
-      <article class="detail-card"><header><h2>Route &amp; Speed</h2><span>Latest telemetry</span></header><div class="speed-panel"><div class="speedometer-card speedometer-skeleton"><div class="speedo-gauge-wrap"><svg class="speedo-svg" viewBox="0 0 400 240"><path d="M 40 210 A 160 160 0 0 1 360 210" fill="none" stroke="var(--color-line, #231e3d)" stroke-width="20" stroke-linecap="round"/></svg></div><div class="speedo-reading"><ui-skeleton width="6rem" height="2rem" radius="0.5rem" /></div></div></div></article>
-      <article class="detail-card"><header><h2>Operational Snapshot</h2><span>Overall</span></header><div class="snapshot">@for (label of ['Last fuel volume','Distance per day','Assigned driver','Last job','Total distance','Total violations']; track label) { <div><span>{{ label }}</span><strong><ui-skeleton width="5rem" height="0.75rem" /></strong></div> }</div></article>
-      <article class="detail-card"><header><h2>Activity &amp; Service</h2><span>Latest records</span></header><div class="activity-columns">@for (group of [{title:'Violations', rows:['Returned records','Violation alerts']},{title:'Maintenance',rows:['Recent records','Next maintenance']}]; track group.title) { <section><h3>{{ group.title }}</h3>@for (label of group.rows; track label) { <div class="activity-row"><span>{{ label }}</span><strong><ui-skeleton width="3.5rem" height="0.625rem" /></strong></div> }</section> }</div></article>
+    <app-vehicle-hud [vehicle]="record()" [metrics]="metrics()" [lastJob]="lastJob()" [routes]="record()?.['attached_routes_list']" [loading]="true" />
+    <section class="vehicle-workspace" id="vehicle-overview" aria-busy="true">
+      <nav class="detail-tabs" aria-label="Vehicle detail sections">
+        @for (tab of [0, 1, 2, 3, 4, 5]; track tab) {
+          <span class="tab-skeleton"><ui-skeleton width="16px" height="16px" radius="4px" /><ui-skeleton [width]="tab % 2 ? '5.5rem' : '7rem'" height="0.625rem" />@if (tab === 3) { <em><ui-skeleton width="1.75rem" height="0.5rem" radius="999px" /></em> }</span>
+        }
+      </nav>
+      <div class="workspace-grid">
+        <article class="workspace-group">
+          <header><span class="group-icon brand"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="9.5rem" height="0.875rem" /><small><ui-skeleton width="4.5rem" height="0.625rem" /></small></header>
+          <dl>@for (row of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track row) { <div><dt><ui-skeleton width="6.5rem" height="0.75rem" /></dt><dd><ui-skeleton width="4.5rem" height="0.75rem" /></dd></div> }</dl>
+        </article>
+        <article class="workspace-group" id="telemetry">
+          <header><span class="group-icon success"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="8rem" height="0.875rem" /><small><ui-skeleton width="3.5rem" height="0.625rem" /></small></header>
+          <dl>@for (row of [1, 2, 3, 4]; track row) { <div><dt><ui-skeleton width="5.5rem" height="0.75rem" /></dt><dd><ui-skeleton width="4rem" height="0.75rem" /></dd></div> }</dl>
+          <div class="workspace-flags" id="safety">@for (row of [1, 2, 3, 4]; track row) { <div><ui-skeleton width="6.5rem" height="0.75rem" /><em><ui-skeleton width="3.5rem" height="0.625rem" radius="999px" /></em></div> }</div>
+        </article>
+        <article class="workspace-group" id="operations">
+          <header><span class="group-icon info"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="9rem" height="0.875rem" /><small><ui-skeleton width="4rem" height="0.625rem" /></small></header>
+          <dl>@for (row of [1, 2, 3, 4, 5, 6, 7, 8]; track row) { <div><dt><ui-skeleton width="7rem" height="0.75rem" /></dt><dd><ui-skeleton width="5rem" height="0.75rem" /></dd></div> }</dl>
+        </article>
+      </div>
     </section>
   } @else if (record(); as vehicle) {
-    <header class="detail-heading smooth-reveal">
+    <!-- Fade-in animation disabled: <header class="detail-heading smooth-reveal"> -->
+    <header class="detail-heading">
       <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p>Vehicles / {{ registration() }}</p><h1>{{ registration() }}</h1><span>{{ text(vehicle.year) }} {{ text(vehicle.make) }} {{ text(vehicle.model) }} · {{ text(vehicle.fleet_name, 'Unassigned fleet') }}</span></div></div>
       <div class="heading-actions"><shared-status-badge variant="pill" [online]="vehicle.online_status" onlineLabel="Online" offlineLabel="Offline" /><button type="button" class="secondary-action" (click)="tripReplay()">Trip Replay</button><button type="button" class="primary-action" (click)="openEdit()">Edit Vehicle</button></div>
     </header>
-    <section class="metric-grid smooth-reveal reveal-metrics" aria-label="Vehicle summary">
+    <!-- Cards fade-in animation disabled: <section class="metric-grid smooth-reveal reveal-metrics" aria-label="Vehicle summary"> -->
+    <section class="metric-grid" aria-label="Vehicle summary">
       @for (card of summaryCards(); track card.label) {
         <article class="summary-card" [attr.data-tone]="card.tone">
           <header><span>{{ card.label }}</span><i><img [src]="card.icon" alt="" aria-hidden="true" /></i></header>
@@ -42,7 +51,8 @@
       }
     </section>
     <app-vehicle-hud [vehicle]="record()" [metrics]="metrics()" [lastJob]="lastJob()" [routes]="record()?.['attached_routes_list']" [loading]="loading()" />
-    <section class="vehicle-workspace smooth-reveal" id="vehicle-overview">
+    <!-- Fade-in animation disabled: <section class="vehicle-workspace smooth-reveal" id="vehicle-overview"> -->
+    <section class="vehicle-workspace" id="vehicle-overview">
       <nav class="detail-tabs" aria-label="Vehicle detail sections">
         <a href="#vehicle-overview" class="active"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</a>
         <a href="#telemetry"><img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Telemetry &amp; sensors</a>

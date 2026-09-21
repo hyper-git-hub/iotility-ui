@@ -1,6 +1,6 @@
 import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Skeleton, StatCardSkeleton, StatusBadge } from '@iotility/shared-ui';
+import { Skeleton, StatusBadge } from '@iotility/shared-ui';
 import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
 import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../../../shared/services/vehicle-detail-api.service';
 import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/services/vehicle-realtime.service';
@@ -12,7 +12,7 @@ import { VehicleInventoryRecord } from '../../../shared/services/vehicle-invento
 interface DetailItem { label: string; value: string; }
 interface SummaryCard { label: string; value: string; suffix: string; tone: 'brand' | 'info' | 'success' | 'warning' | 'danger'; icon: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [Skeleton, StatCardSkeleton, StatusBadge, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
+@Component({ selector: 'app-vehicle-detail', imports: [Skeleton, StatusBadge, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
@@ -57,6 +57,19 @@ export class VehicleDetail implements OnInit, OnDestroy {
       { label: 'Maintenance', value: String(this.count(this.maintenance())), suffix: 'records', tone: 'brand', icon: 'assets/fleetpoint/icons/wrench.svg' },
     ];
   });
+
+  /* Skeleton cards reuse the real static parts (label, tone, icon, suffix) so
+     only the value swaps from a shimmer bar to text on load — no reflow. */
+  protected readonly skeletonSummaryCards = [
+    { label: 'Total distance', tone: 'info', icon: 'assets/fleetpoint/icons/route.svg', suffix: 'km', valueWidth: '3rem' },
+    { label: 'Distance today', tone: 'brand', icon: 'assets/fleetpoint/icons/map-pin-brand.svg', suffix: 'km', valueWidth: '3.5rem' },
+    { label: 'Current speed', tone: 'success', icon: 'assets/fleetpoint/icons/speedometer.svg', suffix: 'km/h', valueWidth: '3rem' },
+    { label: 'Violations', tone: 'danger', icon: 'assets/fleetpoint/icons/warning.svg', suffix: 'total', valueWidth: '2.5rem' },
+    { label: 'Fuel status', tone: 'warning', icon: 'assets/fleetpoint/icons/fuel-sensor.svg', suffix: '', valueWidth: '2.25rem' },
+    { label: 'Ignition', tone: 'warning', icon: 'assets/fleetpoint/icons/ignition.svg', suffix: 'reported', valueWidth: '2.5rem' },
+    { label: 'Safety rules', tone: 'success', icon: 'assets/fleetpoint/icons/shield-check.svg', suffix: 'enabled', valueWidth: '1.5rem' },
+    { label: 'Maintenance', tone: 'brand', icon: 'assets/fleetpoint/icons/wrench.svg', suffix: 'records', valueWidth: '1.5rem' },
+  ] as const;
 
   private readonly subscription = new Subscription();
   /* Realtime self-healing: SignalR callbacks run outside the Angular zone and
@@ -140,31 +153,7 @@ export class VehicleDetail implements OnInit, OnDestroy {
       error: (response) => this.showLoadError(response.error?.message || 'Vehicle details could not be loaded.'),
     });
   }
-  protected metricTone(index: number): 'brand' | 'info' | 'success' | 'warning' | 'danger' { return ['danger', 'warning', 'info', 'success', 'brand', 'danger'][index % 6] as never; }
   protected metricValue(metric: VehicleMetric): string { return this.text(metric.data, '0'); }
-
-  // Icon paths + corner tag per fact for the telemetry-style spec tiles.
-  private static readonly SPEC_META: Record<string, { icon: string[]; tag: string; color: string; tagStyle?: string }> = {
-    'Vehicle Name / ID': { icon: ['M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'], tag: 'Primary', color: '#a78bfa', tagStyle: 'background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-color: rgba(139, 92, 246, 0.5);' },
-    'Record Status': { icon: ['M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'], tag: 'Operational', color: '#34d399', tagStyle: 'background: rgba(16, 185, 129, 0.1); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3);' },
-    'Fleet': { icon: ['M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'], tag: 'Metro Hub', color: '#818cf8', tagStyle: '' },
-    'Make': { icon: ['M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z'], tag: 'OEM', color: '#22d3ee', tagStyle: '' },
-    'Model': { icon: ['M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4'], tag: 'Sedan', color: '#60a5fa', tagStyle: '' },
-    'Year': { icon: ['M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'], tag: 'Next Gen', color: '#34d399', tagStyle: 'color: #34d399;' },
-    'Colour': { icon: ['M7 21a4 4 0 01-4-4 5 5 0 014-4h4a5 5 0 014 4 4 4 0 01-4 4H7zm0 0v-4'], tag: '#F472B6', color: '#f472b6', tagStyle: 'background: rgba(244, 114, 182, 0.1); color: #f9a8d4; border-color: rgba(244, 114, 182, 0.3);' },
-    'Engine Number': { icon: ['M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', 'M15 12a3 3 0 11-6 0 3 3 0 016 0z'], tag: 'BLOCK', color: '#fb7185', tagStyle: '' },
-    'Chassis Number': { icon: ['M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'], tag: 'MATCHED', color: '#c084fc', tagStyle: 'background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);' },
-    'Engine Capacity': { icon: ['M13 10V3L4 14h7v7l9-11h-7z'], tag: 'DISP', color: '#22d3ee', tagStyle: 'color: #22d3ee;' },
-    'Fuel Tank Capacity': { icon: ['M19 14l-7 7m0 0l-7-7m7 7V3'], tag: 'MAX', color: '#34d399', tagStyle: '' },
-    'Odometer Reading': { icon: ['M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'], tag: 'Fresh', color: '#2dd4bf', tagStyle: 'background: rgba(6, 182, 212, 0.1); color: #22d3ee; border-color: rgba(6, 182, 212, 0.3);' },
-    'Owner': { icon: ['M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'], tag: 'OWN', color: '#a78bfa', tagStyle: '' },
-    'Date Commissioned': { icon: ['M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'], tag: 'COMM', color: '#fbbf24', tagStyle: '' },
-    'Registration Expiry': { icon: ['M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'], tag: 'EXPIRY', color: '#fb7185', tagStyle: '' },
-    'Customer': { icon: ['M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'], tag: 'CUST', color: '#818cf8', tagStyle: '' },
-  };
-  protected specMeta(label: string): { icon: string[]; tag: string; color: string; tagStyle?: string } {
-    return VehicleDetail.SPEC_META[label] ?? { icon: ['M4 6h16M4 12h16M4 18h16'], tag: 'SPEC', color: '#94a3b8', tagStyle: '' };
-  }
   protected violationMetric(): string { return this.metricValue(this.metrics().find((metric) => metric.code === 'VA') || { code: 'VA', name: '', data: 0 }); }
   protected deviceDetails(): DetailItem[] { const v = this.record(); return [['Device ID', v?.['device_id']], ['SIM Number', v?.['sim_no']], ['Vehicle Type', v?.['vehicle_type']], ['RFID Tag', v?.['rfid_tag']], ['Immobilizer', v?.['is_immobilization_enabled'] ? 'Enabled' : 'Disabled'], ['Ignition', v?.['ignition_status'] ? 'On' : 'Off']].map(([label, value]) => ({ label: String(label), value: this.text(value) })); }
   protected monitoring(): { label: string; enabled: boolean }[] { const v = this.record(); return [['Harsh acceleration', v?.['harsh_acceleration']], ['Harsh braking', v?.['harsh_braking']], ['Geo zone', v?.['geo_zone']], ['Sharp turning', v?.['sharp_turning']], ['Seat belt monitoring', v?.['seat_belt']], ['Immobilization', v?.['is_immobilization_enabled']]].map(([label, enabled]) => ({ label: String(label), enabled: Boolean(enabled) })); }

@@ -28,43 +28,38 @@
     <div class="hud-divider" aria-hidden="true"></div>
 
     <section class="hud-gauge-panel" aria-hidden="true">
-      <div class="hud-speedo">
-        <div class="hud-speedo__eyebrow">
-          <span class="hud-speedo__live-dot"></span>
-          Live speed
+      <header class="hud-status-header">
+        <div><h2>Live status</h2><span class="ignition-pill"><i></i>Ignition <ui-skeleton width="2rem" height="0.625rem" /></span></div>
+        <small><ui-skeleton width="5.5rem" height="0.5625rem" /></small>
+      </header>
+      <div class="hud-speed-console">
+        <header><span><i></i>Current speed</span><small>Peak today: <ui-skeleton width="4rem" height="0.625rem" /></small></header>
+        <div class="hud-speed-readout">
+          <div><ui-skeleton width="5.5rem" height="2.875rem" radius="0.5rem" /><span>km/h</span></div>
+          <div class="hud-limit-state"><ui-skeleton width="5.5rem" height="1.375rem" radius="0.5rem" /><ui-skeleton width="6.25rem" height="1.375rem" radius="0.5rem" /></div>
         </div>
-        <div class="hud-speedo__dial">
-          <svg class="hud-gauge hud-gauge--skeleton" viewBox="0 0 280 180">
-            <defs>
-              <radialGradient id="hudHubGlowSkeleton" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" style="stop-color: var(--color-purple-500)" stop-opacity="0.4"></stop>
-                <stop offset="50%" style="stop-color: var(--color-indigo-500)" stop-opacity="0.22"></stop>
-                <stop offset="100%" style="stop-color: var(--color-sky-400)" stop-opacity="0"></stop>
-              </radialGradient>
-            </defs>
-            <path class="hud-gauge__arc" d="M 37.3 143.4 A 108 108 0 1 1 242.7 143.4" fill="none" stroke-width="1.5"></path>
-            <g class="hud-gauge__skeleton-ticks">
-              @for (tick of ticks; track tick.x1 + '-' + tick.y1) {
-                <line [attr.stroke-width]="tick.width" [attr.x1]="tick.x1" [attr.y1]="tick.y1" [attr.x2]="tick.x2" [attr.y2]="tick.y2"></line>
-              }
-            </g>
-            <circle cx="140" cy="110" fill="url(#hudHubGlowSkeleton)" r="14"></circle>
-            <circle cx="140" cy="110" style="fill: var(--color-ink)" r="8" stroke-width="1.8" [style.stroke]="'var(--color-indigo-400)'"></circle>
-            <circle cx="140" cy="110" fill="#ffffff" r="3"></circle>
-            <line class="hud-gauge__base" stroke-linecap="round" stroke-width="2" x1="45" x2="235" y1="152" y2="152"></line>
+        <div class="hud-speed-tape">@for (segment of speedSegments; track segment) { <i></i> }</div>
+        <div class="hud-speed-scale"><span>0</span><span>30</span><b>• 60</b><span>90</span><span>120</span><span>150</span><span>180</span></div>
+        <div class="hud-speed-trend">
+          <header><span><i></i>Last 15 min trend</span><ui-skeleton width="6.5rem" height="0.625rem" /></header>
+          <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="hudTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".35"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+            <line class="trend-limit" x1="0" y1="24" x2="320" y2="24"/><text x="8" y="20">LIMIT 60</text>
+            <path class="trend-area" d="M0 38 Q28 35 50 32 T100 28 T150 36 T200 18 T245 27 T285 14 T320 19 L320 50 L0 50Z"/>
+            <path class="trend-line" d="M0 38 Q28 35 50 32 T100 28 T150 36 T200 18 T245 27 T285 14 T320 19"/>
+            <circle class="trend-dot-ring" cx="318" cy="19" r="6"/><circle class="trend-dot" cx="318" cy="19" r="3"/>
           </svg>
-          <div class="hud-reading"><ui-skeleton width="5.5rem" height="2rem" radius="0.5rem" /></div>
         </div>
       </div>
-
       <div class="hud-stats">
-        @for (label of skeletonStatLabels; track label.text; let index = $index) {
-          <div [class.hud-stats__driver]="index === 7">
-            <span>{{ label.text }}</span>
-            <strong class="hud-stats__slot"><ui-skeleton [width]="label.width" height="0.875rem" /></strong>
-          </div>
+        @for (tile of skeletonStatTiles; track tile.label) {
+          <div [attr.data-accent]="tile.accent || null"><span>{{ tile.label }}</span><strong class="hud-number"><ui-skeleton [width]="tile.width" height="1rem" /></strong></div>
         }
       </div>
+      <footer class="hud-status-footer">
+        <span><i class="driver-avatar"><ui-skeleton width="28px" height="28px" radius="999px" /></i><span><small>Driver</small><strong><ui-skeleton width="6rem" height="0.75rem" /></strong></span></span>
+        <span><small>Last update</small><strong><ui-skeleton width="9rem" height="0.75rem" /></strong></span>
+      </footer>
     </section>
   } @else {
   <div class="hud-map-canvas" aria-label="Interactive vehicle location map">

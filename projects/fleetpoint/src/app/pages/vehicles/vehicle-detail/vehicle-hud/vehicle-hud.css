@@ -322,6 +322,7 @@
   transform: skew(-12deg);
 }
 .hud-speed-console > header strong { color: var(--color-ink); }
+.hud-speed-console small ui-skeleton { display: inline-flex; vertical-align: middle; }
 :host-context(.dark) .hud-speed-console > header strong { color: #f8fafc; }
 .hud-speed-readout { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .hud-speed-readout > div:first-child { display: flex; align-items: baseline; gap: 8px; }
