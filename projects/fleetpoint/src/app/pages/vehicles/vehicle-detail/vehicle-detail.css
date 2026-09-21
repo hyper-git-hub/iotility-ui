@@ -335,11 +335,13 @@ app-vehicle-hud ::ng-deep .vehicle-hud {
     opacity: .75
 }
 
-.detail-tabs a.active {
+.detail-tabs a.active,
+.detail-tabs button.active {
     color: var(--color-brand-600)
 }
 
-.detail-tabs a.active:after {
+.detail-tabs a.active:after,
+.detail-tabs button.active:after {
     content: "";
     position: absolute;
     right: 10px;

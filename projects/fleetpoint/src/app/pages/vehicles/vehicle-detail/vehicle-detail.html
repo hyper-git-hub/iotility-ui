@@ -54,12 +54,12 @@
     <!-- Fade-in animation disabled: <section class="vehicle-workspace smooth-reveal" id="vehicle-overview"> -->
     <section class="vehicle-workspace" id="vehicle-overview">
       <nav class="detail-tabs" aria-label="Vehicle detail sections">
-        <a href="#vehicle-overview" class="active"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</a>
-        <a href="#telemetry"><img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Telemetry &amp; sensors</a>
+        <button type="button" [class.active]="activeTab() === 'vehicle-overview'" (click)="scrollTo('vehicle-overview')"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</button>
+        <button type="button" [class.active]="activeTab() === 'telemetry'" (click)="scrollTo('telemetry')"><img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Telemetry &amp; sensors</button>
         <button type="button" (click)="tripReplay()"><img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" />Trips &amp; replay</button>
-        <a href="#safety"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" aria-hidden="true" />Violations &amp; safety <em>{{ violationMetric() }}</em></a>
-        <a href="#telemetry"><img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />Device &amp; connectivity</a>
-        <a href="#operations"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" />Maintenance</a>
+        <button type="button" [class.active]="activeTab() === 'safety'" (click)="scrollTo('safety')"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" aria-hidden="true" />Violations &amp; safety <em>{{ violationMetric() }}</em></button>
+        <button type="button" [class.active]="activeTab() === 'telemetry'" (click)="scrollTo('telemetry')"><img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />Device &amp; connectivity</button>
+        <button type="button" [class.active]="activeTab() === 'operations'" (click)="scrollTo('operations')"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" />Maintenance</button>
       </nav>
       <div class="workspace-grid">
         <article class="workspace-group">
