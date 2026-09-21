@@ -14,3 +14,39 @@ header span { @apply rounded-full bg-brand-50 px-2 py-1 text-[9px] capitalize te
 .allocation-list h3 { @apply mb-2 text-[11px] font-semibold text-brand-600 dark:text-brand-300; }
 .allocation-list section div { @apply flex items-center justify-between gap-2 border-t border-line/70 py-1.5 text-[10px] first:border-0 dark:border-dark-line; }
 .allocation-list span { @apply truncate text-muted; }
+
+.actions-card header { @apply items-center; }
+.urgent-pill { @apply rounded-full bg-danger px-2 py-1 text-[10px] font-semibold text-white; }
+.action-list { @apply flex flex-1 flex-col justify-around; }
+.action-row { @apply grid grid-cols-[2rem_minmax(0,1fr)_auto_auto] items-center gap-3 px-2; }
+.action-icon { @apply grid size-8 place-items-center rounded-lg text-sm not-italic; }
+.action-icon.danger { @apply bg-danger/10 text-danger; }
+.action-icon.warning { @apply bg-warning/10 text-warning; }
+.action-icon.info { @apply bg-info/10 text-info; }
+.action-icon.brand { @apply bg-brand-50 text-brand-500 dark:bg-brand-600/10; }
+.action-row p { @apply min-w-0; }
+.action-row strong { @apply block truncate text-[11px] font-semibold text-ink dark:text-white; }
+.action-row small { @apply mt-1 block truncate text-[10px] text-muted dark:text-brand-300; }
+.action-row > b { @apply text-base font-normal text-slate-300 dark:text-slate-600; }
+.priority { @apply rounded-full px-2 py-1 text-[9px] not-italic; }
+.priority.high { @apply bg-danger/10 text-danger; }
+.priority.medium { @apply bg-warning/15 text-amber-600 dark:text-warning; }
+.priority.low { @apply bg-info/10 text-info; }
+
+.driver-card header { @apply mb-1; }
+.trophy { @apply mr-1 bg-transparent p-0 text-warning; }
+.driver-profile { @apply flex flex-1 flex-col items-center justify-center text-center; }
+.driver-avatar { @apply relative mb-3 grid size-16 place-items-center rounded-full bg-orange-500 text-white shadow-lg; }
+.driver-avatar > span { @apply text-xl font-bold; }
+.driver-avatar > i { @apply absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border-2 border-white bg-warning text-xs not-italic text-white dark:border-dark-surface; }
+.driver-profile > strong { @apply text-sm font-semibold text-ink dark:text-white; }
+.driver-profile > small { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }
+.score-bar { @apply mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-dark-canvas; }
+.score-bar i { @apply block h-full rounded-full bg-gradient-to-r from-warning to-success; width: 98%; }
+.driver-profile > p { @apply my-2; }
+.driver-profile > p b { @apply text-2xl font-bold text-ink dark:text-white; }
+.driver-profile > p span { @apply text-xs text-muted; }
+.driver-stats { @apply grid w-full grid-cols-3 gap-2; }
+.driver-stats > span { @apply rounded-xl bg-canvas px-2 py-3 dark:bg-dark-canvas; }
+.driver-stats b { @apply block text-[11px] font-semibold text-ink dark:text-white; }
+.driver-stats small { @apply mt-1 block text-[9px] text-muted dark:text-brand-300; }

@@ -105,15 +105,27 @@
     <div class="analytics-grid" aria-hidden="true">
       @for (skeleton of loadingSkeletons(); track skeleton.code) {
         <article class="graph-skeleton">
-          <header class="graph-skeleton-header">
-            <ui-skeleton variant="text" width="55%" height="0.85rem" radius="0.3rem" />
-            <ui-skeleton variant="text" width="28%" height="0.58rem" radius="0.25rem" />
-          </header>
+          @if (skeleton.code === 'ANT') {
+            <header class="graph-skeleton-header graph-skeleton-actions-header">
+              <ui-skeleton variant="text" width="8.75rem" height="0.85rem" radius="0.3rem" />
+              <ui-skeleton width="3.5rem" height="1.35rem" radius="9999px" />
+            </header>
+          } @else if (skeleton.code === 'DOW') {
+            <header class="graph-skeleton-header graph-skeleton-driver-header">
+              <ui-skeleton variant="circle" width="1rem" height="1rem" />
+              <ui-skeleton variant="text" width="8.5rem" height="0.85rem" radius="0.3rem" />
+            </header>
+          } @else {
+            <header class="graph-skeleton-header">
+              <ui-skeleton variant="text" width="55%" height="0.85rem" radius="0.3rem" />
+              <ui-skeleton variant="text" width="28%" height="0.58rem" radius="0.25rem" />
+            </header>
+          }
           @switch (skeleton.type) {
             @case ('list') {
               <div class="graph-skeleton-list">
                 @for (_ of [1, 2, 3, 4, 5]; track $index) {
-                  <div><ui-skeleton variant="circle" width="2rem" height="2rem" /><span><ui-skeleton variant="text" width="65%" height="0.65rem" /><ui-skeleton variant="text" width="45%" height="0.5rem" /></span><ui-skeleton width="2.75rem" height="1.15rem" radius="9999px" /></div>
+                  <div><ui-skeleton width="2rem" height="2rem" radius="0.5rem" /><span><ui-skeleton variant="text" width="72%" height="0.65rem" /><ui-skeleton variant="text" width="52%" height="0.5rem" /></span><ui-skeleton width="2.75rem" height="1.15rem" radius="9999px" /><ui-skeleton variant="text" width="0.4rem" height="0.75rem" /></div>
                 }
               </div>
             }
@@ -125,6 +137,32 @@
                 <ui-skeleton width="100%" height="0.5rem" radius="9999px" />
                 <div>@for (_ of [1, 2, 3]; track $index) { <ui-skeleton height="3rem" radius="0.65rem" /> }</div>
               </div>
+            }
+            @case ('line') {
+              <div class="graph-skeleton-line">
+                <div class="line-y-axis" aria-hidden="true">
+                  @for (_ of [1, 2, 3, 4, 5]; track $index) { <span></span> }
+                </div>
+                <div class="line-plot" aria-hidden="true">
+                  <div class="line-grid">
+                    @for (_ of [1, 2, 3, 4]; track $index) { <i></i> }
+                  </div>
+                  <svg viewBox="0 0 500 190" preserveAspectRatio="none">
+                    <path class="line-fill line-fill-one" d="M0 72 C55 48 105 92 165 68 S270 38 330 80 S425 112 500 58 L500 190 L0 190 Z" />
+                    <path class="line-stroke line-stroke-one" d="M0 72 C55 48 105 92 165 68 S270 38 330 80 S425 112 500 58" />
+                    <path class="line-fill line-fill-two" d="M0 132 C65 111 108 145 172 120 S280 101 340 140 S430 151 500 124 L500 190 L0 190 Z" />
+                    <path class="line-stroke line-stroke-two" d="M0 132 C65 111 108 145 172 120 S280 101 340 140 S430 151 500 124" />
+                    @for (x of [0, 83, 166, 250, 333, 416, 500]; track x) {
+                      <circle class="line-point line-point-one" [attr.cx]="x" [attr.cy]="x === 0 ? 72 : x === 83 ? 70 : x === 166 ? 68 : x === 250 ? 50 : x === 333 ? 82 : x === 416 ? 94 : 58" r="3" />
+                      <circle class="line-point line-point-two" [attr.cx]="x" [attr.cy]="x === 0 ? 132 : x === 83 ? 130 : x === 166 ? 120 : x === 250 ? 116 : x === 333 ? 138 : x === 416 ? 143 : 124" r="3" />
+                    }
+                  </svg>
+                  <div class="line-x-axis">
+                    @for (_ of [1, 2, 3, 4, 5, 6, 7]; track $index) { <span></span> }
+                  </div>
+                </div>
+              </div>
+              <div class="graph-skeleton-legend"><span><i></i><b></b></span><span><i></i><b></b></span></div>
             }
             @default {
               <div class="graph-skeleton-plot">

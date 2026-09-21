@@ -19,7 +19,8 @@ export class Maintenance {
     const codes = ['MS', 'POVM'];
     const cached = this.api.cachedGraphs().filter((graph) => codes.includes(graph.code));
     return (cached.length ? cached : emptyDashboardGraphs().filter((graph) => codes.includes(graph.code)))
-      .filter((graph) => this.widgets.isVisible('maintenance', graph.code));
+      .filter((graph) => this.widgets.isVisible('maintenance', graph.code))
+      .sort((first, second) => codes.indexOf(first.code) - codes.indexOf(second.code));
   });
 
   protected readonly columns: TableColumn[] = [
@@ -31,13 +32,7 @@ export class Maintenance {
     { key: 'status', label: 'Status', type: 'status' },
   ];
 
-  protected readonly rows: TableRow[] = [
-    { vehicle: 'LP-9901', make: 'Volvo FH', service: 'Full Service', mileage: '142,300 mi', due: 'Overdue by 12 days', status: 'Overdue' },
-    { vehicle: 'LP-7712', make: 'Mercedes Sprinter', service: 'Oil Change', mileage: '67,200 mi', due: 'Due in 3 days', status: 'Due Soon' },
-    { vehicle: 'LP-4821', make: 'Volvo FH', service: 'Brake Inspection', mileage: '198,100 mi', due: 'Due in 8 days', status: 'Due Soon' },
-    { vehicle: 'LP-3312', make: 'DAF XF', service: 'Tyre Rotation', mileage: '88,400 mi', due: 'Due in 14 days', status: 'Upcoming' },
-    { vehicle: 'LP-6612', make: 'Volvo FH Reefer', service: 'Reefer Unit Check', mileage: '54,700 mi', due: 'Due in 21 days', status: 'Upcoming' },
-  ];
+  protected readonly rows: TableRow[] = [];
 
   constructor(private readonly api: FleetDashboardApiService) {}
 }

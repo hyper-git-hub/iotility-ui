@@ -14,10 +14,11 @@ export class Jobs {
   private readonly widgets = inject(DashboardWidgetsService);
 
   protected readonly jobGraphs = computed(() => {
-    const codes = ['DTS', 'JJ', 'JSJ', 'JSS'];
+    const codes = ['JJ', 'JSJ', 'DTS', 'JSS'];
     const cached = this.api.cachedGraphs().filter((graph) => codes.includes(graph.code));
     return (cached.length ? cached : emptyDashboardGraphs().filter((graph) => codes.includes(graph.code)))
-      .filter((graph) => this.widgets.isVisible('jobs', graph.code));
+      .filter((graph) => this.widgets.isVisible('jobs', graph.code))
+      .sort((first, second) => codes.indexOf(first.code) - codes.indexOf(second.code));
   });
 
   constructor(private readonly api: FleetDashboardApiService) {}

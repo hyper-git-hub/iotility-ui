@@ -216,7 +216,7 @@
             }
           } @empty {
             <tr>
-              <td [attr.colspan]="columns().length" class="empty">No matching records found.</td>
+              <td [attr.colspan]="columns().length" class="empty">{{ emptyMessage() }}</td>
             </tr>
           }
         </tbody>

@@ -6,21 +6,19 @@ import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/
 import { StatCardTone } from '../../../shared/stat-card/stat-card';
 import {
   DashboardCard,
+  DashboardGraphData,
   DashboardGraph,
   DashcamDevice,
   Fleet,
   FleetDashboardApiService,
   Vehicle,
 } from '../../../shared/services/fleet-dashboard-api.service';
-import {
-  emptyDashboardGraphs,
-  mergeDashboardGraphs,
-} from '../../../shared/services/dashboard-graphs';
+import { emptyDashboardGraphs, mergeDashboardGraphs } from '../../../shared/services/dashboard-graphs';
 import { DashboardWidgetsService } from '../../../shared/services/dashboard-widgets.service';
 
 interface OverviewSkeleton {
   code: string;
-  type: 'list' | 'bar' | 'profile';
+  type: 'list' | 'bar' | 'line' | 'profile';
 }
 
 @Component({
@@ -30,12 +28,19 @@ interface OverviewSkeleton {
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })
 export class Overview implements OnInit {
-  private readonly hiddenOverviewGraphCodes = ['DA', 'DP', 'FEV', 'FU', 'RS', 'VS'];
-  private readonly emptyOverviewGraphs: DashboardGraph[] = [
-    { code: 'ANT', name: 'Actions Needed Today', chart_type: null, data: null },
-    { code: 'DOW', name: 'Driver of the Week', chart_type: null, data: null },
-    { code: 'FUT', name: 'Fleet Utilisation', chart_type: null, data: null },
-  ];
+  private readonly overviewGraphOrder = ['ANT', 'FCUT', 'DOW', 'FUT', 'FCT'];
+  private readonly overviewCards = computed<DashboardGraph[]>(() => {
+    const driverCard = this.cards().find((card) => card?.code === 'DOW');
+    return [
+      { code: 'ANT', name: 'Actions Needed Today', chart_type: null, data: null },
+      {
+        code: 'DOW',
+        name: driverCard?.name ?? 'Driver of the Week',
+        chart_type: null,
+        data: driverCard?.data && typeof driverCard.data === 'object' ? driverCard.data : null,
+      },
+    ];
+  });
   private readonly widgetService = inject(DashboardWidgetsService);
   protected readonly fleetStatusVisible = computed(() =>
     this.widgetService.isVisible('overview', 'fleet-status'),
@@ -52,13 +57,13 @@ export class Overview implements OnInit {
   protected readonly loadingSkeletons = computed<OverviewSkeleton[]>(() =>
     [
       { code: 'ANT', type: 'list' as const },
-      { code: 'FE', type: 'bar' as const },
+      { code: 'FCUT', type: 'line' as const },
       { code: 'DOW', type: 'profile' as const },
       { code: 'FUT', type: 'bar' as const },
-      { code: 'FC', type: 'bar' as const },
+      { code: 'FCT', type: 'line' as const },
     ].filter((item) => this.widgetService.isVisible('overview', item.code)),
   );
-  protected readonly cards = signal<DashboardCard[]>([]);
+  protected readonly cards = signal<DashboardCard<number | string | DashboardGraphData | null>[]>([]);
   protected readonly displayedCards = computed(() => {
     const order = ['DVC', 'J', 'MD', 'MOD', 'TD', 'TDC', 'TF', 'VIM'];
     return this.cards()
@@ -75,29 +80,14 @@ export class Overview implements OnInit {
   });
   protected readonly graphs = signal<DashboardGraph[]>([]);
   protected readonly displayedGraphs = computed<DashboardGraph[]>(() => {
-    const order = ['ANT', 'FE', 'DOW', 'FUT', 'FC'];
-    return [...mergeDashboardGraphs(this.graphs()), ...this.emptyOverviewGraphs]
-      .filter(
-        (graph) =>
-          ![
-            'ADF',
-            'DSS',
-            'DVG',
-            'MS',
-            'POVM',
-            'DTS',
-            'JJ',
-            'JSJ',
-            'JSS',
-            ...this.hiddenOverviewGraphCodes,
-          ].includes(graph.code),
-      )
+    const apiGraphs = mergeDashboardGraphs(this.graphs());
+    const apiCodes = new Set(apiGraphs.map((graph) => graph.code));
+    return [...apiGraphs, ...this.overviewCards().filter((graph) => !apiCodes.has(graph.code))]
+      .filter((graph) => this.overviewGraphOrder.includes(graph.code))
       .sort((first, second) => {
-        const firstIndex = order.indexOf(first.code);
-        const secondIndex = order.indexOf(second.code);
         return (
-          (firstIndex < 0 ? order.length : firstIndex) -
-          (secondIndex < 0 ? order.length : secondIndex)
+          this.overviewGraphOrder.indexOf(first.code) -
+          this.overviewGraphOrder.indexOf(second.code)
         );
       });
   });
@@ -207,15 +197,19 @@ export class Overview implements OnInit {
       .getGraphs()
       .pipe(finalize(() => this.graphsLoading.set(false)))
       .subscribe({
-        next: (graphs) => {
-          if (graphs.status !== 1000) {
+        next: (response) => {
+          if (response.status !== 1000) {
             this.showGraphsWithoutData();
             return;
           }
-          const received = Array.isArray(graphs.data?.graphs)
-            ? graphs.data.graphs.filter((graph) => graph.analytics_type === 'G')
+          const received = Array.isArray(response.data?.graphs)
+            ? response.data.graphs.filter((graph) => graph.analytics_type === 'G')
             : [];
-          this.cards.set(Array.isArray(graphs.data?.cards) ? graphs.data.cards : []);
+          this.cards.set(
+            Array.isArray(response.data?.cards)
+              ? response.data.cards.filter((card) => card != null)
+              : [],
+          );
           this.graphs.set(received);
           this.api.cacheGraphs(mergeDashboardGraphs(received));
         },
@@ -255,8 +249,10 @@ export class Overview implements OnInit {
     return 'info';
   }
 
-  protected cardValue(card: DashboardCard): number | string {
-    return card.data ?? 0;
+  protected cardValue(
+    card: DashboardCard<number | string | DashboardGraphData | null>,
+  ): number | string {
+    return typeof card.data === 'number' || typeof card.data === 'string' ? card.data : 0;
   }
 
   protected cardAccent(code: string): string {

@@ -1,4 +1,61 @@
-@if (graph().code === 'DA') {
+@if (graph().code === 'ANT') {
+  <article class="graph-card actions-card">
+    <header>
+      <h2>Actions Needed Today</h2>
+      @if (urgentActionCount()) { <span class="urgent-pill">{{ urgentActionCount() }} urgent</span> }
+    </header>
+    @if (actionItems().length) {
+      <div class="action-list">
+      @for (item of actionItems(); track item.title) {
+        <div class="action-row">
+          <i [class]="'action-icon ' + item.tone">{{ item.icon }}</i>
+          <p><strong>{{ item.title }}</strong><small>{{ item.detail }}</small></p>
+          <em [class]="'priority ' + item.priority">{{ item.priority }}</em>
+          <b aria-hidden="true">›</b>
+        </div>
+      }
+      </div>
+    } @else {
+      <div class="empty">
+        <span class="empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48">
+            <rect x="6" y="7" width="36" height="30" rx="6" />
+            <path d="M13 30v-6M20 30V18M27 30v-9M34 30V14" />
+          </svg>
+        </span>
+        <p>No record found</p>
+      </div>
+    }
+  </article>
+} @else if (graph().code === 'DOW') {
+  <article class="graph-card driver-card">
+    <header><h2><span class="trophy" aria-hidden="true">☆</span> Driver of the Week</h2></header>
+    @if (driverData(); as driver) {
+      <div class="driver-profile">
+        <div class="driver-avatar"><span>{{ driver.initials || '—' }}</span><i>★</i></div>
+        <strong>{{ driver.driver_name || '—' }}</strong>
+        <small>{{ driver.role || 'Driver' }}{{ driver.location ? ' · ' + driver.location : '' }}</small>
+        <div class="score-bar"><i [style.width.%]="driver.score || 0"></i></div>
+        <p><b>{{ driver.score || 0 }}</b> <span>/ 100</span></p>
+        <div class="driver-stats">
+          <span><b>{{ driver.trips || 0 }}</b><small>Trips</small></span>
+          <span><b>{{ driver.distance_km || 0 }}km</b><small>Distance</small></span>
+          <span><b>{{ (driver.score_delta || 0) >= 0 ? '+' : '' }}{{ driver.score_delta || 0 }}↑</b><small>Score</small></span>
+        </div>
+      </div>
+    } @else {
+      <div class="empty">
+        <span class="empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48">
+            <rect x="6" y="7" width="36" height="30" rx="6" />
+            <path d="M13 30v-6M20 30V18M27 30v-9M34 30V14" />
+          </svg>
+        </span>
+        <p>No record found</p>
+      </div>
+    }
+  </article>
+} @else if (graph().code === 'DA') {
   <article class="graph-card">
     <header><div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div></header>
     @if (allocations().length) {

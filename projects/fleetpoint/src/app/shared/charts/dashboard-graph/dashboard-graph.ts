@@ -55,6 +55,27 @@ export class DashboardGraphComponent {
     return ['JSJ', 'MS'].includes(graph.code);
   }
 
+  protected actionItems() {
+    const data = this.graph().data;
+    if (!Array.isArray(data)) return [];
+    return data.map((row) => ({
+      icon: String(row['icon'] ?? '!'),
+      tone: String(row['tone'] ?? 'info'),
+      title: String(row['title'] ?? row['name'] ?? ''),
+      detail: String(row['detail'] ?? row['description'] ?? ''),
+      priority: String(row['priority'] ?? 'low').toLowerCase(),
+    }));
+  }
+
+  protected urgentActionCount(): number {
+    return this.actionItems().filter((item) => item.priority === 'high').length;
+  }
+
+  protected driverData() {
+    const data = this.graph().data;
+    return data && !Array.isArray(data) ? data : null;
+  }
+
   protected graphTitle(): string {
     return this.graph().code === 'JJ' ? 'Jobs by Location' : this.graph().name;
   }
@@ -66,7 +87,11 @@ export class DashboardGraphComponent {
   }
 
   protected isLine(): boolean {
-    return this.graph().code === 'ADF' || this.graph().chart_type === 'line_area_chart';
+    const graph = this.graph();
+    return (
+      ['ADF', 'FCT', 'FCUT'].includes(graph.code) ||
+      ['line graph', 'line_area_chart'].includes(graph.chart_type ?? '')
+    );
   }
 
   protected barData(): ChartData<'bar', number[], string> {

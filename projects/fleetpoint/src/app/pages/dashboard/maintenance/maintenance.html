@@ -1,13 +1,12 @@
 <section class="maintenance-page">
   @if (tableVisible()) {
     <shared-data-table
-      class="smooth-reveal maintenance-table"
+      class="maintenance-table"
       title="Vehicles Due for Service"
-      subtitle="1 overdue · 2 due soon"
       [showToolbar]="false"
       [columns]="columns"
       [rows]="rows"
-      headerActionLabel="View all"
+      emptyMessage="No record found."
     />
   }
   <div class="maintenance-charts">

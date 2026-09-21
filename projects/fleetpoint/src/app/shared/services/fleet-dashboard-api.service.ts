@@ -12,11 +12,11 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-export interface DashboardCard {
+export interface DashboardCard<TData = number | string | null> {
   code: string;
   analytics_type: string;
   name: string;
-  data: number | string | null;
+  data: TData;
   chart_type: string | null;
   filter_by?: string;
 }
@@ -27,6 +27,14 @@ export interface DashboardGraphData {
   values?: Array<number | string>;
   series?: GraphSeries[] | number[];
   fleets?: DriverAllocationFleet[];
+  driver_name?: string;
+  role?: string;
+  location?: string | null;
+  initials?: string;
+  score?: number;
+  score_delta?: number;
+  trips?: number;
+  distance_km?: number;
 }
 export interface DashboardGraphRow {
   [key: string]: string | number | null;
@@ -46,7 +54,7 @@ export interface DashboardGraph {
 
 export interface DashboardAnalytics {
   graphs: DashboardGraph[];
-  cards: DashboardCard[];
+  cards: DashboardCard<number | string | DashboardGraphData | null>[];
 }
 
 export interface Vehicle {

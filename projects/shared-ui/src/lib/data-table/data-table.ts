@@ -79,6 +79,7 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly columns = input.required<TableColumn[]>();
   readonly rows = input.required<TableRow[]>();
   readonly searchPlaceholder = input('Search');
+  readonly emptyMessage = input('No matching records found.');
   readonly primaryActionLabel = input('Add new');
   readonly headerActionLabel = input('');
   readonly headerFilterOptions = input<DropdownOption[]>([]);

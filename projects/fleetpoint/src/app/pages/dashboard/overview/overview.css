@@ -9,6 +9,19 @@
   @apply mb-5;
 }
 
+.graph-skeleton-actions-header {
+  @apply flex items-center justify-between;
+}
+
+.graph-skeleton-driver-header {
+  @apply flex items-center gap-2;
+}
+
+.graph-skeleton-actions-header ui-skeleton + ui-skeleton,
+.graph-skeleton-driver-header ui-skeleton + ui-skeleton {
+  @apply mt-0;
+}
+
 .graph-skeleton-header ui-skeleton + ui-skeleton {
   @apply mt-2;
 }
@@ -18,7 +31,7 @@
 }
 
 .graph-skeleton-list > div {
-  @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-canvas/60 p-2 dark:bg-dark-canvas/50;
+  @apply grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-xl bg-canvas/60 p-2 dark:bg-dark-canvas/50;
 }
 
 .graph-skeleton-list span {
@@ -40,6 +53,41 @@
 .graph-skeleton-plot {
   @apply relative flex flex-1 items-end gap-5 overflow-hidden border-b border-l border-line/70 px-4 pb-0 pt-5 dark:border-dark-line;
 }
+
+.graph-skeleton-line {
+  @apply relative grid flex-1 grid-cols-[1.5rem_minmax(0,1fr)] pb-5;
+}
+
+.graph-skeleton-line::after {
+  content: '';
+  @apply pointer-events-none absolute inset-0;
+  transform: translateX(-115%);
+  background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.6) 48%, transparent 76%);
+  animation: dashboard-chart-shimmer 1.85s ease-in-out infinite;
+}
+.line-y-axis { @apply flex flex-col justify-between pb-5 pr-2 pt-1; }
+.line-y-axis span { @apply h-1.5 w-full rounded-full bg-slate-200/70 dark:bg-slate-700/50; }
+.line-plot { @apply relative min-w-0 border-b border-l border-line/80 dark:border-dark-line; }
+.line-grid { @apply absolute inset-0 flex flex-col justify-evenly; }
+.line-grid i { @apply block w-full border-t border-dashed border-slate-200/80 dark:border-slate-700/60; }
+.graph-skeleton-line svg { @apply absolute inset-0 size-full overflow-visible; }
+.line-stroke { fill: none; stroke-width: 3; stroke-linecap: round; }
+.line-fill { opacity: 0.08; }
+.line-point { stroke: white; stroke-width: 2; }
+.line-stroke-one { stroke: theme(colors.slate.300); }
+.line-fill-one { fill: theme(colors.slate.300); }
+.line-point-one { fill: theme(colors.slate.300); }
+.line-stroke-two { stroke: theme(colors.slate.200); }
+.line-fill-two { fill: theme(colors.slate.200); }
+.line-point-two { fill: theme(colors.slate.200); }
+:host-context(.dark) .line-stroke-one { stroke: theme(colors.slate.600); }
+:host-context(.dark) .line-fill-one { fill: theme(colors.slate.600); }
+:host-context(.dark) .line-point-one { fill: theme(colors.slate.600); stroke: theme(colors.slate.900); }
+:host-context(.dark) .line-stroke-two { stroke: theme(colors.slate.700); }
+:host-context(.dark) .line-fill-two { fill: theme(colors.slate.700); }
+:host-context(.dark) .line-point-two { fill: theme(colors.slate.700); stroke: theme(colors.slate.900); }
+.line-x-axis { @apply absolute inset-x-0 -bottom-5 flex justify-between; }
+.line-x-axis span { @apply h-1.5 w-5 rounded-full bg-slate-200/70 dark:bg-slate-700/50; }
 
 .graph-skeleton-plot::after {
   content: '';
