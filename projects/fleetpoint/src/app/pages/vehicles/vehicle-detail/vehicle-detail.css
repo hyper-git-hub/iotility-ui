@@ -424,6 +424,11 @@ app-vehicle-hud ::ng-deep .vehicle-hud {
     background: color-mix(in srgb, var(--color-info) 10%, transparent)
 }
 
+.group-icon.danger {
+    border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent)
+}
+
 .workspace-group>dl,
 .workspace-flags {
     margin: 0;
@@ -525,6 +530,303 @@ app-vehicle-hud ::ng-deep .vehicle-hud {
     vertical-align: middle
 }
 
+.map-panel {
+    grid-column: 1 / -1
+}
+
+/* Fuel & mileage only ever holds two content cards (fillups + mileage) plus
+   an optional full-width map — two even columns keep the row filled. */
+.workspace-grid.two-up-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr))
+}
+
+/* Violations & safety keeps the summary card at its normal one-column width and
+   lets the map fill the two columns beside it. Both columns stretch to the same
+   height (flags rows share the leftover space) so the panes end level. */
+.workspace-grid.safety-grid>.workspace-group:first-child {
+    display: flex;
+    flex-direction: column
+}
+
+.workspace-grid.safety-grid>.workspace-group:first-child .workspace-flags {
+    display: flex;
+    flex: 1;
+    flex-direction: column
+}
+
+.workspace-grid.safety-grid>.workspace-group:first-child .workspace-flags>div {
+    flex: 1
+}
+
+.workspace-grid.safety-grid>.map-panel {
+    display: flex;
+    grid-column: span 2;
+    flex-direction: column
+}
+
+.workspace-grid.safety-grid>.map-panel .snapshot-map {
+    height: auto;
+    flex: 1;
+    min-height: 380px
+}
+
+.trail-map,
+.job-map,
+.snapshot-map {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+    background: #fff
+}
+
+.trail-map {
+    height: 560px
+}
+
+.job-map {
+    height: 300px
+}
+
+.snapshot-map {
+    height: 380px
+}
+
+:host-context(.dark) .trail-map,
+:host-context(.dark) .job-map,
+:host-context(.dark) .snapshot-map {
+    border-color: var(--color-dark-line);
+    background: var(--color-dark-surface)
+}
+
+.trail-wrap {
+    position: relative
+}
+
+.trail-wrap .map-empty {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, #fff 55%, transparent);
+    border: 0;
+    border-radius: 14px
+}
+
+:host-context(.dark) .trail-wrap .map-empty {
+    background: color-mix(in srgb, var(--color-dark-surface) 55%, transparent)
+}
+
+.replay-fields {
+    align-items: flex-end
+}
+
+.replay-field {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px
+}
+
+.replay-field>span {
+    color: var(--color-muted);
+    font-size: 10px;
+    font-weight: 600
+}
+
+.replay-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap
+}
+
+.replay-controls .scrub {
+    flex: 1;
+    min-width: 140px;
+    accent-color: var(--color-brand-500)
+}
+
+.speed-chip {
+    min-width: 34px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    color: var(--color-muted);
+    background: transparent;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700
+}
+
+.speed-chip.active {
+    color: #fff;
+    border-color: var(--color-brand-500);
+    background: var(--color-brand-600)
+}
+
+.replay-point {
+    color: var(--color-muted);
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap
+}
+
+.card-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 10px;
+    color: var(--color-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase
+}
+
+.card-label em {
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none
+}
+
+.stat-lite-box {
+    display: grid;
+    place-items: center;
+    gap: 4px;
+    padding: 20px 12px;
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-canvas) 48%, transparent)
+}
+
+:host-context(.dark) .stat-lite-box {
+    border-color: var(--color-dark-line);
+    background: rgb(9 9 15/.42)
+}
+
+.stat-lite-box span {
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 600
+}
+
+.stat-lite-box strong {
+    font-size: 15px;
+    font-weight: 750;
+    letter-spacing: -.02em
+}
+
+.replay-load {
+    flex: 0 0 auto;
+    width: 40px;
+    padding: 0;
+    font-size: 16px
+}
+
+.map-empty {
+    margin: 0;
+    padding: 26px 16px;
+    text-align: center;
+    color: var(--color-muted);
+    border: 1px dashed var(--color-line);
+    border-radius: 12px;
+    font-size: 11px
+}
+
+:host-context(.dark) .map-empty {
+    border-color: var(--color-dark-line)
+}
+
+.stop-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 12px;
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer
+}
+
+.stops-list {
+    margin: 12px 0 0;
+    overflow: hidden;
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-canvas) 48%, transparent)
+}
+
+.stops-list>div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 39px;
+    padding: 0 13px;
+    border-bottom: 1px solid var(--color-line);
+    font-size: 11px
+}
+
+.stops-list>div:last-child {
+    border-bottom: 0
+}
+
+.stops-list span {
+    color: var(--color-muted)
+}
+
+.stops-list em {
+    padding: 4px 8px;
+    border-radius: 999px;
+    color: var(--color-info);
+    background: color-mix(in srgb, var(--color-info) 11%, transparent);
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 700
+}
+
+:host-context(.dark) .stops-list {
+    border-color: var(--color-dark-line);
+    background: rgb(9 9 15/.42)
+}
+
+:host-context(.dark) .stops-list>div {
+    border-color: var(--color-dark-line)
+}
+
+.field-row {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 12px
+}
+
+.field-row select {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    padding: 0 10px;
+    color: var(--color-ink);
+    border: 1px solid var(--color-line);
+    border-radius: 9px;
+    background: #fff;
+    font: inherit;
+    font-size: 11px
+}
+
+:host-context(.dark) .field-row select {
+    color: #fff;
+    border-color: var(--color-dark-line);
+    background: var(--color-dark-surface)
+}
+
 @media(max-width:1500px) {
     .metric-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr))
@@ -534,6 +836,14 @@ app-vehicle-hud ::ng-deep .vehicle-hud {
 @media(max-width:1200px) {
     .workspace-grid {
         grid-template-columns: 1fr
+    }
+
+    .workspace-grid.two-up-grid {
+        grid-template-columns: 1fr
+    }
+
+    .workspace-grid.safety-grid>.map-panel {
+        grid-column: auto
     }
 
     app-vehicle-hud ::ng-deep .vehicle-hud {

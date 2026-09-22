@@ -50,4 +50,44 @@ export class VehicleDetailApiService {
   getLastJob(id: string): Observable<ApiResponse<unknown>> {
     return this.http.get<ApiResponse<unknown>>(`${environment.driverBaseUrl}/jobs/last-job-summary`, { params: { vehicle_id: id } });
   }
+
+  getMapTrail(id: string, startDatetime: string, endDatetime: string): Observable<ApiResponse<any>> {
+    const params = new HttpParams()
+      .set('vehicle_id', id)
+      .set('start_datetime', startDatetime)
+      .set('end_datetime', endDatetime)
+      .set('ignition', 'true');
+    return this.http.get<ApiResponse<any>>(`${this.fleetApi}/playback/map-trail`, { params });
+  }
+
+  getStops(id: string, startDatetime: string, endDatetime: string): Observable<ApiResponse<any>> {
+    const params = new HttpParams()
+      .set('vehicle_id', id)
+      .set('start_datetime', startDatetime)
+      .set('end_datetime', endDatetime)
+      .set('duration', '4');
+    return this.http.get<ApiResponse<any>>(`${this.fleetApi}/playback/stops`, { params });
+  }
+
+  getFillups(id: string, startDatetime: string, endDatetime: string): Observable<ApiResponse<any>> {
+    const params = new HttpParams()
+      .set('truck_id', id)
+      .set('start_datetime', startDatetime)
+      .set('end_datetime', endDatetime);
+    return this.http.get<ApiResponse<any>>(`${environment.fleetBaseUrl}/iof/get_fillups`, { params });
+  }
+
+  getMileage(id: string, year?: string, month?: string): Observable<ApiResponse<any>> {
+    let params = new HttpParams().set('vehicle_id', id);
+    if (year) params = params.set('year', year);
+    if (month) params = params.set('month', month);
+    return this.http.get<ApiResponse<any>>(`${this.fleetApi}/fleet/mileage`, { params });
+  }
+
+  getSnapshot(id: string, timestamp: string): Observable<ApiResponse<any>> {
+    const params = new HttpParams()
+      .set('vehicle_id', id)
+      .set('timestamp', timestamp);
+    return this.http.get<ApiResponse<any>>(`${this.fleetApi}/fleet/snapshot`, { params });
+  }
 }

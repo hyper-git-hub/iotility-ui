@@ -2,11 +2,12 @@
 
 .fleet-sidebar {
   @apply flex h-full w-56 shrink-0 flex-col overflow-hidden bg-brand-950 text-white;
+  /* Same stop palette as the main-branch Fleetpoint shell sidebar gradient. */
   background: linear-gradient(
     180deg,
-    var(--color-dark-canvas),
-    var(--color-brand-950) 48%,
-    var(--color-brand-800)
+    #0a0a0f 0%,
+    #1e0a3c 50%,
+    #4c1d95 100%
   );
   --sidebar-motion: 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
   contain: layout paint;

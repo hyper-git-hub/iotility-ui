@@ -33,7 +33,7 @@
         <small><ui-skeleton width="5.5rem" height="0.5625rem" /></small>
       </header>
       <div class="hud-speed-console">
-        <header><span><i></i>Current speed</span><small>Peak today: <ui-skeleton width="4rem" height="0.625rem" /></small></header>
+        <header><span><img src="assets/fleetpoint/icons/speedometer-brand.svg" alt="" aria-hidden="true" />Current speed</span><small>Peak today: <ui-skeleton width="4rem" height="0.625rem" /></small></header>
         <div class="hud-speed-readout">
           <div><ui-skeleton width="5.5rem" height="2.875rem" radius="0.5rem" /><span>km/h</span></div>
           <div class="hud-limit-state"><ui-skeleton width="5.5rem" height="1.375rem" radius="0.5rem" /><ui-skeleton width="6.25rem" height="1.375rem" radius="0.5rem" /></div>
@@ -91,7 +91,7 @@
       <small>{{ online() ? 'Live channel' : 'Last reported' }}</small>
     </header>
     <div class="hud-speed-console">
-      <header><span><i></i>Current speed</span><small>Peak today: <strong>{{ shownSpeed() }} km/h</strong></small></header>
+      <header><span><img src="assets/fleetpoint/icons/speedometer-brand.svg" alt="" aria-hidden="true" />Current speed</span><small>Peak today: <strong>{{ shownSpeed() }} km/h</strong></small></header>
       <div class="hud-speed-readout">
         <div><strong class="hud-number">{{ shownSpeed() }}</strong><span>km/h</span></div>
         <div class="hud-limit-state"><span>Limit {{ speedLimit }} km/h</span><em [class.over]="speedDelta() > 0">{{ speedDeltaText() }}</em></div>

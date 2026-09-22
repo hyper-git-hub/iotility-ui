@@ -15,7 +15,7 @@
     <app-vehicle-hud [vehicle]="record()" [metrics]="metrics()" [lastJob]="lastJob()" [routes]="record()?.['attached_routes_list']" [loading]="true" />
     <section class="vehicle-workspace" id="vehicle-overview" aria-busy="true">
       <nav class="detail-tabs" aria-label="Vehicle detail sections">
-        @for (tab of [0, 1, 2, 3, 4, 5]; track tab) {
+        @for (tab of [0, 1, 2, 3, 4, 5, 6, 7]; track tab) {
           <span class="tab-skeleton"><ui-skeleton width="16px" height="16px" radius="4px" /><ui-skeleton [width]="tab % 2 ? '5.5rem' : '7rem'" height="0.625rem" />@if (tab === 3) { <em><ui-skeleton width="1.75rem" height="0.5rem" radius="999px" /></em> }</span>
         }
       </nav>
@@ -25,9 +25,8 @@
           <dl>@for (row of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track row) { <div><dt><ui-skeleton width="6.5rem" height="0.75rem" /></dt><dd><ui-skeleton width="4.5rem" height="0.75rem" /></dd></div> }</dl>
         </article>
         <article class="workspace-group" id="telemetry">
-          <header><span class="group-icon success"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="8rem" height="0.875rem" /><small><ui-skeleton width="3.5rem" height="0.625rem" /></small></header>
-          <dl>@for (row of [1, 2, 3, 4]; track row) { <div><dt><ui-skeleton width="5.5rem" height="0.75rem" /></dt><dd><ui-skeleton width="4rem" height="0.75rem" /></dd></div> }</dl>
-          <div class="workspace-flags" id="safety">@for (row of [1, 2, 3, 4]; track row) { <div><ui-skeleton width="6.5rem" height="0.75rem" /><em><ui-skeleton width="3.5rem" height="0.625rem" radius="999px" /></em></div> }</div>
+          <header><span class="group-icon success"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="5.5rem" height="0.875rem" /><small><ui-skeleton width="5.5rem" height="0.625rem" /></small></header>
+          <dl>@for (row of [1, 2, 3, 4, 5, 6]; track row) { <div><dt><ui-skeleton width="5.5rem" height="0.75rem" /></dt><dd><ui-skeleton width="4.5rem" height="0.75rem" /></dd></div> }</dl>
         </article>
         <article class="workspace-group" id="operations">
           <header><span class="group-icon info"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="9rem" height="0.875rem" /><small><ui-skeleton width="4rem" height="0.625rem" /></small></header>
@@ -55,22 +54,18 @@
     <section class="vehicle-workspace" id="vehicle-overview">
       <nav class="detail-tabs" aria-label="Vehicle detail sections">
         <button type="button" [class.active]="activeTab() === 'overview'" (click)="openTab('overview')"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</button>
-        <button type="button" [class.active]="activeTab() === 'telemetry'" (click)="openTab('telemetry')"><img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Telemetry &amp; sensors</button>
-        <button type="button" (click)="tripReplay()"><img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" />Trips &amp; replay</button>
+        <button type="button" [class.active]="activeTab() === 'lastjob'" (click)="openTab('lastjob')"><img src="assets/fleetpoint/icons/clipboard-job.svg" alt="" aria-hidden="true" />Last Job</button>
+        <button type="button" [class.active]="activeTab() === 'trips'" (click)="openTab('trips')"><img src="assets/fleetpoint/icons/trip-replay.svg" alt="" aria-hidden="true" />Trips &amp; replay</button>
+        <button type="button" [class.active]="activeTab() === 'fuel'" (click)="openTab('fuel')"><img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" aria-hidden="true" />Fuel &amp; mileage</button>
         <button type="button" [class.active]="activeTab() === 'safety'" (click)="openTab('safety')"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" aria-hidden="true" />Violations &amp; safety <em>{{ violationMetric() }}</em></button>
-        <button type="button" [class.active]="activeTab() === 'device'" (click)="openTab('device')"><img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />Device &amp; connectivity</button>
+        <button type="button" [class.active]="activeTab() === 'snapshot'" (click)="openTab('snapshot')"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" aria-hidden="true" />Snapshot</button>
         <button type="button" [class.active]="activeTab() === 'operations'" (click)="openTab('operations')"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" />Maintenance</button>
       </nav>
-      <div class="workspace-grid">
+      <div class="workspace-grid" [class.two-up-grid]="activeTab() === 'fuel'" [class.safety-grid]="activeTab() === 'safety'">
         @if (activeTab() === 'overview') {
           <article class="workspace-group">
             <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/car-brand.svg" alt="" /></span><h2>Vehicle specifications</h2><small>Hardware profile</small></header>
             <dl>@for (item of details().slice(0, 9); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
-          </article>
-          <article class="workspace-group">
-            <header><span class="group-icon success"><img src="assets/fleetpoint/icons/shield-success.svg" alt="" /></span><h2>Safety &amp; telematics</h2><small>Protocols</small></header>
-            <dl>@for (item of deviceDetails().slice(0, 4); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
-            <div class="workspace-flags">@for (item of monitoring().slice(0, 4); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
           </article>
           <article class="workspace-group">
             <header><span class="group-icon info"><img src="assets/fleetpoint/icons/building.svg" alt="" /></span><h2>Operational context</h2><small>Assignments</small></header>
@@ -85,11 +80,134 @@
               <div><dt>Diagnostic status</dt><dd class="status-value" [class.online]="vehicle.online_status">{{ vehicle.online_status ? 'Connected' : 'Offline' }}</dd></div>
             </dl>
           </article>
-        } @else if (activeTab() === 'telemetry') {
           <article class="workspace-group">
-            <header><span class="group-icon success"><img src="assets/fleetpoint/icons/shield-success.svg" alt="" /></span><h2>Safety &amp; telematics</h2><small>Protocols</small></header>
+            <header><span class="group-icon success"><img src="assets/fleetpoint/icons/telemetry.svg" alt="" /></span><h2>Telematics</h2><small>Device &amp; sensors</small></header>
             <dl>@for (item of deviceDetails(); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
-            <div class="workspace-flags">@for (item of monitoring(); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
+          </article>
+        } @else if (activeTab() === 'lastjob') {
+          @if (lastJobDetail(); as job) {
+            <article class="workspace-group">
+              <dl>
+                <div><dt>Job name</dt><dd>{{ text(job.jobName, '—') }}</dd></div>
+                <div><dt>Driver</dt><dd>{{ text(job.driverName, 'Unassigned') }}</dd></div>
+                <div><dt>Job type</dt><dd>{{ job.jobType }}</dd></div>
+                <div><dt>Start date</dt><dd>{{ formatDateShort(job.startTime) }}</dd></div>
+                <div><dt>End date</dt><dd>{{ formatDateShort(job.endTime) }}</dd></div>
+              </dl>
+            </article>
+            <article class="workspace-group">
+              <dl>
+                <div><dt>Travelled distance</dt><dd>{{ job.distance ? ((job.distance | number:'1.0-2') + ' km') : '—' }}</dd></div>
+                <div><dt>Max speed</dt><dd>{{ job.speed ? (job.speed + ' km/h') : '—' }}</dd></div>
+                <div><dt>Violations</dt><dd>{{ job.violations }}</dd></div>
+                <div><dt>Fillups</dt><dd>{{ job.fillups }}</dd></div>
+              </dl>
+            </article>
+            <article class="workspace-group">
+              <dl>
+                <div><dt>Completed</dt><dd>{{ job.completedTasks || '0/0' }}</dd></div>
+                <div><dt>Pending</dt><dd>{{ job.pendingTasks || '0/0' }}</dd></div>
+                <div><dt>Aborted</dt><dd>{{ job.abortedTasks || '0/0' }}</dd></div>
+              </dl>
+              @if (job.tasks.length) {
+                <dl style="margin-top: 12px;" class="task-listing">
+                  @for (task of job.tasks; track $index) {
+                    <div><dt>Task {{ $index + 1 }} ({{ task.priority || 'N/A' }})</dt><dd>{{ taskLine(task) }}</dd></div>
+                  }
+                </dl>
+              }
+            </article>
+            @if (jobRoutePositions().length) {
+              <article class="workspace-group map-panel">
+                <app-trip-replay-map class="job-map" [positions]="jobRoutePositions()" [events]="jobTrailEvents()" />
+              </article>
+            }
+          } @else {
+            <article class="workspace-group">
+              <dl><div><dt>No completed job found for this vehicle</dt></div></dl>
+            </article>
+          }
+        } @else if (activeTab() === 'trips') {
+          <article class="workspace-group map-panel">
+            <div class="field-row replay-fields">
+              <label class="replay-field"><span>From</span><shared-date-time-picker density="compact" [value]="replayStartDate()" (valueChange)="updateReplayStart($event)" ariaLabel="Trail start date and time" /></label>
+              <label class="replay-field"><span>To</span><shared-date-time-picker density="compact" [value]="replayEndDate()" (valueChange)="updateReplayEnd($event)" ariaLabel="Trail end date and time" /></label>
+              <button type="button" class="primary-action replay-load" [disabled]="trailLoading()" (click)="replayLoad()" aria-label="Load trail">→</button>
+            </div>
+            <label class="stop-toggle"><input type="checkbox" [checked]="showStops()" (change)="toggleStops()" /> Show idling locations</label>
+            @if (showStops() && stopsLoading()) {
+              <p class="map-empty">Loading idling locations…</p>
+            } @else if (showStops() && stopsData().length) {
+              <div class="stops-list">
+                @for (stop of stopsData(); track $index) {
+                  <div><span>{{ formatDateShort(stop.start_time) }} → {{ formatDateShort(stop.end_time) }}</span><em>{{ convertDuration(stop.duration) }}</em></div>
+                }
+              </div>
+            } @else if (showStops()) {
+              <div class="stops-list"><div><span>No idling stops in this range</span></div></div>
+            }
+          </article>
+          <article class="workspace-group">
+            <div class="stat-lite-box"><span>Fuel consumed</span><strong>{{ trailData()?.fuel_consumed ? (trailData().fuel_consumed + ' L') : '—' }}</strong></div>
+          </article>
+          <article class="workspace-group">
+            <div class="stat-lite-box"><span>Distance travelled</span><strong>{{ trailData()?.distance ? ((trailData().distance | number:'1.0-2') + ' km') : '—' }}</strong></div>
+          </article>
+          <article class="workspace-group">
+            <div class="stat-lite-box"><span>Jobs completed</span><strong>{{ trailData()?.jobs_completed ?? '—' }}</strong></div>
+          </article>
+          <article class="workspace-group map-panel">
+            <div class="trail-wrap">
+              <app-trip-replay-map class="trail-map" [positions]="tripPositions()" [events]="replayEvents()" [positionIndex]="replayPositionIndex()" [playbackActive]="playing()" [playbackSpeed]="replaySpeed()" [playbackStepDuration]="stepDurationMs()" (routeLoadingChange)="routeLoading.set($event)" />
+              @if (!tripPositions().length) {
+                <p class="map-empty">{{ trailLoading() ? 'Loading trail…' : 'No trail points for this range' }}</p>
+              }
+            </div>
+            @if (tripPositions().length > 1) {
+              <div class="replay-controls">
+                <button type="button" class="secondary-action" (click)="togglePlayback()">{{ playing() ? 'Pause' : 'Play' }}</button>
+                <button type="button" class="secondary-action" (click)="stopPlayback()">Stop</button>
+                @for (rate of [1, 2, 3, 4, 5]; track rate) { <button type="button" class="speed-chip" [class.active]="replaySpeed() === rate" (click)="setReplaySpeed(rate)">{{ rate }}×</button> }
+                <input class="scrub" type="range" min="0" [max]="maxPosition()" [value]="replayPositionIndex()" (input)="scrub($event)" aria-label="Playback timeline" />
+                <span class="replay-point">{{ replayPointNumber() }}/{{ tripPositions().length }}</span>
+              </div>
+            }
+          </article>
+        } @else if (activeTab() === 'fuel') {
+          <article class="workspace-group">
+            <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" /></span><h2>Fuel fillups</h2><small>Last 30 days</small></header>
+            <dl>
+              @for (fillup of fillupsData(); track $index) {
+                <div><dt>{{ formatDateShort(fillup.timestamp) }}</dt><dd>{{ fillup.volume_consumed ? (fillup.volume_consumed + ' L') : '—' }}</dd></div>
+              } @empty {
+                <div><dt>{{ fillupsLoading() ? 'Loading fillup data...' : 'No fillup records found' }}</dt></div>
+              }
+            </dl>
+          </article>
+          @if (fillupMarkers().length) {
+            <article class="workspace-group map-panel">
+              <header><span class="group-icon success"><img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" /></span><h2>Fillup locations</h2><small>{{ fillupMarkers().length }} records</small></header>
+              <app-fleet-map class="snapshot-map" [vehicles]="fillupMarkers()" />
+            </article>
+          }
+          <article class="workspace-group">
+            <header><span class="group-icon success"><img src="assets/fleetpoint/icons/mileage.svg" alt="" /></span><h2>Mileage</h2><small>{{ mileageYear() }}{{ mileageMonth() ? ' · ' + mileageMonth() : '' }}</small></header>
+            <div class="field-row">
+              <select [value]="mileageYear()" (change)="setMileageYear($event)" aria-label="Mileage year">
+                @for (year of mileageYears; track year) { <option [value]="year">{{ year }}</option> }
+              </select>
+              <select [value]="mileageMonth()" (change)="setMileageMonth($event)" aria-label="Mileage month">
+                <option value="">All months</option>
+                @for (month of mileageMonths; track month) { <option [value]="month">{{ month }}</option> }
+              </select>
+            </div>
+            <dl>
+              @for (row of mileageData(); track $index) {
+                <div><dt>{{ row.month || row.week || ('Period ' + ($index + 1)) }}</dt><dd>{{ (row.fuel_filled || 0) | number:'1.0-2' }}L · {{ (row.distance_traveled || 0) | number:'1.0-2' }}km · {{ (row.mileage || 0) | number:'1.0-2' }}</dd></div>
+              } @empty {
+                <div><dt>{{ mileageLoading() ? 'Loading mileage data...' : 'No mileage data available' }}</dt></div>
+              }
+            </dl>
           </article>
         } @else if (activeTab() === 'safety') {
           <article class="workspace-group">
@@ -100,11 +218,41 @@
             </dl>
             <div class="workspace-flags">@for (item of monitoring(); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
           </article>
-        } @else if (activeTab() === 'device') {
+          @if (violationMarkers().length) {
+            <article class="workspace-group map-panel">
+              <header><span class="group-icon danger"><img src="assets/fleetpoint/icons/violation-location.svg" alt="" /></span><h2>Violation locations</h2><small>{{ violationMarkers().length }} records</small></header>
+              <app-fleet-map class="snapshot-map" [vehicles]="violationMarkers()" />
+            </article>
+          }
+        } @else if (activeTab() === 'snapshot') {
           <article class="workspace-group">
-            <header><span class="group-icon info"><img src="assets/fleetpoint/icons/device-default.svg" alt="" /></span><h2>Device &amp; connectivity</h2><small>Hardware</small></header>
-            <dl>@for (item of deviceDetails(); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
+            <header><span class="group-icon info"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" /></span><h2>Vehicle snapshot</h2><small>Historical state</small></header>
+            <dl>
+              <div><dt>Select date &amp; time</dt><dd><shared-date-time-picker mode="datetime" [value]="snapshotDateValue()" (valueChange)="snapshotDateValue.set($event)" placeholder="Select date and time" ariaLabel="Choose snapshot date and time" /></dd></div>
+              <div><dt>Load snapshot</dt><dd><button type="button" class="primary-action" style="height:28px;font-size:11px;padding:0 10px;border-radius:6px;" [disabled]="!snapshotDateValue() || snapshotLoading()" (click)="loadSnapshot()">{{ snapshotLoading() ? 'Loading...' : 'Load' }}</button></dd></div>
+            </dl>
           </article>
+          @if (snapshotResult(); as snap) {
+            <article class="workspace-group">
+              <header><span class="group-icon success"><img src="assets/fleetpoint/icons/shield-success.svg" alt="" /></span><h2>Snapshot data</h2><small>{{ snap.timestamp ? formatDateShort(snap.timestamp) : '—' }}</small></header>
+              <dl>
+                <div><dt>Vehicle state</dt><dd>{{ snap.vehicle_state || '—' }}</dd></div>
+                <div><dt>Speed</dt><dd>{{ snap.speed === null ? '—' : (snap.speed + ' km/h') }}</dd></div>
+                <div><dt>Fuel level</dt><dd>{{ snap.volume === null ? '—' : (snap.volume + ' gal') }}</dd></div>
+                <div><dt>Temperature</dt><dd>{{ snap.temperature ? (snap.temperature + ' °C') : '—' }}</dd></div>
+                <div><dt>Timestamp</dt><dd>{{ snap.timestamp ? formatDateShort(snap.timestamp) : '—' }}</dd></div>
+                <div><dt>Assigned driver</dt><dd>{{ text(snap.assigned_driver, 'Unassigned') }}</dd></div>
+                <div><dt>Assigned route</dt><dd>{{ text(snap.assigned_route, 'None') }}</dd></div>
+                <div><dt>Assigned geozone</dt><dd>{{ text(snap.assigned_geo_zone, 'None') }}</dd></div>
+              </dl>
+            </article>
+          }
+          @if (snapshotMarker().length) {
+            <article class="workspace-group map-panel">
+              <header><span class="group-icon info"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" /></span><h2>Snapshot location</h2><small>Historical position</small></header>
+              <app-fleet-map class="snapshot-map" [vehicles]="snapshotMarker()" />
+            </article>
+          }
         } @else {
           <article class="workspace-group">
             <header><span class="group-icon info"><img src="assets/fleetpoint/icons/wrench.svg" alt="" /></span><h2>Maintenance &amp; service</h2><small>Records</small></header>

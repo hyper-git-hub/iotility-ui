@@ -2,11 +2,12 @@
 
 .sidebar-shell {
   @apply flex h-full w-[104px] shrink-0 flex-col items-center gap-6 py-6;
+  /* Same stop palette as the main-branch shell sidebar gradient. */
   background: linear-gradient(
     180deg,
-    var(--color-dark-canvas) 0%,
-    var(--color-brand-950) 50%,
-    var(--color-brand-800) 100%
+    #0a0a0f 0%,
+    #1e0a3c 50%,
+    #4c1d95 100%
   );
 }
 
