@@ -162,12 +162,11 @@ export class VehicleDetail implements OnInit, OnDestroy {
   protected image(): string { const value = String(this.record()?.image || '').trim(); return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase()) ? value : 'assets/fleetpoint/def-car.svg'; }
   protected useDefaultImage(event: Event): void { (event.target as HTMLImageElement).src = 'assets/fleetpoint/def-car.svg'; }
   protected back(): void { void this.router.navigateByUrl('/fleetpoint/vehicles'); }
-  /* In-page tab scrolling — plain href="#id" anchors would trigger a Router
+  /* Tab switching — plain href="#id" anchors would trigger a Router
      navigation to the root route (home) because of <base href="/">. */
-  protected readonly activeTab = signal('vehicle-overview');
-  protected scrollTo(id: string): void {
+  protected readonly activeTab = signal('overview');
+  protected openTab(id: string): void {
     this.activeTab.set(id);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   protected openEdit(): void { this.formOpen.set(true); }
   protected closeForm(): void { this.formOpen.set(false); }

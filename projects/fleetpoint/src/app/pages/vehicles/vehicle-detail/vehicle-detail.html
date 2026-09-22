@@ -54,36 +54,68 @@
     <!-- Fade-in animation disabled: <section class="vehicle-workspace smooth-reveal" id="vehicle-overview"> -->
     <section class="vehicle-workspace" id="vehicle-overview">
       <nav class="detail-tabs" aria-label="Vehicle detail sections">
-        <button type="button" [class.active]="activeTab() === 'vehicle-overview'" (click)="scrollTo('vehicle-overview')"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</button>
-        <button type="button" [class.active]="activeTab() === 'telemetry'" (click)="scrollTo('telemetry')"><img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Telemetry &amp; sensors</button>
+        <button type="button" [class.active]="activeTab() === 'overview'" (click)="openTab('overview')"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</button>
+        <button type="button" [class.active]="activeTab() === 'telemetry'" (click)="openTab('telemetry')"><img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Telemetry &amp; sensors</button>
         <button type="button" (click)="tripReplay()"><img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" />Trips &amp; replay</button>
-        <button type="button" [class.active]="activeTab() === 'safety'" (click)="scrollTo('safety')"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" aria-hidden="true" />Violations &amp; safety <em>{{ violationMetric() }}</em></button>
-        <button type="button" [class.active]="activeTab() === 'telemetry'" (click)="scrollTo('telemetry')"><img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />Device &amp; connectivity</button>
-        <button type="button" [class.active]="activeTab() === 'operations'" (click)="scrollTo('operations')"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" />Maintenance</button>
+        <button type="button" [class.active]="activeTab() === 'safety'" (click)="openTab('safety')"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" aria-hidden="true" />Violations &amp; safety <em>{{ violationMetric() }}</em></button>
+        <button type="button" [class.active]="activeTab() === 'device'" (click)="openTab('device')"><img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />Device &amp; connectivity</button>
+        <button type="button" [class.active]="activeTab() === 'operations'" (click)="openTab('operations')"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" />Maintenance</button>
       </nav>
       <div class="workspace-grid">
-        <article class="workspace-group">
-          <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/car-brand.svg" alt="" /></span><h2>Vehicle specifications</h2><small>Hardware profile</small></header>
-          <dl>@for (item of details().slice(0, 9); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
-        </article>
-        <article class="workspace-group" id="telemetry">
-          <header><span class="group-icon success"><img src="assets/fleetpoint/icons/shield-success.svg" alt="" /></span><h2>Safety &amp; telematics</h2><small>Protocols</small></header>
-          <dl>@for (item of deviceDetails().slice(0, 4); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
-          <div class="workspace-flags" id="safety">@for (item of monitoring().slice(0, 4); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
-        </article>
-        <article class="workspace-group" id="operations">
-          <header><span class="group-icon info"><img src="assets/fleetpoint/icons/building.svg" alt="" /></span><h2>Operational context</h2><small>Assignments</small></header>
-          <dl>
-            <div><dt>Fleet assignment</dt><dd>{{ text(vehicle.fleet_name, 'Unassigned') }}</dd></div>
-            <div><dt>Assigned driver</dt><dd>{{ text(vehicle.vehicle_driver_name, 'Unassigned') }}</dd></div>
-            <div><dt>Registration expiry</dt><dd>{{ text(vehicle['expiry_date']) }}</dd></div>
-            <div><dt>Average distance / day</dt><dd>{{ text(vehicle.km_per_day, '0') }} km</dd></div>
-            <div><dt>Active dispatch job</dt><dd>{{ summary(lastJob(), 'No active job') }}</dd></div>
-            <div><dt>Maintenance records</dt><dd>{{ count(maintenance()) }}</dd></div>
-            <div><dt>Next maintenance</dt><dd>{{ text(vehicle.next_maintenance) }}</dd></div>
-            <div><dt>Diagnostic status</dt><dd class="status-value" [class.online]="vehicle.online_status">{{ vehicle.online_status ? 'Connected' : 'Offline' }}</dd></div>
-          </dl>
-        </article>
+        @if (activeTab() === 'overview') {
+          <article class="workspace-group">
+            <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/car-brand.svg" alt="" /></span><h2>Vehicle specifications</h2><small>Hardware profile</small></header>
+            <dl>@for (item of details().slice(0, 9); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
+          </article>
+          <article class="workspace-group">
+            <header><span class="group-icon success"><img src="assets/fleetpoint/icons/shield-success.svg" alt="" /></span><h2>Safety &amp; telematics</h2><small>Protocols</small></header>
+            <dl>@for (item of deviceDetails().slice(0, 4); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
+            <div class="workspace-flags">@for (item of monitoring().slice(0, 4); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
+          </article>
+          <article class="workspace-group">
+            <header><span class="group-icon info"><img src="assets/fleetpoint/icons/building.svg" alt="" /></span><h2>Operational context</h2><small>Assignments</small></header>
+            <dl>
+              <div><dt>Fleet assignment</dt><dd>{{ text(vehicle.fleet_name, 'Unassigned') }}</dd></div>
+              <div><dt>Assigned driver</dt><dd>{{ text(vehicle.vehicle_driver_name, 'Unassigned') }}</dd></div>
+              <div><dt>Registration expiry</dt><dd>{{ text(vehicle['expiry_date']) }}</dd></div>
+              <div><dt>Average distance / day</dt><dd>{{ text(vehicle.km_per_day, '0') }} km</dd></div>
+              <div><dt>Active dispatch job</dt><dd>{{ summary(lastJob(), 'No active job') }}</dd></div>
+              <div><dt>Maintenance records</dt><dd>{{ count(maintenance()) }}</dd></div>
+              <div><dt>Next maintenance</dt><dd>{{ text(vehicle.next_maintenance) }}</dd></div>
+              <div><dt>Diagnostic status</dt><dd class="status-value" [class.online]="vehicle.online_status">{{ vehicle.online_status ? 'Connected' : 'Offline' }}</dd></div>
+            </dl>
+          </article>
+        } @else if (activeTab() === 'telemetry') {
+          <article class="workspace-group">
+            <header><span class="group-icon success"><img src="assets/fleetpoint/icons/shield-success.svg" alt="" /></span><h2>Safety &amp; telematics</h2><small>Protocols</small></header>
+            <dl>@for (item of deviceDetails(); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
+            <div class="workspace-flags">@for (item of monitoring(); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
+          </article>
+        } @else if (activeTab() === 'safety') {
+          <article class="workspace-group">
+            <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" /></span><h2>Violations &amp; safety</h2><small>Alerts</small></header>
+            <dl>
+              <div><dt>Total violations</dt><dd>{{ violationMetric() }}</dd></div>
+              <div><dt>Diagnostic status</dt><dd class="status-value" [class.online]="vehicle.online_status">{{ vehicle.online_status ? 'Connected' : 'Offline' }}</dd></div>
+            </dl>
+            <div class="workspace-flags">@for (item of monitoring(); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
+          </article>
+        } @else if (activeTab() === 'device') {
+          <article class="workspace-group">
+            <header><span class="group-icon info"><img src="assets/fleetpoint/icons/device-default.svg" alt="" /></span><h2>Device &amp; connectivity</h2><small>Hardware</small></header>
+            <dl>@for (item of deviceDetails(); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
+          </article>
+        } @else {
+          <article class="workspace-group">
+            <header><span class="group-icon info"><img src="assets/fleetpoint/icons/wrench.svg" alt="" /></span><h2>Maintenance &amp; service</h2><small>Records</small></header>
+            <dl>
+              <div><dt>Maintenance records</dt><dd>{{ count(maintenance()) }}</dd></div>
+              <div><dt>Next maintenance</dt><dd>{{ text(vehicle.next_maintenance) }}</dd></div>
+              <div><dt>Active dispatch job</dt><dd>{{ summary(lastJob(), 'No active job') }}</dd></div>
+              <div><dt>Registration expiry</dt><dd>{{ text(vehicle['expiry_date']) }}</dd></div>
+            </dl>
+          </article>
+        }
       </div>
     </section>
   }
