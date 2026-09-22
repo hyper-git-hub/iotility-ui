@@ -227,10 +227,15 @@
         } @else if (activeTab() === 'snapshot') {
           <article class="workspace-group">
             <header><span class="group-icon info"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" /></span><h2>Vehicle snapshot</h2><small>Historical state</small></header>
-            <dl>
-              <div><dt>Select date &amp; time</dt><dd><shared-date-time-picker mode="datetime" [value]="snapshotDateValue()" (valueChange)="snapshotDateValue.set($event)" placeholder="Select date and time" ariaLabel="Choose snapshot date and time" /></dd></div>
-              <div><dt>Load snapshot</dt><dd><button type="button" class="primary-action" style="height:28px;font-size:11px;padding:0 10px;border-radius:6px;" [disabled]="!snapshotDateValue() || snapshotLoading()" (click)="loadSnapshot()">{{ snapshotLoading() ? 'Loading...' : 'Load' }}</button></dd></div>
-            </dl>
+            <div class="snapshot-controls">
+              <label class="snapshot-field">
+                <span>Date &amp; time</span>
+                <shared-date-time-picker mode="datetime" [value]="snapshotDateValue()" (valueChange)="snapshotDateValue.set($event)" placeholder="Select date and time" ariaLabel="Choose snapshot date and time" />
+              </label>
+              <button type="button" class="primary-action snapshot-load-btn" [disabled]="!snapshotDateValue() || snapshotLoading()" (click)="loadSnapshot()">
+                {{ snapshotLoading() ? 'Loading...' : 'Load' }}
+              </button>
+            </div>
           </article>
           @if (snapshotResult(); as snap) {
             <article class="workspace-group">
