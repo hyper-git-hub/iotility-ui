@@ -300,17 +300,16 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   // into a single themed count badge, and zooming in returns them to
   // individual markers. Grouping is driven purely by map zoom level so
   // it is stable (no flicker between group/single while panning).
-  private static readonly CLUSTER_ZOOM_THRESHOLD = 14;
-  private static readonly CLUSTER_WORLD_DISTANCE = 0.02;
-  private clusterWorldDistance(): number {
-    const zoom = this.map?.getZoom() ?? 0;
-    return FleetMap.CLUSTER_WORLD_DISTANCE * Math.pow(2, FleetMap.CLUSTER_ZOOM_THRESHOLD - zoom);
-  }
+  // Cluster by a fixed on-screen distance. The previous degree-based radius
+  // changed meaning by latitude and zoom level, which made identical camera
+  // views occasionally disagree about whether markers should be grouped.
+  private static readonly CLUSTER_PIXEL_RADIUS = 56;
 
   private bindClusterMove(): void {
     if (!this.map || this.clusterMoveBound) return;
     this.clusterMoveBound = true;
     this.map.on('zoom', this.onClusterMove);
+    this.map.on('zoomend', this.onClusterMove);
     this.map.on('moveend', this.onClusterMove);
   }
 
@@ -318,6 +317,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     if (!this.map || !this.clusterMoveBound) return;
     this.clusterMoveBound = false;
     this.map.off('zoom', this.onClusterMove);
+    this.map.off('zoomend', this.onClusterMove);
     this.map.off('moveend', this.onClusterMove);
   }
 
@@ -343,31 +343,44 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   private recomputeClusters(): void {
     if (!this.map?.isStyleLoaded() || !this.clusterEnabled) return;
-    const distance = this.clusterWorldDistance();
 
     interface ClusterGroup { lng: number; lat: number; ids: string[]; key: string; color: string; }
-    const groups: ClusterGroup[] = [];
-    this.markers.forEach((_marker, id) => {
-      const vehicle = this.vehicles().find((item) => item.id === id);
-      if (!vehicle) return;
-      let placed = false;
-      for (const group of groups) {
-        const span = Math.hypot(group.lng - vehicle.lng, group.lat - vehicle.lat);
-        if (span > distance) continue;
-        group.ids.push(id);
-        group.key = [...group.ids].sort().join('|');
-        group.color = this.badgeColor(group.ids);
-        let lng = 0, lat = 0;
-        for (const memberId of group.ids) {
-          const member = this.vehicles().find((item) => item.id === memberId);
-          if (member) { lng += member.lng; lat += member.lat; }
-        }
-        group.lng = lng / group.ids.length;
-        group.lat = lat / group.ids.length;
-        placed = true;
-        break;
+    const visibleVehicles = this.vehicles()
+      .filter(({ id }) => this.markers.has(id))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const projected = visibleVehicles.map(({ lng, lat }) => this.map!.project([lng, lat]));
+    const parents = visibleVehicles.map((_, index) => index);
+    const find = (index: number): number => {
+      while (parents[index] !== index) {
+        parents[index] = parents[parents[index]];
+        index = parents[index];
       }
-      if (!placed) groups.push({ lng: vehicle.lng, lat: vehicle.lat, ids: [id], key: id, color: this.badgeColor([id]) });
+      return index;
+    };
+    const join = (left: number, right: number): void => {
+      const leftRoot = find(left);
+      const rightRoot = find(right);
+      if (leftRoot !== rightRoot) parents[rightRoot] = leftRoot;
+    };
+    for (let left = 0; left < projected.length; left += 1) {
+      for (let right = left + 1; right < projected.length; right += 1) {
+        const dx = projected[left].x - projected[right].x;
+        const dy = projected[left].y - projected[right].y;
+        if (Math.hypot(dx, dy) <= FleetMap.CLUSTER_PIXEL_RADIUS) join(left, right);
+      }
+    }
+    const membersByRoot = new Map<number, TrackedVehicle[]>();
+    visibleVehicles.forEach((vehicle, index) => {
+      const root = find(index);
+      const members = membersByRoot.get(root) ?? [];
+      members.push(vehicle);
+      membersByRoot.set(root, members);
+    });
+    const groups: ClusterGroup[] = [...membersByRoot.values()].map((members) => {
+      const ids = members.map(({ id }) => id).sort();
+      const lng = members.reduce((sum, vehicle) => sum + vehicle.lng, 0) / members.length;
+      const lat = members.reduce((sum, vehicle) => sum + vehicle.lat, 0) / members.length;
+      return { lng, lat, ids, key: ids.join('|'), color: this.badgeColor(ids) };
     });
 
     // 1) Hide grouped vehicle markers and reveal ungrouped ones instantly.
@@ -399,33 +412,42 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         const div = document.createElement('div');
         div.className = 'vehicle-cluster';
         div.setAttribute('role', 'button');
-        div.style.display = 'flex';
-        div.style.alignItems = 'center';
-        div.style.justifyContent = 'center';
-        div.style.borderRadius = '50%';
-        div.style.boxSizing = 'border-box';
-        div.style.color = '#fff';
-        div.style.fontWeight = '700';
-        div.style.cursor = 'pointer';
-        div.style.fontFamily = 'Inter, ui-sans-serif, system-ui, sans-serif';
-        div.style.userSelect = 'none';
-        div.addEventListener('click', () => this.expandCluster([group.lng, group.lat], group.ids.length));
+        div.setAttribute('tabindex', '0');
+        const countLabel = document.createElement('span');
+        countLabel.className = 'vehicle-cluster__count';
+        div.append(countLabel);
+        const expand = () => {
+          const lng = Number(div.dataset['lng']);
+          const lat = Number(div.dataset['lat']);
+          const clusterCount = Number(div.dataset['count']);
+          if (Number.isFinite(lng) && Number.isFinite(lat) && Number.isFinite(clusterCount)) {
+            this.expandCluster([lng, lat], clusterCount);
+          }
+        };
+        div.addEventListener('click', expand);
+        div.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          expand();
+        });
         marker = new maplibregl.Marker({ element: div, anchor: 'center' }).setLngLat([group.lng, group.lat]).addTo(this.map!);
         this.clusterBadges.set(group.key, marker);
         this.clusterBadgeDivs.set(group.key, div);
       }
       const div = this.clusterBadgeDivs.get(group.key)!;
       const count = group.ids.length;
-      const size = count >= 100 ? 48 : count >= 50 ? 44 : count >= 10 ? 40 : 36;
+      const size = count >= 100 ? 44 : count >= 50 ? 41 : count >= 10 ? 38 : 34;
       const label = count >= 100 ? '99+' : String(count);
       div.style.width = `${size}px`;
       div.style.height = `${size}px`;
-      div.style.lineHeight = `${size}px`;
-      div.style.fontSize = `${Math.round(size * 0.42)}px`;
-      div.style.background = `linear-gradient(135deg,color-mix(in srgb,${this.brandColor()} 50%,white),${this.brandColor()})`;
-      div.style.borderColor = group.color;
-      div.style.boxShadow = `0 0 0 3px ${this.brandColor()},0 4px 12px rgb(0 0 0 / .28)`;
-      div.textContent = label;
+      div.style.setProperty('--cluster-font-size', `${Math.round(size * 0.35)}px`);
+      div.style.setProperty('--cluster-brand', this.brandColor());
+      div.style.setProperty('--cluster-status', group.color);
+      div.dataset['lng'] = String(group.lng);
+      div.dataset['lat'] = String(group.lat);
+      div.dataset['count'] = String(count);
+      const countLabel = div.querySelector<HTMLElement>('.vehicle-cluster__count');
+      if (countLabel) countLabel.textContent = label;
       div.setAttribute('aria-label', `${count} vehicles`);
       marker.setLngLat([group.lng, group.lat]);
     }
