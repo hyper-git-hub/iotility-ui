@@ -42,8 +42,8 @@
 </section> -->
 
 @if (fleetStatusVisible()) {
-<section class="fleet-status-card" aria-label="Live fleet status" [attr.aria-busy]="fleetLoading()">
-  @if (fleetLoading()) {
+<section class="fleet-status-card" aria-label="Live fleet status" [attr.aria-busy]="graphsLoading()">
+  @if (graphsLoading()) {
     <div class="fleet-status-skeleton" aria-hidden="true">
       <header>
         <ui-skeleton variant="text" width="8.5rem" height="0.875rem" radius="0.3rem" />
@@ -176,7 +176,7 @@
     </div>
   } @else {
     <div class="analytics-grid">
-      @for (graph of visibleGraphs(); track graph.code) {
+      @for (graph of displayedGraphs(); track graph.code) {
         <app-dashboard-graph [graph]="graph" />
       }
     </div>

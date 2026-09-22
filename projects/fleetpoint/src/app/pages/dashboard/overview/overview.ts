@@ -1,5 +1,6 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DestroyRef } from '@angular/core';
 import { Skeleton, StatusBadge, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, interval } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
@@ -101,6 +102,27 @@ export class Overview implements OnInit {
     () => this.vehicles().filter((vehicle) => vehicle.online_status).length,
   );
   protected readonly fleetStatus = computed(() => {
+    // Extract fleet status data from graphs API if available
+    const graphs = this.graphs();
+    const fleetStatusGraph = graphs.find((g) => g.code === 'LFS') as DashboardGraph & {
+      data: {
+        categories?: string[];
+        values?: (string | number)[];
+      };
+    };
+    
+    if (fleetStatusGraph?.data?.categories && fleetStatusGraph?.data?.values) {
+      const values = fleetStatusGraph.data.values;
+      return {
+        moving: Number(values[0]) || 0,
+        idling: Number(values[1]) || 0,
+        stopped: Number(values[2]) || 0,
+        alert: Number(values[3]) || 0,
+        offline: Number(values[4]) || 0,
+      };
+    }
+    
+    // Fallback: compute from vehicles data
     const status = { moving: 0, idling: 0, stopped: 0, alert: 0, offline: 0 };
     for (const vehicle of this.vehicles()) {
       if (!vehicle.online_status) status.offline++;
@@ -249,40 +271,8 @@ export class Overview implements OnInit {
     return 'info';
   }
 
-  protected cardValue(
-    card: DashboardCard<number | string | DashboardGraphData | null>,
-  ): number | string {
-    return typeof card.data === 'number' || typeof card.data === 'string' ? card.data : 0;
-  }
-
-  protected cardAccent(code: string): string {
-    const accents: Record<string, string> = {
-      DVC: 'var(--color-danger)',
-      J: 'var(--color-info)',
-      MD: 'var(--color-warning)',
-      MOD: 'color-mix(in srgb, var(--color-danger) 72%, var(--color-warning))',
-      TD: 'var(--color-success)',
-      TDC: 'var(--color-brand-500)',
-      TF: 'color-mix(in srgb, var(--color-brand-500) 68%, var(--color-info))',
-      VIM: 'color-mix(in srgb, var(--color-warning) 72%, var(--color-danger))',
-      VIO: 'color-mix(in srgb, var(--color-success) 72%, var(--color-info))',
-      QFU: 'var(--color-success)',
-      QHB: 'var(--color-danger)',
-      QIT: 'var(--color-warning)',
-      QLC: 'var(--color-info)',
-      QPT: 'var(--color-brand-500)',
-      QRH: 'color-mix(in srgb, var(--color-success) 55%, var(--color-info))',
-      QSF: 'color-mix(in srgb, var(--color-danger) 55%, var(--color-brand-500))',
-      QUL: 'color-mix(in srgb, var(--color-warning) 58%, var(--color-danger))',
-    };
-    return accents[code] ?? 'var(--color-brand-500)';
-  }
-
-  protected vehicleInitial(vehicle: Vehicle): string {
-    return (vehicle.name || '?').charAt(0).toUpperCase();
-  }
-
   protected statusPercentage(value: number): number {
-    return this.vehicles().length ? (value / this.vehicles().length) * 100 : 0;
+    const total = this.fleetStatus().moving + this.fleetStatus().idling + this.fleetStatus().stopped + this.fleetStatus().alert + this.fleetStatus().offline;
+    return total > 0 ? (value / total) * 100 : 0;
   }
 }
