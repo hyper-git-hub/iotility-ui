@@ -623,6 +623,35 @@ app-vehicle-hud ::ng-deep .vehicle-hud {
     align-items: flex-end
 }
 
+.snapshot-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.snapshot-field {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px
+}
+
+.snapshot-field>span {
+    color: var(--color-muted);
+    font-size: 10px;
+    font-weight: 600
+}
+
+.snapshot-load-btn {
+    height: 28px;
+    font-size: 11px;
+    padding: 0 10px;
+    border-radius: 6px;
+    flex-shrink: 0
+}
+
 .replay-field {
     display: flex;
     min-width: 0;
