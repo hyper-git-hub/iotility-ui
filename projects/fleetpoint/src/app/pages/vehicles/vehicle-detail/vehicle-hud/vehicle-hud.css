@@ -43,11 +43,11 @@
   -webkit-mask-image: linear-gradient(to right, #000 38%, rgb(0 0 0 / 0.5) 66%, transparent 96%);
   mask-image: linear-gradient(to right, #000 38%, rgb(0 0 0 / 0.5) 66%, transparent 96%);
 }
-/* Live MapLibre canvas fills the band; slightly dimmed so it never competes
-   with the gauge. MapLibre builds its DOM imperatively (no _ngcontent attr),
-   so every rule touching it must pierce view encapsulation. */
+/* Live MapLibre canvas fills the band. Keep the light map crisp; only the
+   dark theme needs dimming so its roads do not compete with the telemetry. */
 .hud-maplibre { @apply absolute inset-0; }
-:host ::ng-deep .hud-maplibre .maplibregl-canvas { filter: brightness(0.8) saturate(0.85); }
+:host ::ng-deep .hud-maplibre .maplibregl-canvas { filter: saturate(0.96) contrast(1.01); }
+:host-context(.dark) ::ng-deep .hud-maplibre .maplibregl-canvas { filter: brightness(0.8) saturate(0.85); }
 /* Keep the marker above the scrim so it stays crisp even where the map beneath
    it is dimmed — the scrim is a ::after INSIDE the map container, and the
    marker's z-index paints above it. */
@@ -135,7 +135,7 @@
     backdrop-filter: none;
     -webkit-mask-image: none;
     mask-image: none;
-    background: linear-gradient(to bottom, rgb(9 9 15 / 0.08), rgb(9 9 15 / 0.34));
+    background: linear-gradient(to bottom, transparent, rgb(255 255 255 / 0.08));
   }
   :host-context(.dark) .hud-maplibre::after {
     background: linear-gradient(to bottom, rgb(9 9 15 / 0.08), rgb(9 9 15 / 0.38));
