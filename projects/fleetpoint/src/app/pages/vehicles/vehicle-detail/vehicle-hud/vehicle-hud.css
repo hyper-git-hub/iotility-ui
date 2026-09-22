@@ -314,14 +314,15 @@
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-.hud-speed-console > header span i {
-  width: 13px;
-  height: 9px;
-  border: 2px solid var(--color-brand-500);
-  border-radius: 9px 9px 3px 3px;
-  transform: skew(-12deg);
+.hud-speed-console > header span i,
+.hud-speed-trend header span i { display: none; }
+.hud-speed-console > header span img {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
 }
 .hud-speed-console > header strong { color: var(--color-ink); }
+.hud-speed-console small ui-skeleton { display: inline-flex; vertical-align: middle; }
 :host-context(.dark) .hud-speed-console > header strong { color: #f8fafc; }
 .hud-speed-readout { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .hud-speed-readout > div:first-child { display: flex; align-items: baseline; gap: 8px; }

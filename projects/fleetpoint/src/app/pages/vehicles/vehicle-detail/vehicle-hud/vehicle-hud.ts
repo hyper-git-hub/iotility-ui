@@ -183,16 +183,14 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
      with shimmer bars in every data slot so nothing shifts when data pops in. */
   readonly loading = input(false);
 
-  /* Skeleton stat tiles mirror the live grid 1:1 (labels + bar widths). */
-  protected readonly skeletonStatLabels = [
-    { text: 'Distance today', width: '4.5rem' },
-    { text: 'Total distance', width: '4rem' },
-    { text: 'Fuel', width: '3rem' },
-    { text: 'Violations', width: '3rem' },
-    { text: 'Ignition', width: '2.5rem' },
-    { text: 'Next maintenance', width: '5rem' },
-    { text: 'Last update', width: '6rem' },
-    { text: 'Driver', width: '7rem' },
+  /* Skeleton telemetry tiles mirror the live grid 1:1 (labels, accents, widths). */
+  protected readonly skeletonStatTiles = [
+    { label: 'Today', accent: 'blue', width: '4.5rem' },
+    { label: 'Odometer', accent: 'violet', width: '4rem' },
+    { label: 'Fuel level', accent: 'cyan', width: '3.5rem' },
+    { label: 'Violations', accent: 'rose', width: '3rem' },
+    { label: 'Ignition', accent: null, width: '2.5rem' },
+    { label: 'Maintenance', accent: null, width: '4.5rem' },
   ] as const;
 
   private readonly mapHost = viewChild.required<ElementRef<HTMLDivElement>>('mapHost');

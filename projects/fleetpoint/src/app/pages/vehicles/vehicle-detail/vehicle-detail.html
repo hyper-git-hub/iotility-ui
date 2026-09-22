@@ -1,39 +1,47 @@
 ﻿<main class="vehicle-detail-page">
   @if (loading()) {
     <header class="detail-heading">
-      <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p class="vehicle-heading-line">Vehicles / <ui-skeleton width="6rem" height="0.625rem" /></p><h1 class="vehicle-title-skeleton"><ui-skeleton width="9rem" height="1.125rem" /></h1><span class="vehicle-heading-line vehicle-description-skeleton"><ui-skeleton width="15rem" height="0.75rem" /></span></div></div>
-      <div class="heading-actions"><ui-skeleton width="4rem" height="1.5rem" radius="999px" /><button type="button" class="secondary-action" disabled>Trip Replay</button><button type="button" class="primary-action" disabled>Edit Vehicle</button></div>
+      <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p>Vehicles / <ui-skeleton width="4.5rem" height="0.625rem" /></p><h1><ui-skeleton width="8.5rem" height="1.625rem" /></h1><span><ui-skeleton width="12rem" height="0.75rem" /></span></div></div>
+      <div class="heading-actions"><ui-skeleton width="4.5rem" height="1.5rem" radius="999px" /><button type="button" class="secondary-action" disabled>Trip Replay</button><button type="button" class="primary-action" disabled>Edit Vehicle</button></div>
     </header>
-    <section class="metric-grid">@for (item of [1, 2, 3, 4, 5, 6]; track item) { <ui-stat-card-skeleton [compact]="true" [showIcon]="false" /> }</section>
-    <nav class="detail-tabs" aria-label="Vehicle detail sections">
-      <a href="#vehicle-overview" class="active">Overview</a><a href="#vehicle-connectivity">Device &amp; monitoring</a><a href="#vehicle-operations">Activity &amp; service</a>
-    </nav>
-    <div class="section-heading overview-heading"><div><span>Vehicle profile</span><h2>Identity &amp; specifications</h2></div><p>Registration, ownership and technical information</p></div>
-    <section class="overview-grid" id="vehicle-overview">
-      <article class="detail-card identity-card vehicle-overview-skeleton">
-        <header><h2>Vehicle Overview</h2><ui-skeleton width="6rem" height="1.25rem" radius="999px" /></header>
-        <div class="vehicle-identity hidden"><span class="vehicle-illustration"><ui-skeleton width="4rem" height="4rem" radius="1rem" /></span><div><h3><ui-skeleton width="8rem" height="1.125rem" /></h3><p><ui-skeleton width="10rem" height="0.75rem" /></p><ui-skeleton width="4rem" height="1.5rem" radius="999px" /></div></div>
-        <dl class="details-list">@for (label of ['Vehicle Name / ID','Record Status','Fleet','Make','Model','Year','Colour','Engine Number','Chassis Number','Engine Capacity','Fuel Tank Capacity','Odometer Reading','Owner','Date Commissioned','Registration Expiry','Customer']; track label) { <div class="spec-item"><dt><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" [style.color]="specMeta(label).color">@for (path of specMeta(label).icon; track path) { <path [attr.d]="path" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" /> }</svg><span>{{ label }}</span><span class="spec-tag" [style]="specMeta(label).tagStyle">{{ specMeta(label).tag }}</span></dt><dd><ui-skeleton [width]="$index % 3 === 0 ? '7rem' : '5.5rem'" height="0.875rem" /></dd></div> }</dl>
-      </article>
+    <section class="metric-grid" aria-label="Vehicle summary loading" aria-busy="true">
+      @for (card of skeletonSummaryCards; track card.label) {
+        <article class="summary-card" [attr.data-tone]="card.tone" aria-hidden="true">
+          <header><span>{{ card.label }}</span><i><img [src]="card.icon" alt="" /></i></header>
+          <div><ui-skeleton [width]="card.valueWidth" height="1rem" />@if (card.suffix) { <small>{{ card.suffix }}</small> }</div>
+        </article>
+      }
     </section>
-    <div class="section-heading"><div><span>Connected vehicle</span><h2>Device &amp; monitoring</h2></div><p>Connectivity, safety rules and the latest sensor state</p></div>
-    <section class="information-grid" id="vehicle-connectivity">
-      <article class="detail-card"><header><h2>Device &amp; Connectivity</h2></header><dl class="compact-list">@for (label of ['Device ID','SIM Number','Vehicle Type','RFID Tag','Immobilizer','Ignition']; track label) { <div><dt>{{ label }}</dt><dd><ui-skeleton width="5.5rem" height="0.75rem" /></dd></div> }</dl></article>
-      <article class="detail-card"><header><h2>Monitoring &amp; Safety</h2></header><div class="monitoring-list">@for (label of ['Harsh acceleration','Harsh braking','Geo zone','Sharp turning','Seat belt monitoring','Immobilization']; track label) { <div><span>{{ label }}</span><ui-skeleton width="3.75rem" height="1.25rem" radius="999px" /></div> }</div></article>
-      <article class="detail-card"><header><h2>Live Sensor Readings</h2><ui-skeleton width="4.5rem" height="1.25rem" radius="999px" /></header><div class="sensor-list">@for (label of ['Last updated','Location','Vehicle status','Current speed']; track label) { <div><ui-skeleton width="2.25rem" height="2.25rem" radius="0.5rem" /><span><small>{{ label }}</small><strong><ui-skeleton width="8rem" height="0.75rem" /></strong></span></div> }</div></article>
-    </section>
-    <div class="section-heading"><div><span>Operations</span><h2>Performance &amp; service</h2></div><p>Recent activity and maintenance at a glance</p></div>
-    <section class="operations-grid" id="vehicle-operations">
-      <article class="detail-card"><header><h2>Route &amp; Speed</h2><span>Latest telemetry</span></header><div class="speed-panel"><div class="speedometer-card speedometer-skeleton"><div class="speedo-gauge-wrap"><svg class="speedo-svg" viewBox="0 0 400 240"><path d="M 40 210 A 160 160 0 0 1 360 210" fill="none" stroke="var(--color-line, #231e3d)" stroke-width="20" stroke-linecap="round"/></svg></div><div class="speedo-reading"><ui-skeleton width="6rem" height="2rem" radius="0.5rem" /></div></div></div></article>
-      <article class="detail-card"><header><h2>Operational Snapshot</h2><span>Overall</span></header><div class="snapshot">@for (label of ['Last fuel volume','Distance per day','Assigned driver','Last job','Total distance','Total violations']; track label) { <div><span>{{ label }}</span><strong><ui-skeleton width="5rem" height="0.75rem" /></strong></div> }</div></article>
-      <article class="detail-card"><header><h2>Activity &amp; Service</h2><span>Latest records</span></header><div class="activity-columns">@for (group of [{title:'Violations', rows:['Returned records','Violation alerts']},{title:'Maintenance',rows:['Recent records','Next maintenance']}]; track group.title) { <section><h3>{{ group.title }}</h3>@for (label of group.rows; track label) { <div class="activity-row"><span>{{ label }}</span><strong><ui-skeleton width="3.5rem" height="0.625rem" /></strong></div> }</section> }</div></article>
+    <app-vehicle-hud [vehicle]="record()" [metrics]="metrics()" [lastJob]="lastJob()" [routes]="record()?.['attached_routes_list']" [loading]="true" />
+    <section class="vehicle-workspace" id="vehicle-overview" aria-busy="true">
+      <nav class="detail-tabs" aria-label="Vehicle detail sections">
+        @for (tab of [0, 1, 2, 3, 4, 5, 6, 7]; track tab) {
+          <span class="tab-skeleton"><ui-skeleton width="16px" height="16px" radius="4px" /><ui-skeleton [width]="tab % 2 ? '5.5rem' : '7rem'" height="0.625rem" />@if (tab === 3) { <em><ui-skeleton width="1.75rem" height="0.5rem" radius="999px" /></em> }</span>
+        }
+      </nav>
+      <div class="workspace-grid">
+        <article class="workspace-group">
+          <header><span class="group-icon brand"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="9.5rem" height="0.875rem" /><small><ui-skeleton width="4.5rem" height="0.625rem" /></small></header>
+          <dl>@for (row of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track row) { <div><dt><ui-skeleton width="6.5rem" height="0.75rem" /></dt><dd><ui-skeleton width="4.5rem" height="0.75rem" /></dd></div> }</dl>
+        </article>
+        <article class="workspace-group" id="telemetry">
+          <header><span class="group-icon success"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="5.5rem" height="0.875rem" /><small><ui-skeleton width="5.5rem" height="0.625rem" /></small></header>
+          <dl>@for (row of [1, 2, 3, 4, 5, 6]; track row) { <div><dt><ui-skeleton width="5.5rem" height="0.75rem" /></dt><dd><ui-skeleton width="4.5rem" height="0.75rem" /></dd></div> }</dl>
+        </article>
+        <article class="workspace-group" id="operations">
+          <header><span class="group-icon info"><ui-skeleton width="15px" height="15px" radius="4px" /></span><ui-skeleton width="9rem" height="0.875rem" /><small><ui-skeleton width="4rem" height="0.625rem" /></small></header>
+          <dl>@for (row of [1, 2, 3, 4, 5, 6, 7, 8]; track row) { <div><dt><ui-skeleton width="7rem" height="0.75rem" /></dt><dd><ui-skeleton width="5rem" height="0.75rem" /></dd></div> }</dl>
+        </article>
+      </div>
     </section>
   } @else if (record(); as vehicle) {
-    <header class="detail-heading smooth-reveal">
+    <!-- Fade-in animation disabled: <header class="detail-heading smooth-reveal"> -->
+    <header class="detail-heading">
       <div class="heading-copy"><button type="button" (click)="back()" aria-label="Back to vehicles">←</button><div><p>Vehicles / {{ registration() }}</p><h1>{{ registration() }}</h1><span>{{ text(vehicle.year) }} {{ text(vehicle.make) }} {{ text(vehicle.model) }} · {{ text(vehicle.fleet_name, 'Unassigned fleet') }}</span></div></div>
       <div class="heading-actions"><shared-status-badge variant="pill" [online]="vehicle.online_status" onlineLabel="Online" offlineLabel="Offline" /><button type="button" class="secondary-action" (click)="tripReplay()">Trip Replay</button><button type="button" class="primary-action" (click)="openEdit()">Edit Vehicle</button></div>
     </header>
-    <section class="metric-grid smooth-reveal reveal-metrics" aria-label="Vehicle summary">
+    <!-- Cards fade-in animation disabled: <section class="metric-grid smooth-reveal reveal-metrics" aria-label="Vehicle summary"> -->
+    <section class="metric-grid" aria-label="Vehicle summary">
       @for (card of summaryCards(); track card.label) {
         <article class="summary-card" [attr.data-tone]="card.tone">
           <header><span>{{ card.label }}</span><i><img [src]="card.icon" alt="" aria-hidden="true" /></i></header>
@@ -42,38 +50,220 @@
       }
     </section>
     <app-vehicle-hud [vehicle]="record()" [metrics]="metrics()" [lastJob]="lastJob()" [routes]="record()?.['attached_routes_list']" [loading]="loading()" />
-    <section class="vehicle-workspace smooth-reveal" id="vehicle-overview">
+    <!-- Fade-in animation disabled: <section class="vehicle-workspace smooth-reveal" id="vehicle-overview"> -->
+    <section class="vehicle-workspace" id="vehicle-overview">
       <nav class="detail-tabs" aria-label="Vehicle detail sections">
-        <a href="#vehicle-overview" class="active"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</a>
-        <a href="#telemetry"><img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Telemetry &amp; sensors</a>
-        <button type="button" (click)="tripReplay()"><img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" />Trips &amp; replay</button>
-        <a href="#safety"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" aria-hidden="true" />Violations &amp; safety <em>{{ violationMetric() }}</em></a>
-        <a href="#telemetry"><img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />Device &amp; connectivity</a>
-        <a href="#operations"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" />Maintenance</a>
+        <button type="button" [class.active]="activeTab() === 'overview'" (click)="openTab('overview')"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</button>
+        <button type="button" [class.active]="activeTab() === 'lastjob'" (click)="openTab('lastjob')"><img src="assets/fleetpoint/icons/clipboard-job.svg" alt="" aria-hidden="true" />Last Job</button>
+        <button type="button" [class.active]="activeTab() === 'trips'" (click)="openTab('trips')"><img src="assets/fleetpoint/icons/trip-replay.svg" alt="" aria-hidden="true" />Trips &amp; replay</button>
+        <button type="button" [class.active]="activeTab() === 'fuel'" (click)="openTab('fuel')"><img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" aria-hidden="true" />Fuel &amp; mileage</button>
+        <button type="button" [class.active]="activeTab() === 'safety'" (click)="openTab('safety')"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" aria-hidden="true" />Violations &amp; safety <em>{{ violationMetric() }}</em></button>
+        <button type="button" [class.active]="activeTab() === 'snapshot'" (click)="openTab('snapshot')"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" aria-hidden="true" />Snapshot</button>
+        <button type="button" [class.active]="activeTab() === 'operations'" (click)="openTab('operations')"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" />Maintenance</button>
       </nav>
-      <div class="workspace-grid">
-        <article class="workspace-group">
-          <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/car-brand.svg" alt="" /></span><h2>Vehicle specifications</h2><small>Hardware profile</small></header>
-          <dl>@for (item of details().slice(0, 9); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
-        </article>
-        <article class="workspace-group" id="telemetry">
-          <header><span class="group-icon success"><img src="assets/fleetpoint/icons/shield-success.svg" alt="" /></span><h2>Safety &amp; telematics</h2><small>Protocols</small></header>
-          <dl>@for (item of deviceDetails().slice(0, 4); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
-          <div class="workspace-flags" id="safety">@for (item of monitoring().slice(0, 4); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
-        </article>
-        <article class="workspace-group" id="operations">
-          <header><span class="group-icon info"><img src="assets/fleetpoint/icons/building.svg" alt="" /></span><h2>Operational context</h2><small>Assignments</small></header>
-          <dl>
-            <div><dt>Fleet assignment</dt><dd>{{ text(vehicle.fleet_name, 'Unassigned') }}</dd></div>
-            <div><dt>Assigned driver</dt><dd>{{ text(vehicle.vehicle_driver_name, 'Unassigned') }}</dd></div>
-            <div><dt>Registration expiry</dt><dd>{{ text(vehicle['expiry_date']) }}</dd></div>
-            <div><dt>Average distance / day</dt><dd>{{ text(vehicle.km_per_day, '0') }} km</dd></div>
-            <div><dt>Active dispatch job</dt><dd>{{ summary(lastJob(), 'No active job') }}</dd></div>
-            <div><dt>Maintenance records</dt><dd>{{ count(maintenance()) }}</dd></div>
-            <div><dt>Next maintenance</dt><dd>{{ text(vehicle.next_maintenance) }}</dd></div>
-            <div><dt>Diagnostic status</dt><dd class="status-value" [class.online]="vehicle.online_status">{{ vehicle.online_status ? 'Connected' : 'Offline' }}</dd></div>
-          </dl>
-        </article>
+      <div class="workspace-grid" [class.two-up-grid]="activeTab() === 'fuel'" [class.safety-grid]="activeTab() === 'safety'">
+        @if (activeTab() === 'overview') {
+          <article class="workspace-group">
+            <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/car-brand.svg" alt="" /></span><h2>Vehicle specifications</h2><small>Hardware profile</small></header>
+            <dl>@for (item of details().slice(0, 9); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
+          </article>
+          <article class="workspace-group">
+            <header><span class="group-icon info"><img src="assets/fleetpoint/icons/building.svg" alt="" /></span><h2>Operational context</h2><small>Assignments</small></header>
+            <dl>
+              <div><dt>Fleet assignment</dt><dd>{{ text(vehicle.fleet_name, 'Unassigned') }}</dd></div>
+              <div><dt>Assigned driver</dt><dd>{{ text(vehicle.vehicle_driver_name, 'Unassigned') }}</dd></div>
+              <div><dt>Registration expiry</dt><dd>{{ text(vehicle['expiry_date']) }}</dd></div>
+              <div><dt>Average distance / day</dt><dd>{{ text(vehicle.km_per_day, '0') }} km</dd></div>
+              <div><dt>Active dispatch job</dt><dd>{{ summary(lastJob(), 'No active job') }}</dd></div>
+              <div><dt>Maintenance records</dt><dd>{{ count(maintenance()) }}</dd></div>
+              <div><dt>Next maintenance</dt><dd>{{ text(vehicle.next_maintenance) }}</dd></div>
+              <div><dt>Diagnostic status</dt><dd class="status-value" [class.online]="vehicle.online_status">{{ vehicle.online_status ? 'Connected' : 'Offline' }}</dd></div>
+            </dl>
+          </article>
+          <article class="workspace-group">
+            <header><span class="group-icon success"><img src="assets/fleetpoint/icons/telemetry.svg" alt="" /></span><h2>Telematics</h2><small>Device &amp; sensors</small></header>
+            <dl>@for (item of deviceDetails(); track item.label) { <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div> }</dl>
+          </article>
+        } @else if (activeTab() === 'lastjob') {
+          @if (lastJobDetail(); as job) {
+            <article class="workspace-group">
+              <dl>
+                <div><dt>Job name</dt><dd>{{ text(job.jobName, '—') }}</dd></div>
+                <div><dt>Driver</dt><dd>{{ text(job.driverName, 'Unassigned') }}</dd></div>
+                <div><dt>Job type</dt><dd>{{ job.jobType }}</dd></div>
+                <div><dt>Start date</dt><dd>{{ formatDateShort(job.startTime) }}</dd></div>
+                <div><dt>End date</dt><dd>{{ formatDateShort(job.endTime) }}</dd></div>
+              </dl>
+            </article>
+            <article class="workspace-group">
+              <dl>
+                <div><dt>Travelled distance</dt><dd>{{ job.distance ? ((job.distance | number:'1.0-2') + ' km') : '—' }}</dd></div>
+                <div><dt>Max speed</dt><dd>{{ job.speed ? (job.speed + ' km/h') : '—' }}</dd></div>
+                <div><dt>Violations</dt><dd>{{ job.violations }}</dd></div>
+                <div><dt>Fillups</dt><dd>{{ job.fillups }}</dd></div>
+              </dl>
+            </article>
+            <article class="workspace-group">
+              <dl>
+                <div><dt>Completed</dt><dd>{{ job.completedTasks || '0/0' }}</dd></div>
+                <div><dt>Pending</dt><dd>{{ job.pendingTasks || '0/0' }}</dd></div>
+                <div><dt>Aborted</dt><dd>{{ job.abortedTasks || '0/0' }}</dd></div>
+              </dl>
+              @if (job.tasks.length) {
+                <dl style="margin-top: 12px;" class="task-listing">
+                  @for (task of job.tasks; track $index) {
+                    <div><dt>Task {{ $index + 1 }} ({{ task.priority || 'N/A' }})</dt><dd>{{ taskLine(task) }}</dd></div>
+                  }
+                </dl>
+              }
+            </article>
+            @if (jobRoutePositions().length) {
+              <article class="workspace-group map-panel">
+                <app-trip-replay-map class="job-map" [positions]="jobRoutePositions()" [events]="jobTrailEvents()" />
+              </article>
+            }
+          } @else {
+            <article class="workspace-group">
+              <dl><div><dt>No completed job found for this vehicle</dt></div></dl>
+            </article>
+          }
+        } @else if (activeTab() === 'trips') {
+          <article class="workspace-group map-panel">
+            <div class="field-row replay-fields">
+              <label class="replay-field"><span>From</span><shared-date-time-picker density="compact" [value]="replayStartDate()" (valueChange)="updateReplayStart($event)" ariaLabel="Trail start date and time" /></label>
+              <label class="replay-field"><span>To</span><shared-date-time-picker density="compact" [value]="replayEndDate()" (valueChange)="updateReplayEnd($event)" ariaLabel="Trail end date and time" /></label>
+              <button type="button" class="primary-action replay-load" [disabled]="trailLoading()" (click)="replayLoad()" aria-label="Load trail">→</button>
+            </div>
+            <label class="stop-toggle"><input type="checkbox" [checked]="showStops()" (change)="toggleStops()" /> Show idling locations</label>
+            @if (showStops() && stopsLoading()) {
+              <p class="map-empty">Loading idling locations…</p>
+            } @else if (showStops() && stopsData().length) {
+              <div class="stops-list">
+                @for (stop of stopsData(); track $index) {
+                  <div><span>{{ formatDateShort(stop.start_time) }} → {{ formatDateShort(stop.end_time) }}</span><em>{{ convertDuration(stop.duration) }}</em></div>
+                }
+              </div>
+            } @else if (showStops()) {
+              <div class="stops-list"><div><span>No idling stops in this range</span></div></div>
+            }
+          </article>
+          <article class="workspace-group">
+            <div class="stat-lite-box"><span>Fuel consumed</span><strong>{{ trailData()?.fuel_consumed ? (trailData().fuel_consumed + ' L') : '—' }}</strong></div>
+          </article>
+          <article class="workspace-group">
+            <div class="stat-lite-box"><span>Distance travelled</span><strong>{{ trailData()?.distance ? ((trailData().distance | number:'1.0-2') + ' km') : '—' }}</strong></div>
+          </article>
+          <article class="workspace-group">
+            <div class="stat-lite-box"><span>Jobs completed</span><strong>{{ trailData()?.jobs_completed ?? '—' }}</strong></div>
+          </article>
+          <article class="workspace-group map-panel">
+            <div class="trail-wrap">
+              <app-trip-replay-map class="trail-map" [positions]="tripPositions()" [events]="replayEvents()" [positionIndex]="replayPositionIndex()" [playbackActive]="playing()" [playbackSpeed]="replaySpeed()" [playbackStepDuration]="stepDurationMs()" (routeLoadingChange)="routeLoading.set($event)" />
+              @if (!tripPositions().length) {
+                <p class="map-empty">{{ trailLoading() ? 'Loading trail…' : 'No trail points for this range' }}</p>
+              }
+            </div>
+            @if (tripPositions().length > 1) {
+              <div class="replay-controls">
+                <button type="button" class="secondary-action" (click)="togglePlayback()">{{ playing() ? 'Pause' : 'Play' }}</button>
+                <button type="button" class="secondary-action" (click)="stopPlayback()">Stop</button>
+                @for (rate of [1, 2, 3, 4, 5]; track rate) { <button type="button" class="speed-chip" [class.active]="replaySpeed() === rate" (click)="setReplaySpeed(rate)">{{ rate }}×</button> }
+                <input class="scrub" type="range" min="0" [max]="maxPosition()" [value]="replayPositionIndex()" (input)="scrub($event)" aria-label="Playback timeline" />
+                <span class="replay-point">{{ replayPointNumber() }}/{{ tripPositions().length }}</span>
+              </div>
+            }
+          </article>
+        } @else if (activeTab() === 'fuel') {
+          <article class="workspace-group">
+            <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" /></span><h2>Fuel fillups</h2><small>Last 30 days</small></header>
+            <dl>
+              @for (fillup of fillupsData(); track $index) {
+                <div><dt>{{ formatDateShort(fillup.timestamp) }}</dt><dd>{{ fillup.volume_consumed ? (fillup.volume_consumed + ' L') : '—' }}</dd></div>
+              } @empty {
+                <div><dt>{{ fillupsLoading() ? 'Loading fillup data...' : 'No fillup records found' }}</dt></div>
+              }
+            </dl>
+          </article>
+          @if (fillupMarkers().length) {
+            <article class="workspace-group map-panel">
+              <header><span class="group-icon success"><img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" /></span><h2>Fillup locations</h2><small>{{ fillupMarkers().length }} records</small></header>
+              <app-fleet-map class="snapshot-map" [vehicles]="fillupMarkers()" />
+            </article>
+          }
+          <article class="workspace-group">
+            <header><span class="group-icon success"><img src="assets/fleetpoint/icons/mileage.svg" alt="" /></span><h2>Mileage</h2><small>{{ mileageYear() }}{{ mileageMonth() ? ' · ' + mileageMonth() : '' }}</small></header>
+            <div class="field-row">
+              <select [value]="mileageYear()" (change)="setMileageYear($event)" aria-label="Mileage year">
+                @for (year of mileageYears; track year) { <option [value]="year">{{ year }}</option> }
+              </select>
+              <select [value]="mileageMonth()" (change)="setMileageMonth($event)" aria-label="Mileage month">
+                <option value="">All months</option>
+                @for (month of mileageMonths; track month) { <option [value]="month">{{ month }}</option> }
+              </select>
+            </div>
+            <dl>
+              @for (row of mileageData(); track $index) {
+                <div><dt>{{ row.month || row.week || ('Period ' + ($index + 1)) }}</dt><dd>{{ (row.fuel_filled || 0) | number:'1.0-2' }}L · {{ (row.distance_traveled || 0) | number:'1.0-2' }}km · {{ (row.mileage || 0) | number:'1.0-2' }}</dd></div>
+              } @empty {
+                <div><dt>{{ mileageLoading() ? 'Loading mileage data...' : 'No mileage data available' }}</dt></div>
+              }
+            </dl>
+          </article>
+        } @else if (activeTab() === 'safety') {
+          <article class="workspace-group">
+            <header><span class="group-icon brand"><img src="assets/fleetpoint/icons/shield-brand.svg" alt="" /></span><h2>Violations &amp; safety</h2><small>Alerts</small></header>
+            <dl>
+              <div><dt>Total violations</dt><dd>{{ violationMetric() }}</dd></div>
+              <div><dt>Diagnostic status</dt><dd class="status-value" [class.online]="vehicle.online_status">{{ vehicle.online_status ? 'Connected' : 'Offline' }}</dd></div>
+            </dl>
+            <div class="workspace-flags">@for (item of monitoring(); track item.label) { <div><span>{{ item.label }}</span><em [class.enabled]="item.enabled">{{ item.enabled ? 'Enabled' : 'Disabled' }}</em></div> }</div>
+          </article>
+          @if (violationMarkers().length) {
+            <article class="workspace-group map-panel">
+              <header><span class="group-icon danger"><img src="assets/fleetpoint/icons/violation-location.svg" alt="" /></span><h2>Violation locations</h2><small>{{ violationMarkers().length }} records</small></header>
+              <app-fleet-map class="snapshot-map" [vehicles]="violationMarkers()" />
+            </article>
+          }
+        } @else if (activeTab() === 'snapshot') {
+          <article class="workspace-group">
+            <header><span class="group-icon info"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" /></span><h2>Vehicle snapshot</h2><small>Historical state</small></header>
+            <dl>
+              <div><dt>Select date &amp; time</dt><dd><shared-date-time-picker mode="datetime" [value]="snapshotDateValue()" (valueChange)="snapshotDateValue.set($event)" placeholder="Select date and time" ariaLabel="Choose snapshot date and time" /></dd></div>
+              <div><dt>Load snapshot</dt><dd><button type="button" class="primary-action" style="height:28px;font-size:11px;padding:0 10px;border-radius:6px;" [disabled]="!snapshotDateValue() || snapshotLoading()" (click)="loadSnapshot()">{{ snapshotLoading() ? 'Loading...' : 'Load' }}</button></dd></div>
+            </dl>
+          </article>
+          @if (snapshotResult(); as snap) {
+            <article class="workspace-group">
+              <header><span class="group-icon success"><img src="assets/fleetpoint/icons/shield-success.svg" alt="" /></span><h2>Snapshot data</h2><small>{{ snap.timestamp ? formatDateShort(snap.timestamp) : '—' }}</small></header>
+              <dl>
+                <div><dt>Vehicle state</dt><dd>{{ snap.vehicle_state || '—' }}</dd></div>
+                <div><dt>Speed</dt><dd>{{ snap.speed === null ? '—' : (snap.speed + ' km/h') }}</dd></div>
+                <div><dt>Fuel level</dt><dd>{{ snap.volume === null ? '—' : (snap.volume + ' gal') }}</dd></div>
+                <div><dt>Temperature</dt><dd>{{ snap.temperature ? (snap.temperature + ' °C') : '—' }}</dd></div>
+                <div><dt>Timestamp</dt><dd>{{ snap.timestamp ? formatDateShort(snap.timestamp) : '—' }}</dd></div>
+                <div><dt>Assigned driver</dt><dd>{{ text(snap.assigned_driver, 'Unassigned') }}</dd></div>
+                <div><dt>Assigned route</dt><dd>{{ text(snap.assigned_route, 'None') }}</dd></div>
+                <div><dt>Assigned geozone</dt><dd>{{ text(snap.assigned_geo_zone, 'None') }}</dd></div>
+              </dl>
+            </article>
+          }
+          @if (snapshotMarker().length) {
+            <article class="workspace-group map-panel">
+              <header><span class="group-icon info"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" /></span><h2>Snapshot location</h2><small>Historical position</small></header>
+              <app-fleet-map class="snapshot-map" [vehicles]="snapshotMarker()" />
+            </article>
+          }
+        } @else {
+          <article class="workspace-group">
+            <header><span class="group-icon info"><img src="assets/fleetpoint/icons/wrench.svg" alt="" /></span><h2>Maintenance &amp; service</h2><small>Records</small></header>
+            <dl>
+              <div><dt>Maintenance records</dt><dd>{{ count(maintenance()) }}</dd></div>
+              <div><dt>Next maintenance</dt><dd>{{ text(vehicle.next_maintenance) }}</dd></div>
+              <div><dt>Active dispatch job</dt><dd>{{ summary(lastJob(), 'No active job') }}</dd></div>
+              <div><dt>Registration expiry</dt><dd>{{ text(vehicle['expiry_date']) }}</dd></div>
+            </dl>
+          </article>
+        }
       </div>
     </section>
   }
