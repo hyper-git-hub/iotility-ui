@@ -34,7 +34,7 @@
     <section class="fleet-status-card">
       <div class="status-title">
         <shared-status-badge variant="dot" [online]="fleetStatus.hasOnlineVehicles()" /><strong>Live Fleet Status</strong
-        ><small>{{ records().length }} loaded of {{ total() }} vehicles</small>
+        ><small>{{ total() }} vehicles</small>
       </div>
       <div class="status-bar">
         @if (moving() > 0) {
@@ -63,7 +63,14 @@
     </section>
   }
 
-  @if (!initialLoading() && attentionItems().length) {
+  @if (initialLoading()) {
+    <section class="attention-card attention-card-skeleton" aria-hidden="true">
+      <p><ui-skeleton width="12rem" height="0.625rem" radius="0.25rem" /></p>
+      <div>
+        <ui-skeleton class="attention-chip-skeleton" width="27rem" height="2.125rem" radius="0.75rem" />
+      </div>
+    </section>
+  } @else if (attentionItems().length) {
     <section class="attention-card">
       <p>Compliance &amp; attention required</p>
       <div>

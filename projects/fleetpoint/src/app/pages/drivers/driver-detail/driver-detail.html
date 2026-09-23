@@ -74,9 +74,12 @@
       <section class="cards-column">
         <div class="metric-grid" aria-label="Driver summary loading">
           @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; track item) {
-            <article class="driver-metric-skeleton" aria-hidden="true">
-              <ui-skeleton width="3rem" height="1.25rem" radius="0.3rem" />
-              <ui-skeleton width="7rem" height="0.625rem" radius="0.25rem" />
+            <article class="summary-card" aria-hidden="true">
+              <header>
+                <ui-skeleton width="5rem" height="0.625rem" radius="0.25rem" />
+                <i><ui-skeleton width="0.875rem" height="0.875rem" radius="0.2rem" /></i>
+              </header>
+              <div><ui-skeleton width="3rem" height="1rem" radius="0.3rem" /></div>
             </article>
           }
         </div>
@@ -296,42 +299,18 @@
         <section class="cards-column">
           <div class="metric-grid" aria-label="Driver summary">
             @for (card of cards(); track card.code || $index) {
-              <app-stat-card
-                [label]="card.name"
-                [value]="card.data ?? 0"
-                [tone]="$index % 2 ? 'info' : 'brand'"
-                [compact]="true"
-                [showIcon]="false"
-              />
+              <article class="summary-card" [attr.data-tone]="$index % 2 ? 'info' : 'brand'">
+                <header>
+                  <span>{{ card.name }}</span>
+                  <i><img [src]="$index % 2 ? 'assets/fleetpoint/icons/info-brand.svg' : 'assets/fleetpoint/icons/activity.svg'" alt="" aria-hidden="true" /></i>
+                </header>
+                <div><strong>{{ card.data ?? 0 }}</strong></div>
+              </article>
             } @empty {
-              <app-stat-card
-                label="Distance travelled"
-                [value]="(graphs().total_distance_travelled || 0) + ' km'"
-                tone="brand"
-                [compact]="true"
-                [showIcon]="false"
-              />
-              <app-stat-card
-                label="Total violations"
-                [value]="totalViolations()"
-                tone="danger"
-                [compact]="true"
-                [showIcon]="false"
-              />
-              <app-stat-card
-                label="Idle time"
-                [value]="totalIdle() + ' min'"
-                tone="warning"
-                [compact]="true"
-                [showIcon]="false"
-              />
-              <app-stat-card
-                label="Recorded alerts"
-                [value]="violationCount()"
-                tone="info"
-                [compact]="true"
-                [showIcon]="false"
-              />
+              <article class="summary-card" data-tone="brand"><header><span>Distance travelled</span><i><img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" /></i></header><div><strong>{{ graphs().total_distance_travelled || 0 }}</strong><small>km</small></div></article>
+              <article class="summary-card" data-tone="danger"><header><span>Total violations</span><i><img src="assets/fleetpoint/icons/warning.svg" alt="" aria-hidden="true" /></i></header><div><strong>{{ totalViolations() }}</strong><small>total</small></div></article>
+              <article class="summary-card" data-tone="warning"><header><span>Idle time</span><i><img src="assets/fleetpoint/icons/history-muted.svg" alt="" aria-hidden="true" /></i></header><div><strong>{{ totalIdle() }}</strong><small>min</small></div></article>
+              <article class="summary-card" data-tone="info"><header><span>Recorded alerts</span><i><img src="assets/fleetpoint/icons/bell.svg" alt="" aria-hidden="true" /></i></header><div><strong>{{ violationCount() }}</strong><small>total</small></div></article>
             }
           </div>
         </section>
