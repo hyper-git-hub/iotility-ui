@@ -66,14 +66,12 @@ export class FleetsPage implements OnInit, OnDestroy {
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
   protected readonly selectedFleet = signal<FleetInventoryRecord | null>(null);
   protected readonly total = signal(0);
+  protected readonly apiTotalVehicles = signal(0);
+  protected readonly apiTotalDrivers = signal(0);
   protected readonly offset = signal(0);
   protected readonly limit = 10;
-  protected readonly totalVehicles = computed(() =>
-    this.fleets().reduce((total, fleet) => total + fleet.vehicles, 0),
-  );
-  protected readonly totalDrivers = computed(() =>
-    this.fleets().reduce((total, fleet) => total + fleet.drivers, 0),
-  );
+  protected readonly totalVehicles = computed(() => this.apiTotalVehicles());
+  protected readonly totalDrivers = computed(() => this.apiTotalDrivers());
   protected readonly totalAlerts = computed(
     () => this.fleets().reduce((total, fleet) => total + fleet.alertVehicles, 0),
   );
@@ -126,7 +124,15 @@ export class FleetsPage implements OnInit, OnDestroy {
             ...records.map((fleet, index) => this.toFleet(fleet, previousFleets.length + index)),
           ]);
           this.offset.set(requestOffset);
-          this.total.set(response.data?.count ?? 0);
+          this.total.set(response.data?.total_fleet_count ?? response.data?.count ?? records.length);
+          this.apiTotalVehicles.set(
+            response.data?.total_vehicle_count ??
+              records.reduce((sum, fleet) => sum + (fleet.total_vehicles || 0), 0),
+          );
+          this.apiTotalDrivers.set(
+            response.data?.total_driver_count ??
+              records.reduce((sum, fleet) => sum + (fleet.total_drivers || 0), 0),
+          );
         },
         error: (response) => {
           const message = response.error?.message || 'Fleet data could not be loaded.';
@@ -182,37 +188,27 @@ export class FleetsPage implements OnInit, OnDestroy {
           .filter((id): id is number => id != null),
       ),
     );
-    const mileageValues = assignedVehicles
-      .map((vehicle) => Number.parseFloat(vehicle.mileage ?? ''))
-      .filter(Number.isFinite);
-    const allocatedVehicles = assignedVehicles.filter((vehicle) => vehicle.device_allocation).length;
-    const staticScores = [78, 82, 88, 74, 91];
-    const staticFuelEfficiency = [72, 76, 85, 69, 88];
-
     return {
       id: fleet.id,
       name: fleet.name,
       color: colors[index % colors.length],
       vehicles: fleet.total_vehicles || 0,
-      drivers: driverIds.size,
+      drivers: fleet.total_drivers ?? driverIds.size,
       activeVehicles: assignedVehicles.filter((vehicle) => vehicle.online_status).length,
-      alertVehicles: assignedVehicles.filter((vehicle) => (vehicle.total_violations ?? 0) > 0)
-        .length,
-      avgFuel: mileageValues.length
-        ? `${(mileageValues.reduce((sum, value) => sum + value, 0) / mileageValues.length).toFixed(1)} km/L`
-        : 'Not available',
-      description: 'Fleet operations and assigned vehicles',
-      safetyScore: staticScores[index % staticScores.length],
-      fuelEfficiency: staticFuelEfficiency[index % staticFuelEfficiency.length],
-      utilisation: fleet.total_vehicles
-        ? Math.round((allocatedVehicles / fleet.total_vehicles) * 100)
-        : 0,
+      alertVehicles: assignedVehicles.filter(
+        (vehicle) => vehicle.live_status?.toLowerCase() === 'alert',
+      ).length,
+      avgFuel: fleet.avg_fuel == null ? '—' : `${fleet.avg_fuel}%`,
+      description: fleet.category || fleet.customer_name || '—',
+      safetyScore: fleet.safety_score ?? 0,
+      fuelEfficiency: fleet.fuel_efficiency ?? 0,
+      utilisation: fleet.utilisation ?? 0,
       location:
-        assignedVehicles.find((vehicle) => vehicle.location)?.location || 'Main operations depot',
+        assignedVehicles.find((vehicle) => vehicle.location)?.location || '—',
       vehicleIds: assignedVehicles.map((vehicle) => ({
         label: vehicle.registration || vehicle.name || String(vehicle.id),
         state:
-          (vehicle.total_violations ?? 0) > 0
+          vehicle.live_status?.toLowerCase() === 'alert'
             ? 'alert'
             : vehicle.online_status
               ? 'online'

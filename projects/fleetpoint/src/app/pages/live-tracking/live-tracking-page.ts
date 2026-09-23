@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DropdownOption, Skeleton, StatusBadge } from '@iotility/shared-ui';
+import { Dropdown, DropdownOption, Skeleton, StatusBadge } from '@iotility/shared-ui';
 import { EMPTY, Subscription, catchError, finalize, interval, switchMap, timer } from 'rxjs';
 import {
   FleetMap,
@@ -33,6 +33,10 @@ import {
 import { VehicleDetailApiService } from '../../shared/services/vehicle-detail-api.service';
 import { AllocationForm } from '../drivers/allocation-form/allocation-form';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
+import {
+  FleetInventoryApiService,
+  FleetInventoryRecord,
+} from '../../shared/services/fleet-inventory-api.service';
 
 interface LiveVehicle extends TrackedVehicle {
   numericId: number;
@@ -45,19 +49,44 @@ interface LiveVehicle extends TrackedVehicle {
   kmPerDay: number;
 }
 
+interface TrackingDriver {
+  id: string;
+  name: string;
+  initials: string;
+  role: string;
+  vehicle: string;
+  vehicleId: number | null;
+  trips: number;
+  distance: number;
+  rating: number;
+  status: 'online' | 'idling';
+}
+
 @Component({
   selector: 'app-live-tracking-page',
-  imports: [Skeleton, FleetMap, AllocationForm, SearchOverlay, StatusBadge, VehicleLegend],
+  imports: [
+    Dropdown,
+    Skeleton,
+    FleetMap,
+    AllocationForm,
+    SearchOverlay,
+    StatusBadge,
+    VehicleLegend,
+  ],
   templateUrl: './live-tracking-page.html',
   styleUrl: './live-tracking-page.css',
 })
 export class LiveTrackingPage implements OnInit, OnDestroy {
-  protected readonly loading = signal(true);
+  private readonly vehiclesLoading = signal(true);
+  private readonly fleetsLoading = signal(true);
+  protected readonly loading = computed(() => this.vehiclesLoading() || this.fleetsLoading());
   protected readonly mapLoaded = signal(false);
   protected readonly error = signal('');
   protected readonly search = signal('');
   protected readonly statusFilter = signal<VehicleStatus | 'All'>('All');
-  protected readonly locationFilter = signal('all');
+  protected readonly selectedFleet = signal('all');
+  protected readonly trackingView = signal<'vehicles' | 'drivers'>('vehicles');
+  protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
   protected readonly selectedVehicle = signal<LiveVehicle | null>(null);
   protected readonly liveTrackingEnabled = signal(false);
   protected readonly allocationOpen = signal(false);
@@ -85,13 +114,60 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     'Offline',
   ];
   protected readonly vehicleSkeletons = Array.from({ length: 8 });
-  protected readonly locationOptions: DropdownOption[] = [
-    { id: 'all', label: 'All locations', description: 'Every tracked vehicle' },
-  ];
+  protected readonly fleetOptions = computed<DropdownOption[]>(() => {
+    const fleets = this.fleetRecords();
+    const total = fleets.reduce((sum, fleet) => sum + fleet.total_vehicles, 0);
+    return [
+      { id: 'all', label: `All Fleets (${total} vehicles)` },
+      ...fleets.map((fleet) => ({
+        id: String(fleet.id),
+        label: `${fleet.name} (${fleet.total_vehicles} vehicles)`,
+      })),
+    ];
+  });
+  protected readonly selectedFleetRecords = computed(() =>
+    this.selectedFleet() === 'all'
+      ? this.fleetRecords()
+      : this.fleetRecords().filter((fleet) => String(fleet.id) === this.selectedFleet()),
+  );
+  protected readonly drivers = computed<TrackingDriver[]>(() => {
+    const drivers = this.selectedFleetRecords().flatMap((fleet) =>
+      (fleet.assigned_vehicles ?? []).flatMap((vehicle) => {
+        const assignedDrivers = vehicle.associated_drivers_name?.length
+          ? vehicle.associated_drivers_name
+          : vehicle.vehicle_driver_name
+            ? [{ driver_name: vehicle.vehicle_driver_name }]
+            : [];
+        return assignedDrivers.map((driver, index) => {
+          const name = driver.driver_name?.trim() || '—';
+          const staticIndex = Math.abs(Number(driver.driver_id ?? vehicle.id ?? index)) % 5;
+          return {
+            id: String(driver.driver_id ?? `${vehicle.id ?? vehicle.registration}-${index}`),
+            name,
+            initials: name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase(),
+            role: fleet.name || '—',
+            vehicle: vehicle.registration || vehicle.name || '—',
+            vehicleId: vehicle.id ?? null,
+            trips: [7, 12, 5, 11, 6][staticIndex],
+            distance: [289, 187, 198, 156, 267][staticIndex],
+            rating: [91, 96, 72, 89, 83][staticIndex],
+            status: vehicle.online_status ? 'online' as const : 'idling' as const,
+          };
+        });
+      }),
+    );
+    return drivers;
+  });
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
+    const fleetVehicleIds = new Set(
+      this.selectedFleetRecords().flatMap((fleet) =>
+        (fleet.assigned_vehicles ?? []).map((vehicle) => vehicle.id),
+      ),
+    );
     return this.vehicles().filter(
       (vehicle) =>
+        (this.selectedFleet() === 'all' || fleetVehicleIds.has(vehicle.numericId)) &&
         (this.statusFilter() === 'All' || vehicle.status === this.statusFilter()) &&
         (!query ||
           `${vehicle.id} ${vehicle.model} ${vehicle.driver} ${vehicle.location}`
@@ -128,6 +204,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   constructor(
     private readonly api: LiveTrackingApiService,
+    private readonly fleetApi: FleetInventoryApiService,
     private readonly realtime: VehicleRealtimeService,
     private readonly vehicleDetailApi: VehicleDetailApiService,
     private readonly router: Router,
@@ -155,6 +232,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadVehicles();
+    this.loadFleets();
     this.subscription.add(
       this.realtime.updates$.subscribe((update) => this.applyRealtimeUpdate(update)),
     );
@@ -163,8 +241,21 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.startVehiclePolling();
   }
 
+  private loadFleets(): void {
+    this.fleetsLoading.set(true);
+    this.subscription.add(
+      this.fleetApi
+        .getFleets({ limit: 100, offset: 0, id: '', search: '' })
+        .pipe(finalize(() => this.fleetsLoading.set(false)))
+        .subscribe({
+          next: (response) => this.fleetRecords.set(response.data?.data ?? []),
+          error: () => this.fleetRecords.set([]),
+        }),
+    );
+  }
+
   protected loadVehicles(): void {
-    this.loading.set(true);
+    this.vehiclesLoading.set(true);
     this.error.set('');
     this.subscription.add(
       this.api.getGeoZones().subscribe({
@@ -175,7 +266,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     );
     this.api
       .getVehicles()
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => this.vehiclesLoading.set(false)))
       .subscribe({
         next: (response) => {
           if (response.status !== 1000) {
@@ -249,11 +340,21 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected updateSearchValue(value: string): void {
     this.search.set(value);
   }
-  protected updateLocation(ids: string[]): void {
-    this.locationFilter.set(ids[0] ?? 'all');
+  protected selectFleet(option: DropdownOption): void {
+    this.selectedFleet.set(option.id);
   }
-  protected locationLabel(): string {
-    return 'All locations';
+  protected fleetLabel(): string {
+    return this.fleetOptions().find((option) => option.id === this.selectedFleet())?.label ?? 'All Fleets';
+  }
+  protected vehicleDetails(vehicle: LiveVehicle): string {
+    const record = this.fleetRecords()
+      .flatMap((fleet) => fleet.assigned_vehicles ?? [])
+      .find((item) => item.id === vehicle.numericId || item.registration === vehicle.id);
+    return [record?.make, record?.model, record?.year].filter(Boolean).join(' · ') || '—';
+  }
+  protected selectDriverVehicle(driver: TrackingDriver): void {
+    const vehicle = this.vehicles().find((item) => item.numericId === driver.vehicleId);
+    if (vehicle) this.selectVehicle(vehicle);
   }
   protected selectVehicle(vehicle: TrackedVehicle): void {
     if (this.selectedVehicle()?.id === vehicle.id) {

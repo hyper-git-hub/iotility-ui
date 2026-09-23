@@ -132,9 +132,13 @@
                       ><i [style.background]="r['fleetColor']"></i>{{ r[c.key] }}</span
                     >
                   } @else if (c.type === 'fuel') {
-                    <span class="fuel-cell"
-                      ><i><b [style.width.%]="r[c.key]"></b></i>{{ r[c.key] }}%</span
-                    >
+                    @if (r[c.key] !== '—') {
+                      <span class="fuel-cell"
+                        ><i><b [style.width.%]="r[c.key]"></b></i>{{ r[c.key] }}%</span
+                      >
+                    } @else {
+                      <span>—</span>
+                    }
                   } @else if (c.type === 'mot') {
                     <strong class="mot" [class]="motClass(r[c.key])">{{ r[c.key] }}</strong>
                   } @else if (c.type === 'alert') {
