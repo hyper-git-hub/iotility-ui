@@ -55,7 +55,7 @@ export interface VehicleInventoryRecord {
   mileage?: string | null;
   km_per_day?: number | null;
   updated_time?: string | null;
-  next_maintenance?: string | null;
+  next_maintenance?: string | number | null;
   total_distance_traveled?: number | null;
 }
 
