@@ -6,6 +6,13 @@
         <p>{{ subtitle() }}</p>
       }
     </div>
+    @if (statusLegend()) {
+      <span class="status-legend">
+        <span><i class="good" aria-hidden="true"></i>Good</span>
+        <span><i class="ok" aria-hidden="true"></i>OK</span>
+        <span><i class="low" aria-hidden="true"></i>Low</span>
+      </span>
+    }
     @if (badge()) {
       <span class="badge">{{ badge() }}</span>
     }

@@ -1,7 +1,7 @@
 @reference "../../../../styles.css";
 
 .graph-skeleton {
-  @apply flex h-[23.75rem] min-w-0 flex-col rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+  @apply flex h-[23.75rem] min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
 }
 
@@ -55,15 +55,31 @@
 }
 
 .graph-skeleton-line {
-  @apply relative grid flex-1 grid-cols-[1.5rem_minmax(0,1fr)] pb-5;
+  @apply relative grid flex-1 grid-cols-[1.5rem_minmax(0,1fr)] overflow-hidden pb-5 pr-1;
 }
 
 .graph-skeleton-line::after {
   content: '';
   @apply pointer-events-none absolute inset-0;
   transform: translateX(-115%);
-  background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.6) 48%, transparent 76%);
+  background: linear-gradient(
+    100deg,
+    transparent 22%,
+    rgb(255 255 255 / 0.52) 47%,
+    rgb(255 255 255 / 0.18) 56%,
+    transparent 80%
+  );
   animation: dashboard-chart-shimmer 1.85s ease-in-out infinite;
+}
+
+:host-context(.dark) .graph-skeleton-line::after {
+  background: linear-gradient(
+    100deg,
+    transparent 22%,
+    rgb(255 255 255 / 0.07) 47%,
+    rgb(255 255 255 / 0.025) 56%,
+    transparent 80%
+  );
 }
 .line-y-axis { @apply flex flex-col justify-between pb-5 pr-2 pt-1; }
 .line-y-axis span { @apply h-1.5 w-full rounded-full bg-slate-200/70 dark:bg-slate-700/50; }
@@ -155,5 +171,6 @@
   .graph-skeleton {
     transition: none;
   }
-  .graph-skeleton-plot::after { animation: none; }
+  .graph-skeleton-plot::after,
+  .graph-skeleton-line::after { animation: none; }
 }

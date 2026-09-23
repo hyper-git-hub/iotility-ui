@@ -1,46 +1,3 @@
-<!-- <section class="metric-grid" aria-label="Fleet summary" [attr.aria-busy]="cardsLoading()">
-  @if (cardsLoading()) {
-    @for (_ of metricSkeletons; track $index) {
-      <ui-stat-card-skeleton
-        [compact]="true"
-        [valueWidth]="28 + ($index % 3) * 7 + '%'"
-        [labelWidth]="58 + ($index % 4) * 7 + '%'"
-      />
-    }
-  } @else if (cardsError()) {
-    <section class="dashboard-inline-error">
-      <div><strong>Fleet summary unavailable</strong><p>{{ cardsError() }}</p></div>
-      <button type="button" (click)="loadCards()">Try again</button>
-    </section>
-  } @else {
-    @for (card of displayedCards(); track card.code) {
-      <app-stat-card [label]="card.name" [value]="cardValue(card)" [tone]="cardTone(card.code)" [accent]="cardAccent(card.code)" [animatedBorder]="true" [compact]="true">
-        <svg stat-card-icon viewBox="0 0 24 24" aria-hidden="true">
-          @switch (card.code) {
-            @case ('DVC') { <path d="M12 3 3.5 6v5.5c0 4.8 3.6 8 8.5 9.5 4.9-1.5 8.5-4.7 8.5-9.5V6L12 3Z"/><path d="M12 7v5M12 16h.01"/> }
-            @case ('J') { <rect x="4" y="6" width="16" height="14" rx="2"/><path d="M9 6V4h6v2M4 11h16M10 11v2h4v-2"/> }
-            @case ('MD') { <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/> }
-            @case ('MOD') { <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M5.6 5.6 3.5 3.5"/><path d="M3 7V3h4"/> }
-            @case ('TD') { <circle cx="12" cy="8" r="3"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/> }
-            @case ('TDC') { <rect x="3" y="6" width="14" height="12" rx="2"/><path d="m17 10 4-2v8l-4-2"/> }
-            @case ('TF') { <path d="M3 17V9h10v8M13 12h4l3 3v2M3 13h10"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/> }
-            @case ('VIM') { <path d="M3 16V9h12v7M3 16h2M9 16h5"/><circle cx="7" cy="17" r="2"/><path d="m16 7 4 4M18 5l-2 2 4 4 2-2"/> }
-            @case ('VIO') { <path d="M3 16V8h11v8M14 11h4l3 3v2h-2M3 16h2M9 16h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="m8 5 2-2 2 2"/> }
-            @case ('QFU') { <path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/><circle cx="12" cy="17" r="1.5"/> }
-            @case ('QHB') { <path d="M12 3 4 6v6c0 4 3 7 8 9 5-2 8-5 8-9V6l-8-3Z"/><path d="M12 8v5M12 16h.01"/> }
-            @case ('QIT') { <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/> }
-            @case ('QLC') { <path d="M4 19h16M6 16l3-9h6l3 9M8 12h8"/><path d="M9 7V4h6v3"/> }
-            @case ('QPT') { <circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/> }
-            @case ('QRH') { <path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/><circle cx="12" cy="17" r="1.5"/><path d="m8 13 2 2"/> }
-            @case ('QSF') { <path d="M8 3h8v4H8zM6 7h12v12H6z"/><path d="M9 11h6M12 11v5M9 16h6"/> }
-            @case ('QUL') { <path d="M3 16V9h12v7M3 16h2M9 16h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M15 11h3l3 3v2h-2M12 5v4M10 7h4"/> }
-          }
-        </svg>
-      </app-stat-card>
-    }
-  }
-</section> -->
-
 @if (fleetStatusVisible()) {
 <section class="fleet-status-card" aria-label="Live fleet status" [attr.aria-busy]="graphsLoading()">
   @if (graphsLoading()) {
@@ -63,9 +20,9 @@
   } @else {
   <header class="fleet-status-heading">
     <h2>Live Fleet Status</h2>
-    <shared-status-badge [variant]="'live-pill'" [online]="onlineVehicles() > 0" [onlineLabel]="'Live · ' + vehicles().length + ' vehicles'" [offlineLabel]="'Offline · ' + vehicles().length + ' vehicles'" />
+    <shared-status-badge [variant]="'live-pill'" [online]="fleetStatusOnline()" [onlineLabel]="'Live · ' + fleetStatusTotal() + ' vehicles'" [offlineLabel]="'Offline · ' + fleetStatusTotal() + ' vehicles'" />
   </header>
-  <div class="fleet-status-bar" role="img" [attr.aria-label]="vehicles().length + ' vehicles by live status'">
+  <div class="fleet-status-bar" role="img" [attr.aria-label]="fleetStatusTotal() + ' vehicles by live status'">
     @for (item of fleetStatusItems(); track item.key) {
       <span [class]="'status-segment ' + item.tone" [style.width.%]="statusPercentage(item.value)"></span>
     }
@@ -97,7 +54,7 @@
     @if (graphsLoading()) {
       <ui-skeleton class="skeleton-report-count" width="4.5rem" height="1.45rem" radius="9999px" />
     } @else {
-      <span>{{ displayedGraphs().length }} reports</span>
+      <span>{{ visibleGraphs().length }} reports</span>
     }
   </div>
 
@@ -176,7 +133,7 @@
     </div>
   } @else {
     <div class="analytics-grid">
-      @for (graph of displayedGraphs(); track graph.code) {
+      @for (graph of visibleGraphs(); track graph.code) {
         <app-dashboard-graph [graph]="graph" />
       }
     </div>

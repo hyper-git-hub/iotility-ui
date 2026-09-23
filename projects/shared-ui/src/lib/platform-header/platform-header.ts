@@ -17,6 +17,7 @@ export class PlatformHeader {
   readonly liveOffline = input(false);
   readonly userName = input('Haris Khan');
   readonly userInitials = input('HK');
+  readonly userRole = input('');
   readonly profileAction = output<DropdownOption>();
   protected readonly profileOptions: DropdownOption[] = [
     { id: 'profile', label: 'Profile', description: 'View your account', icon: 'user' },

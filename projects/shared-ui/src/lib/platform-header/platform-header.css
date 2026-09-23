@@ -19,4 +19,6 @@ header {
 .profile-copy strong { @apply block text-sm leading-4 font-semibold text-ink dark:text-white; }
 .profile-copy small { @apply block text-[0.65rem] leading-3 text-muted dark:text-brand-300; }
 .profile-avatar { @apply relative grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white; }
-.profile-avatar i { @apply absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white bg-online dark:border-dark-surface; }
+.profile-avatar-content { @apply grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white; }
+.profile-status-indicator { @apply absolute bottom-0 right-0 p-0.5 bg-dark-surface rounded-full; }
+.profile-status-dot { @apply size-2.5 rounded-full bg-online; }

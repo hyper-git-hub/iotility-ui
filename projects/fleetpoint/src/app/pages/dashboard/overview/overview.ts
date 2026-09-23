@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
-import { Skeleton, StatusBadge, TableColumn, TableRow } from '@iotility/shared-ui';
+import { Skeleton, StatusBadge } from '@iotility/shared-ui';
 import { finalize, interval } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCardTone } from '../../../shared/stat-card/stat-card';
@@ -10,9 +10,7 @@ import {
   DashboardGraphData,
   DashboardGraph,
   DashcamDevice,
-  Fleet,
   FleetDashboardApiService,
-  Vehicle,
 } from '../../../shared/services/fleet-dashboard-api.service';
 import { emptyDashboardGraphs, mergeDashboardGraphs } from '../../../shared/services/dashboard-graphs';
 import { DashboardWidgetsService } from '../../../shared/services/dashboard-widgets.service';
@@ -52,7 +50,6 @@ export class Overview implements OnInit {
 
   protected readonly cardsLoading = signal(true);
   protected readonly graphsLoading = signal(true);
-  protected readonly fleetLoading = signal(true);
   protected readonly cardsError = signal('');
   protected readonly metricSkeletons = Array.from({ length: 8 });
   protected readonly loadingSkeletons = computed<OverviewSkeleton[]>(() =>
@@ -92,47 +89,35 @@ export class Overview implements OnInit {
         );
       });
   });
-  protected readonly fleets = signal<Fleet[]>([]);
   protected readonly dashcams = signal<DashcamDevice[]>([]);
-  protected readonly vehicles = computed(() =>
-    this.fleets().flatMap((fleet) => fleet.assigned_vehicles ?? []),
-  );
-  protected readonly visibleVehicles = computed(() => this.vehicles());
-  protected readonly onlineVehicles = computed(
-    () => this.vehicles().filter((vehicle) => vehicle.online_status).length,
-  );
+  /* Live fleet status comes straight from the LFS entry of the graphs API
+     response (categories/values/total) — no per-vehicle re-derivation. */
+  private readonly fleetStatusData = computed<(DashboardGraphData & { total?: number }) | null>(() => {
+    const lfs = this.cards().find((card) => card?.code === 'LFS');
+    const data = lfs?.data;
+    return data && typeof data === 'object' && !Array.isArray(data)
+      ? (data as DashboardGraphData & { total?: number })
+      : null;
+  });
+  protected readonly fleetStatusTotal = computed<number>(() => {
+    const data = this.fleetStatusData();
+    if (typeof data?.total === 'number') return data.total;
+    return (data?.values ?? []).reduce<number>((sum, value) => sum + (Number(value) || 0), 0);
+  });
   protected readonly fleetStatus = computed(() => {
-    // Extract fleet status data from graphs API if available
-    const graphs = this.graphs();
-    const fleetStatusGraph = graphs.find((g) => g.code === 'LFS') as DashboardGraph & {
-      data: {
-        categories?: string[];
-        values?: (string | number)[];
-      };
-    };
-    
-    if (fleetStatusGraph?.data?.categories && fleetStatusGraph?.data?.values) {
-      const values = fleetStatusGraph.data.values;
-      return {
-        moving: Number(values[0]) || 0,
-        idling: Number(values[1]) || 0,
-        stopped: Number(values[2]) || 0,
-        alert: Number(values[3]) || 0,
-        offline: Number(values[4]) || 0,
-      };
-    }
-    
-    // Fallback: compute from vehicles data
     const status = { moving: 0, idling: 0, stopped: 0, alert: 0, offline: 0 };
-    for (const vehicle of this.vehicles()) {
-      if (!vehicle.online_status) status.offline++;
-      else if (Number(vehicle.speed) > 0) status.moving++;
-      else if (vehicle.ignition_status) status.idling++;
-      else status.stopped++;
-    }
-    status.alert = this.violationCount();
+    const data = this.fleetStatusData();
+    if (!data) return status;
+    const values = data.values ?? [];
+    (data.categories ?? []).forEach((category, index) => {
+      const key = category.trim().toLowerCase();
+      if (key in status) status[key as keyof typeof status] = Number(values[index]) || 0;
+    });
     return status;
   });
+  protected readonly fleetStatusOnline = computed<boolean>(
+    () => this.fleetStatusTotal() > this.fleetStatus().offline,
+  );
   protected readonly fleetStatusItems = computed(() => {
     const status = this.fleetStatus();
     return [
@@ -143,53 +128,18 @@ export class Overview implements OnInit {
       { key: 'offline', label: 'Offline', value: status.offline, tone: 'offline' },
     ];
   });
-  protected readonly fleetColumns: TableColumn[] = [
-    { key: 'vehicle', label: 'Vehicle', type: 'vehicle', secondaryKey: 'details' },
-    { key: 'location', label: 'Location' },
-    { key: 'speed', label: 'Speed' },
-    { key: 'connection', label: 'Status', type: 'status' },
-  ];
-  protected readonly dashcamColumns: TableColumn[] = [
-    { key: 'camera', label: 'Dashcam', type: 'user', secondaryKey: 'deviceType' },
-    { key: 'deviceId', label: 'Device ID' },
-    { key: 'alerts', label: 'Alerts', type: 'status' },
-  ];
-  protected readonly fleetRows = computed<TableRow[]>(() =>
-    this.vehicles().map((vehicle) => ({
-      vehicle: vehicle.name,
-      details: `${vehicle.make} ${vehicle.model} · ${vehicle.vehicle_driver_name || 'No driver assigned'}`,
-      location: vehicle.location || 'Location unavailable',
-      speed: `${vehicle.speed || 0} km/h`,
-      connection: vehicle.online_status ? 'Active' : 'Inactive',
-    })),
-  );
-  protected readonly dashcamRows = computed<TableRow[]>(() =>
-    this.dashcams().map((camera) => ({
-      camera: camera.name,
-      deviceType: camera.device_type,
-      deviceId: camera.device_id,
-      alerts: camera.notifications ? `${camera.notifications} alerts` : 'Active',
-    })),
-  );
-
-  protected readonly violationCount = signal(0);
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(private readonly api: FleetDashboardApiService) {}
 
   ngOnInit(): void {
     this.loadDashboard();
-    this.loadViolationCount();
     interval(30_000)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.loadFleetData();
-        this.loadViolationCount();
-      });
+      .subscribe(() => this.loadGraphs(false));
   }
 
   protected loadDashboard(): void {
-    this.loadFleetData();
     // this.loadCards();
     this.loadGraphs();
     this.dashcams.set([]);
@@ -213,11 +163,11 @@ export class Overview implements OnInit {
   //   });
   // }
 
-  protected loadGraphs(): void {
-    this.graphsLoading.set(true);
+  protected loadGraphs(showSkeleton = true): void {
+    if (showSkeleton) this.graphsLoading.set(true);
     this.api
       .getGraphs()
-      .pipe(finalize(() => this.graphsLoading.set(false)))
+      .pipe(finalize(() => { if (showSkeleton) this.graphsLoading.set(false); }))
       .subscribe({
         next: (response) => {
           if (response.status !== 1000) {
@@ -245,24 +195,6 @@ export class Overview implements OnInit {
     this.api.cacheGraphs(graphs);
   }
 
-  private loadFleetData(): void {
-    if (!this.fleets().length) this.fleetLoading.set(true);
-    this.api
-      .getFleets()
-      .pipe(finalize(() => this.fleetLoading.set(false)))
-      .subscribe({
-        next: (fleets) => this.fleets.set(fleets.data?.data ?? []),
-        error: () => this.fleets.set([]),
-      });
-  }
-
-  private loadViolationCount(): void {
-    this.api.getTodayViolationCount().subscribe({
-      next: (res) => this.violationCount.set(res.data?.count ?? 0),
-      error: () => this.violationCount.set(0),
-    });
-  }
-
   protected cardTone(code: string): StatCardTone {
     if (['DVC', 'MOD', 'QHB', 'QSF'].includes(code)) return 'danger';
     if (['MD', 'VIM', 'QIT', 'QUL'].includes(code)) return 'warning';
@@ -272,7 +204,7 @@ export class Overview implements OnInit {
   }
 
   protected statusPercentage(value: number): number {
-    const total = this.fleetStatus().moving + this.fleetStatus().idling + this.fleetStatus().stopped + this.fleetStatus().alert + this.fleetStatus().offline;
+    const total: number = this.fleetStatusTotal();
     return total > 0 ? (value / total) * 100 : 0;
   }
 }

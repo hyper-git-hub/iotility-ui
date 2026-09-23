@@ -216,6 +216,18 @@ nav em {
 .sidebar-footer {
   @apply shrink-0 border-t border-white/10 p-2;
 }
+.user-info {
+  @apply mb-2 rounded-lg p-2 bg-white/5;
+}
+.user-details {
+  @apply flex flex-col gap-1 text-center;
+}
+.user-name {
+  @apply text-xs font-medium text-white;
+}
+.user-role {
+  @apply text-xs text-brand-300;
+}
 .footer-return {
   @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-brand-300 transition hover:bg-white/5 hover:text-white;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -243,6 +255,9 @@ nav em {
   transform: translateX(-8px);
   overflow: hidden;
   pointer-events: none;
+}
+.fleet-sidebar.collapsed .user-info {
+  @apply hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
