@@ -76,7 +76,7 @@
     </div>
 
     <div class="hud-map-footer">
-      <span><img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" />Vehicle odometer: <strong>{{ totalDistanceText() }} km</strong></span>
+      <span><img src="assets/fleetpoint/icons/route.svg" alt="" aria-hidden="true" />Vehicle odometer: <strong>{{ totalDistanceText() }}{{ totalDistanceText() === '—' ? '' : ' km' }}</strong></span>
       <span><img src="assets/fleetpoint/icons/device-default.svg" alt="" aria-hidden="true" />Device: <strong>{{ deviceText() }}</strong></span>
     </div>
   </section>
@@ -91,32 +91,38 @@
       <small>{{ online() ? 'Live channel' : 'Last reported' }}</small>
     </header>
     <div class="hud-speed-console">
-      <header><span><img src="assets/fleetpoint/icons/speedometer-brand.svg" alt="" aria-hidden="true" />Current speed</span><small>Peak today: <strong>{{ shownSpeed() }} km/h</strong></small></header>
+      <header><span><img src="assets/fleetpoint/icons/speedometer-brand.svg" alt="" aria-hidden="true" />Current speed</span><small>Peak this session: <strong>{{ trendPeak() }} km/h</strong></small></header>
       <div class="hud-speed-readout">
         <div><strong class="hud-number">{{ shownSpeed() }}</strong><span>km/h</span></div>
-        <div class="hud-limit-state"><span>Limit {{ speedLimit }} km/h</span><em [class.over]="speedDelta() > 0">{{ speedDeltaText() }}</em></div>
+        <div class="hud-limit-state"><span>Limit {{ speedLimit() === null ? '—' : speedLimit() + ' km/h' }}</span><em [class.over]="(speedDelta() ?? 0) > 0">{{ speedDeltaText() }}</em></div>
       </div>
       <div class="hud-speed-tape" role="meter" aria-label="Current speed" aria-valuemin="0" aria-valuemax="180" [attr.aria-valuenow]="shownSpeed()">
         @for (segment of speedSegments; track segment) {
-          <i [class.active]="segment <= shownSpeed()" [class.warning]="segment > speedLimit && segment <= shownSpeed()"></i>
+          <i [class.active]="segment <= shownSpeed()" [class.warning]="segment > (speedLimit() ?? 181) && segment <= shownSpeed()"></i>
         }
       </div>
       <div class="hud-speed-scale"><span>0</span><span>30</span><b>• 60</b><span>90</span><span>120</span><span>150</span><span>180</span></div>
       <div class="hud-speed-trend">
         <header><span><i></i>Last 15 min trend</span><small>Live speed · {{ shownSpeed() }} km/h</small></header>
-        <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-hidden="true">
+        <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-label="Speed readings collected during this session">
           <defs><linearGradient id="hudTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".35"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
-          <line class="trend-limit" x1="0" y1="24" x2="320" y2="24"/><text x="8" y="20">LIMIT 60</text>
-          <path class="trend-area" d="M0 38 Q28 35 50 32 T100 28 T150 36 T200 18 T245 27 T285 14 T320 19 L320 50 L0 50Z"/>
-          <path class="trend-line" d="M0 38 Q28 35 50 32 T100 28 T150 36 T200 18 T245 27 T285 14 T320 19"/>
-          <circle class="trend-dot-ring" cx="318" cy="19" r="6"/><circle class="trend-dot" cx="318" cy="19" r="3"/>
+          @if (trendLimitY() !== null) {
+            <line class="trend-limit" x1="0" [attr.y1]="trendLimitY()" x2="320" [attr.y2]="trendLimitY()"/>
+            <text x="8" [attr.y]="(trendLimitY() ?? 10) - 4">LIMIT {{ speedLimit() }}</text>
+          }
+          <path class="trend-area" [attr.d]="speedTrendArea()"/>
+          <path class="trend-line" [attr.d]="speedTrendPath()"/>
+          @if (hasSpeedTrend()) {
+            <circle class="trend-dot-ring" cx="318" [attr.cy]="trendEndY()" r="6"/>
+            <circle class="trend-dot" cx="318" [attr.cy]="trendEndY()" r="3"/>
+          }
         </svg>
       </div>
     </div>
 
     <div class="hud-stats" aria-label="Vehicle telemetry">
       <div data-accent="blue"><span>Today</span><strong class="hud-number">{{ distanceKm() }} <small>km</small></strong></div>
-      <div data-accent="violet"><span>Odometer</span><strong class="hud-number">{{ totalDistanceText() }} <small>km</small></strong></div>
+      <div data-accent="violet"><span>Odometer</span><strong class="hud-number">{{ totalDistanceText() }} @if (totalDistanceText() !== '—') { <small>km</small> }</strong></div>
       <div data-accent="cyan"><span>Fuel level</span><strong class="hud-number">{{ fuelText() }}</strong></div>
       <div data-accent="rose"><span>Violations</span><strong class="hud-number">{{ violationsText() }}</strong></div>
       <div><span>Ignition</span><strong class="hud-number"><i class="hud-state-dot" [class.is-on]="ignitionText() === 'On'"></i>{{ ignitionText() }}</strong></div>
