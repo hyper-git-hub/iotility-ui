@@ -46,6 +46,7 @@ export interface VehicleInventoryRecord {
   latitude?: string | null;
   longitude?: string | null;
   online_status?: boolean;
+  live_status?: string | null;
   ignition_status?: boolean;
   location?: string | null;
   vehicle_driver_name?: string | null;
@@ -55,6 +56,7 @@ export interface VehicleInventoryRecord {
   km_per_day?: number | null;
   updated_time?: string | null;
   next_maintenance?: string | null;
+  total_distance_traveled?: number | null;
 }
 
 export interface InventoryOption {

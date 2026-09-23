@@ -34,8 +34,14 @@ export class CustomiseModal {
     );
   }
 
+  protected allSelected = computed(() => {
+    const ids = this.allWidgets().map((widget) => widget.id);
+    return ids.length > 0 && ids.every((id) => this.pendingVisible().includes(id));
+  });
+
   protected selectAll(): void {
-    this.pendingVisible.set(this.allWidgets().map((widget) => widget.id));
+    const allIds = this.allWidgets().map((widget) => widget.id);
+    this.pendingVisible.set(this.allSelected() ? [] : allIds);
   }
 
   protected save(): void {

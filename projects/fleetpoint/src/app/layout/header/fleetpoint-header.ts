@@ -210,13 +210,16 @@ export class FleetpointHeader {
     void this.router.navigateByUrl(profileUrl);
   }
 
-  private readIdentity(): { name: string; initials: string } {
+  private readIdentity(): { name: string; initials: string; role: string } {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}') as {
         username?: string | null;
         first_name?: string;
         last_name?: string;
         email?: string;
+        internal_role?: string | null;
+        group?: string | null;
+        designation?: string | null;
       };
       const name =
         user.username?.trim() ||
@@ -226,9 +229,10 @@ export class FleetpointHeader {
       const parts = name.trim().split(/\s+/);
       const initials =
         `${parts[0]?.[0] || 'I'}${parts.length > 1 ? parts.at(-1)?.[0] || '' : ''}`.toUpperCase();
-      return { name, initials };
+      const role = user.group?.trim() || user.internal_role?.trim() || user.designation?.trim() || '';
+      return { name, initials, role };
     } catch {
-      return { name: 'IoTility User', initials: 'IU' };
+      return { name: 'IoTility User', initials: 'IU', role: '' };
     }
   }
 

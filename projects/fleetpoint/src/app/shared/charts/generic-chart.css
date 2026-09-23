@@ -17,6 +17,18 @@
 .badge {
   @apply rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-medium text-success;
 }
+.status-legend {
+  @apply flex items-center gap-3 text-[11px] text-ink dark:text-white;
+}
+.status-legend > span {
+  @apply inline-flex items-center gap-1.5;
+}
+.status-legend i {
+  @apply size-2 rounded-full;
+}
+.status-legend i.good { @apply bg-success; }
+.status-legend i.ok { @apply bg-warning; }
+.status-legend i.low { @apply bg-danger; }
 .filter {
   @apply h-8 cursor-pointer rounded-lg border border-line bg-white px-2.5 text-[10px] text-muted outline-none dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
 }

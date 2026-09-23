@@ -530,9 +530,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       !matchMedia('(max-width: 900px)').matches ? 320 : 0;
     this.map.flyTo({
       center: [vehicle.lng, vehicle.lat],
-      zoom: 16,
-      pitch: 55,
-      bearing: -18,
+      zoom: 14,
       duration: 1200,
       essential: true,
       padding: { top: 0, bottom: 0, left: 0, right: panelPadding },

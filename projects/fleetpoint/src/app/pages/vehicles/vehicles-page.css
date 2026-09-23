@@ -191,3 +191,13 @@
 .vehicles-table {
   contain: layout paint style;
 }
+:host ::ng-deep .vehicles-table th:nth-child(5),
+:host ::ng-deep .vehicles-table td:nth-child(5) {
+  width: 18rem;
+  max-width: 18rem;
+}
+:host ::ng-deep .vehicles-table td:nth-child(5) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

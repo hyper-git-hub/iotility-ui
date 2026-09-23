@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter } from 'rxjs';
+import { filter, interval } from 'rxjs';
 import { DashboardWidgetsService } from '../../shared/services/dashboard-widgets.service';
 import { FleetDashboardApiService } from '../../shared/services/fleet-dashboard-api.service';
 import { mergeDashboardGraphs } from '../../shared/services/dashboard-graphs';
@@ -29,17 +29,28 @@ export class DashboardPage {
     month: 'long',
   });
 
+  protected readonly currentTime = signal(
+    new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+  );
+
   protected readonly tabs: Array<{ label: string; path: string; exact: boolean; placeholder?: boolean; emoji: string }> = [
     { label: 'Overview', path: 'overview', exact: true, emoji: '📊' },
     { label: 'Safety', path: 'safety', exact: true, emoji: '🛡️' },
     { label: 'Maintenance', path: 'maintenance', exact: true, emoji: '🔧' },
     { label: 'Jobs', path: 'jobs', exact: true, emoji: '📋' },
-    { label: 'Reports', path: 'reports', exact: true, placeholder: true, emoji: '📈' },
+    // { label: 'Reports', path: 'reports', exact: true, placeholder: true, emoji: '📈' },
   ];
 
   constructor() {
     this.activeTab.set(this.tabFromUrl());
     this.loadGraphsForDirectTab();
+    interval(30_000)
+      .pipe(takeUntilDestroyed())
+      .subscribe(() =>
+        this.currentTime.set(
+          new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        ),
+      );
     this.router.events
       .pipe(
         filter((event) => event instanceof NavigationEnd),

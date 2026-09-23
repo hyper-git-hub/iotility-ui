@@ -11,6 +11,7 @@ export class FleetBarChart implements AfterViewInit, OnDestroy {
   readonly title = input.required<string>();
   readonly subtitle = input('');
   readonly badge = input('');
+  readonly statusLegend = input(false);
   readonly filterLabel = input('');
   readonly height = input(320);
   readonly data = input.required<ChartData<'bar', number[], string>>();
