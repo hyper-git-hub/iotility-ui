@@ -13,25 +13,11 @@
         [attr.aria-label]="liveOffline() ? 'All vehicles offline' : 'Realtime tracking active'"
       />
     }
-    <button class="theme" type="button" (click)="toggleTheme()" [tooltip]="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
-      @if (isDark) {
-        <img src="assets/fleetpoint/icons/sun-brand.svg" alt="" aria-hidden="true"/>
-        Light
-      } @else {
-        <img src="assets/fleetpoint/icons/moon-muted.svg" alt="" aria-hidden="true"/>
-        Dark
-      }
-    </button>
-    <shared-dropdown [options]="profileOptions" mode="action" (optionSelected)="selectProfileOption($event)">
-      <button dropdown-trigger type="button" class="profile-button">
-        <span class="profile-copy"><strong>{{ userName() }}</strong><small>{{ userRole() || 'Signed in as' }}</small></span>
-        <div class="relative inline-flex items-center justify-center">
-          <span class="profile-avatar">{{ userInitials() }}</span>
-          <span class="absolute bottom-0 right-0 p-0.5 bg-white rounded-full dark:bg-dark-surface">
-            <span class="block size-2.5 rounded-full bg-online"></span>
-          </span>
-        </div>
-      </button>
-    </shared-dropdown>
+    <shared-user-menu
+      [userName]="userName()"
+      [userInitials]="userInitials()"
+      [userRole]="userRole()"
+      (profileAction)="profileAction.emit($event)"
+    />
   </div>
 </header>

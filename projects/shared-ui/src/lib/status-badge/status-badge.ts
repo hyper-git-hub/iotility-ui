@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Skeleton } from '../skeleton/skeleton';
+import { Tooltip } from '../tooltip/tooltip';
 
 export type StatusBadgeVariant = 'dot' | 'ping' | 'pill' | 'live-pill' | 'header' | 'map';
 
 @Component({
   selector: 'shared-status-badge',
-  imports: [Skeleton],
+  imports: [Skeleton, Tooltip],
   templateUrl: './status-badge.html',
   styleUrl: './status-badge.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
