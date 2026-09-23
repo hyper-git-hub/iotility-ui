@@ -32,7 +32,7 @@ export class Header {
   }
   protected get userRole(): string {
     const user = this.session.user;
-    return user?.internal_role?.trim() || user?.group?.trim() || user?.designation?.trim() || '';
+    return user?.user_type === 1 ? 'Super Admin' : user?.group?.trim() || 'Unassigned';
   }
   protected handleProfileAction(option: DropdownOption): void {
     if (option.id === 'logout') {

@@ -10,3 +10,4 @@ export * from './lib/skeleton/stat-card-skeleton';
 export * from './lib/skeleton/data-table-skeleton';
 export * from './lib/tooltip/tooltip';
 export * from './lib/logo/logo';
+export * from './lib/user-menu/user-menu';

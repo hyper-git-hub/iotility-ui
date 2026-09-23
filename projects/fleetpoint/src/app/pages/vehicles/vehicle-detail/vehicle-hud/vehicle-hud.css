@@ -347,7 +347,9 @@
 .hud-speed-trend header span { letter-spacing: 0; text-transform: none; }
 .hud-speed-trend header i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-brand-500); }
 .hud-speed-trend svg { display: block; width: 100%; height: 52px; margin-top: 6px; padding: 4px; overflow: visible; border: 1px solid var(--color-line); border-radius: 7px; background: color-mix(in srgb,var(--color-canvas) 70%,transparent); }
+.hud-trend-unavailable { display: grid; width: 100%; height: 52px; margin-top: 6px; place-items: center; border: 1px solid var(--color-line); border-radius: 7px; color: var(--color-muted); background: color-mix(in srgb,var(--color-canvas) 70%,transparent); }
 :host-context(.dark) .hud-speed-trend svg { border-color: rgb(58 52 67 / .7); background: rgb(9 9 15 / .7); }
+:host-context(.dark) .hud-trend-unavailable { border-color: rgb(58 52 67 / .7); background: rgb(9 9 15 / .7); }
 .trend-limit { stroke: var(--color-warning); stroke-width: 1; stroke-dasharray: 3 3; opacity: .5; }
 .hud-speed-trend text { fill: var(--color-warning); font: 7px monospace; opacity: .8; }
 .trend-area { fill: url(#hudTrendFill); }

@@ -220,6 +220,7 @@ export class FleetpointHeader {
         internal_role?: string | null;
         group?: string | null;
         designation?: string | null;
+        user_type?: number;
       };
       const name =
         user.username?.trim() ||
@@ -229,7 +230,7 @@ export class FleetpointHeader {
       const parts = name.trim().split(/\s+/);
       const initials =
         `${parts[0]?.[0] || 'I'}${parts.length > 1 ? parts.at(-1)?.[0] || '' : ''}`.toUpperCase();
-      const role = user.group?.trim() || user.internal_role?.trim() || user.designation?.trim() || '';
+      const role = user.user_type === 1 ? 'Super Admin' : user.group?.trim() || 'Unassigned';
       return { name, initials, role };
     } catch {
       return { name: 'IoTility User', initials: 'IU', role: '' };

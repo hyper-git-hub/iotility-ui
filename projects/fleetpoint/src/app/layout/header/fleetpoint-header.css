@@ -4,7 +4,7 @@
 .mobile-menu-button { display:none; }
 .global-search { @apply relative min-w-0 flex-1; }
 .notification-control { @apply relative; }
-.notification-trigger { @apply relative grid size-9 cursor-pointer place-items-center rounded-full border border-line bg-white transition hover:border-brand-400 hover:bg-brand-50 dark:border-dark-line dark:bg-dark-canvas dark:hover:border-brand-500; }
+.notification-trigger { @apply relative grid size-9 cursor-pointer place-items-center rounded-full border border-line bg-white transition hover:border-brand-400 hover:bg-brand-50 dark:border-dark-line dark:bg-dark-canvas dark:hover:border-brand-500 dark:hover:bg-brand-600/15; }
 .notification-trigger svg { @apply size-[1.15rem] text-muted dark:text-brand-300; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.7; }
 .notification-trigger>span { @apply absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full border-2 border-white bg-danger px-1 text-[8px] font-bold leading-3 text-white dark:border-dark-surface; }
 .notification-panel { @apply absolute right-0 top-[calc(100%+0.65rem)] z-[1700] w-[22rem] overflow-hidden rounded-2xl border border-line bg-white shadow-[0_18px_55px_rgba(20,12,45,0.22)] dark:border-dark-line dark:bg-dark-surface; animation:search-panel-in 180ms cubic-bezier(.22,1,.36,1) both; }
