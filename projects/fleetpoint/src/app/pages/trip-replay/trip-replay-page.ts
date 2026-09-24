@@ -107,7 +107,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly legendItems: Array<{ label: string; color: string }> = [
     { label: 'Travelled', color: 'var(--color-brand-500)' },
     { label: 'Start', color: 'var(--color-success)' },
-    { label: 'End', color: 'var(--color-danger)' },
+    { label: 'End', color: 'color-mix(in srgb, var(--color-danger) 65%, white)' },
     { label: 'Violation', color: 'var(--color-danger)' },
     { label: 'DashCam', color: 'var(--color-warning)' },
     { label: 'Stop', color: 'var(--color-info)' },

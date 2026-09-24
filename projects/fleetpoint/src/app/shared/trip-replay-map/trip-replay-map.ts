@@ -353,7 +353,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       ),
       this.circleMarker(
         this.roadSegments.at(-1)?.at(-1) ?? coordinates.at(-1)!,
-        css('--color-danger', '#df405e'),
+        // Softer than the violations danger red so End reads distinct from events.
+        'color-mix(in srgb, var(--color-danger) 65%, white)',
         'Trip end',
       ),
     ];
