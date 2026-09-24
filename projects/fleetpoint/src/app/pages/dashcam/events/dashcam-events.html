@@ -62,7 +62,7 @@
         <span class="speed-cell" [class.speed-alert]="row.speed >= 90">{{ row.speedLabel }}</span>
       </ng-template>
       <ng-template tableCell="jobRoute" let-row>
-        <span class="truncate-cell" [title]="row.jobRoute">{{ row.jobRoute }}</span>
+        <span class="truncate-cell" [tooltip]="row.jobRoute">{{ row.jobRoute }}</span>
       </ng-template>
       <ng-template tableCell="scoreLabel" let-row>
         <span class="score-cell" [class.has-score]="row.score < 0">{{ row.scoreLabel }}</span>

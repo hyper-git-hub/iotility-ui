@@ -1,6 +1,6 @@
 import { Component, computed, HostListener, isDevMode, output, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { DropdownOption, PlatformHeader, SmoothHeight } from '@iotility/shared-ui';
+import { DropdownOption, PlatformHeader, SmoothHeight, Tooltip } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
 import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { FleetNotification, NotificationService } from '../../shared/services/notification.service';
@@ -18,7 +18,7 @@ interface SearchDestination {
 
 @Component({
   selector: 'app-fleetpoint-header',
-  imports: [PlatformHeader, SmoothHeight],
+  imports: [PlatformHeader, SmoothHeight, Tooltip],
   templateUrl: './fleetpoint-header.html',
   styleUrl: './fleetpoint-header.css',
 })

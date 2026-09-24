@@ -6,6 +6,8 @@ import { Skeleton } from './skeleton';
   imports: [Skeleton],
   templateUrl: './data-table-skeleton.html',
   styleUrl: './data-table-skeleton.css',
+  // The card header already renders the title, so keep it out of the browser's native tooltip.
+  host: { '[attr.title]': 'null' },
 })
 export class DataTableSkeleton {
   readonly title = input('Data');

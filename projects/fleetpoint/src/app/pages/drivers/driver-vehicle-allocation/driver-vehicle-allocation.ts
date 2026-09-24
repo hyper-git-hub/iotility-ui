@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { BlockingLoader, Skeleton } from '@iotility/shared-ui';
+import { BlockingLoader, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import {
   DriverApiService,
@@ -10,7 +10,7 @@ import { AllocationForm } from '../allocation-form/allocation-form';
 
 @Component({
   selector: 'app-driver-vehicle-allocation',
-  imports: [AllocationForm, BlockingLoader, Skeleton],
+  imports: [AllocationForm, BlockingLoader, Skeleton, Tooltip],
   templateUrl: './driver-vehicle-allocation.html',
   styleUrl: '../drivers-page.css',
 })

@@ -1,10 +1,10 @@
 import { Component, computed, signal } from '@angular/core';
-import { Dropdown, DropdownOption, SmoothHeight } from '@iotility/shared-ui';
+import { Dropdown, DropdownOption, SmoothHeight, Tooltip } from '@iotility/shared-ui';
 import { GEOZONES, GeozoneRecord, GeozoneType, ZONE_TYPE_LABELS } from '../geozones.data';
 
 @Component({
   selector: 'app-zone-list',
-  imports: [Dropdown, SmoothHeight],
+  imports: [Dropdown, SmoothHeight, Tooltip],
   templateUrl: './zone-list.html',
   styleUrl: './zone-list.css',
 })
