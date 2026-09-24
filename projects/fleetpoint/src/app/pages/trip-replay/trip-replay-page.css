@@ -703,7 +703,8 @@
   @apply bg-success;
 }
 .end-dot {
-  @apply bg-danger;
+  /* Matches the map's End marker/legend: lighter red than violations danger. */
+  background: color-mix(in srgb, var(--color-danger) 65%, white);
 }
 .detail-tabs {
   @apply flex border-b border-line px-3 dark:border-dark-line;
@@ -728,6 +729,16 @@
 }
 .event-icon {
   @apply grid size-7 shrink-0 place-items-center rounded-lg bg-danger/10 text-xs font-bold text-danger;
+}
+/* Violation glyphs come from the Violations page icon set (stroke-based). */
+.event-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .event-icon.dashcam {
   @apply bg-warning/10 text-warning;

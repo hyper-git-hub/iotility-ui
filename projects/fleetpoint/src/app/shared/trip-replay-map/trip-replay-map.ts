@@ -122,6 +122,8 @@ export interface TripReplayEvent {
   type: 'violation' | 'dashcam' | 'stop';
   positionIndex: number;
   detail: string;
+  /** Inner SVG markup for the violation icon (from the Violations page set). */
+  icon?: string;
 }
 interface EventMarkerRecord {
   event: TripReplayEvent;
@@ -373,7 +375,12 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           : event.type === 'dashcam'
             ? css('--color-warning', '#eca91f')
             : css('--color-info', '#397bd5');
-      const glyph = event.type === 'violation' ? '!' : event.type === 'dashcam' ? '●' : '';
+      const glyph =
+        event.type === 'violation'
+          ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${event.icon ?? ''}</svg>`
+          : event.type === 'dashcam'
+            ? '●'
+            : '';
       const border = event.type === 'stop' ? 'none' : '2px solid #fff';
       const size = event.type === 'stop' ? '12px' : '18px';
       const element = markerElement(
@@ -568,7 +575,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     const header = document.createElement('header');
     const dot = document.createElement('i');
     dot.setAttribute('aria-hidden', 'true');
-    dot.textContent = event.type === 'violation' ? '!' : event.type === 'dashcam' ? '\u25CF' : '\u25CF';
+    if (event.type === 'violation') {
+      dot.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${event.icon ?? ''}</svg>`;
+    } else {
+      dot.textContent = event.type === 'dashcam' ? '\u25CF' : '\u25CF';
+    }
     const title = document.createElement('strong');
     title.textContent = event.label;
     header.append(dot, title);
