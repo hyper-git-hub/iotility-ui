@@ -710,10 +710,18 @@
   @apply flex border-b border-line px-3 dark:border-dark-line;
 }
 .detail-tabs button {
-  @apply flex-1 cursor-pointer border-b-2 border-transparent py-2.5 text-[10px] text-muted;
+  @apply flex flex-1 cursor-pointer items-center justify-center gap-1.5 border-b-2 border-transparent py-2.5 text-[10px] text-muted;
 }
 .detail-tabs .active {
   @apply border-brand-600 font-semibold text-brand-600;
+}
+/* Count badges on the tab labels: neutral pill by default, brand tinted while
+   the tab is active (same token usage as the sidebar badge / selection-count). */
+.tab-count {
+  @apply inline-grid h-4 min-w-4 place-items-center rounded-full bg-canvas px-1 text-[9px] font-semibold leading-none text-muted dark:bg-dark-canvas dark:text-brand-300;
+}
+.detail-tabs .active .tab-count {
+  @apply bg-brand-100 text-brand-700 dark:bg-brand-300 dark:text-brand-900;
 }
 .detail-content {
   @apply min-h-0 flex-1 overflow-y-auto;
