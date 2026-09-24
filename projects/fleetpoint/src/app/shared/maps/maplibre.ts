@@ -747,7 +747,7 @@ class LocationSearchControl implements IControl {
     if (this.input) this.input.value = result.display_name;
     if (this.results) this.results.hidden = true;
     this.marker?.remove();
-    this.marker = new maplibregl.Marker({ color: '#7c3aed' }).setLngLat([lng, lat]).addTo(this.map);
+    this.marker = new maplibregl.Marker({ color: 'var(--color-brand-600)' }).setLngLat([lng, lat]).addTo(this.map);
     this.map.flyTo({ center: [lng, lat], zoom: Math.max(this.map.getZoom(), 14), duration: 900 });
   }
 

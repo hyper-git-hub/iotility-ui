@@ -78,7 +78,7 @@
   box-sizing: border-box;
   background:
     radial-gradient(circle at 35% 24%, rgb(255 255 255 / 0.26), transparent 34%),
-    linear-gradient(145deg, color-mix(in srgb, var(--cluster-brand) 82%, #c4b5fd), var(--cluster-brand));
+    linear-gradient(145deg, color-mix(in srgb, var(--cluster-brand) 82%, var(--color-brand-300)), var(--cluster-brand));
   box-shadow:
     0 8px 24px rgb(9 9 15 / 0.28),
     0 2px 6px rgb(9 9 15 / 0.22),

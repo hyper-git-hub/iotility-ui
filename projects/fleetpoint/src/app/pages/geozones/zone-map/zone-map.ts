@@ -30,6 +30,10 @@ export class ZoneMap{
   protected toggle(zone:GeozoneRecord):void{this.selected.update(id=>id===zone.id?null:zone.id);}
   protected closeDetails():void{this.selected.set(null);}
   protected label(type:GeozoneType):string{return ZONE_TYPE_LABELS[type];}
-  private zoneColor(type:GeozoneType):string{return{allowed:'#22c55e',restricted:'#ef4444',speed:'#f59e0b',curfew:'#8b5cf6',poi:'#3b82f6',corridor:'#14b8a6'}[type];}
+  private zoneColor(type:GeozoneType):string{
+    // MapLibre paint needs a resolved colour; brand token → cyan light / purple dark.
+    const brand=getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim()||'#1896cc';
+    return{allowed:'#22c55e',restricted:'#ef4444',speed:'#f59e0b',curfew:brand,poi:'#3b82f6',corridor:'#14b8a6'}[type];
+  }
   private status(zone:GeozoneRecord):VehicleStatus{return zone.violations?'Alert':zone.type==='allowed'?'Moving':zone.type==='speed'?'Idling':'Offline';}
 }

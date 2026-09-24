@@ -446,7 +446,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     }
     const routeColor = document.documentElement.classList.contains('dark')
       ? '#c4b5fd'
-      : '#8b19f5';
+      : '#1896cc';
     const data: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features };
     const source = this.map.getSource('trip-route') as maplibregl.GeoJSONSource | undefined;
     const layerIds = [

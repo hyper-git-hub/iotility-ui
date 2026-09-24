@@ -389,7 +389,7 @@
   background: var(--color-brand-500);
   box-shadow:
     0 0 0 1px var(--color-brand-500),
-    0 2px 6px rgb(33 18 67 / 20%);
+    0 2px 6px color-mix(in srgb, var(--color-brand-600) 20%, transparent);
 }
 .timeline::-moz-range-thumb {
   width: 10px;
@@ -399,7 +399,7 @@
   background: var(--color-brand-500);
   box-shadow:
     0 0 0 1px var(--color-brand-500),
-    0 2px 6px rgb(33 18 67 / 20%);
+    0 2px 6px color-mix(in srgb, var(--color-brand-600) 20%, transparent);
 }
 .event-markers {
   pointer-events: none;
@@ -489,7 +489,7 @@
   border-radius: 9px;
   color: white;
   background: var(--color-brand-600);
-  box-shadow: 0 4px 10px rgb(101 52 211 / 22%);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--color-brand-600) 22%, transparent);
 }
 .transport-controls .play-button:hover {
   background: var(--color-brand-700);

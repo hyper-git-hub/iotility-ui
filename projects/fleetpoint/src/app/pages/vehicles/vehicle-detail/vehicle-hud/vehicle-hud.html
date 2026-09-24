@@ -43,7 +43,7 @@
         <div class="hud-speed-trend">
           <header><span><i></i>Last 15 min trend</span><ui-skeleton width="6.5rem" height="0.625rem" /></header>
           <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-hidden="true">
-            <defs><linearGradient id="hudTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".35"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+            <defs><linearGradient id="hudTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--color-brand-500)" stop-opacity=".35"/><stop offset="1" stop-color="var(--color-brand-500)" stop-opacity="0"/></linearGradient></defs>
             <line class="trend-limit" x1="0" y1="24" x2="320" y2="24"/><text x="8" y="20">LIMIT 60</text>
             <path class="trend-area" d="M0 38 Q28 35 50 32 T100 28 T150 36 T200 18 T245 27 T285 14 T320 19 L320 50 L0 50Z"/>
             <path class="trend-line" d="M0 38 Q28 35 50 32 T100 28 T150 36 T200 18 T245 27 T285 14 T320 19"/>
@@ -105,7 +105,7 @@
       <div class="hud-speed-trend">
         <header><span><i></i>Last 15 min trend</span><small>Live speed · {{ shownSpeed() }} km/h</small></header>
         <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-label="Speed readings collected during this session">
-          <defs><linearGradient id="hudTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".35"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+          <defs><linearGradient id="hudTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--color-brand-500)" stop-opacity=".35"/><stop offset="1" stop-color="var(--color-brand-500)" stop-opacity="0"/></linearGradient></defs>
           @if (trendLimitY() !== null) {
             <line class="trend-limit" x1="0" [attr.y1]="trendLimitY()" x2="320" [attr.y2]="trendLimitY()"/>
             <text x="8" [attr.y]="(trendLimitY() ?? 10) - 4">LIMIT {{ speedLimit() }}</text>

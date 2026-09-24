@@ -170,10 +170,15 @@ export class GeozoneDrawingMap implements AfterViewInit, OnDestroy {
       type: 'FeatureCollection',
       features: [boundaryFeature, ...vertexFeatures],
     }, [
-      { id: 'geozone-fill', type: 'fill', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': '#8b5cf6', 'fill-opacity': .2 } },
-      { id: 'geozone-line', type: 'line', paint: { 'line-color': '#7c3aed', 'line-width': 2 } },
-      { id: 'geozone-points', type: 'circle', filter: ['==', ['get', 'vertex'], true], paint: { 'circle-radius': 5, 'circle-color': '#7c3aed', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } },
+      { id: 'geozone-fill', type: 'fill', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': this.brandColor('--color-brand-500'), 'fill-opacity': .2 } },
+      { id: 'geozone-line', type: 'line', paint: { 'line-color': this.brandColor('--color-brand-600'), 'line-width': 2 } },
+      { id: 'geozone-points', type: 'circle', filter: ['==', ['get', 'vertex'], true], paint: { 'circle-radius': 5, 'circle-color': this.brandColor('--color-brand-600'), 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } },
     ]);
+  }
+
+  // MapLibre paint props need resolved colour values (no var()).
+  private brandColor(token: string): string {
+    return getComputedStyle(document.documentElement).getPropertyValue(token).trim() || '#1896cc';
   }
 
   private distanceMeters(a: LatLng, b: LatLng): number {

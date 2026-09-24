@@ -133,6 +133,8 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
       ? this.routePath
       : this.points.map(({ lat, lng }) => [lat, lng] as LatLng);
     if (path.length < 2) return;
+    // MapLibre paint needs a resolved colour (brand → cyan light / purple dark).
+    const brandLine = getComputedStyle(document.documentElement).getPropertyValue('--color-brand-600').trim() || '#1896cc';
     upsertGeoJson(this.map, 'builder-route', lineFeature(path), [
       {
         id: 'builder-outline', type: 'line',
@@ -142,7 +144,7 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
       {
         id: 'builder-line', type: 'line',
         paint: {
-          'line-color': '#8b5cf6', 'line-width': dashed ? 4 : 5,
+          'line-color': brandLine, 'line-width': dashed ? 4 : 5,
           ...(dashed ? { 'line-dasharray': [2, 1.5] } : {}),
         },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -173,7 +175,7 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
     const point = { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)), type, label };
     this.points.push(point);
     this.routePath = [];
-    const color = type === 'start' ? '#10b981' : type === 'end' ? '#ef4444' : '#8b5cf6';
+    const color = type === 'start' ? '#10b981' : type === 'end' ? '#ef4444' : 'var(--color-brand-500)';
     const element = markerElement(`<span style="display:block;width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:${color}"></span>`);
     this.markers.push(new maplibregl.Marker({ element }).setLngLat([lng, lat]).setPopup(popup(label)).addTo(this.map!));
     this.renderLine(true);

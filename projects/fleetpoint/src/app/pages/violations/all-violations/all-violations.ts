@@ -265,7 +265,7 @@ export class AllViolations implements OnInit, OnDestroy {
       Speeding: '#dc2626',
       Behaviour: '#e87500',
       Safety: '#ea580c',
-      Compliance: '#7c3aed',
+      Compliance: 'var(--color-brand-500)',
       Geozone: '#2563eb',
     };
     return colors[category] ?? '#64748b';
@@ -277,7 +277,7 @@ export class AllViolations implements OnInit, OnDestroy {
 
   protected sourceIconColor(source: string): string {
     const colors: Record<string, string> = {
-      Telematics: '#8b5cf6',
+      Telematics: 'var(--color-brand-500)',
       DashCam: '#2563eb',
       Manual: '#6b7280',
     };

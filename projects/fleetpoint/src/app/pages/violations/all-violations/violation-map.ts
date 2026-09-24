@@ -191,7 +191,7 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
       Speeding: css('--color-danger', '#ef4444'),
       Behaviour: css('--color-warning', '#f59e0b'),
       Safety: '#ef6c36',
-      Compliance: css('--color-brand-500', '#8b5cf6'),
+      Compliance: css('--color-brand-500', '#1896cc'),
       Geozone: css('--color-info', '#3b82f6'),
     };
     return colors[category] ?? css('--color-muted', '#64748b');

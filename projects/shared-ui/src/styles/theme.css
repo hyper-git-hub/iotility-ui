@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  /* This creates the 'bg-brand-gradient' utility */
+  /* This creates the 'bg-brand-gradient' utility. Uses --color-brand-500 so the
+     light theme shows the cyan brand and dark mode keeps the purple look. */
   --background-image-fp-brand-gradient: linear-gradient(to bottom right,
-      var(--color-purple-500),
+      var(--color-brand-500),
       var(--color-blue-500));
 
 
@@ -14,17 +15,20 @@
   --background-image-brand-blue: linear-gradient(135deg, #bae6fd, #0ea5e9);
   --background-image-brand-orange: linear-gradient(135deg, #ffedd5, #f97316);
 
-  --color-brand-50: var(--color-purple-50);
-  --color-brand-100: var(--color-purple-100);
-  --color-brand-200: var(--color-purple-200);
-  --color-brand-300: var(--color-purple-300);
-  --color-brand-400: var(--color-purple-400);
-  --color-brand-500: var(--color-purple-500);
-  --color-brand-600: var(--color-purple-600);
-  --color-brand-700: var(--color-purple-700);
-  --color-brand-800: var(--color-purple-800);
-  --color-brand-900: var(--color-purple-900);
-  --color-brand-950: var(--color-purple-950);
+  /* Light-mode brand palette — derived from the given cyan
+     #1896cc (HSL 198 79% 45%), which sits at brand-600 (primary).
+     Dark mode reverts to the original purple scale via the .dark block below. */
+  --color-brand-50: #f1fafd;
+  --color-brand-100: #daf1fb;
+  --color-brand-200: #c0e6f7;
+  --color-brand-300: #8cd0ee;
+  --color-brand-400: #58bae4;
+  --color-brand-500: #28aae2;
+  --color-brand-600: #1896cc;
+  --color-brand-700: #117dac;
+  --color-brand-800: #0f658b;
+  --color-brand-900: #0c516e;
+  --color-brand-950: #07374b;
   --color-ink: #1e1b4b;
   --color-muted: #94a3b8;
   --color-line: #e7e2ed;
@@ -40,7 +44,7 @@
   --color-dialog-surface: #17131f;
   --color-dialog-line: #3a3443;
   --color-dialog-muted: #aaa1b5;
-  --color-dialog-question: #a855f7;
+  --color-dialog-question: var(--color-brand-600);
   --color-dialog-success: #21a179;
   --color-dialog-warning: #e7a92d;
   --color-dialog-error: #d9435f;
@@ -53,6 +57,25 @@
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Dark mode keeps the original purple brand scale: every .dark:* utility and
+   :host-context(.dark) rule resolves --color-brand-* back to purple, so the
+   dark theme is visually unchanged while light mode uses the cyan palette. */
+.dark {
+  --color-brand-50: var(--color-purple-50);
+  --color-brand-100: var(--color-purple-100);
+  --color-brand-200: var(--color-purple-200);
+  --color-brand-300: var(--color-purple-300);
+  --color-brand-400: var(--color-purple-400);
+  --color-brand-500: var(--color-purple-500);
+  --color-brand-600: var(--color-purple-600);
+  --color-brand-700: var(--color-purple-700);
+  --color-brand-800: var(--color-purple-800);
+  --color-brand-900: var(--color-purple-900);
+  --color-brand-950: var(--color-purple-950);
+  /* Dark keeps the original dialog accent (≈ purple-500). */
+  --color-dialog-question: #a855f7;
+}
 
 html.theme-transition *,
 html.theme-transition *::before,

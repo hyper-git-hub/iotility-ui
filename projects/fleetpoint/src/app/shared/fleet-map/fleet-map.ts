@@ -478,7 +478,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private brandColor(): string {
     const styles = getComputedStyle(document.documentElement);
     const value = styles.getPropertyValue('--color-brand-600').trim();
-    return value || '#7c3aed';
+    return value || '#1896cc';
   }
 
   private vehicleSetKey(vehicles: TrackedVehicle[]): string {

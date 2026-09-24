@@ -2,6 +2,16 @@
 
 .sidebar-shell {
   @apply flex h-full w-[104px] shrink-0 flex-col items-center gap-6 py-6;
+  /* Light theme: same stop layout (0/50/100%), white where black was and
+     brand where the purple stops were. Dark keeps the original palette. */
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    color-mix(in srgb, var(--color-brand-500) 15%, #fff) 50%,
+    var(--color-brand-600) 100%
+  );
+}
+:host-context(.dark) .sidebar-shell {
   /* Same stop palette as the main-branch shell sidebar gradient. */
   background: linear-gradient(
     180deg,
@@ -9,6 +19,20 @@
     #1e0a3c 50%,
     #4c1d95 100%
   );
+}
+
+/* Light theme shows the black Hypernym mark; dark keeps the white hypernym.svg. */
+.sidebar-logo-dark {
+  display: none;
+}
+.sidebar-logo-light {
+  display: block;
+}
+:host-context(.dark) .sidebar-logo-dark {
+  display: block;
+}
+:host-context(.dark) .sidebar-logo-light {
+  display: none;
 }
 
 .sidebar-nav-item {
@@ -26,6 +50,28 @@
 
 .sidebar-nav-active {
   @apply bg-brand-600 text-white hover:bg-brand-600;
+}
+
+/* Light theme readability overrides — MUST stay after the @apply rules above:
+   gradient goes white → brand, so brand-300 washes out towards the bottom. */
+.sidebar-nav-item {
+  color: var(--color-ink);
+}
+.sidebar-nav-item:hover {
+  background: color-mix(in srgb, var(--color-brand-600) 15%, #fff);
+  color: var(--color-brand-700);
+}
+.sidebar-nav-active,
+.sidebar-nav-active:hover {
+  background: var(--color-brand-600);
+  color: #fff;
+}
+:host-context(.dark) .sidebar-nav-item {
+  color: var(--color-brand-300);
+}
+:host-context(.dark) .sidebar-nav-item:hover {
+  background: color-mix(in srgb, var(--color-brand-800) 40%, transparent);
+  color: #fff;
 }
 
 .app-close-button {
@@ -64,7 +110,8 @@
   height: 62px;
   flex-shrink: 0;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
+  /* Light: translucent white doesn't read on the brand-coloured bottom. */
+  background: rgb(255 255 255 / 65%);
   --3x2: 0px;
   --3y2: 4px;
   --3b2: 8px;
@@ -74,4 +121,7 @@
   box-shadow:
     var(--3x2) var(--3y2) var(--3b2) 0px rgba(0, 0, 0, 0.12),
     var(--3x) var(--3y) var(--3b) 0px rgba(0, 0, 0, 0.1);
+}
+:host-context(.dark) .fleetpoint-button {
+  background: rgba(255, 255, 255, 0.12);
 }
