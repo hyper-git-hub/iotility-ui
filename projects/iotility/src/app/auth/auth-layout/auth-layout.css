@@ -1,10 +1,12 @@
 @reference "../../../styles.css";
 
 .auth-shell { @apply flex min-h-screen bg-canvas dark:bg-dark-canvas; }
-.auth-brand-panel { @apply relative hidden w-[63%] overflow-hidden bg-brand-950 p-10 text-white lg:flex lg:flex-col lg:justify-between; }
+.auth-brand-panel { @apply relative hidden w-[63%] overflow-hidden bg-white p-10 text-ink lg:flex lg:flex-col lg:justify-between dark:bg-brand-950 dark:text-white; }
+/* Light: white stage with a soft cyan brand ambience.
+   Dark keeps the original black stage with the purple glow. */
 .auth-glow {
   @apply absolute inset-0;
-  background: #000;
+  background: #ffffff;
 }
 .auth-glow::before {
   content: '';
@@ -15,9 +17,15 @@
   transform: translate(-50%, -50%);
   width: 90%;
   height: 120%;
-  background: radial-gradient(circle at center, var(--color-brand-500) 0%, var(--color-brand-600) 15%, var(--color-brand-700) 30%, var(--color-brand-900) 50%, var(--color-brand-950) 70%, #000 100%);
+  background: radial-gradient(circle at center, var(--color-brand-500) 0%, var(--color-brand-600) 15%, var(--color-brand-700) 30%, var(--color-brand-400) 55%, #ffffff 80%);
   filter: blur(60px);
   animation: auth-glow-pulse 4s ease-in-out infinite;
+}
+:host-context(html.dark) .auth-glow {
+  background: #000;
+}
+:host-context(html.dark) .auth-glow::before {
+  background: radial-gradient(circle at center, var(--color-brand-500) 0%, var(--color-brand-600) 15%, var(--color-brand-700) 30%, var(--color-brand-900) 50%, var(--color-brand-950) 70%, #000 100%);
 }
 
 @keyframes auth-glow-pulse {
@@ -39,9 +47,29 @@
   aspect-ratio: 1136 / 522;
   content: '';
   background-image: url('/assets/grid.svg');
+  /* grid.svg strokes are white — invert them to dark for the light panel. */
+  filter: invert(1);
+}
+:host-context(html.dark) .auth-illustration::before {
+  filter: none;
 }
 .auth-illustration img { @apply w-full max-w-4xl; }
 .auth-tagline { @apply relative z-10 mx-auto text-center; }
 .auth-tagline h1 { @apply text-3xl font-bold leading-snug; }
-.auth-tagline p { @apply mt-2 text-sm text-brand-300; }
+.auth-tagline p { @apply mt-2 text-sm text-brand-700 dark:text-brand-300; }
 .auth-content-panel { @apply flex min-w-0 flex-1 flex-col items-stretch justify-center px-5 py-10 sm:px-8; }
+
+/* Theme-specific artwork: -dark classes carry the original light-on-dark art
+   for the dark panel; -light classes carry art recoloured for the light panel. */
+.logo-dark,
+.illu-dark {
+  display: none;
+}
+:host-context(html.dark) .logo-dark,
+:host-context(html.dark) .illu-dark {
+  display: block;
+}
+:host-context(html.dark) .logo-light,
+:host-context(html.dark) .illu-light {
+  display: none;
+}

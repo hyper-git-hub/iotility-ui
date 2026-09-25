@@ -10,13 +10,13 @@
   @apply flex items-center gap-3;
 }
 .browse-button {
-  @apply inline-flex items-center gap-1 text-xs text-muted transition hover:text-brand-600 dark:text-brand-300;
+  @apply inline-flex cursor-pointer items-center gap-1 rounded text-xs text-muted outline-none transition hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:text-brand-300 dark:hover:text-brand-200;
 }
 .browse-button img, .browse-button .color-icon {
   @apply size-3.5 transition-transform duration-300;
 }
 .new-role-button {
-  @apply rounded-lg bg-ink px-3 py-2 text-xs font-medium text-white transition hover:bg-brand-700 dark:bg-brand-600;
+  @apply inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-brand-600 bg-brand-600 px-3 py-2 text-xs font-medium text-white outline-none transition hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:border-brand-600 dark:bg-brand-600 dark:hover:bg-brand-500;
 }
 .roles-grid {
   @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-5;

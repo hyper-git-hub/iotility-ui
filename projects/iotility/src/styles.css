@@ -52,3 +52,20 @@ button:has(> .color-icon[style*='export.svg']) {
   width: 0;
   height: 0;
 }
+
+/* The shared @iotility/shared-ui federation bundle can be served from a stale
+   dev build (compiled before data-table.css changes) and paints the table
+   toolbar primary action with the ink colour. Re-assert the brand colours
+   here from the host stylesheet so the button always matches the theme.
+   Mirrors data-table.css `.toolbar .primary`. */
+.toolbar button.primary {
+  border-color: var(--color-brand-600);
+  background-color: var(--color-brand-600);
+  color: var(--color-white, #fff);
+}
+.toolbar button.primary:hover {
+  background-color: var(--color-brand-700);
+}
+.dark .toolbar button.primary:hover {
+  background-color: var(--color-brand-500);
+}

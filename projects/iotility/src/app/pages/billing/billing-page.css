@@ -5,7 +5,7 @@
 .page-heading h1 { @apply mt-1 text-2xl font-semibold text-ink dark:text-white; }
 .page-heading p:not(.eyebrow) { @apply mt-2 text-sm text-muted dark:text-brand-300; }
 .eyebrow { @apply text-xs font-medium text-brand-600 dark:text-brand-300; }
-.primary { @apply inline-flex cursor-pointer items-center justify-center rounded-lg border border-ink bg-ink px-4 py-2 text-xs font-medium text-white outline-none transition hover:bg-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:border-brand-600 dark:bg-brand-600 dark:hover:bg-brand-500; }
+.primary { @apply inline-flex cursor-pointer items-center justify-center rounded-lg border border-brand-600 bg-brand-600 px-4 py-2 text-xs font-medium text-white outline-none transition hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:border-brand-600 dark:bg-brand-600 dark:hover:bg-brand-500; }
 .plan-card { @apply flex items-center justify-between rounded-xl border border-line bg-white p-6 text-ink dark:border-dark-line dark:bg-dark-surface dark:text-white; }
 .badge { @apply rounded-full bg-brand-50 px-2 py-1 text-[10px] font-medium text-brand-600 dark:bg-brand-600/15 dark:text-brand-300; }
 .plan-card h2 { @apply mt-3 text-xl font-semibold; }

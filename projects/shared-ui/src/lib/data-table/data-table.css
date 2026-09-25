@@ -36,16 +36,16 @@
   @apply ml-auto flex items-end justify-end gap-2;
 }
 .toolbar label {
-  @apply flex h-9 w-64 items-center gap-2 rounded-lg border border-line px-3 text-xs text-muted dark:border-dark-line;
+  @apply flex h-9 w-64 items-center gap-2 rounded-lg border border-line px-3 text-xs text-muted transition focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-500/25 dark:border-dark-line dark:focus-within:border-brand-500;
 }
 .toolbar .search-icon {
   @apply size-4 shrink-0;
 }
 .toolbar input {
-  @apply min-w-0 flex-1 border-0 bg-transparent text-xs text-ink outline-none dark:text-white;
+  @apply min-w-0 flex-1 border-0 bg-transparent text-xs text-ink outline-none placeholder:text-muted dark:text-white dark:placeholder:text-brand-300;
 }
 .toolbar button {
-  @apply inline-flex h-9 cursor-pointer items-center whitespace-nowrap rounded-lg border border-line bg-transparent px-3 text-xs font-medium text-muted dark:border-dark-line dark:text-brand-300;
+  @apply inline-flex h-9 cursor-pointer items-center whitespace-nowrap rounded-lg border border-line bg-transparent px-3 text-xs font-medium text-muted transition hover:border-brand-500 hover:text-brand-600 dark:border-dark-line dark:text-brand-300;
 }
 .toolbar .header-filter {
   @apply block;
@@ -60,7 +60,7 @@
   @apply min-w-32 justify-between bg-white dark:bg-dark-canvas;
 }
 .toolbar .primary {
-  @apply border-ink bg-ink text-white dark:border-brand-600 dark:bg-brand-600;
+  @apply inline-flex cursor-pointer items-center justify-center rounded-lg border border-brand-600 bg-brand-600 px-3 text-xs font-medium text-white transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:border-brand-600 dark:bg-brand-600 dark:hover:bg-brand-500;
 }
 .scroll {
   @apply max-w-full overflow-auto;

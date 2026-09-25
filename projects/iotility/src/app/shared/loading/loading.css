@@ -3,11 +3,11 @@
 .loading-glow {
   position: absolute;
   inset: 0;
-  /* Two brand ambiences (cyan + violet) over a light base. */
+  /* Light mode: pure cyan brand ambience over the page canvas base. */
   background:
-    radial-gradient(circle at 8% 6%, rgb(0 194 255 / 28%) 0%, transparent 44%),
-    radial-gradient(circle at 96% 96%, rgb(138 63 252 / 22%) 0%, transparent 48%),
-    linear-gradient(145deg, #ffffff, #eaf3fb);
+    radial-gradient(circle at 8% 6%, color-mix(in srgb, var(--color-brand-500) 30%, transparent) 0%, transparent 44%),
+    radial-gradient(circle at 96% 96%, color-mix(in srgb, var(--color-brand-700) 22%, transparent) 0%, transparent 48%),
+    linear-gradient(145deg, #ffffff, var(--color-canvas));
 }
 
 :host-context(html.dark) .loading-glow {
@@ -19,8 +19,13 @@
 
 .loading-bar {
   position: relative;
-  background: linear-gradient(90deg, #22d3ee, #0ea5e9, #a855f7);
+  /* Light mode: cyan brand-only gradient (purple ambience is dark mode). */
+  background: linear-gradient(90deg, var(--color-brand-500), var(--color-brand-600), var(--color-brand-700));
   animation: loading-progress 2.2s ease-in-out infinite;
+}
+
+:host-context(html.dark) .loading-bar {
+  background: linear-gradient(90deg, #22d3ee, #0ea5e9, #a855f7);
 }
 
 .loading-bar::after {
@@ -50,10 +55,10 @@
   }
 }
 
-/* Light theme: light stage, ink text, identical bar gradient. */
+/* Light theme: page-canvas stage, ink text. */
 :host-context(html:not(.dark)) .loading-shell {
   color: var(--color-ink);
-  background: #f4f7fb;
+  background: var(--color-canvas);
 }
 
 :host-context(html.dark) .loading-shell {

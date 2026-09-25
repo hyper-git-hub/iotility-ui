@@ -80,5 +80,5 @@
   @apply grid size-7 cursor-pointer place-items-center rounded-lg border border-line text-[11px] font-medium text-muted transition hover:border-brand-500 hover:text-brand-600 dark:border-dark-line dark:text-brand-300;
 }
 .page-number.active {
-  @apply border-ink bg-ink font-semibold text-white hover:border-ink hover:text-white dark:border-brand-600 dark:bg-brand-600 dark:hover:border-brand-600;
+  @apply border-brand-600 bg-brand-600 font-semibold text-white hover:border-brand-600 hover:bg-brand-700 hover:text-white dark:border-brand-600 dark:bg-brand-600 dark:hover:border-brand-600 dark:hover:bg-brand-500;
 }
