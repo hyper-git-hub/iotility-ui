@@ -1,0 +1,29 @@
+@reference "../../../styles.css";
+
+.page-shell { @apply flex min-h-full flex-col gap-6 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white sm:p-8; }
+.page-heading { @apply flex items-start justify-between gap-4; }
+.page-heading h1 { @apply mt-1 text-2xl font-semibold text-ink dark:text-white; }
+.page-heading p:not(.eyebrow) { @apply mt-2 text-sm text-muted dark:text-brand-300; }
+.eyebrow { @apply text-xs font-medium text-brand-600 dark:text-brand-300; }
+.primary { @apply inline-flex cursor-pointer items-center justify-center rounded-lg border border-ink bg-ink px-4 py-2 text-xs font-medium text-white outline-none transition hover:bg-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:border-brand-600 dark:bg-brand-600 dark:hover:bg-brand-500; }
+.plan-card { @apply flex items-center justify-between rounded-xl border border-line bg-white p-6 text-ink dark:border-dark-line dark:bg-dark-surface dark:text-white; }
+.badge { @apply rounded-full bg-brand-50 px-2 py-1 text-[10px] font-medium text-brand-600 dark:bg-brand-600/15 dark:text-brand-300; }
+.plan-card h2 { @apply mt-3 text-xl font-semibold; }
+.plan-card p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
+.price { @apply text-2xl font-semibold; }
+.price span { @apply text-xs font-normal text-muted dark:text-brand-300; }
+.panel { @apply rounded-xl border border-line bg-white p-5 text-ink dark:border-dark-line dark:bg-dark-surface dark:text-white; }
+.panel h2 { @apply text-sm font-medium; }
+.card-row { @apply mt-5 flex items-center gap-3; }
+.card-icon { @apply grid size-10 place-items-center rounded-lg bg-brand-50 text-xs font-semibold text-brand-600 dark:bg-brand-600/15 dark:text-brand-300; }
+.card-row span:nth-child(2) { @apply flex flex-1 flex-col gap-1; }
+.card-row small { @apply text-xs text-muted dark:text-brand-300; }
+.text-button { @apply cursor-pointer bg-transparent text-xs font-medium text-brand-600 outline-none transition hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:text-brand-300 dark:hover:text-brand-200; }
+.divider { @apply my-5 border-t border-line dark:border-dark-line; }
+.usage { @apply mt-5; }
+.usage > div { @apply flex justify-between text-xs; }
+.usage strong { @apply text-brand-600 dark:text-brand-300; }
+progress { @apply mt-2 h-1.5 w-full appearance-none overflow-hidden rounded-full bg-line dark:bg-dark-line; }
+progress::-webkit-progress-bar { @apply rounded-full bg-line dark:bg-dark-line; }
+progress::-webkit-progress-value { @apply rounded-full bg-brand-600; }
+progress::-moz-progress-bar { @apply rounded-full bg-brand-600; }

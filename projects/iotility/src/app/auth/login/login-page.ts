@@ -49,13 +49,15 @@ export class LoginPage {
     this.error.set('');
 
     this.authApi
-      .login(email, password, remember) 
+      .login(email, password, remember)
       .pipe(
         tap((response) => {
           const token = response.data?.Token;
           if (response.error || !token) throw new Error(response.message || 'Login failed.');
           localStorage.setItem('token', token);
           localStorage.setItem('userMS-token', token);
+          if (response.data?.is_first_time_login === true) localStorage.removeItem('firstLoginCompleted');
+          else localStorage.setItem('firstLoginCompleted', 'true');
           remember
             ? localStorage.setItem('rememberedEmail', email.trim().toLowerCase())
             : localStorage.removeItem('rememberedEmail');

@@ -407,13 +407,19 @@
           [class.active]="activeTab() === 'events'"
           (click)="activeTab.set('events')"
         >
-          Events</button
+          Events
+          @if (eventCount()) {
+            <span class="tab-count">{{ eventCount() }}</span>
+          }</button
         ><button
           type="button"
           [class.active]="activeTab() === 'stops'"
           (click)="activeTab.set('stops')"
         >
-          Stops</button
+          Stops
+          @if (stopCount()) {
+            <span class="tab-count">{{ stopCount() }}</span>
+          }</button
         ><button
           type="button"
           [class.active]="activeTab() === 'statistics'"

@@ -97,7 +97,7 @@
         <button
           type="button"
           aria-label="Export Excel"
-          title="Export Excel"
+          tooltip="Export Excel"
           [disabled]="!!exporting()"
           (click)="exportReport('xls')"
         >
@@ -111,7 +111,7 @@
         <button
           type="button"
           aria-label="Export PDF"
-          title="Export PDF"
+          tooltip="Export PDF"
           [disabled]="!!exporting()"
           (click)="exportReport('pdf')"
         >

@@ -6,6 +6,7 @@ import {
   DataTableSkeleton,
   Skeleton,
   TableRow,
+  Tooltip,
 } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
@@ -32,7 +33,7 @@ const JOB_STATUS: Record<string, string> = {
 
 @Component({
   selector: 'app-dashboard-reports',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, ProgressBar, Skeleton],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, ProgressBar, Skeleton, Tooltip],
   templateUrl: './reports.html',
   styleUrl: './reports.css',
 })

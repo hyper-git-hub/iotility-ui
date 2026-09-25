@@ -6,6 +6,8 @@ Chart.register(...registerables);
   selector: 'app-fleet-line-chart',
   templateUrl: '../generic-chart.html',
   styleUrl: '../generic-chart.css',
+  // The card header already renders the title, so keep it out of the browser's native tooltip.
+  host: { '[attr.title]': 'null' },
 })
 export class FleetLineChart implements AfterViewInit, OnDestroy {
   readonly title = input.required<string>();

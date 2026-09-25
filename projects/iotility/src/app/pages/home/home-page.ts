@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Tooltip } from '@iotility/shared-ui';
 import { LoadingService } from '../../shared/services/loading.service';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
 import { FLEETPOINT_APP, RecentAppsService } from '../../shared/services/recent-apps.service';
@@ -24,6 +25,7 @@ interface OnboardingStep {
 
 @Component({
   selector: 'app-home-page',
+  imports: [Tooltip],
   templateUrl: './home-page.html',
   styleUrl: './home-page.css',
 })
@@ -31,6 +33,8 @@ export class HomePage {
   protected activeModuleId = 'fleetpoint';
   protected expandedStep: number | null = 1;
   protected guideCollapsed = false;
+  protected trayOpen = false;
+
 
   protected readonly modules: IotilityModule[] = [
     {
