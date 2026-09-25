@@ -9,6 +9,32 @@
     <div class="rounded-2xl border border-line bg-white p-5 dark:border-dark-line dark:bg-dark-surface sm:p-6">
       <div class="mb-5 flex items-center justify-between">
         <div>
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h2 class="font-semibold text-ink dark:text-white">Use Cases</h2>
+        <p class="mt-1 text-xs text-muted dark:text-brand-300">Open an IoTility application to get started.</p>
+      </div>
+      <button type="button" class="tray-trigger" (click)="trayOpen = !trayOpen" [attr.aria-expanded]="trayOpen">
+        <span>{{ trayOpen ? 'Close use cases' : 'Open use cases' }}</span>
+        <span class="color-icon size-4" [class.rotate-180]="trayOpen" style="--icon: url('/assets/icons/chevron-down.svg')" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    @if (trayOpen) {
+      <div class="use-case-tray" role="region" aria-label="Use cases">
+        <div class="use-case-tray__heading">Use Case</div>
+        <div class="use-case-tray__grid">
+          @for (module of modules; track module.id) {
+            <button type="button" class="use-case-app" (click)="module.action()">
+              <img [src]="module.icon" [alt]="module.name" />
+              <span>{{ module.name }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+
           <h2 class="font-semibold text-ink dark:text-white">Explore IoTility</h2>
           <p class="mt-1 text-xs text-muted dark:text-brand-300">
             Choose a solution built for your operation.

@@ -8,10 +8,39 @@
   </a>
 
   <nav class="flex flex-1 flex-col items-center gap-1" aria-label="Primary navigation">
-    <a routerLink="/use-cases" routerLinkActive="sidebar-nav-active" class="sidebar-nav-item">
-      <span class="color-icon" style="--icon: url('/assets/icons/grid.svg')" aria-hidden="true"></span>
-      <span>Use Cases</span>
-    </a>
+    <div class="relative">
+      <button
+        type="button"
+        class="sidebar-nav-item"
+        [class.sidebar-nav-active]="useCasesOpen()"
+        (click)="toggleUseCases()"
+        [attr.aria-expanded]="useCasesOpen()"
+      >
+        <span class="color-icon" style="--icon: url('/assets/icons/grid.svg')" aria-hidden="true"></span>
+        <span>Use Cases</span>
+      </button>
+      <div class="use-cases-backdrop" [class.use-open]="useCasesOpen()" aria-hidden="true" (click)="closeUseCases()"></div>
+        <section
+          class="use-cases-window"
+          [class.use-open]="useCasesOpen()"
+          [attr.aria-hidden]="!useCasesOpen()"
+          role="dialog"
+          aria-labelledby="use-cases-window-title"
+        >
+          <header class="use-cases-window-header">
+            <h2 id="use-cases-window-title">Use Cases</h2>
+            <p>Open an IoTility application to get started.</p>
+          </header>
+          <div class="use-cases-logos">
+            @for (module of modules; track module.id) {
+              <button type="button" class="use-case-logo" (click)="selectModule(module.action)">
+                <img [src]="module.icon" [alt]="module.name" />
+                <span>{{ module.name }}</span>
+              </button>
+            }
+          </div>
+        </section>
+    </div>
     <a
       routerLink="/home"
       routerLinkActive="sidebar-nav-active"

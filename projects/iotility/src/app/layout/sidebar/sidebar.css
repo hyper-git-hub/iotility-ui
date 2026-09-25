@@ -28,6 +28,56 @@
   @apply bg-brand-600 text-white hover:bg-brand-600;
 }
 
+/* Use Cases window anchored next to the Use Cases button */
+.use-cases-backdrop {
+  @apply fixed inset-0 z-[1499];
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 140ms ease,
+    visibility 140ms ease;
+}
+.use-cases-window {
+  @apply absolute left-[calc(100%+28px)] top-0 z-[1500] w-[576px] overflow-hidden rounded-2xl border border-line bg-white shadow-2xl dark:border-dark-line dark:bg-dark-surface;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-12px) scale(0.98);
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out,
+    visibility 180ms ease-out;
+}
+.use-cases-backdrop.use-open {
+  visibility: visible;
+  opacity: 1;
+}
+.use-cases-window.use-open {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+.use-cases-window-header {
+  @apply border-b border-line px-6 py-5 dark:border-dark-line;
+}
+.use-cases-window-header h2 {
+  @apply text-lg font-bold text-ink dark:text-white;
+}
+.use-cases-window-header p {
+  @apply mt-1 text-xs text-muted dark:text-brand-300;
+}
+.use-cases-logos {
+  @apply grid grid-cols-3 gap-4 p-6;
+}
+.use-case-logo {
+  @apply flex flex-col items-center gap-2.5 rounded-xl border border-line bg-white p-4 transition-all hover:border-brand-500 hover:shadow-md dark:border-dark-line dark:bg-dark-canvas/40 dark:hover:border-brand-500/40;
+}
+.use-case-logo img {
+  @apply size-10 object-contain;
+}
+.use-case-logo span {
+  @apply text-[11px] font-semibold text-ink dark:text-white;
+}
+
 .app-close-button {
   position: absolute;
   top: -7px;

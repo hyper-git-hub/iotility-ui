@@ -216,7 +216,9 @@ export class MfaPage implements OnInit, OnDestroy {
       localStorage.setItem('roleAccess', JSON.stringify(roleData));
       sessionStorage.removeItem('pendingAuthProfile');
       const returnUrl = this.safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
-      void this.router.navigateByUrl(returnUrl);
+      void this.router.navigateByUrl(
+        localStorage.getItem('firstLoginCompleted') === 'true' ? returnUrl : '/home',
+      );
     });
   }
 

@@ -1,11 +1,11 @@
-import { Component, DestroyRef, HostListener, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   NavigationCancel,
   NavigationEnd,
   NavigationError,
   NavigationStart,
-  Router,
   RouterOutlet,
 } from '@angular/router';
 import { Loading } from './shared/loading/loading';
@@ -30,7 +30,7 @@ interface FeedbackDialogRequest {
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit {
+export class App {
   private static readonly PROGRESS_DELAY_MS = 110;
   private static readonly MINIMUM_PROGRESS_MS = 280;
   private static readonly PROGRESS_FADE_MS = 240;
@@ -115,21 +115,6 @@ export class App implements OnInit {
     this.hideTimer = undefined;
   }
 
-  ngOnInit(): void {
-    /* IoTility startup loading is handled by the pre-bootstrap loader in index.html.
-    this.loading.showFor(
-      {
-        label: 'Hypernym',
-        title: 'Loading IoTility',
-        message: 'Preparing your connected operations platform…',
-        initials: 'io',
-        logoSrc: 'assets/iotility-light.svg',
-        labelLogoSrc: 'assets/hypernym-full.svg',
-      },
-      2500,
-    ); */
-  }
-
   @HostListener('window:iotility:logout')
   protected logoutFromRemote(): void {
     void this.authLogout.request();
@@ -140,5 +125,10 @@ export class App implements OnInit {
     const request = (event as CustomEvent<FeedbackDialogRequest>).detail;
     request.handled = true;
     request.respond(await this.feedbackDialog.open(request.config));
+  }
+
+  checkAuthenticationStatus(): boolean {
+    const token = localStorage.getItem('token');
+    return !!token;
   }
 }

@@ -33,6 +33,8 @@ export class HomePage {
   protected activeModuleId = 'fleetpoint';
   protected expandedStep: number | null = 1;
   protected guideCollapsed = false;
+  protected trayOpen = false;
+
 
   protected readonly modules: IotilityModule[] = [
     {
