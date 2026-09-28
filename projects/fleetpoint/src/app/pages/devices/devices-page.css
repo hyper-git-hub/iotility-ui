@@ -40,6 +40,18 @@
 .device-filters {
   @apply relative z-20 flex items-center gap-3 rounded-2xl border border-line bg-white p-3 dark:border-dark-line dark:bg-dark-surface;
 }
+.device-table-error {
+  @apply rounded-xl border border-danger/25 bg-danger/5 px-4 py-3 text-xs text-danger;
+}
+.device-pagination {
+  @apply flex shrink-0 items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
+}
+.device-pagination div {
+  @apply flex gap-2;
+}
+.device-pagination button {
+  @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line;
+}
 .search {
   @apply flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-canvas px-3 dark:border-dark-line dark:bg-dark-canvas;
 }
@@ -67,6 +79,9 @@
 }
 .view-toggle button.active {
   @apply bg-brand-600 text-white;
+}
+.view-toggle button.active img {
+  filter: brightness(0) invert(1);
 }
 .device-cell {
   @apply flex items-center gap-2;
@@ -107,6 +122,7 @@
 .identifier-cell strong { @apply text-[10px] font-medium text-ink dark:text-white; }
 .identifier-cell small { @apply mt-1 text-[9px] text-muted dark:text-brand-300; }
 .firmware-cell { @apply font-mono text-[10px] text-ink dark:text-white; }
+.unavailable-value { @apply text-xs font-normal text-muted dark:text-brand-300; }
 .ping-value,.warranty-value { @apply text-[10px]; }
 .ping-value[data-state='stale'],.warranty-value[data-state='expired'] { @apply font-medium text-danger; }
 .ping-value[data-state='never'] { @apply text-muted; }
@@ -127,6 +143,12 @@
 }
 .device-status[data-status='in-stock'] {
   @apply border-brand-500/30 bg-brand-500/10 text-brand-600;
+}
+.device-status[data-status='sold'] {
+  @apply border-success/30 bg-success/10 text-success;
+}
+.device-status[data-status='allocated'] {
+  @apply border-info/30 bg-info/10 text-info;
 }
 .meter {
   @apply flex items-center gap-2 text-[10px];
