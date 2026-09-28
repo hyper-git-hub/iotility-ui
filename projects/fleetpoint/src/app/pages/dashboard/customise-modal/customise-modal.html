@@ -28,7 +28,7 @@
       }
     </div>
     <footer class="customise-footer">
-      <button type="button" class="customise-select-all" (click)="selectAll()">Select all</button>
+      <button type="button" class="customise-select-all" (click)="selectAll()">{{ allSelected() ? 'Deselect All' : 'Select All' }}</button>
       <div class="customise-footer-actions">
         <button type="button" class="customise-cancel" (click)="cancel()">Cancel</button>
         <button type="button" class="customise-save" (click)="save()">Save Changes</button>

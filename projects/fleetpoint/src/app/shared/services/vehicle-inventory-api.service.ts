@@ -1,5 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { secureStorage } from '@iotility/shared-ui';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { environment } from '../../../environments/environment';
@@ -46,6 +47,7 @@ export interface VehicleInventoryRecord {
   latitude?: string | null;
   longitude?: string | null;
   online_status?: boolean;
+  live_status?: string | null;
   ignition_status?: boolean;
   location?: string | null;
   vehicle_driver_name?: string | null;
@@ -54,7 +56,8 @@ export interface VehicleInventoryRecord {
   mileage?: string | null;
   km_per_day?: number | null;
   updated_time?: string | null;
-  next_maintenance?: string | null;
+  next_maintenance?: string | number | null;
+  total_distance_traveled?: number | null;
 }
 
 export interface InventoryOption {
@@ -171,7 +174,7 @@ export class VehicleInventoryApiService {
     };
   } | null {
     try {
-      return JSON.parse(localStorage.getItem('user') ?? 'null');
+      return JSON.parse(secureStorage.get('user') ?? 'null');
     } catch {
       return null;
     }

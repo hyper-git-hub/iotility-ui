@@ -16,17 +16,36 @@ export interface FleetInventoryRecord {
   created_at: string | null;
   customer_name: string | null;
   status: number;
+  total_drivers?: number;
+  avg_fuel?: number | null;
+  utilisation?: number | null;
+  fuel_efficiency?: number | null;
+  safety_score?: number | null;
+  category?: string | null;
   assigned_vehicles?: Array<{
     id?: number;
     name?: string;
     registration?: string;
+    make?: string | null;
+    model?: string | null;
+    year?: string | number | null;
     online_status?: boolean;
+    live_status?: string | null;
     location?: string | null;
     mileage?: string | null;
     total_violations?: number | null;
     device_allocation?: boolean;
+    vehicle_driver_name?: string | null;
     associated_drivers_name?: Array<{ driver_id?: number; driver_name?: string }>;
   }>;
+}
+
+export interface FleetInventoryResponse {
+  count?: number;
+  total_fleet_count?: number;
+  total_vehicle_count?: number;
+  total_driver_count?: number;
+  data: FleetInventoryRecord[];
 }
 
 export interface FleetVehicleOption {
@@ -45,7 +64,7 @@ export class FleetInventoryApiService {
     offset: number;
     id: string;
     search: string;
-  }): Observable<ApiResponse<{ count: number; data: FleetInventoryRecord[] }>> {
+  }): Observable<ApiResponse<FleetInventoryResponse>> {
     let params = new HttpParams()
       .set('limit', filters.limit)
       .set('offset', filters.offset)
@@ -54,7 +73,7 @@ export class FleetInventoryApiService {
       .set('id', filters.id)
       .set('search', filters.search)
       .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone);
-    return this.http.get<ApiResponse<{ count: number; data: FleetInventoryRecord[] }>>(FLEET_API, {
+    return this.http.get<ApiResponse<FleetInventoryResponse>>(FLEET_API, {
       params,
     });
   }

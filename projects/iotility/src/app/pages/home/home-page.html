@@ -96,7 +96,7 @@
     class="flex w-full shrink-0 justify-center border-t border-line bg-white p-2 dark:border-dark-line dark:bg-dark-surface xl:w-14 xl:border-l xl:border-t-0 xl:pt-5">
     <button type="button" (click)="toggleGuide()"
       class="grid size-9 place-items-center rounded-full text-muted transition hover:bg-brand-50 hover:text-brand-700 dark:text-brand-300 dark:hover:bg-dark-canvas dark:hover:text-white"
-      aria-label="Expand step-by-step guide" title="Expand guide">
+      aria-label="Expand step-by-step guide" tooltip="Expand guide">
       <span class="color-icon size-5 rotate-90 xl:rotate-0" style="--icon: url('/assets/icons/chevron-left.svg')" aria-hidden="true"></span>
     </button>
   </aside>
@@ -112,7 +112,7 @@
       </div>
       <button type="button" (click)="toggleGuide()"
         class="grid size-9 shrink-0 place-items-center rounded-full text-muted transition hover:bg-brand-50 hover:text-brand-700 dark:text-brand-300 dark:hover:bg-dark-canvas dark:hover:text-white"
-        aria-label="Collapse step-by-step guide" title="Collapse guide">
+        aria-label="Collapse step-by-step guide" tooltip="Collapse guide">
         <span class="color-icon size-5 rotate-90 xl:rotate-0" style="--icon: url('/assets/icons/chevron-right.svg')" aria-hidden="true"></span>
       </button>
     </div>

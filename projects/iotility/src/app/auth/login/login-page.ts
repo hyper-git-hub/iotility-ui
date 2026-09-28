@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { BlockingLoader, SmoothHeight } from '@iotility/shared-ui';
+import { BlockingLoader, SmoothHeight, secureStorage } from '@iotility/shared-ui';
 import { finalize, from, switchMap, tap } from 'rxjs';
 import { AuthApiResponse, AuthApiService } from '../../shared/services/auth-api.service';
 import { AuthSessionService } from '../../shared/services/auth-session.service';
@@ -32,11 +32,11 @@ export class LoginPage {
   ) {
     this.form = formBuilder.nonNullable.group({
       email: [
-        localStorage.getItem('rememberedEmail') ?? '',
+        secureStorage.get('rememberedEmail') ?? '',
         [Validators.required, Validators.email],
       ],
       password: ['', Validators.required],
-      remember: [Boolean(localStorage.getItem('rememberedEmail'))],
+      remember: [Boolean(secureStorage.get('rememberedEmail'))],
     });
   }
 
@@ -49,16 +49,17 @@ export class LoginPage {
     this.error.set('');
 
     this.authApi
-      .login(email, password, remember) 
+      .login(email, password, remember)
       .pipe(
         tap((response) => {
           const token = response.data?.Token;
           if (response.error || !token) throw new Error(response.message || 'Login failed.');
-          localStorage.setItem('token', token);
-          localStorage.setItem('userMS-token', token);
+          secureStorage.set('token', token);
+          secureStorage.set('userMS-token', token);
+          if (response.data?.is_first_time_login !== true) localStorage.setItem('firstLoginCompleted', 'true');
           remember
-            ? localStorage.setItem('rememberedEmail', email.trim().toLowerCase())
-            : localStorage.removeItem('rememberedEmail');
+            ? secureStorage.set('rememberedEmail', email.trim().toLowerCase())
+            : secureStorage.remove('rememberedEmail');
         }),
         switchMap((response) => from(this.firebaseAuth.signIn(response.data?.fb_auth_token))),
         switchMap(() => this.authApi.getUserProfile()),

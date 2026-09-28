@@ -9,6 +9,7 @@ import {
   TableAction,
   TableColumn,
   TableRow,
+  Tooltip,
 } from '@iotility/shared-ui';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import {
@@ -21,7 +22,15 @@ import {
 import { DeviceForm, DeviceFormValue } from './device-form/device-form';
 @Component({
   selector: 'app-devices-page',
-  imports: [DataTable, DataTableCellTemplate, DeviceForm, Dropdown, SmoothHeight, StatCard],
+  imports: [
+    DataTable,
+    DataTableCellTemplate,
+    DeviceForm,
+    Dropdown,
+    SmoothHeight,
+    StatCard,
+    Tooltip,
+  ],
   templateUrl: './devices-page.html',
   styleUrl: './devices-page.css',
 })

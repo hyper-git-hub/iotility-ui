@@ -122,7 +122,7 @@ export const SIDEBAR_MENU: MenuGroup[] = [
         label: 'Reports',
         route: '/reports',
         icon: 'assets/fleetpoint/sidebar-icons/reports.svg',
-        featureId: 499,
+        featureId: 113,
       },
       {
         label: 'Documents',

@@ -2,11 +2,12 @@
 
 .fleet-sidebar {
   @apply flex h-full w-56 shrink-0 flex-col overflow-hidden bg-brand-950 text-white;
+  /* Same stop palette as the main-branch Fleetpoint shell sidebar gradient. */
   background: linear-gradient(
     180deg,
-    var(--color-dark-canvas),
-    var(--color-brand-950) 48%,
-    var(--color-brand-800)
+    #0a0a0f 0%,
+    #1e0a3c 50%,
+    #4c1d95 100%
   );
   --sidebar-motion: 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
   contain: layout paint;
@@ -215,6 +216,18 @@ nav em {
 .sidebar-footer {
   @apply shrink-0 border-t border-white/10 p-2;
 }
+.user-info {
+  @apply mb-2 rounded-lg p-2 bg-white/5;
+}
+.user-details {
+  @apply flex flex-col gap-1 text-center;
+}
+.user-name {
+  @apply text-xs font-medium text-white;
+}
+.user-role {
+  @apply text-xs text-brand-300;
+}
 .footer-return {
   @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-brand-300 transition hover:bg-white/5 hover:text-white;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -242,6 +255,9 @@ nav em {
   transform: translateX(-8px);
   overflow: hidden;
   pointer-events: none;
+}
+.fleet-sidebar.collapsed .user-info {
+  @apply hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {

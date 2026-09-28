@@ -66,17 +66,18 @@ export class VehiclesPage implements OnInit {
     id: vehicle.id,
     image: this.vehicleImage(vehicle.image),
     registration: vehicle.registration || vehicle.name,
-    makeModel: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Details unavailable',
-    fleet: vehicle.fleet_name || 'Unassigned',
+    makeModel: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim() || '—',
+    fleet: vehicle.fleet_name || '—',
     fleetColor: vehicle.fleet_name ? 'var(--color-brand-600)' : 'var(--color-muted)',
     status: this.vehicleStatus(vehicle),
-    driver: vehicle.vehicle_driver_name || 'Unassigned',
-    location: vehicle.location || 'Location unavailable',
-    speed: vehicle.speed ? `${vehicle.speed.toFixed(1)} km/h` : '—',
-    fuel: this.staticFuel(vehicle),
-    odometer: `${Number(vehicle.odo_reading || 0).toLocaleString()} km`,
-    mot: this.staticMot(vehicle),
-    alerts: (vehicle.total_violations ?? 0) > 0,
+    driver: vehicle.vehicle_driver_name || '—',
+    location: vehicle.location || '—',
+    speed: vehicle.speed == null ? '—' : `${Number(vehicle.speed).toFixed(1)} km/h`,
+    fuel: '—',
+    odometer: vehicle.odo_reading == null ? '—' : `${Number(vehicle.odo_reading).toLocaleString()} km`,
+    mot: vehicle.expiry_date || '—',
+    alerts:
+      vehicle.live_status?.toLowerCase() === 'alert' || (vehicle.total_violations ?? 0) > 0,
     actions: '',
   })));
   protected readonly moving = computed(() => this.statusCount('Moving'));
@@ -85,15 +86,12 @@ export class VehiclesPage implements OnInit {
   protected readonly alerts = computed(() => this.statusCount('Alert'));
   protected readonly offline = computed(() => this.statusCount('Offline'));
   protected readonly attentionItems = computed(() => {
-    const motExpiring = this.records().filter((vehicle) => {
-      const mot = this.staticMot(vehicle);
-      return mot === 'Expired' || Number.parseInt(mot, 10) <= 30;
-    });
-    const serviceOverdue = this.records().filter((vehicle) => vehicle.id % 3 !== 0);
+    const activeAlerts = this.records().filter(
+      (vehicle) => vehicle.live_status?.toLowerCase() === 'alert',
+    );
     const offline = this.records().filter((vehicle) => !vehicle.online_status);
     return [
-      { label: 'MOT expiring', vehicles: motExpiring, tone: 'danger', icon: '/assets/fleetpoint/icons/shield-alert.svg' },
-      { label: 'service overdue', vehicles: serviceOverdue, tone: 'warning', icon: '/assets/fleetpoint/sidebar-icons/maintenance.svg' },
+      { label: 'active alerts', vehicles: activeAlerts, tone: 'danger', icon: '/assets/fleetpoint/sidebar-icons/violations.svg' },
       { label: 'offline', vehicles: offline, tone: 'neutral', icon: '/assets/fleetpoint/sidebar-icons/devices.svg' },
     ]
       .filter((item) => item.vehicles.length > 0)
@@ -210,23 +208,11 @@ export class VehiclesPage implements OnInit {
   }
 
   private vehicleStatus(vehicle: VehicleInventoryRecord): string {
-    if ((vehicle.total_violations ?? 0) > 0) return 'Alert';
-    if (!vehicle.online_status) return 'Offline';
-    if ((vehicle.speed ?? 0) > 0) return 'Moving';
-    if (vehicle.ignition_status) return 'Idling';
-    return 'Stopped';
+    return vehicle.live_status?.trim() || '—';
   }
 
   private statusCount(status: string): number {
     return this.records().filter((vehicle) => this.vehicleStatus(vehicle) === status).length;
   }
 
-  private staticFuel(vehicle: VehicleInventoryRecord): number {
-    return 20 + ((vehicle.id * 17) % 76);
-  }
-
-  private staticMot(vehicle: VehicleInventoryRecord): string {
-    const options = ['Expired', '24d', '67d', '184d', '310d'];
-    return options[vehicle.id % options.length];
-  }
 }

@@ -1,6 +1,6 @@
 @reference "../../../styles.css";
 .dashboard-section {
-  @apply grid min-h-80 place-items-center rounded-2xl border border-line bg-white text-center dark:border-dark-line dark:bg-dark-surface;
+  @apply grid min-h-80 place-items-center rounded-2xl border border-line bg-white text-center dark:border-dark-card-line dark:bg-dark-card;
 }
 .dashboard-section h2 {
   @apply text-lg font-semibold text-ink dark:text-white;

@@ -11,3 +11,5 @@
 .browse-card {
   @apply flex items-center justify-center rounded-2xl border-2 border-dashed border-line bg-canvas/50 p-5 text-muted transition-colors hover:bg-canvas/80 dark:border-dark-line dark:bg-dark-surface dark:text-brand-300 dark:hover:bg-dark-surface;
 }
+
+

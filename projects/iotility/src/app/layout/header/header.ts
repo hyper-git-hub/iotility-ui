@@ -30,6 +30,10 @@ export class Header {
     const parts = this.userName.trim().split(/\s+/);
     return `${parts[0]?.[0] || 'I'}${parts.length > 1 ? parts.at(-1)?.[0] || '' : ''}`.toUpperCase();
   }
+  protected get userRole(): string {
+    const user = this.session.user;
+    return user?.user_type === 1 ? 'Super Admin' : user?.group?.trim() || 'Unassigned';
+  }
   protected handleProfileAction(option: DropdownOption): void {
     if (option.id === 'logout') {
       void this.logout.request();

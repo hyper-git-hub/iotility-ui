@@ -21,6 +21,7 @@ import {
   DropdownOption,
   SmoothHeight,
 } from '@iotility/shared-ui';
+import { secureStorage } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import { Modal } from '../../../shared/modal/modal';
 import {
@@ -464,7 +465,7 @@ export class VehicleForm implements OnChanges {
 
   private storedUser(): any {
     try {
-      return JSON.parse(localStorage.getItem('user') ?? 'null');
+      return JSON.parse(secureStorage.get('user') ?? 'null');
     } catch {
       return null;
     }

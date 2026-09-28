@@ -1,6 +1,7 @@
-import { Component, NgZone, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Skeleton, StatCardSkeleton, StatusBadge } from '@iotility/shared-ui';
+import { DateTimePicker, Skeleton, StatusBadge } from '@iotility/shared-ui';
 import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
 import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../../../shared/services/vehicle-detail-api.service';
 import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/services/vehicle-realtime.service';
@@ -8,11 +9,14 @@ import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-d
 import { VehicleForm, VehicleFormValue } from '../vehicle-form/vehicle-form';
 import { VehicleHud } from './vehicle-hud/vehicle-hud';
 import { VehicleInventoryRecord } from '../../../shared/services/vehicle-inventory-api.service';
+import { FleetMap, TrackedVehicle } from '../../../shared/fleet-map/fleet-map';
+import { TripPosition, TripReplayEvent, TripReplayMap } from '../../../shared/trip-replay-map/trip-replay-map';
+import { environment } from '../../../../environments/environment';
 
 interface DetailItem { label: string; value: string; }
 interface SummaryCard { label: string; value: string; suffix: string; tone: 'brand' | 'info' | 'success' | 'warning' | 'danger'; icon: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [Skeleton, StatCardSkeleton, StatusBadge, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
+@Component({ selector: 'app-vehicle-detail', imports: [DateTimePicker, DecimalPipe, FleetMap, Skeleton, StatusBadge, TripReplayMap, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
@@ -22,6 +26,22 @@ export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly violations = signal<unknown>(null);
   protected readonly maintenance = signal<unknown>(null);
   protected readonly lastJob = signal<unknown>(null);
+  protected readonly trailData = signal<any>(null);
+  protected readonly trailLoading = signal(false);
+  protected readonly fillupsData = signal<any[]>([]);
+  protected readonly fillupsLoading = signal(false);
+  protected readonly mileageData = signal<any[]>([]);
+  protected readonly mileageLoading = signal(false);
+  protected readonly mileageYear = signal<string>(String(new Date().getFullYear()));
+  protected readonly mileageMonth = signal<string>('');
+  protected readonly stopsData = signal<any[]>([]);
+  protected readonly stopsLoading = signal(false);
+  protected readonly showStops = signal(false);
+  protected readonly mileageYears = Array.from({ length: 30 }, (_, i) => String(new Date().getFullYear() - i));
+  protected readonly mileageMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  protected readonly snapshotResult = signal<any>(null);
+  protected readonly snapshotLoading = signal(false);
+  protected readonly snapshotDateValue = signal<string>('');
   protected readonly formOpen = signal(false);
   protected readonly editVehicle = computed<VehicleInventoryRecord | null>(() => {
     const vehicle = this.record();
@@ -58,6 +78,301 @@ export class VehicleDetail implements OnInit, OnDestroy {
     ];
   });
 
+  protected readonly lastJobDetail = computed(() => {
+    const job = this.lastJob() as any;
+    if (!job) return null;
+    return {
+      jobName: job.job_name || job.name || null,
+      driverName: job.driver_name || null,
+      driverImage: job.driver_image || null,
+      jobType: job.job_type === '1' || job.job_type === 1 ? 'Ad-hoc' : 'Schedule',
+      startTime: job.start_time_by_driver || null,
+      endTime: job.end_time_by_driver || null,
+      distance: job.travelled_distance ?? null,
+      speed: job.speed ?? null,
+      violations: job.violations ?? 0,
+      fillups: job.fill_ups ?? 0,
+      completedTasks: job.count_completed_tasks || null,
+      pendingTasks: job.count_pending_tasks || null,
+      abortedTasks: job.count_aborted_tasks || null,
+      tasks: Array.isArray(job.job_tasks) ? job.job_tasks : [],
+    };
+  });
+
+  /* Feeds the inline trip-replay trail map straight from the same map-trail
+     response that drives the trip statistics (lat/long → TripPosition). */
+  protected readonly tripPositions = computed<TripPosition[]>(() => {
+    const trail = this.trailData() as { map_trail?: any[] } | null;
+    const points = Array.isArray(trail?.map_trail) ? trail.map_trail : [];
+    return points
+      .filter((p) => p && Number.isFinite(Number(p?.lat)) && Number.isFinite(Number(p?.long ?? p?.lng)))
+      .map((p) => ({
+        lat: Number(p.lat),
+        lng: Number(p.long ?? p?.lng),
+        speed: Number(p?.speed) || 0,
+        heading: Number(p?.heading ?? p?.course) || 0,
+        time: String(p?.timestamp ?? ''),
+        timestamp: String(p?.timestamp ?? ''),
+      }));
+  });
+
+  /* ── Trip replay (trips tab) — ported from TripReplayPage: From/To pickers,
+     OSRM-snapped trail and the same wall-clock playback engine (VLC-style
+     scrub, 1–5× rates, 5s gap clamp). Vehicle comes from this page; stops for
+     the event dots come from the vehicle-detail stops API. ── */
+  protected readonly replayStartDate = signal('');
+  protected readonly replayEndDate = signal('');
+  protected readonly playing = signal(false);
+  protected readonly replayPositionIndex = signal(0);
+  protected readonly replaySpeed = signal(1);
+  protected readonly stepDurationMs = signal(600);
+  protected readonly routeLoading = signal(false);
+  protected readonly playbackRates: Record<number, number> = { 1: 2, 2: 5, 3: 9, 4: 16, 5: 25 };
+  protected readonly maxPosition = computed(() => Math.max(this.tripPositions().length - 1, 0));
+  protected readonly replayPointNumber = computed(() => (this.tripPositions().length ? this.replayPositionIndex() + 1 : 0));
+  protected readonly replayEvents = computed<TripReplayEvent[]>(() => {
+    const stops = this.stopsData();
+    const positions = this.tripPositions();
+    if (!stops.length || !positions.length) return [];
+    return stops.map((stop: any, i: number) => ({
+      id: `stop-${i}`,
+      label: 'Idling',
+      type: 'stop' as const,
+      positionIndex: this.nearestTimePosition(positions, String(stop?.start_time ?? '')),
+      detail: `${this.formatDateShort(stop?.start_time)} → ${this.formatDateShort(stop?.end_time)} · ${this.convertDuration(stop?.duration)}`,
+    }));
+  });
+  private playbackFrame?: number;
+  private playbackWallStart = 0;
+  private playbackStartIndex = 0;
+  private playbackOffsets: number[] = [];
+  private playbackTotalMs = 0;
+  private playbackRate = 1;
+  private static readonly MAX_PLAYBACK_GAP_MS = 5_000;
+
+  /* Ordered pickup→dropoff waypoints drawn from every job task — port of
+     hypernym's #jobTrailMap logic: first task's pickup is the route start,
+     last task's dropoff is the end, and every task point in between becomes a
+     stopover waypoint. These are raw job coordinates (straight-line hops), so
+     they are only the fallback/waypoint list: the trail itself is built from
+     the OSRM /route geometry in loadJobRoute(). */
+  private readonly jobWaypoints = computed<TripPosition[]>(() => {
+    const job = this.lastJobDetail();
+    const tasks = job?.tasks ?? [];
+    if (!tasks.length) return [];
+    const start = job?.startTime ? new Date(job.startTime).getTime() : NaN;
+    const end = job?.endTime ? new Date(job.endTime).getTime() : NaN;
+    const base = Number.isFinite(start) ? start : Number.isFinite(end) ? end : Date.now();
+    const span = Number.isFinite(start) && Number.isFinite(end) && end > start ? end - start : tasks.length * 3_600_000;
+    const stepMs = span / Math.max(tasks.length, 1);
+    const positions: TripPosition[] = [];
+    tasks.forEach((task: any, i: number) => {
+      const t0 = new Date(base + i * stepMs).toISOString();
+      const t1 = new Date(base + (i + 1) * stepMs).toISOString();
+      const push = (latRaw: unknown, lngRaw: unknown, time: string, label: string) => {
+        const lat = Number(latRaw), lng = Number(lngRaw);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        positions.push({ lat, lng, speed: 0, heading: 0, time, timestamp: time, location: label });
+      };
+      push(task?.pick_up__latitude, task?.pick_up__longitude, t0, `Task ${i + 1} Pickup`);
+      push(task?.drop_off__latitude, task?.drop_off__longitude, t1, `Task ${i + 1} Dropoff`);
+    });
+    return positions;
+  });
+
+  /* OSRM-snapped job trail. Stays empty until the /route reply lands (and if the
+     routing service is unreachable), and the computed below then falls back to
+     the raw waypoints so the tab still renders something instead of nothing. */
+  private readonly jobRouteTrail = signal<TripPosition[]>([]);
+  protected readonly jobRouteLoading = signal(false);
+  private jobRouteRequest?: AbortController;
+  protected readonly jobRoutePositions = computed<TripPosition[]>(() => {
+    const trail = this.jobRouteTrail();
+    return trail.length > 1 ? trail : this.jobWaypoints();
+  });
+  private static readonly JOB_ROUTE_TIMEOUT_MS = 10_000;
+  /* OSRM accepts a bounded coordinate list per /route call. */
+  private static readonly JOB_ROUTE_MAX_POINTS = 25;
+
+  /* Snap the ordered job waypoints to real roads before any trail is drawn:
+     one OSRM /route call with every pickup/dropoff as a stopover (first pickup
+     is the origin, last dropoff the destination), then the returned geometry
+     replaces the raw straight-line hops. Re-runs when the job payload lands
+     after the tab was opened, or when the tab is opened after the payload. */
+  private async loadJobRoute(waypoints: TripPosition[]): Promise<void> {
+    if (waypoints.length < 2) return;
+    this.jobRouteRequest?.abort();
+    const controller = new AbortController();
+    this.jobRouteRequest = controller;
+    this.jobRouteLoading.set(true);
+    const timeout = setTimeout(() => controller.abort(), VehicleDetail.JOB_ROUTE_TIMEOUT_MS);
+    try {
+      const geometry = await this.requestJobGeometry(waypoints, controller.signal);
+      if (geometry) this.jobRouteTrail.set(this.jobRoutePoints(geometry, waypoints));
+    } finally {
+      clearTimeout(timeout);
+      if (this.jobRouteRequest === controller) {
+        this.jobRouteRequest = undefined;
+        this.jobRouteLoading.set(false);
+      }
+    }
+  }
+
+  /* One /route request for the whole waypoint list — OSRM keeps the job order
+     and routes through every intermediate stopover. Falls back to the public
+     demo router, and returns null when neither answers so the tab keeps the raw
+     straight-line waypoints rather than an empty map. */
+  private async requestJobGeometry(waypoints: TripPosition[], signal: AbortSignal): Promise<Array<[number, number]> | null> {
+    const stride = Math.max(1, Math.ceil(waypoints.length / VehicleDetail.JOB_ROUTE_MAX_POINTS));
+    const selected = waypoints.filter((_, index) => index % stride === 0 || index === waypoints.length - 1);
+    const coordinates = selected.map((point) => `${point.lng},${point.lat}`).join(';');
+    for (const baseUrl of [environment.osrmBaseUrl, environment.osrmFallbackUrl]) {
+      try {
+        const response = await fetch(
+          `${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson&alternatives=false&steps=false`,
+          { signal },
+        );
+        if (!response.ok) continue;
+        const result = (await response.json()) as {
+          code?: string;
+          routes?: Array<{ geometry?: { coordinates?: Array<[number, number]> } }>;
+        };
+        const geometry = result.code === 'Ok' ? result.routes?.[0]?.geometry?.coordinates ?? [] : [];
+        if (geometry.length > 1) return geometry;
+      } catch {
+        // Aborted by a newer load or a timeout — stop; otherwise try the next router.
+        if (signal.aborted) return null;
+      }
+    }
+    return null;
+  }
+
+  /* Spreads the job's time window and a per-point heading over the OSRM
+     geometry so the marker/playback code (time + heading per point) works
+     unchanged on the snapped trail. */
+  private jobRoutePoints(geometry: Array<[number, number]>, waypoints: TripPosition[]): TripPosition[] {
+    const start = Date.parse(String(waypoints[0]?.timestamp || waypoints[0]?.time || ''));
+    const end = Date.parse(String(waypoints[waypoints.length - 1]?.timestamp || waypoints[waypoints.length - 1]?.time || ''));
+    const span = Number.isFinite(start) && Number.isFinite(end) && end > start ? end - start : 0;
+    const last = geometry.length - 1;
+    return geometry.map(([lng, lat], index) => {
+      const time = span ? new Date(start + (span * index) / last).toISOString() : '';
+      return { lat, lng, speed: 0, heading: this.jobHeading(geometry, index), time, timestamp: time };
+    });
+  }
+
+  private jobHeading(geometry: Array<[number, number]>, index: number): number {
+    const [lng, lat] = geometry[Math.min(index + 1, geometry.length - 1)];
+    const [prevLng, prevLat] = geometry[Math.max(index - 1, 0)];
+    if (lng === prevLng && lat === prevLat) return 0;
+    return ((Math.atan2(lng - prevLng, lat - prevLat) * 180) / Math.PI + 360) % 360;
+  }
+
+  /* Task markers with pickup/dropoff info cards — parity with hypernym's
+     createMarkers(...): pickup pins carry the job start date, dropoff pins the
+     job end date (dd-MMM-yyyy, hh:mm a equivalent). Once the trail is OSRM
+     geometry the task points are no longer at their waypoint indexes, so each
+     event is anchored to the nearest coordinate on the drawn trail. */
+  protected readonly jobTrailEvents = computed<TripReplayEvent[]>(() => {
+    const job = this.lastJobDetail();
+    const pickupDate = job?.startTime ? this.formatDateShort(job.startTime) : '-';
+    const dropoffDate = job?.endTime ? this.formatDateShort(job.endTime) : '-';
+    const positions = this.jobRoutePositions();
+    return this.jobWaypoints().map((waypoint, index) => {
+      const pickup = waypoint.location?.includes('Pickup') ?? false;
+      return {
+        id: `job-task-${index}`,
+        label: waypoint.location || `Task point ${index + 1}`,
+        type: 'stop' as const,
+        positionIndex: this.nearestCoordinatePosition(positions, waypoint.lat, waypoint.lng),
+        detail: `${pickup ? 'Pickup' : 'Dropoff'} Date: ${pickup ? pickupDate : dropoffDate}`,
+      };
+    });
+  });
+
+  /* Fillup locations — one marker per fillup record with coordinates. */
+  protected readonly fillupMarkers = computed<TrackedVehicle[]>(() => {
+    return this.fillupsData()
+      .map((fillup: any, i: number) => {
+        const lat = Number(fillup?.lat ?? fillup?.latitude);
+        const lng = Number(fillup?.long ?? fillup?.lng ?? fillup?.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        return {
+          id: `fillup-${i}`,
+          model: this.formatDateShort(fillup?.timestamp),
+          driver: '',
+          status: 'Idling',
+          speed: 0,
+          fuel: Number(fillup?.volume_consumed) || 0,
+          location: '',
+          updated: this.formatDateShort(fillup?.timestamp),
+          lat,
+          lng,
+        };
+      })
+      .filter((marker): marker is TrackedVehicle => marker !== null);
+  });
+
+  /* Violation locations — one marker per violation record with coordinates. */
+  protected readonly violationMarkers = computed<TrackedVehicle[]>(() => {
+    const raw = this.violations() as any;
+    const records = Array.isArray(raw) ? raw : raw?.data;
+    const list = Array.isArray(records) ? records : [];
+    return list
+      .map((record: any, i: number) => {
+        const lat = Number(record?.lat ?? record?.latitude);
+        const lng = Number(record?.long ?? record?.lng ?? record?.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        return {
+          id: `violation-${i}`,
+          model: record?.violation_type || `Violation ${i + 1}`,
+          driver: record?.driver_name || '',
+          status: 'Alert',
+          speed: Number(record?.speed) || 0,
+          fuel: 0,
+          location: record?.location || '',
+          updated: this.formatDateShort(record?.event_generation_time ?? record?.timestamp),
+          lat,
+          lng,
+        };
+      })
+      .filter((marker): marker is TrackedVehicle => marker !== null);
+  });
+
+  /* Single-vehicle marker for the snapshot tab's map. */
+  protected readonly snapshotMarker = computed<TrackedVehicle[]>(() => {
+    const snap = this.snapshotResult() as any;
+    if (!snap) return [];
+    const lat = Number(snap.latitude);
+    const lng = Number(snap.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+    return [{
+      id: this.vehicleId,
+      model: this.text(snap.vehicle_name || this.record()?.name || this.registration()),
+      driver: this.text(snap.assigned_driver, 'Unassigned'),
+      status: snap.vehicle_state === 'Idle' ? 'Idling' : 'Moving',
+      speed: Number(snap.speed) || 0,
+      fuel: Number(snap.volume) || 0,
+      location: this.text(snap.location, ''),
+      updated: snap.timestamp ? this.formatDateShort(snap.timestamp) : '',
+      lat,
+      lng,
+    }];
+  });
+
+  /* Skeleton cards reuse the real static parts (label, tone, icon, suffix) so
+     only the value swaps from a shimmer bar to text on load — no reflow. */
+  protected readonly skeletonSummaryCards = [
+    { label: 'Total distance', tone: 'info', icon: 'assets/fleetpoint/icons/route.svg', suffix: 'km', valueWidth: '3rem' },
+    { label: 'Distance today', tone: 'brand', icon: 'assets/fleetpoint/icons/map-pin-brand.svg', suffix: 'km', valueWidth: '3.5rem' },
+    { label: 'Current speed', tone: 'success', icon: 'assets/fleetpoint/icons/speedometer.svg', suffix: 'km/h', valueWidth: '3rem' },
+    { label: 'Violations', tone: 'danger', icon: 'assets/fleetpoint/icons/warning.svg', suffix: 'total', valueWidth: '2.5rem' },
+    { label: 'Fuel status', tone: 'warning', icon: 'assets/fleetpoint/icons/fuel-sensor.svg', suffix: '', valueWidth: '2.25rem' },
+    { label: 'Ignition', tone: 'warning', icon: 'assets/fleetpoint/icons/ignition.svg', suffix: 'reported', valueWidth: '2.5rem' },
+    { label: 'Safety rules', tone: 'success', icon: 'assets/fleetpoint/icons/shield-check.svg', suffix: 'enabled', valueWidth: '1.5rem' },
+    { label: 'Maintenance', tone: 'brand', icon: 'assets/fleetpoint/icons/wrench.svg', suffix: 'records', valueWidth: '1.5rem' },
+  ] as const;
+
   private readonly subscription = new Subscription();
   /* Realtime self-healing: SignalR callbacks run outside the Angular zone and
      can go quiet on backend hiccups, so the HUD would otherwise stay frozen
@@ -67,6 +382,7 @@ export class VehicleDetail implements OnInit, OnDestroy {
   private lastRealtimeAt = 0;
   private pollRefreshing = false;
   private pollTimer?: ReturnType<typeof setInterval>;
+  private trailRange: { start: Date; end: Date } | null = null;
   private static readonly POLL_INTERVAL_MS = 20_000;
   private static readonly REALTIME_STALE_MS = 15_000;
 
@@ -85,6 +401,13 @@ export class VehicleDetail implements OnInit, OnDestroy {
       { code: 'DS', name: 'Distance Today', data: '0 km' },
       { code: 'FS', name: 'Fuel Status', data: 'Not available' },
     ]);
+    /* The Last Job trail is only requested while that tab is open, and re-runs
+       once the job payload arrives (or the tab is opened after it landed). */
+    effect(() => {
+      const waypoints = this.jobWaypoints();
+      if (this.activeTab() !== 'lastjob' || waypoints.length < 2) return;
+      void this.loadJobRoute(waypoints);
+    });
   }
   ngOnInit(): void {
     this.subscription.add(
@@ -140,32 +463,15 @@ export class VehicleDetail implements OnInit, OnDestroy {
       error: (response) => this.showLoadError(response.error?.message || 'Vehicle details could not be loaded.'),
     });
   }
-  protected metricTone(index: number): 'brand' | 'info' | 'success' | 'warning' | 'danger' { return ['danger', 'warning', 'info', 'success', 'brand', 'danger'][index % 6] as never; }
   protected metricValue(metric: VehicleMetric): string { return this.text(metric.data, '0'); }
-
-  // Icon paths + corner tag per fact for the telemetry-style spec tiles.
-  private static readonly SPEC_META: Record<string, { icon: string[]; tag: string; color: string; tagStyle?: string }> = {
-    'Vehicle Name / ID': { icon: ['M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'], tag: 'Primary', color: '#a78bfa', tagStyle: 'background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-color: rgba(139, 92, 246, 0.5);' },
-    'Record Status': { icon: ['M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'], tag: 'Operational', color: '#34d399', tagStyle: 'background: rgba(16, 185, 129, 0.1); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3);' },
-    'Fleet': { icon: ['M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'], tag: 'Metro Hub', color: '#818cf8', tagStyle: '' },
-    'Make': { icon: ['M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z'], tag: 'OEM', color: '#22d3ee', tagStyle: '' },
-    'Model': { icon: ['M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4'], tag: 'Sedan', color: '#60a5fa', tagStyle: '' },
-    'Year': { icon: ['M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'], tag: 'Next Gen', color: '#34d399', tagStyle: 'color: #34d399;' },
-    'Colour': { icon: ['M7 21a4 4 0 01-4-4 5 5 0 014-4h4a5 5 0 014 4 4 4 0 01-4 4H7zm0 0v-4'], tag: '#F472B6', color: '#f472b6', tagStyle: 'background: rgba(244, 114, 182, 0.1); color: #f9a8d4; border-color: rgba(244, 114, 182, 0.3);' },
-    'Engine Number': { icon: ['M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', 'M15 12a3 3 0 11-6 0 3 3 0 016 0z'], tag: 'BLOCK', color: '#fb7185', tagStyle: '' },
-    'Chassis Number': { icon: ['M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'], tag: 'MATCHED', color: '#c084fc', tagStyle: 'background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);' },
-    'Engine Capacity': { icon: ['M13 10V3L4 14h7v7l9-11h-7z'], tag: 'DISP', color: '#22d3ee', tagStyle: 'color: #22d3ee;' },
-    'Fuel Tank Capacity': { icon: ['M19 14l-7 7m0 0l-7-7m7 7V3'], tag: 'MAX', color: '#34d399', tagStyle: '' },
-    'Odometer Reading': { icon: ['M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'], tag: 'Fresh', color: '#2dd4bf', tagStyle: 'background: rgba(6, 182, 212, 0.1); color: #22d3ee; border-color: rgba(6, 182, 212, 0.3);' },
-    'Owner': { icon: ['M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'], tag: 'OWN', color: '#a78bfa', tagStyle: '' },
-    'Date Commissioned': { icon: ['M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'], tag: 'COMM', color: '#fbbf24', tagStyle: '' },
-    'Registration Expiry': { icon: ['M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'], tag: 'EXPIRY', color: '#fb7185', tagStyle: '' },
-    'Customer': { icon: ['M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'], tag: 'CUST', color: '#818cf8', tagStyle: '' },
-  };
-  protected specMeta(label: string): { icon: string[]; tag: string; color: string; tagStyle?: string } {
-    return VehicleDetail.SPEC_META[label] ?? { icon: ['M4 6h16M4 12h16M4 18h16'], tag: 'SPEC', color: '#94a3b8', tagStyle: '' };
+  protected violationMetric(): string {
+    const metric = this.metrics().find((item) => item.code === 'VA');
+    if (metric !== undefined && this.text(metric.data, '') !== '') return this.metricValue(metric);
+    /* Fallback: the violations response carries its own total when the VD
+       cards endpoint omits or renames the "VA" card. */
+    const fallback = this.count(this.violations());
+    return fallback > 0 ? String(fallback) : this.metricValue(metric ?? { code: 'VA', name: '', data: 0 });
   }
-  protected violationMetric(): string { return this.metricValue(this.metrics().find((metric) => metric.code === 'VA') || { code: 'VA', name: '', data: 0 }); }
   protected deviceDetails(): DetailItem[] { const v = this.record(); return [['Device ID', v?.['device_id']], ['SIM Number', v?.['sim_no']], ['Vehicle Type', v?.['vehicle_type']], ['RFID Tag', v?.['rfid_tag']], ['Immobilizer', v?.['is_immobilization_enabled'] ? 'Enabled' : 'Disabled'], ['Ignition', v?.['ignition_status'] ? 'On' : 'Off']].map(([label, value]) => ({ label: String(label), value: this.text(value) })); }
   protected monitoring(): { label: string; enabled: boolean }[] { const v = this.record(); return [['Harsh acceleration', v?.['harsh_acceleration']], ['Harsh braking', v?.['harsh_braking']], ['Geo zone', v?.['geo_zone']], ['Sharp turning', v?.['sharp_turning']], ['Seat belt monitoring', v?.['seat_belt']], ['Immobilization', v?.['is_immobilization_enabled']]].map(([label, enabled]) => ({ label: String(label), enabled: Boolean(enabled) })); }
   protected count(value: unknown): number { const data = value as { count?: number; data?: unknown[] } | null; return Number(data?.count ?? data?.data?.length ?? (Array.isArray(value) ? value.length : 0)); }
@@ -173,6 +479,320 @@ export class VehicleDetail implements OnInit, OnDestroy {
   protected image(): string { const value = String(this.record()?.image || '').trim(); return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase()) ? value : 'assets/fleetpoint/def-car.svg'; }
   protected useDefaultImage(event: Event): void { (event.target as HTMLImageElement).src = 'assets/fleetpoint/def-car.svg'; }
   protected back(): void { void this.router.navigateByUrl('/fleetpoint/vehicles'); }
+
+  protected loadTrailData(start: Date, end: Date): void {
+    this.trailRange = { start, end };
+    this.trailLoading.set(true);
+    this.api.getMapTrail(this.vehicleId, this.toApiDatetime(start), this.toApiDatetime(end))
+      .pipe(finalize(() => this.trailLoading.set(false)))
+      .subscribe({
+        next: (resp) => this.trailData.set(resp.data || null),
+        error: () => this.trailData.set(null),
+      });
+  }
+
+  protected loadStops(): void {
+    if (!this.trailRange || this.stopsLoading()) return;
+    this.showStops.set(true);
+    this.stopsLoading.set(true);
+    this.api.getStops(this.vehicleId, this.toApiDatetime(this.trailRange.start), this.toApiDatetime(this.trailRange.end))
+      .pipe(finalize(() => this.stopsLoading.set(false)))
+      .subscribe({
+        next: (resp) => {
+          const raw = resp as any;
+          const stops = raw?.data?.data;
+          this.stopsData.set(Array.isArray(stops) ? stops : []);
+        },
+        error: () => this.stopsData.set([]),
+      });
+  }
+
+  protected toggleStops(): void {
+    if (this.showStops()) {
+      this.showStops.set(false);
+      this.stopsData.set([]);
+      return;
+    }
+    this.loadStops();
+  }
+
+  protected loadFillups(start: Date, end: Date): void {
+    this.fillupsLoading.set(true);
+    this.api.getFillups(this.vehicleId, this.toApiDatetime(start), this.toApiDatetime(end))
+      .pipe(finalize(() => this.fillupsLoading.set(false)))
+      .subscribe({
+        next: (resp) => {
+          const raw = resp as any;
+          const fillups = raw?.response?.[0]?.fillups || resp?.data || [];
+          this.fillupsData.set(Array.isArray(fillups) ? fillups : []);
+        },
+        error: () => this.fillupsData.set([]),
+      });
+  }
+
+  protected loadMileage(): void {
+    this.mileageLoading.set(true);
+    this.api.getMileage(this.vehicleId, this.mileageYear(), this.mileageMonth() || undefined)
+      .pipe(finalize(() => this.mileageLoading.set(false)))
+      .subscribe({
+        next: (resp) => {
+          const rows = (resp?.data || []) as any[];
+          if (!rows.length) { this.mileageData.set([]); return; }
+          const totalFuel = rows.reduce((sum, row) => sum + (Number(row.fuel_filled) || 0), 0);
+          const totalDistance = rows.reduce((sum, row) => sum + (Number(row.distance_traveled) || 0), 0);
+          const mileage = totalFuel > 0 ? totalDistance / totalFuel : null;
+          const label = this.mileageMonth() ? 'week' : 'month';
+          this.mileageData.set([
+            ...rows,
+            { [label]: 'Total', fuel_filled: totalFuel, distance_traveled: totalDistance, mileage: mileage !== null && Number.isFinite(mileage) ? mileage : null },
+          ]);
+        },
+        error: () => this.mileageData.set([]),
+      });
+  }
+
+  protected setMileageYear(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.mileageYear.set(value || String(new Date().getFullYear()));
+    this.mileageMonth.set('');
+    this.loadMileage();
+  }
+
+  protected setMileageMonth(event: Event): void {
+    this.mileageMonth.set((event.target as HTMLSelectElement).value);
+    this.loadMileage();
+  }
+
+  protected convertDuration(duration: unknown): string {
+    const seconds = Number(duration);
+    if (!Number.isFinite(seconds)) return '—';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remaining = Math.floor(seconds % 60);
+    return `${hours}h ${minutes}m ${remaining}s`;
+  }
+
+  /* Snapshot timestamp follows the same contract as the legacy FMS tab: the
+     picker holds local wall-clock time and the API expects UTC
+     'yyyy-MM-dd HH:mm:ss', so both sides must round-trip through Date. */
+  protected loadSnapshot(): void {
+    if (!this.snapshotDateValue()) return;
+    this.snapshotLoading.set(true);
+    this.api.getSnapshot(this.vehicleId, this.toApiDatetime(new Date(this.snapshotDateValue())))
+      .pipe(finalize(() => this.snapshotLoading.set(false)))
+      .subscribe({
+        next: (resp) => this.snapshotResult.set(resp?.data ? this.normaliseSnapshot(resp.data) : null),
+        error: () => this.snapshotResult.set(null),
+      });
+  }
+
+  /* The snapshot endpoint returns raw packet values (packet speed, litres,
+     unix timestamp, driver object), so normalise them once for the view —
+     same shaping the working FMS snapshot tab applies. */
+  private normaliseSnapshot(snap: Record<string, any>): Record<string, any> {
+    const speed = Number(snap['speed']);
+    const volume = Number(snap['volume']);
+    const state = snap['vehicle_state'] ? String(snap['vehicle_state']) : '';
+    return {
+      ...snap,
+      vehicle_state: state ? (state === 'Idle' ? 'Idle' : 'Moving') : '',
+      speed: Number.isFinite(speed) && snap['speed'] !== null && snap['speed'] !== '' ? Math.round(speed) : null,
+      volume: Number.isFinite(volume) && volume > 0 ? Number((volume * 0.219).toFixed(2)) : null,
+      temperature: snap['temperature'] ?? null,
+      assigned_driver: this.driverName(snap['assigned_driver']),
+    };
+  }
+
+  private driverName(value: unknown): string {
+    if (!value) return '';
+    if (typeof value === 'object') return this.text((value as Record<string, unknown>)['name'], '');
+    return this.text(value, '');
+  }
+
+  protected loadDefaultFillups(): void {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    this.loadFillups(start, end);
+  }
+
+  /* Replay controls — same engine as the trip replay page. */
+  protected updateReplayStart(value: string): void { this.replayStartDate.set(value); }
+  protected updateReplayEnd(value: string): void { this.replayEndDate.set(value); }
+  private initReplayRange(): void {
+    const end = new Date();
+    const start = new Date(end);
+    start.setHours(0, 0, 0, 0);
+    this.replayStartDate.set(this.inputDate(start));
+    this.replayEndDate.set(this.inputDate(end));
+  }
+  private inputDate(date: Date): string {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 16);
+  }
+  protected replayLoad(): void {
+    const start = this.replayStartDate(), end = this.replayEndDate();
+    if (!start || !end || start >= end) return;
+    this.pause();
+    this.replayPositionIndex.set(0);
+    this.showStops.set(false);
+    this.stopsData.set([]);
+    this.loadTrailData(new Date(start), new Date(end));
+  }
+  protected togglePlayback(): void { this.playing() ? this.pause() : this.play(); }
+  protected play(): void {
+    const positions = this.tripPositions();
+    if (positions.length < 2) return;
+    if (this.replayPositionIndex() >= positions.length - 1) this.replayPositionIndex.set(0);
+    this.clearPlaybackFrame();
+    this.playing.set(true);
+    this.playbackRate = this.playbackRates[this.replaySpeed()] ?? 2;
+    this.playbackStartIndex = this.replayPositionIndex();
+    this.playbackOffsets = this.buildTimeOffsets(positions, this.playbackStartIndex);
+    this.playbackTotalMs = this.playbackOffsets[this.playbackOffsets.length - 1] || 1;
+    this.playbackWallStart = performance.now();
+    const lastIndex = positions.length - 1;
+    const wallStart = this.playbackWallStart;
+    const startIdx = this.playbackStartIndex;
+    const rate = this.playbackRate;
+    const offsets = this.playbackOffsets;
+    const totalTripMs = this.playbackTotalMs;
+    let lastIdx = 0;
+    this.zone.runOutsideAngular(() => {
+      const advance = (now: number) => {
+        if (!this.playing()) return;
+        if (this.playbackWallStart !== wallStart || this.playbackStartIndex !== startIdx) {
+          this.playbackFrame = requestAnimationFrame(advance);
+          return;
+        }
+        const elapsedTripMs = (now - wallStart) * rate;
+        let idx = 0;
+        for (let i = offsets.length - 1; i >= 0; i--) {
+          if (offsets[i] <= elapsedTripMs) { idx = i; break; }
+        }
+        const nextIndex = Math.min(startIdx + idx, lastIndex);
+        if (nextIndex !== this.replayPositionIndex()) {
+          this.stepDurationMs.set(Math.max(40, (offsets[idx] - offsets[lastIdx]) / rate));
+          this.replayPositionIndex.set(nextIndex);
+          lastIdx = idx;
+        }
+        if (elapsedTripMs >= totalTripMs) { this.pause(); return; }
+        this.playbackFrame = requestAnimationFrame(advance);
+      };
+      this.playbackFrame = requestAnimationFrame(advance);
+    });
+  }
+  protected pause(): void { this.clearPlaybackFrame(); this.playing.set(false); }
+  protected stopPlayback(): void { this.pause(); this.replayPositionIndex.set(0); }
+  protected setReplaySpeed(value: number): void { this.replaySpeed.set(value); if (this.playing()) this.play(); }
+  protected scrub(event: Event): void { this.seekTo(Number((event.target as HTMLInputElement).value)); }
+  private seekTo(index: number): void {
+    const last = this.maxPosition();
+    const clamped = Math.max(0, Math.min(index, last));
+    if (clamped === last && this.playing()) { this.replayPositionIndex.set(clamped); this.pause(); return; }
+    this.replayPositionIndex.set(clamped);
+    if (this.playing()) this.play();
+  }
+  private nearestTimePosition(positions: TripPosition[], value: string): number {
+    const target = new Date(value).getTime();
+    if (!Number.isFinite(target)) return 0;
+    let best = 0;
+    let bestDiff = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < positions.length; index++) {
+      const parsed = new Date(positions[index].timestamp ?? positions[index].time).getTime();
+      if (!Number.isFinite(parsed)) continue;
+      const diff = Math.abs(parsed - target);
+      if (diff < bestDiff) { bestDiff = diff; best = index; }
+    }
+    return best;
+  }
+  /* Snapped trails no longer contain the task waypoints verbatim, so each task
+     marker is anchored to the closest vertex of the drawn geometry. */
+  private nearestCoordinatePosition(positions: TripPosition[], lat: number, lng: number): number {
+    if (!positions.length || !Number.isFinite(lat) || !Number.isFinite(lng)) return 0;
+    const cosLat = Math.cos((lat * Math.PI) / 180);
+    let best = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < positions.length; index++) {
+      const point = positions[index];
+      const dLat = Number(point.lat) - lat;
+      const dLng = (Number(point.lng) - lng) * cosLat;
+      const distance = dLat * dLat + dLng * dLng;
+      if (distance < bestDistance) { bestDistance = distance; best = index; }
+    }
+    return best;
+  }
+
+  private buildTimeOffsets(positions: TripPosition[], startIdx: number): number[] {
+    const offsets = [0];
+    for (let i = startIdx + 1; i < positions.length; i++) {
+      const prev = new Date(positions[i - 1]?.timestamp ?? '').getTime();
+      const curr = new Date(positions[i]?.timestamp ?? '').getTime();
+      const gap = Number.isFinite(prev) && Number.isFinite(curr) && curr > prev
+        ? Math.min(curr - prev, VehicleDetail.MAX_PLAYBACK_GAP_MS)
+        : this.stepDurationMs();
+      offsets.push(offsets[offsets.length - 1] + gap);
+    }
+    return offsets;
+  }
+  private clearPlaybackFrame(): void {
+    if (this.playbackFrame !== undefined) cancelAnimationFrame(this.playbackFrame);
+    this.playbackFrame = undefined;
+  }
+
+  private toApiDatetime(date: Date): string {
+    return date.toISOString().slice(0, 19).replace('T', ' ');
+  }
+
+  protected formatDateShort(value: unknown): string {
+    if (!value) return '—';
+    let date: Date;
+    const v = value as string | number;
+    if (typeof v === 'number') {
+      date = new Date(v > 1e12 ? v : v * 1000);
+    } else {
+      date = new Date(v);
+    }
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  protected getTaskStatusLabel(status: unknown): string {
+    const s = String(status);
+    if (s === '1') return 'Pending';
+    if (s === '2') return 'Started';
+    if (s === '3') return 'Completed';
+    if (s === '4') return 'Aborted';
+    return '—';
+  }
+
+  protected taskLine(task: any): string {
+    const status = this.getTaskStatusLabel(task?.task_status);
+    if (!task?.abort_reason && !task?.abort_reason_description) return status;
+    const parts = [status];
+    if (task?.abort_reason) parts.push(task.abort_reason);
+    if (task?.abort_reason_description) parts.push(task.abort_reason_description);
+    return parts.join(' · ');
+  }
+
+  /* Tab switching — plain href="#id" anchors would trigger a Router
+     navigation to the root route (home) because of <base href="/">. */
+  protected readonly activeTab = signal('overview');
+  protected openTab(id: string): void {
+    this.activeTab.set(id);
+    if (id === 'trips') {
+      if (!this.replayStartDate()) this.initReplayRange();
+      if (!this.trailData()) this.replayLoad();
+    }
+    if (id === 'fuel' && !this.fillupsData().length) {
+      this.loadDefaultFillups();
+      this.loadMileage();
+    }
+    /* Snapshot tab opens pre-filled with "now", mirroring the FMS tab which
+       defaults snapshotDate to the current time so the Load button is usable. */
+    if (id === 'snapshot' && !this.snapshotDateValue()) {
+      this.snapshotDateValue.set(this.inputDate(new Date()));
+    }
+  }
   protected openEdit(): void { this.formOpen.set(true); }
   protected closeForm(): void { this.formOpen.set(false); }
   protected saveVehicle(_: VehicleFormValue): void { this.closeForm(); this.load(); }
@@ -318,6 +938,7 @@ export class VehicleDetail implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.pollTimer) clearInterval(this.pollTimer);
+    this.clearPlaybackFrame();
     this.subscription.unsubscribe();
     void this.realtime.disconnect();
   }

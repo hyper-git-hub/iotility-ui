@@ -1,0 +1,20 @@
+<div class="user-menu">
+<button class="theme" type="button" (click)="toggleTheme()" [tooltip]="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
+  @if (isDark) {
+    <img src="assets/fleetpoint/icons/sun-brand.svg" alt="" aria-hidden="true"/>
+    Light
+  } @else {
+    <img src="assets/fleetpoint/icons/moon-muted.svg" alt="" aria-hidden="true"/>
+    Dark
+  }
+</button>
+<shared-dropdown [options]="profileOptions" mode="action" (optionSelected)="selectProfileOption($event)">
+  <button dropdown-trigger type="button" class="profile-button">
+    <span class="profile-copy"><strong>{{ userName() }}</strong><small>{{ userRole() || 'Signed in as' }}</small></span>
+    <div class="relative inline-flex items-center justify-center">
+      <span class="profile-avatar">{{ userInitials() }}</span>
+      <span class="absolute bottom-0 right-0 w-2 h-2 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></span>
+    </div>
+  </button>
+</shared-dropdown>
+</div>

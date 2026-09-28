@@ -1,5 +1,5 @@
 @reference "../../../styles.css";
-@import "../../shared/styles/fields.css";
+@import '../../shared/styles/fields.css';
 
 :host {
   @apply block h-full;
@@ -13,8 +13,12 @@
 .vehicle-row-skeleton {
   @apply flex h-[4.625rem] w-full items-start gap-2 border-t border-line px-3 py-3 dark:border-dark-line;
 }
-.vehicle-image-skeleton { @apply mt-1 shrink-0; }
-.vehicle-copy-skeleton { @apply min-w-0 flex-1; }
+.vehicle-image-skeleton {
+  @apply mt-1 shrink-0;
+}
+.vehicle-copy-skeleton {
+  @apply min-w-0 flex-1;
+}
 .vehicle-title-line {
   @apply flex h-4 items-center;
 }
@@ -26,6 +30,12 @@
 }
 .panel-heading {
   @apply border-b border-line p-4 dark:border-dark-line;
+}
+.fleet-filter {
+  @apply mb-3 block;
+}
+.fleet-filter [dropdown-trigger] span {
+  @apply min-w-0 flex-1 truncate;
 }
 .panel-heading > div {
   @apply flex items-center justify-between;
@@ -42,23 +52,26 @@
 .tracked-count-skeleton {
   @apply flex h-[0.9375rem] items-center;
 }
+.tracking-view-switch {
+  @apply mx-3 mt-3 flex rounded-xl bg-canvas p-1 dark:bg-dark-canvas;
+}
+.tracking-view-switch button {
+  @apply flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-medium text-muted transition-colors dark:text-brand-300;
+}
+.tracking-view-switch button.active {
+  @apply bg-brand-600 font-semibold text-white shadow-sm;
+}
+.tracking-view-switch img {
+  @apply size-3.5 shrink-0;
+}
+.tracking-view-switch button.active img {
+  filter: brightness(0) invert(1);
+}
 .map-count-reveal {
   @apply flex items-center gap-2;
 }
-.location-filter {
-  @apply mx-3 mt-3;
-}
 .fleet-search-field img {
   @apply size-4 shrink-0;
-}
-.location-filter [dropdown-trigger] {
-  @apply flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-xs text-ink dark:border-dark-line dark:text-white;
-}
-.location-filter [dropdown-trigger] img {
-  @apply size-4 shrink-0 text-brand-600;
-}
-.location-filter [dropdown-trigger] span {
-  @apply min-w-0 flex-1 truncate;
 }
 .status-filters {
   @apply flex flex-wrap gap-1.5 px-3 py-2;
@@ -76,6 +89,39 @@
 }
 .vehicle-list {
   @apply min-h-0 flex-1 overflow-y-auto;
+}
+.driver-list {
+  @apply mt-2 min-h-0 flex-1 overflow-y-auto;
+}
+.driver-row {
+  @apply flex w-full cursor-pointer items-start gap-2.5 border-t border-line px-3 py-3 text-left transition-colors hover:bg-brand-50 dark:border-dark-line dark:hover:bg-dark-canvas;
+}
+.driver-row.selected {
+  @apply bg-brand-50 dark:bg-brand-600/10;
+}
+.driver-avatar {
+  @apply relative grid size-8 shrink-0 place-items-center rounded-full bg-brand-500 text-[10px] font-bold text-white;
+}
+.driver-avatar i {
+  @apply absolute bottom-0 right-0 size-2 rounded-full border border-white bg-success dark:border-dark-surface;
+}
+.driver-avatar i.idling {
+  @apply bg-warning;
+}
+.driver-copy {
+  @apply min-w-0 flex-1;
+}
+.driver-copy strong {
+  @apply block truncate text-xs text-ink dark:text-white;
+}
+.driver-copy small {
+  @apply mt-0.5 block truncate text-[10px] text-muted dark:text-brand-300;
+}
+.driver-rating {
+  @apply shrink-0 text-[10px] font-semibold text-ink dark:text-white;
+}
+.driver-rating b {
+  @apply text-warning;
 }
 .vehicle-row {
   @apply flex w-full items-start gap-2 border-t border-line px-3 py-3 text-left transition hover:bg-brand-50 dark:border-dark-line dark:hover:bg-dark-canvas;
@@ -116,14 +162,22 @@
 .empty-list {
   @apply p-6 text-center text-xs text-muted;
 }
-.tracking-error { @apply m-3 rounded-xl border border-danger/20 bg-danger/5 p-3 text-center text-xs text-danger; }
-.tracking-error button { @apply mt-2 cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-[10px] font-semibold text-white; }
+.tracking-error {
+  @apply m-3 rounded-xl border border-danger/20 bg-danger/5 p-3 text-center text-xs text-danger;
+}
+.tracking-error button {
+  @apply mt-2 cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-[10px] font-semibold text-white;
+}
 .tracking-map-error {
   @apply absolute left-1/2 top-1/2 z-[650] m-0 w-[min(22rem,calc(100%_-_2rem))] -translate-x-1/2 -translate-y-1/2 bg-white/95 shadow-xl backdrop-blur dark:bg-dark-surface/95;
   transition: left 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.tracking-map-error strong { @apply text-sm; }
-.tracking-map-error p { @apply mt-1; }
+.tracking-map-error strong {
+  @apply text-sm;
+}
+.tracking-map-error p {
+  @apply mt-1;
+}
 .map-area {
   @apply relative min-w-0 flex-1;
   background: #f8fafc;
@@ -158,8 +212,14 @@
   animation: tracking-notice-in 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes tracking-notice-in {
-  from { opacity: 0; transform: translateY(-0.5rem); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .fullscreen-tracking-notice.waiting {
   @apply border-warning/25 bg-warning/10;

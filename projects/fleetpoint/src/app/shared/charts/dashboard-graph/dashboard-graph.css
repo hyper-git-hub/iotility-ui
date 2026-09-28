@@ -34,7 +34,7 @@ header span { @apply rounded-full bg-brand-50 px-2 py-1 text-[9px] capitalize te
 .priority.low { @apply bg-info/10 text-info; }
 
 .driver-card header { @apply mb-1; }
-.trophy { @apply mr-1 bg-transparent p-0 text-warning; }
+.trophy { @apply mr-1 inline-block size-4 shrink-0 align-middle text-warning; }
 .driver-profile { @apply flex flex-1 flex-col items-center justify-center text-center; }
 .driver-avatar { @apply relative mb-3 grid size-16 place-items-center rounded-full bg-orange-500 text-white shadow-lg; }
 .driver-avatar > span { @apply text-xl font-bold; }

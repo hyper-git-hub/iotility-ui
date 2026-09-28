@@ -183,16 +183,14 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
      with shimmer bars in every data slot so nothing shifts when data pops in. */
   readonly loading = input(false);
 
-  /* Skeleton stat tiles mirror the live grid 1:1 (labels + bar widths). */
-  protected readonly skeletonStatLabels = [
-    { text: 'Distance today', width: '4.5rem' },
-    { text: 'Total distance', width: '4rem' },
-    { text: 'Fuel', width: '3rem' },
-    { text: 'Violations', width: '3rem' },
-    { text: 'Ignition', width: '2.5rem' },
-    { text: 'Next maintenance', width: '5rem' },
-    { text: 'Last update', width: '6rem' },
-    { text: 'Driver', width: '7rem' },
+  /* Skeleton telemetry tiles mirror the live grid 1:1 (labels, accents, widths). */
+  protected readonly skeletonStatTiles = [
+    { label: 'Today', accent: 'blue', width: '4.5rem' },
+    { label: 'Odometer', accent: 'violet', width: '4rem' },
+    { label: 'Fuel level', accent: 'cyan', width: '3.5rem' },
+    { label: 'Violations', accent: 'rose', width: '3rem' },
+    { label: 'Ignition', accent: null, width: '2.5rem' },
+    { label: 'Maintenance', accent: null, width: '4.5rem' },
   ] as const;
 
   private readonly mapHost = viewChild.required<ElementRef<HTMLDivElement>>('mapHost');
@@ -217,9 +215,45 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     return ok ? { lat, lng } : null;
   });
 
+  private readonly speedSamples = signal<Array<{ time: number; speed: number }>>([]);
+  protected readonly speedTrendPath = computed(() => {
+    const samples = this.speedSamples();
+    if (!samples.length) return '';
+    const points = samples.length === 1 ? [samples[0], { ...samples[0], time: Date.now() }] : samples;
+    const start = points[0].time;
+    const range = Math.max(1, points[points.length - 1].time - start);
+    return points
+      .map((sample, index) => {
+        const x = points.length === 2 && samples.length === 1 ? index * 320 : ((sample.time - start) / range) * 320;
+        const y = 46 - (Math.min(MAX_SPEED, sample.speed) / MAX_SPEED) * 42;
+        return `${index ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+      })
+      .join(' ');
+  });
+  protected readonly speedTrendArea = computed(() => {
+    const path = this.speedTrendPath();
+    return path ? `${path} L320 50 L0 50 Z` : '';
+  });
+  protected readonly trendPeak = computed(() =>
+    Math.max(0, ...this.speedSamples().map((sample) => sample.speed)),
+  );
+  protected readonly hasSpeedTrend = computed(() => this.speedSamples().length > 0);
+  protected readonly trendEndY = computed(() => {
+    const samples = this.speedSamples();
+    const speed = samples[samples.length - 1]?.speed ?? 0;
+    return 46 - (Math.min(MAX_SPEED, speed) / MAX_SPEED) * 42;
+  });
+  protected readonly trendLimitY = computed(() => {
+    const limit = this.speedLimit();
+    return limit === null ? null : 46 - (Math.min(MAX_SPEED, limit) / MAX_SPEED) * 42;
+  });
+
   /* Drive the sweep whenever a new target speed arrives from realtime. */
   private readonly speedTargetEffect = effect(() => {
-    this.animateSpeedTo(this.speed());
+    const speed = this.speed();
+    this.vehicle()?.updated_time;
+    this.recordSpeedSample(speed);
+    this.animateSpeedTo(speed);
   });
 
   /* ── Smoothed speed ──
@@ -404,6 +438,17 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     if (progress < 1) this.speedRaf = requestAnimationFrame(this.stepSpeed);
   };
 
+  private recordSpeedSample(speed: number): void {
+    const now = Date.now();
+    const cutoff = now - 15 * 60_000;
+    this.speedSamples.update((samples) => {
+      const recent = samples.filter((sample) => sample.time >= cutoff);
+      const last = recent[recent.length - 1];
+      if (last && last.speed === speed && now - last.time < 10_000) return recent;
+      return [...recent, { time: now, speed }].slice(-180);
+    });
+  }
+
   protected readonly routeCode = computed(() => {
     const route = this.firstRoute();
     const value =
@@ -439,11 +484,18 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     const value = Number(this.vehicle()?.latitude);
     return Number.isFinite(value) ? value.toFixed(5) + '°' : '—';
   });
-  protected readonly speedLimit = 60;
+  protected readonly speedLimit = computed<number | null>(() => {
+    const value = Number(this.vehicle()?.['speed_threshold']);
+    return Number.isFinite(value) && value > 0 ? value : null;
+  });
   protected readonly speedSegments = Array.from({ length: 36 }, (_, index) => (index + 1) * 5);
-  protected readonly speedDelta = computed(() => this.shownSpeed() - this.speedLimit);
+  protected readonly speedDelta = computed(() => {
+    const limit = this.speedLimit();
+    return limit === null ? null : this.shownSpeed() - limit;
+  });
   protected readonly speedDeltaText = computed(() => {
     const delta = this.speedDelta();
+    if (delta === null) return '—';
     return delta > 0 ? `+${delta} km/h Over limit` : `${Math.abs(delta)} km/h below limit`;
   });
   protected readonly longitudeText = computed(() => {
@@ -453,8 +505,10 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   protected readonly deviceText = computed(() => this.text(this.vehicle()?.device_id, 'Not allocated'));
 
   protected readonly totalDistanceText = computed(() => {
-    const value = Number(this.vehicle()?.total_distance_traveled ?? 0);
-    return (Number.isFinite(value) ? Math.round(value) : 0).toLocaleString();
+    const raw = this.vehicle()?.['odo_reading'];
+    if (raw === null || raw === undefined || raw === '') return '—';
+    const value = Number(raw);
+    return Number.isFinite(value) ? value.toLocaleString() : this.text(raw, '—');
   });
 
   protected readonly fuelText = computed(() => {
@@ -462,8 +516,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     const raw = metric?.data ?? null;
     const metricText = this.text(raw, '').trim();
     if (metricText) return metricText;
-    const level = Number(this.vehicle()?.heavy_equipment?.['fuel_level'] ?? 0);
-    return Number.isFinite(level) ? Math.round(level).toString() + '%' : '—';
+    return '—';
   });
 
   protected readonly violationsText = computed(() => {
@@ -478,9 +531,10 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     this.vehicle()?.ignition_status ? 'On' : 'Off',
   );
 
-  protected readonly nextMaintenanceText = computed(() =>
-    this.text(this.vehicle()?.next_maintenance, 'No scheduled'),
-  );
+  protected readonly nextMaintenanceText = computed(() => {
+    const value = this.vehicle()?.next_maintenance;
+    return value === 0 || value === '0' ? '—' : this.text(value, '—');
+  });
 
   private firstRoute(): Record<string, unknown> | undefined {
     const routes = this.routes();

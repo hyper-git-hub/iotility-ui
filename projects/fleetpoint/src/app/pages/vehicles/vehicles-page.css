@@ -86,6 +86,15 @@
 .attention-card > p {
   @apply mb-3 text-[11px] font-medium uppercase tracking-wide text-muted dark:text-brand-300;
 }
+.attention-card {
+  @apply min-h-24;
+}
+.attention-card-skeleton > p {
+  @apply flex h-[0.9375rem] items-center;
+}
+.attention-chip-skeleton {
+  @apply max-w-full;
+}
 .attention-card > div {
   @apply flex flex-wrap gap-2;
 }
@@ -190,4 +199,14 @@
 }
 .vehicles-table {
   contain: layout paint style;
+}
+:host ::ng-deep .vehicles-table th:nth-child(5),
+:host ::ng-deep .vehicles-table td:nth-child(5) {
+  width: 18rem;
+  max-width: 18rem;
+}
+:host ::ng-deep .vehicles-table td:nth-child(5) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

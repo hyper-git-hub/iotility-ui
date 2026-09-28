@@ -29,7 +29,7 @@
   </article>
 } @else if (graph().code === 'DOW') {
   <article class="graph-card driver-card">
-    <header><h2><span class="trophy" aria-hidden="true">☆</span> Driver of the Week</h2></header>
+    <header><h2><svg class="trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> Driver of the Week</h2></header>
     @if (driverData(); as driver) {
       <div class="driver-profile">
         <div class="driver-avatar"><span>{{ driver.initials || '—' }}</span><i>★</i></div>
@@ -82,11 +82,11 @@
     }
   </article>
 } @else if (hasChartData() && isDoughnut()) {
-  <app-fleet-doughnut-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [height]="380" [data]="doughnutData()" [options]="doughnutOptions()" />
+  <app-fleet-doughnut-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [height]="380" [data]="doughnutData()" [options]="doughnutOptions()" />
 } @else if (hasChartData() && isLine()) {
-  <app-fleet-line-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [height]="380" [data]="lineData()" [options]="lineOptions" />
+  <app-fleet-line-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [height]="380" [data]="lineData()" [options]="lineOptions" />
 } @else if (hasChartData()) {
-  <app-fleet-bar-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [height]="380" [data]="barData()" [options]="barOptions()" />
+  <app-fleet-bar-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [height]="380" [data]="barData()" [options]="barOptions()" />
 } @else {
   <article class="graph-card">
     <header><div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div></header>

@@ -80,6 +80,13 @@ export class DashboardGraphComponent {
     return this.graph().code === 'JJ' ? 'Jobs by Location' : this.graph().name;
   }
 
+  /* Fleet Utilisation (FUT) carries the Good/OK/Low status legend instead of
+     the single-dataset chart legend at the bottom. */
+  protected isFleetUtilisation(): boolean {
+    const graph = this.graph();
+    return graph.code === 'FUT' || graph.name.trim().toLowerCase() === 'fleet utilisation';
+  }
+
   protected emptyMessage(): string {
     return ['ANT', 'DOW', 'FUT', 'DCE'].includes(this.graph().code)
       ? 'No record found'
@@ -221,7 +228,7 @@ export class DashboardGraphComponent {
     return {
       indexAxis: horizontal ? 'y' : 'x',
       interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { position: 'bottom' } },
+      plugins: { legend: { position: 'bottom', display: !this.isFleetUtilisation() } },
       scales: {
         x: {
           stacked,
@@ -238,16 +245,18 @@ export class DashboardGraphComponent {
     };
   }
 
-  protected readonly lineOptions: ChartOptions<'line'> = {
-    interaction: { mode: 'index', intersect: false },
-    plugins: { legend: { position: 'bottom' } },
-    scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
-  };
+  protected get lineOptions(): ChartOptions<'line'> {
+    return {
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', display: !this.isFleetUtilisation() } },
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
+    };
+  }
 
   protected doughnutOptions(): ChartOptions<'doughnut'> {
     return {
       cutout: this.graph().chart_type === 'piechart' ? '0%' : '60%',
-      plugins: { legend: { position: 'bottom' } },
+      plugins: { legend: { position: 'bottom', display: !this.isFleetUtilisation() } },
     };
   }
 

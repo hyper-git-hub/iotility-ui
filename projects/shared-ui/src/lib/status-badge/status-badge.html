@@ -3,7 +3,7 @@
   [class]="variant()"
   [class.online]="effectiveOnline()"
   [class.offline]="!effectiveOnline()"
-  [attr.title]="title() || null"
+  [tooltip]="title()"
   [attr.aria-label]="title() || null"
 >
   <i class="status-dot" aria-hidden="true"></i>

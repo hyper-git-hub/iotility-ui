@@ -22,7 +22,6 @@ import {
   DriverViolationRecord,
 } from '../../../shared/services/driver-detail-api.service';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
-import { StatCard } from '../../../shared/stat-card/stat-card';
 
 @Component({
   selector: 'app-driver-detail',
@@ -33,7 +32,6 @@ import { StatCard } from '../../../shared/stat-card/stat-card';
     Dropdown,
     ProgressBar,
     Skeleton,
-    StatCard,
   ],
   templateUrl: './driver-detail.html',
   styleUrl: './driver-detail.css',

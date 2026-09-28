@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Skeleton, SmoothHeight } from '@iotility/shared-ui';
+import { Skeleton, SmoothHeight, secureStorage } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 import { ProfileApiService, UserProfile } from '../../shared/services/profile-api.service';
@@ -73,7 +73,7 @@ export class ProfilePage implements OnInit {
         }
         this.profile.set(response.data);
         this.patchProfileForm(response.data);
-        localStorage.setItem('user', JSON.stringify(response.data));
+        secureStorage.set('user', JSON.stringify(response.data));
       },
       error: (response) => {
         const message = response.error?.message || 'Profile details could not be loaded.';
@@ -124,7 +124,7 @@ export class ProfilePage implements OnInit {
       next: (response) => {
         const updated = response.data || { ...user, first_name: values.firstName, last_name: values.lastName, phone: values.phone };
         this.profile.set(updated);
-        localStorage.setItem('user', JSON.stringify(updated));
+        secureStorage.set('user', JSON.stringify(updated));
         this.selectedImage.set(null);
         this.imagePreview.set('');
         this.editing.set(false);

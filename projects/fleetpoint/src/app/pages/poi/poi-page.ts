@@ -1,5 +1,5 @@
 import { Component, computed, signal } from '@angular/core';
-import { SmoothHeight } from '@iotility/shared-ui';
+import { SmoothHeight, Tooltip } from '@iotility/shared-ui';
 import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { PoiForm, PoiFormValue } from './poi-form/poi-form';
@@ -14,7 +14,7 @@ interface PoiRecord {
 
 @Component({
   selector: 'app-poi-page',
-  imports: [FleetMap, PoiForm, SmoothHeight, StatCard],
+  imports: [FleetMap, PoiForm, SmoothHeight, StatCard, Tooltip],
   templateUrl: './poi-page.html',
   styleUrl: './poi-page.css',
 })
