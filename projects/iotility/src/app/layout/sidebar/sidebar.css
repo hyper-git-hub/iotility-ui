@@ -32,47 +32,64 @@
 .use-cases-backdrop {
   @apply fixed inset-0 z-[1499];
   visibility: hidden;
-  opacity: 0;
-  transition:
-    opacity 140ms ease,
-    visibility 140ms ease;
+  transition: visibility 0s linear 700ms;
 }
 .use-cases-window {
-  @apply absolute left-[calc(100%+28px)] top-0 z-[1500] w-[576px] overflow-hidden rounded-2xl border border-line bg-white shadow-2xl dark:border-dark-line dark:bg-dark-surface;
+  @apply absolute left-[calc(100%+28px)] top-0 z-[1500] w-fit overflow-hidden rounded-2xl border border-line bg-white shadow-2xl dark:border-dark-line dark:bg-dark-surface;
   visibility: hidden;
-  opacity: 0;
-  transform: translateX(-12px) scale(0.98);
+  opacity: 1;
+  transform: translateX(calc(-100% - 28px));
   transition:
-    opacity 180ms ease-out,
-    transform 180ms ease-out,
-    visibility 180ms ease-out;
+    transform 700ms linear,
+    visibility 0s linear 700ms;
 }
 .use-cases-backdrop.use-open {
   visibility: visible;
-  opacity: 1;
+  transition: visibility 0s;
 }
 .use-cases-window.use-open {
   visibility: visible;
   opacity: 1;
-  transform: translateX(0) scale(1);
-}
-.use-cases-window-header {
-  @apply border-b border-line px-6 py-5 dark:border-dark-line;
-}
-.use-cases-window-header h2 {
-  @apply text-lg font-bold text-ink dark:text-white;
-}
-.use-cases-window-header p {
-  @apply mt-1 text-xs text-muted dark:text-brand-300;
+  transform: translateX(0);
+  transition:
+    transform 700ms linear,
+    visibility 0s;
 }
 .use-cases-logos {
-  @apply grid grid-cols-3 gap-4 p-6;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  align-items: start;
+  gap: 20px 32px;
+  padding: 24px 32px;
 }
 .use-case-logo {
-  @apply flex flex-col items-center gap-2.5 rounded-xl border border-line bg-white p-4 transition-all hover:border-brand-500 hover:shadow-md dark:border-dark-line dark:bg-dark-canvas/40 dark:hover:border-brand-500/40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 4px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  transition: box-shadow 150ms ease;
+}
+.use-case-logo:hover,
+.use-case-logo:focus,
+.use-case-logo:focus-visible,
+.use-case-logo:active {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+.use-case-logo:hover {
+  filter: brightness(1.1);
 }
 .use-case-logo img {
-  @apply size-10 object-contain;
+  @apply size-14 object-contain;
 }
 .use-case-logo span {
   @apply text-[11px] font-semibold text-ink dark:text-white;

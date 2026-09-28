@@ -1,6 +1,6 @@
 import { Component, computed, HostListener, isDevMode, output, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { DropdownOption, PlatformHeader, SmoothHeight, Tooltip } from '@iotility/shared-ui';
+import { DropdownOption, PlatformHeader, SmoothHeight, Tooltip, secureStorage } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
 import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { FleetNotification, NotificationService } from '../../shared/services/notification.service';
@@ -212,7 +212,7 @@ export class FleetpointHeader {
 
   private readIdentity(): { name: string; initials: string; role: string } {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}') as {
+      const user = JSON.parse(secureStorage.get('user') || '{}') as {
         username?: string | null;
         first_name?: string;
         last_name?: string;

@@ -1,6 +1,7 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { secureStorage } from '@iotility/shared-ui';
 import { catchError, retry, throwError, timer } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthSessionService } from '../services/auth-session.service';
@@ -72,7 +73,7 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
     );
   }
 
-  const token = localStorage.getItem('userMS-token') || localStorage.getItem('token');
+  const token = secureStorage.get('userMS-token') || secureStorage.get('token');
   let headers = request.headers
     .set('User-Platform', 'WEB')
     .set('OS', 'WEB')

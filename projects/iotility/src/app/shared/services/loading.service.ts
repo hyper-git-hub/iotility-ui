@@ -37,6 +37,7 @@ export class LoadingService {
   navigate(url: string, config: LoadingConfig, duration = 1800): void {
     if (this.navigationTimer) return;
 
+    localStorage.setItem('firstLoginCompleted', 'true');
     this.config.set(config);
     this.isVisible.set(true);
     this.navigationTimer = setTimeout(() => {

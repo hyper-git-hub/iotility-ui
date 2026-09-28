@@ -11,7 +11,7 @@ import {
 import { Loading } from './shared/loading/loading';
 import { LoadingService } from './shared/services/loading.service';
 import { FeedbackDialog } from './shared/feedback-dialog/feedback-dialog';
-import { BlockingLoader } from '@iotility/shared-ui';
+import { BlockingLoader, secureStorage } from '@iotility/shared-ui';
 import { AuthLogoutService } from './shared/services/auth-logout.service';
 import {
   FeedbackDialogConfig,
@@ -128,7 +128,7 @@ export class App {
   }
 
   checkAuthenticationStatus(): boolean {
-    const token = localStorage.getItem('token');
+    const token = secureStorage.get('token');
     return !!token;
   }
 }

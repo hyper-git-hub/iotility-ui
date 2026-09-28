@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
 import { LoadingService } from '../../shared/services/loading.service';
@@ -18,7 +18,7 @@ interface UseCaseModule {
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css',
 })
-export class Sidebar implements OnInit {
+export class Sidebar {
   protected readonly useCasesOpen = signal(false);
 
   protected readonly modules: UseCaseModule[] = [
@@ -64,10 +64,6 @@ export class Sidebar implements OnInit {
     readonly recentApps: RecentAppsService,
     private readonly feedbackDialog: FeedbackDialogService,
   ) {}
-
-  ngOnInit(): void {
-    if (localStorage.getItem('firstLoginCompleted') !== 'true') this.useCasesOpen.set(true);
-  }
 
   protected toggleUseCases(): void {
     this.useCasesOpen.update((open) => !open);

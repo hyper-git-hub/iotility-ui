@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BlockingLoader, SmoothHeight } from '@iotility/shared-ui';
+import { BlockingLoader, SmoothHeight, secureStorage } from '@iotility/shared-ui';
 import QRCode from 'qrcode';
 import { finalize, interval, Subscription } from 'rxjs';
 import {
@@ -54,7 +54,7 @@ export class MfaPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const rawProfile = sessionStorage.getItem('pendingAuthProfile');
-    const token = localStorage.getItem('userMS-token') || localStorage.getItem('token');
+    const token = secureStorage.get('userMS-token') || secureStorage.get('token');
     if (!rawProfile || !token) {
       this.cancel();
       return;
@@ -210,10 +210,10 @@ export class MfaPage implements OnInit, OnDestroy {
       const features = Array.isArray(roleData.features) ? roleData.features : [];
       if (this.profile?.user_type === 5 && !features.some((id) => Number(id) === 70)) features.push(70);
       const user = { ...(this.profile ?? {}), use_cases: 6, menuaccess: features };
-      localStorage.setItem('user', JSON.stringify(user));
+      secureStorage.set('user', JSON.stringify(user));
       localStorage.setItem('language', this.profile?.language || 'en');
-      localStorage.setItem('menuaccess', JSON.stringify(features));
-      localStorage.setItem('roleAccess', JSON.stringify(roleData));
+      secureStorage.set('menuaccess', JSON.stringify(features));
+      secureStorage.set('roleAccess', JSON.stringify(roleData));
       sessionStorage.removeItem('pendingAuthProfile');
       const returnUrl = this.safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
       void this.router.navigateByUrl(

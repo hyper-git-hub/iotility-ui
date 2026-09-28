@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { secureStorage } from '@iotility/shared-ui';
 
 interface StoredRoleAccess {
   features?: (string | number)[];
@@ -26,7 +27,7 @@ export class FeatureAccessService {
 
   private restoreStoredFeatures(): void {
     try {
-      const roleAccess = JSON.parse(localStorage.getItem('roleAccess') ?? '{}') as StoredRoleAccess;
+      const roleAccess = JSON.parse(secureStorage.get('roleAccess') ?? '{}') as StoredRoleAccess;
       this.setFeatures(Array.isArray(roleAccess.features) ? roleAccess.features : []);
     } catch {
       this.setFeatures([]);

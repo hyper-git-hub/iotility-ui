@@ -12,6 +12,7 @@ import {
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
+import { secureStorage } from '@iotility/shared-ui';
 import { finalize, forkJoin, switchMap } from 'rxjs';
 import { Modal } from '../../shared/modal/modal';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
@@ -562,7 +563,7 @@ export class UsersRolesPage implements OnInit {
 
   private currentUserGuid(): string {
     try {
-      return JSON.parse(localStorage.getItem('user') || '{}')?.guid || '';
+      return JSON.parse(secureStorage.get('user') || '{}')?.guid || '';
     } catch {
       return '';
     }
@@ -657,7 +658,7 @@ export class UsersRolesPage implements OnInit {
 
   private packageContext(): { customerId: number; packageId: number } | null {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}') as {
+      const user = JSON.parse(secureStorage.get('user') || '{}') as {
         customer?: {
           customer_id?: number;
           associations?: {
