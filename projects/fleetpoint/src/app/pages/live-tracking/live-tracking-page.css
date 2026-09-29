@@ -35,7 +35,7 @@
   @apply mb-3 block;
 }
 .fleet-filter [dropdown-trigger] span {
-  @apply min-w-0 flex-1 truncate;
+  @apply min-w-0 flex-1 truncate text-xs font-medium text-ink dark:text-white;
 }
 .panel-heading > div {
   @apply flex items-center justify-between;

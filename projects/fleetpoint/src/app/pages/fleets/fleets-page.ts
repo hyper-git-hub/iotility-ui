@@ -25,7 +25,7 @@ interface FleetSummary {
   fuelEfficiency: number;
   utilisation: number;
   location: string;
-  vehicleIds: Array<{ label: string; state: 'alert' | 'online' | 'offline' }>;
+  vehicleIds: Array<{ id?: number; label: string; state: 'alert' | 'online' | 'offline' }>;
 }
 
 @Component({
@@ -165,6 +165,10 @@ export class FleetsPage implements OnInit, OnDestroy {
       queryParams: { fleet_id: fleet.id },
     });
   }
+  protected openVehicle(id?: number): void {
+    if (id == null) return;
+    void this.router.navigate(['/fleetpoint/vehicles', id]);
+  }
   protected handleFleetAction(action: DropdownOption, fleet: FleetSummary): void {
     if (action.id === 'view') {
       this.trackFleet(fleet);
@@ -208,6 +212,7 @@ export class FleetsPage implements OnInit, OnDestroy {
       location:
         assignedVehicles.find((vehicle) => vehicle.location)?.location || '—',
       vehicleIds: assignedVehicles.map((vehicle) => ({
+        id: vehicle.id,
         label: vehicle.registration || vehicle.name || String(vehicle.id),
         state:
           vehicle.live_status?.toLowerCase() === 'alert'

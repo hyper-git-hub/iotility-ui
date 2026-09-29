@@ -63,6 +63,7 @@
 .fleet-card > footer { @apply h-[2.8125rem] shrink-0 flex flex-wrap items-center gap-2 border-t border-line px-5 py-3 dark:border-dark-line; }
 .fleet-card-skeleton > footer { @apply flex-nowrap overflow-hidden; }
 .fleet-card > footer span { @apply rounded-full border px-2 py-0.5 text-[10px] font-medium; }
+.fleet-card > footer button.vehicle-pill { @apply cursor-pointer rounded-full border px-2 py-0.5 text-[10px] font-medium transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500; }
 .fleet-card > footer .vehicle-pill-online { @apply border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400; }
 .fleet-card > footer .vehicle-pill-alert { @apply border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400; }
 .fleet-card > footer .vehicle-pill-offline { @apply border-gray-200 bg-gray-100 text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400; }

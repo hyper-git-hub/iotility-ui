@@ -9,6 +9,7 @@ import {
   VehicleInventoryFilters,
   VehicleInventoryRecord,
 } from '../../shared/services/vehicle-inventory-api.service';
+import { FleetInventoryApiService, FleetInventoryRecord } from '../../shared/services/fleet-inventory-api.service';
 import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { VehicleForm, VehicleFormValue } from './vehicle-form/vehicle-form';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
@@ -32,6 +33,16 @@ export class VehiclesPage implements OnInit {
   protected readonly selectedVehicle = signal<VehicleInventoryRecord | null>(null);
   protected readonly total = signal(0);
   protected readonly records = signal<VehicleInventoryRecord[]>([]);
+  protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
+  protected readonly fleetChips = computed(() =>
+    this.fleetRecords()
+      .filter((fleet) => fleet.status === undefined || fleet.status === 1)
+      .map((fleet) => ({
+        id: String(fleet.id),
+        name: fleet.name || `Fleet ${fleet.id}`,
+        count: fleet.total_vehicles ?? fleet.assigned_vehicles?.length ?? 0,
+      })),
+  );
   protected readonly fleetOptions = signal<InventoryOption[]>([]);
   protected readonly categoryOptions = signal<InventoryOption[]>([]);
   protected readonly vehicleTypeOptions = signal<InventoryOption[]>([]);
@@ -68,7 +79,7 @@ export class VehiclesPage implements OnInit {
     registration: vehicle.registration || vehicle.name,
     makeModel: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim() || '—',
     fleet: vehicle.fleet_name || '—',
-    fleetColor: vehicle.fleet_name ? 'var(--color-brand-600)' : 'var(--color-muted)',
+    fleetColor: this.fleetColor(vehicle),
     status: this.vehicleStatus(vehicle),
     driver: vehicle.vehicle_driver_name || '—',
     location: vehicle.location || '—',
@@ -105,12 +116,17 @@ export class VehiclesPage implements OnInit {
 
   constructor(
     private readonly api: VehicleInventoryApiService,
+    private readonly fleetApi: FleetInventoryApiService,
     private readonly router: Router,
     private readonly feedback: FeedbackDialogBridgeService,
     protected readonly fleetStatus: FleetStatusService,
   ) {}
 
   ngOnInit(): void {
+    this.fleetApi.getFleets({ limit: 100, offset: 0, id: '', search: '' }).subscribe({
+      next: (response) => this.fleetRecords.set(response.data?.data ?? []),
+      error: () => this.fleetRecords.set([]),
+    });
     forkJoin({ fleets: this.api.getFleetOptions(), categories: this.api.getCategoryOptions(), vehicleTypes: this.api.getVehicleTypeOptions() }).pipe(finalize(() => this.optionsLoading.set(false))).subscribe({
       next: ({ fleets, categories, vehicleTypes }) => {
         this.fleetOptions.set((fleets.data?.data ?? []).filter((item) => item.status === undefined || item.status === 1));
@@ -155,6 +171,35 @@ export class VehiclesPage implements OnInit {
     this.searchTimer = setTimeout(() => { this.offset.set(0); this.loadVehicles(); }, 400);
   }
   protected selectFleet(option: DropdownOption): void { this.fleetId.set(option.id); this.categoryId.set(''); this.loadCategories(option.id); }
+  protected toggleFleetChip(id: string): void {
+    const selectedId = this.fleetId() === id ? '' : id;
+    this.fleetId.set(selectedId);
+    this.categoryId.set('');
+    this.offset.set(0);
+    this.loadCategories(selectedId);
+    this.loadVehicles();
+  }
+  protected fleetChipColor(index: number): string {
+    const colors = [
+      'var(--color-brand-500)',
+      'var(--color-info)',
+      'var(--color-warning)',
+      'var(--color-success)',
+      'var(--color-danger)',
+    ];
+    return colors[index % colors.length];
+  }
+  private fleetColor(vehicle: VehicleInventoryRecord): string {
+    const fleetId = String(vehicle.fleet ?? '');
+    const index = this.fleetChips().findIndex(
+      (fleet) => fleet.id === fleetId || (vehicle.fleet_name && fleet.name === vehicle.fleet_name),
+    );
+    return index >= 0
+      ? this.fleetChipColor(index)
+      : vehicle.fleet_name
+        ? 'var(--color-brand-600)'
+        : 'var(--color-muted)';
+  }
   protected selectCategory(option: DropdownOption): void { this.categoryId.set(option.id); }
   protected selectVehicleType(option: DropdownOption): void { this.vehicleTypeId.set(option.id); }
   protected selectedLabel(options: DropdownOption[], id: string, fallback: string): string { return options.find((option) => option.id === id)?.label || fallback; }

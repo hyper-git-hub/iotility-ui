@@ -179,7 +179,16 @@
         </section>
         <footer>
           @for (vehicle of fleet.vehicleIds.slice(0, 5); track vehicle.label) {
-            <span [class]="'vehicle-pill-' + vehicle.state">{{ vehicle.label }}</span>
+            @if (vehicle.id != null) {
+              <button
+                type="button"
+                [class]="'vehicle-pill vehicle-pill-' + vehicle.state"
+                [attr.aria-label]="'Open vehicle details for ' + vehicle.label"
+                (click)="openVehicle(vehicle.id)"
+              >{{ vehicle.label }}</button>
+            } @else {
+              <span [class]="'vehicle-pill-' + vehicle.state">{{ vehicle.label }}</span>
+            }
           }
           @if (fleet.vehicleIds.length > 5) {
             <small>+{{ fleet.vehicleIds.length - 5 }} more</small>

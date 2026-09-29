@@ -24,10 +24,18 @@
         <ui-skeleton width="6rem" height="0.625rem" radius="0.25rem" />
       </div>
       <ui-skeleton width="100%" height="0.5rem" radius="9999px" />
-      <div class="status-pill-skeletons">
-        @for (_ of [1, 2, 3]; track $index) {
-          <ui-skeleton width="6.5rem" height="1.75rem" radius="9999px" />
-        }
+      <div class="status-filter-skeleton-row">
+        <div class="status-pill-skeletons">
+          @for (_ of [1, 2, 3, 4, 5]; track $index) {
+            <ui-skeleton width="5.25rem" height="1.75rem" radius="9999px" />
+          }
+        </div>
+        <span class="vehicle-filter-separator" aria-hidden="true"></span>
+        <div class="fleet-filter-skeletons">
+          @for (_ of [1, 2, 3]; track $index) {
+            <ui-skeleton width="7rem" height="1.75rem" radius="9999px" />
+          }
+        </div>
       </div>
     </section>
   } @else {
@@ -53,12 +61,33 @@
           <i class="offline" [style.flex-grow]="offline()"></i>
         }
       </div>
-      <div class="status-pills">
-        <span class="moving"><i></i>Moving {{ moving() }}</span>
-        <span class="idling"><i></i>Idling {{ idling() }}</span>
-        <span class="stopped"><i></i>Stopped {{ stopped() }}</span>
-        <span class="alert"><i></i>Alert {{ alerts() }}</span>
-        <span class="offline"><i></i>Offline {{ offline() }}</span>
+      <div class="status-filter-row">
+        <div class="status-pills">
+          <span class="moving"><i></i>Moving {{ moving() }}</span>
+          <span class="idling"><i></i>Idling {{ idling() }}</span>
+          <span class="stopped"><i></i>Stopped {{ stopped() }}</span>
+          <span class="alert"><i></i>Alert {{ alerts() }}</span>
+          <span class="offline"><i></i>Offline {{ offline() }}</span>
+        </div>
+        @if (fleetChips().length) {
+          <span class="vehicle-filter-separator" aria-hidden="true"></span>
+          <div class="fleet-filter-chips" aria-label="Filter vehicles by fleet">
+            @for (fleet of fleetChips(); track fleet.id; let index = $index) {
+              <button
+                type="button"
+                class="fleet-filter-chip"
+                [class.active]="fleetId() === fleet.id"
+                [style.--fleet-chip-color]="fleetChipColor(index)"
+                [attr.aria-pressed]="fleetId() === fleet.id"
+                (click)="toggleFleetChip(fleet.id)"
+              >
+                <i aria-hidden="true"></i>
+                <span>{{ fleet.name }}</span>
+                <strong>{{ fleet.count }}</strong>
+              </button>
+            }
+          </div>
+        }
       </div>
     </section>
   }

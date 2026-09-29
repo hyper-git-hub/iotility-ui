@@ -17,6 +17,10 @@ import {
   DriverGroup,
   DriverRecord,
 } from '../../../shared/services/driver-api.service';
+import {
+  FleetInventoryApiService,
+  FleetInventoryRecord,
+} from '../../../shared/services/fleet-inventory-api.service';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { DriverForm } from '../driver-form/driver-form';
 
@@ -55,6 +59,29 @@ export class DriverList implements OnInit, OnDestroy {
   protected readonly formOpen = signal(false);
   protected readonly error = signal('');
   protected readonly records = signal<DriverRecord[]>([]);
+  protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
+  private readonly driverFleets = computed(() => {
+    const colors = [
+      'var(--color-brand-500)',
+      'var(--color-info)',
+      'var(--color-warning)',
+      'var(--color-success)',
+      'var(--color-danger)',
+    ];
+    const assignments = new Map<number, { name: string; color: string }>();
+    this.fleetRecords().forEach((fleet, index) => {
+      for (const vehicle of fleet.assigned_vehicles ?? []) {
+        for (const driver of vehicle.associated_drivers_name ?? []) {
+          if (driver.driver_id == null) continue;
+          assignments.set(driver.driver_id, {
+            name: fleet.name,
+            color: colors[index % colors.length],
+          });
+        }
+      }
+    });
+    return assignments;
+  });
   protected readonly groups = signal<DriverGroup[]>([]);
   protected readonly selectedDriver = signal<DriverRecord | null>(null);
   protected readonly total = signal(0);
@@ -99,23 +126,27 @@ export class DriverList implements OnInit, OnDestroy {
     { id: 'free-drivers', label: 'Free Drivers' },
   ];
   protected readonly rows = computed<TableRow[]>(() =>
-    this.visibleRecords().map((d) => ({
-      id: d.id,
-      name: d.name || 'Unnamed driver',
-      details: d.email || 'No email',
-      fleet: d.group || 'Operations Fleet',
-      fleetColor: this.driverColor(d),
-      shift: this.shiftStatus(d),
-      vehicle: this.staticVehicle(d),
-      vehicleAllocated: this.staticVehicle(d) !== 'Unallocated',
-      score: this.staticScore(d),
-      trips: `${this.staticTrips(d)} today`,
-      violations: this.staticViolations(d),
-      fines: this.staticFines(d),
-      licence: this.licenceStatus(d),
-      categories: this.staticCategories(d),
-      actions: '',
-    })),
+    this.visibleRecords().map((d) => {
+      const fleet = this.driverFleets().get(d.id);
+      const fleetName = fleet?.name || d.group || '';
+      return {
+        id: d.id,
+        name: d.name || 'Unnamed driver',
+        details: d.email || 'No email',
+        fleet: fleetName || '—',
+        fleetColor: fleet?.color ?? this.driverColor(fleetName),
+        shift: this.shiftStatus(d),
+        vehicle: this.staticVehicle(d),
+        vehicleAllocated: this.staticVehicle(d) !== 'Unallocated',
+        score: this.staticScore(d),
+        trips: `${this.staticTrips(d)} today`,
+        violations: this.staticViolations(d),
+        fines: this.staticFines(d),
+        licence: this.licenceStatus(d),
+        categories: this.staticCategories(d),
+        actions: '',
+      };
+    }),
   );
   protected readonly displayedTotal = computed(() =>
     this.groupId() || this.driverId() ? this.visibleRecords().length : this.total(),
@@ -131,11 +162,16 @@ export class DriverList implements OnInit, OnDestroy {
   );
   constructor(
     private readonly api: DriverApiService,
+    private readonly fleetApi: FleetInventoryApiService,
     private readonly feedback: FeedbackDialogBridgeService,
     private readonly router: Router,
   ) {}
   ngOnInit(): void {
     this.refreshGroups();
+    this.fleetApi.getFleets({ limit: 100, offset: 0, id: '', search: '' }).subscribe({
+      next: (response) => this.fleetRecords.set(response.data?.data ?? []),
+      error: () => this.fleetRecords.set([]),
+    });
     this.loadDrivers();
   }
   protected tableSearchChanged(v: string): void {
@@ -307,9 +343,13 @@ export class DriverList implements OnInit, OnDestroy {
     const days = Number.parseInt(licence, 10);
     return days <= 30 ? 'danger' : days <= 90 ? 'warning' : 'safe';
   }
-  protected driverColor(driver: DriverRecord): string {
+  protected driverColor(fleetName: string): string {
     const colors = ['var(--color-brand-600)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)'];
-    return colors[driver.id % colors.length];
+    let hash = 0;
+    for (const character of fleetName.trim().toLowerCase()) {
+      hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+    }
+    return fleetName ? colors[hash % colors.length] : 'var(--color-muted)';
   }
   private shiftStatus(driver: DriverRecord): string {
     if (this.hasActiveShift(driver)) return 'On Shift';
