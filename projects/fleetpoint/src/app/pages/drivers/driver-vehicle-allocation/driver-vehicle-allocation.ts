@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { BlockingLoader, Skeleton, Tooltip } from '@iotility/shared-ui';
+import { BlockingLoader, DataTablePagination, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import {
   DriverApiService,
@@ -10,7 +10,7 @@ import { AllocationForm } from '../allocation-form/allocation-form';
 
 @Component({
   selector: 'app-driver-vehicle-allocation',
-  imports: [AllocationForm, BlockingLoader, Skeleton, Tooltip],
+  imports: [AllocationForm, BlockingLoader, DataTablePagination, Skeleton, Tooltip],
   templateUrl: './driver-vehicle-allocation.html',
   styleUrl: '../drivers-page.css',
 })
@@ -24,8 +24,6 @@ export class DriverVehicleAllocation implements OnInit {
   protected readonly total = signal(0);
   protected readonly offset = signal(0);
   protected readonly limit = 10;
-  protected readonly start = computed(() => (this.total() ? this.offset() + 1 : 0));
-  protected readonly end = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
   protected readonly actionLoading = signal(false);
   protected readonly formOpen = signal(false);
@@ -67,15 +65,9 @@ export class DriverVehicleAllocation implements OnInit {
           date,
         );
   }
-  protected previous(): void {
-    this.offset.update((value) => Math.max(0, value - this.limit));
+  protected goToPage(page: number): void {
+    this.offset.set((page - 1) * this.limit);
     this.load();
-  }
-  protected next(): void {
-    if (this.offset() + this.limit < this.total()) {
-      this.offset.update((value) => value + this.limit);
-      this.load();
-    }
   }
   protected create(): void {
     this.selectedAllocation.set(null);

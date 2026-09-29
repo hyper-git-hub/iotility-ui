@@ -205,10 +205,6 @@
         [showToolbar]="false"
         [minTableWidth]="760"
       />
-      <nav class="alerts-pagination">
-        <ui-skeleton width="8rem" height="0.75rem" />
-        <div><button disabled>Previous</button><button disabled>Next</button></div>
-      </nav>
     </section>
   } @else if (driver(); as item) {
     <div class="driver-detail-content" [class.refreshing]="dataLoading()">
@@ -435,26 +431,13 @@
       <section class="alerts-section">
         <shared-data-table
           title="Driver alerts"
-          [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + violationCount()"
           [columns]="alertColumns"
           [rows]="alertRows()"
           [showToolbar]="false"
           [minTableWidth]="760"
+          [pagination]="{ totalItems: violationCount(), pageSize: limit, page: offset() / limit + 1, loading: dataLoading() }"
+          (pageChange)="goToAlertPage($event)"
         />
-        <nav class="alerts-pagination" aria-label="Driver alert pages">
-          <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ violationCount() }}</span>
-          <div>
-            <button type="button" [disabled]="dataLoading() || offset() === 0" (click)="previous()">
-              Previous</button
-            ><button
-              type="button"
-              [disabled]="dataLoading() || offset() + limit >= violationCount()"
-              (click)="next()"
-            >
-              Next
-            </button>
-          </div>
-        </nav>
       </section>
     </div>
   }

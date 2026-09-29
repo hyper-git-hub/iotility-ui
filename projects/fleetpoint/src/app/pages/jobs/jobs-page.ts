@@ -136,10 +136,8 @@ export class JobsPage {
         actions: '',
       }));
   });
-  protected readonly rows = computed(() => this.filteredRows().slice(this.offset(), this.offset() + this.limit));
+  protected readonly rows = computed(() => this.filteredRows());
   protected readonly filteredTotal = computed(() => this.filteredRows().length);
-  protected readonly pageStart = computed(() => this.filteredTotal() ? this.offset() + 1 : 0);
-  protected readonly pageEnd = computed(() => Math.min(this.offset() + this.limit, this.filteredTotal()));
 
   protected selectFilter(option: DropdownOption): void { this.filter.set(option.id); }
   protected selectJobType(option: DropdownOption): void { this.jobTypeFilter.set(option.id); }
@@ -165,15 +163,9 @@ export class JobsPage {
     this.closeJobDetails();
   }
   protected tableSearchChanged(value: string): void { this.search.set(value); this.offset.set(0); }
-  protected previousPage(): void {
-    this.offset.update((value) => Math.max(0, value - this.limit));
+  protected goToPage(page: number): void {
+    this.offset.set((page - 1) * this.limit);
     this.closeJobDetails();
-  }
-  protected nextPage(): void {
-    if (this.offset() + this.limit < this.filteredTotal()) {
-      this.offset.update((value) => value + this.limit);
-      this.closeJobDetails();
-    }
   }
   protected selectView(view: 'list' | 'dispatch'): void {
     this.activeView.set(view);

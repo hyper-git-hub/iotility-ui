@@ -6,7 +6,6 @@ import {
   DataTableSkeleton,
   Dropdown,
   DropdownOption,
-  Skeleton,
   SmoothHeight,
   TableAction,
   TableColumn,
@@ -34,7 +33,6 @@ import { DeviceForm, DeviceFormValue } from './device-form/device-form';
     DataTableSkeleton,
     DeviceForm,
     Dropdown,
-    Skeleton,
     SmoothHeight,
     StatCard,
     Tooltip,
@@ -118,19 +116,8 @@ export class DevicesPage implements OnInit {
         },
       });
   }
-  protected readonly hardwarePageStart = computed(() =>
-    this.hardwareTotal() ? this.hardwareOffset() + 1 : 0,
-  );
-  protected readonly hardwarePageEnd = computed(() =>
-    Math.min(this.hardwareOffset() + this.hardware().length, this.hardwareTotal()),
-  );
-  protected previousHardwarePage(): void {
-    this.hardwareOffset.update((offset) => Math.max(0, offset - this.hardwareLimit));
-    this.loadHardware();
-  }
-  protected nextHardwarePage(): void {
-    if (this.hardwareOffset() + this.hardwareLimit >= this.hardwareTotal()) return;
-    this.hardwareOffset.update((offset) => offset + this.hardwareLimit);
+  protected goToHardwarePage(page: number): void {
+    this.hardwareOffset.set((page - 1) * this.hardwareLimit);
     this.loadHardware();
   }
   protected readonly filtered = computed(() => {

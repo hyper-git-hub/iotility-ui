@@ -111,8 +111,6 @@ export class VehiclesPage implements OnInit {
         registrations: item.vehicles.map((vehicle) => vehicle.registration || vehicle.name).join(', '),
       }));
   });
-  protected readonly pageStart = computed(() => this.total() ? this.offset() + 1 : 0);
-  protected readonly pageEnd = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
   constructor(
     private readonly api: VehicleInventoryApiService,
@@ -203,8 +201,7 @@ export class VehiclesPage implements OnInit {
   protected selectCategory(option: DropdownOption): void { this.categoryId.set(option.id); }
   protected selectVehicleType(option: DropdownOption): void { this.vehicleTypeId.set(option.id); }
   protected selectedLabel(options: DropdownOption[], id: string, fallback: string): string { return options.find((option) => option.id === id)?.label || fallback; }
-  protected previousPage(): void { this.offset.update((value) => Math.max(0, value - this.limit)); this.loadVehicles(); }
-  protected nextPage(): void { if (this.offset() + this.limit < this.total()) { this.offset.update((value) => value + this.limit); this.loadVehicles(); } }
+  protected goToPage(page: number): void { this.offset.set((page - 1) * this.limit); this.loadVehicles(); }
 
   protected openCreateForm(): void { this.selectedVehicle.set(null); this.formOpen.set(true); }
   protected closeForm(): void { this.formOpen.set(false); this.selectedVehicle.set(null); }

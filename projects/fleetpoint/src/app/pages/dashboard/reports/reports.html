@@ -150,33 +150,16 @@
         <shared-data-table
           class="reports-table"
           [title]="selectedReport().name"
-          [subtitle]="'Showing ' + start() + '–' + end() + ' of ' + total()"
           [columns]="selectedReport().columns"
           [rows]="rows()"
           [showToolbar]="false"
           [showExport]="false"
           [showPrimaryAction]="false"
           [minTableWidth]="selectedReport().minTableWidth ?? 760"
+          [pagination]="{ totalItems: total(), pageSize: limit, page: offset() / limit + 1, loading: loading() }"
+          (pageChange)="goToPage($event)"
         />
       </div>
     }
-    <nav class="report-pagination">
-      @if (initialLoading()) {
-        <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" />
-      } @else {
-        <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span>
-      }
-      <div>
-        <button type="button" [disabled]="loading() || offset() === 0" (click)="previous()">
-          Previous</button
-        ><button
-          type="button"
-          [disabled]="loading() || offset() + limit >= total()"
-          (click)="next()"
-        >
-          Next
-        </button>
-      </div>
-    </nav>
   </main>
 </section>

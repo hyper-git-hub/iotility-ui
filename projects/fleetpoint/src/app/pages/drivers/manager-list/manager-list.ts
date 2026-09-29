@@ -3,7 +3,6 @@ import {
   BlockingLoader,
   DataTable,
   DataTableSkeleton,
-  Skeleton,
   TableAction,
   TableColumn,
   TableRow,
@@ -15,7 +14,7 @@ import { ManagerForm } from '../manager-form/manager-form';
 
 @Component({
   selector: 'app-manager-list',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, ManagerForm, Skeleton],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, ManagerForm],
   templateUrl: './manager-list.html',
   styleUrl: '../drivers-page.css',
 })
@@ -56,8 +55,6 @@ export class ManagerList implements OnInit {
       actions: '',
     })),
   );
-  protected readonly start = computed(() => (this.total() ? this.offset() + 1 : 0));
-  protected readonly end = computed(() => Math.min(this.offset() + this.limit, this.total()));
 
   constructor(
     private readonly api: DriverApiService,
@@ -74,15 +71,9 @@ export class ManagerList implements OnInit {
       this.load();
     }, 400);
   }
-  protected previous(): void {
-    this.offset.update((value) => Math.max(0, value - this.limit));
+  protected goToPage(page: number): void {
+    this.offset.set((page - 1) * this.limit);
     this.load();
-  }
-  protected next(): void {
-    if (this.offset() + this.limit < this.total()) {
-      this.offset.update((value) => value + this.limit);
-      this.load();
-    }
   }
   protected openCreate(): void {
     this.selected.set(null);

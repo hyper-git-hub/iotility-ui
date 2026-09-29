@@ -37,10 +37,12 @@
     <shared-data-table
       class="jobs-table"
       title="Job List"
-      [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + filteredTotal() + ' jobs · Click a row to view details'"
+      subtitle="Click a row to view details"
       [columns]="columns"
       [rows]="rows()"
       [clientSideSearch]="false"
+      [clientSidePagination]="true"
+      [pagination]="{ totalItems: filteredTotal(), pageSize: limit, page: offset() / limit + 1 }"
       [showExport]="false"
       [showPrimaryAction]="false"
       [minTableWidth]="1450"
@@ -48,15 +50,12 @@
       [actions]="tableActions"
       [selectedRowId]="selectedJob()?.id ?? null"
       searchPlaceholder="Search job name, driver, vehicle, location..."
+      (pageChange)="goToPage($event)"
       (searchChange)="tableSearchChanged($event)"
       (cellSelected)="openVehicle()"
       (rowSelected)="selectJob($event)"
       (rowAction)="selectJob($event.row)"
     />
-    <nav class="job-pagination" aria-label="Job pages">
-      <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ filteredTotal() }}</span>
-      <div><button type="button" [disabled]="offset() === 0" (click)="previousPage()">Previous</button><button type="button" [disabled]="offset() + limit >= filteredTotal()" (click)="nextPage()">Next</button></div>
-    </nav>
     </div>
 
     <aside class="job-details" [attr.aria-hidden]="!selectedJob()">

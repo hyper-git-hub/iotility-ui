@@ -1,7 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import {
   DataTable,
-  DataTableBottomPanel,
   DataTableCellTemplate,
   TableColumn,
   TableRow,
@@ -26,7 +25,7 @@ const FLEETPOINT_USE_CASE = { usecase: 'Fleetpoint', usecaseIcon: 'assets/fleetp
 
 @Component({
   selector: 'app-home-dashboard',
-  imports: [DataTable, DataTableCellTemplate, DataTableBottomPanel],
+  imports: [DataTable, DataTableCellTemplate],
   templateUrl: './home-dashboard.html',
   styleUrl: './home-dashboard.css',
 })
@@ -281,7 +280,7 @@ export class HomeDashboardPage {
     },
   ];
 
-  private readonly filteredActivities = computed(() => {
+  protected readonly filteredActivities = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
     if (!query) return this.activities;
     return this.activities.filter((activity) =>
@@ -289,19 +288,6 @@ export class HomeDashboardPage {
         String(activity[key]).toLowerCase().includes(query),
       ),
     );
-  });
-
-  protected readonly pageCount = computed(() =>
-    Math.max(1, Math.ceil(this.filteredActivities().length / this.pageSize)),
-  );
-
-  protected readonly pageNumbers = computed(() =>
-    Array.from({ length: this.pageCount() }, (_, index) => index + 1),
-  );
-
-  protected readonly visibleActivities = computed(() => {
-    const start = (this.page() - 1) * this.pageSize;
-    return this.filteredActivities().slice(start, start + this.pageSize);
   });
 
   constructor(
@@ -316,19 +302,7 @@ export class HomeDashboardPage {
   }
 
   protected goToPage(page: number): void {
-    this.page.set(Math.min(Math.max(page, 1), this.pageCount()));
-  }
-
-  protected previousPage(): void {
-    this.goToPage(this.page() - 1);
-  }
-
-  protected nextPage(): void {
-    this.goToPage(this.page() + 1);
-  }
-
-  protected pageLabel(page: number): string {
-    return String(page).padStart(2, '0');
+    this.page.set(page);
   }
 
   protected initials(name: string): string {

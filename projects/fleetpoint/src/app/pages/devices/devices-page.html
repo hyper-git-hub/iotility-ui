@@ -89,7 +89,6 @@
     } @else {
     <shared-data-table
       title="Device Inventory"
-      [subtitle]="'Showing ' + hardwarePageStart() + '–' + hardwarePageEnd() + ' of ' + hardwareTotal() + ' devices'"
       [columns]="columns"
       [rows]="rows()"
       [actions]="actions"
@@ -97,6 +96,8 @@
       [showExport]="false"
       [showPrimaryAction]="false"
       [minTableWidth]="1320"
+      [pagination]="{ totalItems: hardwareTotal(), pageSize: hardwareLimit, page: hardwareOffset() / hardwareLimit + 1, loading: hardwareLoading() }"
+      (pageChange)="goToHardwarePage($event)"
       (cellSelected)="openVehicle($event.row)"
       ><ng-template tableCell="device" let-row
         ><div class="device-cell">
@@ -163,24 +164,6 @@
       ></shared-data-table
     >
     }
-    <nav class="device-pagination" aria-label="Device pages">
-      @if (hardwareLoading()) {
-        <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" />
-      } @else {
-        <span>Showing {{ hardwarePageStart() }}–{{ hardwarePageEnd() }} of {{ hardwareTotal() }}</span>
-      }
-      <div>
-        <button type="button" [disabled]="hardwareLoading() || hardwareOffset() === 0" (click)="previousHardwarePage()">
-          Previous</button
-        ><button
-          type="button"
-          [disabled]="hardwareLoading() || hardwareOffset() + hardwareLimit >= hardwareTotal()"
-          (click)="nextHardwarePage()"
-        >
-          Next
-        </button>
-      </div>
-    </nav>
   } @else {
     <section class="bundle-list">
       @for (bundle of bundles(); track bundle.vehicle) {

@@ -77,15 +77,6 @@
   @apply absolute inset-x-0 top-0 block h-[3px] origin-left bg-brand-500 shadow-[0_1px_5px_rgba(124,58,237,0.35)];
   animation: management-refresh-progress 1.1s ease-in-out infinite;
 }
-.pagination {
-  @apply flex items-center justify-between border-t border-line px-4 py-3 text-xs text-muted dark:border-dark-line dark:text-brand-300;
-}
-.pagination div {
-  @apply flex gap-2;
-}
-.pagination button {
-  @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line;
-}
 .role-summary {
   @apply grid gap-3 sm:grid-cols-3;
 }
@@ -300,8 +291,5 @@
   }
   .heading-actions button {
     @apply flex-1;
-  }
-  .pagination {
-    @apply items-start gap-3;
   }
 }

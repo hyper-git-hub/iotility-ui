@@ -66,7 +66,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (r of filteredRows(); track $index) {
+          @for (r of displayedRows(); track $index) {
             <tr
               [class.clickable-row]="rowsClickable() || expandableRows()"
               [class.selected-row]="isSelectedRow(r) || isExpandedRow(r)"
@@ -231,5 +231,14 @@
     <div class="table-bottom-panel">
       <ng-container [ngTemplateOutlet]="template" />
     </div>
+  }
+  @if (pagination(); as pageConfig) {
+    <shared-data-table-pagination
+      [totalItems]="pageConfig.totalItems"
+      [pageSize]="pageConfig.pageSize"
+      [currentPage]="pageConfig.page"
+      [loading]="pageConfig.loading ?? false"
+      (pageChange)="pageChange.emit($event)"
+    />
   }
 </section>

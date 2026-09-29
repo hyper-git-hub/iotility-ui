@@ -101,7 +101,6 @@
       <shared-data-table
         class="drivers-table"
         title="Driver List"
-        [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + displayedTotal()"
         [columns]="columns"
         [rows]="rows()"
         [actions]="actions"
@@ -109,7 +108,9 @@
         [showPrimaryAction]="false"
         [showExport]="true"
         [minTableWidth]="1250"
+        [pagination]="groupId() || driverId() ? null : { totalItems: total(), pageSize: limit, page: offset() / limit + 1, loading: loading() }"
         searchPlaceholder="Search drivers or employee ID"
+        (pageChange)="goToPage($event)"
         (searchChange)="tableSearchChanged($event)"
         (rowAction)="handleRowAction($event)"
         (cellSelected)="handleCellSelected($event)"
@@ -153,30 +154,6 @@
         }
       </div>
     }
-  }
-
-  @if (viewMode() === 'list') {
-  <nav class="driver-pagination">
-    @if (initialLoading()) {
-      <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" />
-    } @else {
-      <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ displayedTotal() }}</span>
-    }
-    <div>
-      <button
-        [disabled]="loading() || offset() === 0 || !!groupId() || !!driverId()"
-        (click)="previousPage()"
-      >
-        Previous
-      </button>
-      <button
-        [disabled]="loading() || offset() + limit >= total() || !!groupId() || !!driverId()"
-        (click)="nextPage()"
-      >
-        Next
-      </button>
-    </div>
-  </nav>
   }
 
   <app-driver-form

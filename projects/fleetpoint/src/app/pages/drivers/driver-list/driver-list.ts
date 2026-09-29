@@ -148,18 +148,7 @@ export class DriverList implements OnInit, OnDestroy {
       };
     }),
   );
-  protected readonly displayedTotal = computed(() =>
-    this.groupId() || this.driverId() ? this.visibleRecords().length : this.total(),
-  );
   protected readonly hasMore = computed(() => this.records().length < this.total());
-  protected readonly pageStart = computed(() =>
-    this.displayedTotal() ? (this.groupId() || this.driverId() ? 1 : this.offset() + 1) : 0,
-  );
-  protected readonly pageEnd = computed(() =>
-    this.groupId() || this.driverId()
-      ? this.visibleRecords().length
-      : Math.min(this.offset() + this.limit, this.total()),
-  );
   constructor(
     private readonly api: DriverApiService,
     private readonly fleetApi: FleetInventoryApiService,
@@ -252,15 +241,10 @@ export class DriverList implements OnInit, OnDestroy {
     }
     this.openDriver(event.row);
   }
-  protected previousPage(): void {
-    this.offset.update((v) => Math.max(0, v - this.limit));
+  protected goToPage(page: number): void {
+    if (this.groupId() || this.driverId()) return;
+    this.offset.set((page - 1) * this.limit);
     this.loadDrivers();
-  }
-  protected nextPage(): void {
-    if (this.offset() + this.limit < this.total()) {
-      this.offset.update((v) => v + this.limit);
-      this.loadDrivers();
-    }
   }
   protected loadDrivers(append = false, requestOffset = this.offset()): void {
     if (append) this.loadingMore.set(true);

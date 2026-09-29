@@ -218,7 +218,6 @@
       <shared-data-table
         class="vehicles-table"
         title="Vehicle List"
-        [subtitle]="'Showing ' + pageStart() + '–' + pageEnd() + ' of ' + total()"
         [columns]="columns"
         [rows]="vehicles()"
         [actions]="tableActions"
@@ -227,32 +226,15 @@
         [showExport]="false"
         [showPrimaryAction]="false"
         [clientSideSearch]="false"
+        [pagination]="{ totalItems: total(), pageSize: limit, page: offset() / limit + 1, loading: loading() }"
         searchPlaceholder="Search vehicles"
+        (pageChange)="goToPage($event)"
         (searchChange)="tableSearchChanged($event)"
         (rowAction)="handleRowAction($event)"
         (cellSelected)="openVehicle($event.row)"
       ></shared-data-table>
     </div>
   }
-
-  <nav class="vehicle-pagination" aria-label="Vehicle pages">
-    @if (initialLoading()) {
-      <ui-skeleton width="8.5rem" height="0.75rem" radius="0.3rem" />
-    } @else {
-      <span>Showing {{ pageStart() }}–{{ pageEnd() }} of {{ total() }}</span>
-    }
-    <div>
-      <button type="button" [disabled]="loading() || offset() === 0" (click)="previousPage()">
-        Previous</button
-      ><button
-        type="button"
-        [disabled]="loading() || offset() + limit >= total()"
-        (click)="nextPage()"
-      >
-        Next
-      </button>
-    </div>
-  </nav>
 
   <app-vehicle-form
     [open]="formOpen()"

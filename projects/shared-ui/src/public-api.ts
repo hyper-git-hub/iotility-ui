@@ -1,5 +1,6 @@
 export * from './lib/dropdown/dropdown';
 export * from './lib/data-table/data-table';
+export * from './lib/data-table/data-table-pagination';
 export * from './lib/platform-header/platform-header';
 export * from './lib/status-badge/status-badge';
 export * from './lib/blocking-loader/blocking-loader';

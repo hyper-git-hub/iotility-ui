@@ -45,8 +45,11 @@
     title="User Activities"
     searchPlaceholder="search for users"
     [columns]="columns"
-    [rows]="visibleActivities()"
+    [rows]="filteredActivities()"
     [clientSideSearch]="false"
+    [clientSidePagination]="true"
+    [pagination]="{ totalItems: filteredActivities().length, pageSize: pageSize, page: page() }"
+    (pageChange)="goToPage($event)"
     [showPrimaryAction]="false"
     [minTableWidth]="920"
     (searchChange)="updateSearch($event)"
@@ -91,35 +94,5 @@
       </span>
     </ng-template>
 
-    <ng-template tableBottomPanel>
-      <nav class="activity-pagination" aria-label="User activity pages">
-        <button type="button" class="page-step" [disabled]="page() === 1" (click)="previousPage()">
-          Prev
-        </button>
-
-        <div class="page-numbers">
-          @for (number of pageNumbers(); track number) {
-            <button
-              type="button"
-              class="page-number"
-              [class.active]="number === page()"
-              [attr.aria-current]="number === page() ? 'page' : null"
-              (click)="goToPage(number)"
-            >
-              {{ pageLabel(number) }}
-            </button>
-          }
-        </div>
-
-        <button
-          type="button"
-          class="page-step"
-          [disabled]="page() === pageCount()"
-          (click)="nextPage()"
-        >
-          Next
-        </button>
-      </nav>
-    </ng-template>
   </shared-data-table>
 </main>

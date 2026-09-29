@@ -79,9 +79,6 @@
 .job-tasks > div.complete i { @apply border-success bg-success text-white; }
 .job-notes { @apply rounded-xl border border-warning/50 bg-warning/5 p-3 text-xs text-warning; }.job-notes p { @apply mt-1 text-[11px]; }
 .job-details footer { @apply text-[10px] text-muted dark:text-brand-300; }
-.job-pagination { @apply flex items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300; }
-.job-pagination div { @apply flex gap-2; }
-.job-pagination button { @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line; }
 .view-enter { animation: jobs-view-enter 240ms ease-out; }
 .dispatch-card { @apply min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; }
 .dispatch-workspace .dispatch-card { @apply flex-1; }

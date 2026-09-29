@@ -231,16 +231,6 @@
 .alerts-section {
   @apply grid min-w-0 gap-4;
 }
-.alerts-pagination {
-  @apply flex items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
-}
-.alerts-pagination div {
-  @apply flex gap-2;
-}
-.alerts-pagination button {
-  @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line;
-}
-
 @media (max-width: 640px) {
   .driver-detail-page {
     @apply p-3;
@@ -248,8 +238,5 @@
   .bar-list > div,
   .idle-list > div {
     @apply grid-cols-[7rem_1fr_3rem] gap-2;
-  }
-  .alerts-pagination {
-    @apply gap-3;
   }
 }

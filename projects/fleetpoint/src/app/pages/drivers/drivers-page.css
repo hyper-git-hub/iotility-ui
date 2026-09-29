@@ -294,15 +294,6 @@
 .drivers-error button {
   @apply cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-white;
 }
-.driver-pagination {
-  @apply flex items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
-}
-.driver-pagination div {
-  @apply flex gap-2;
-}
-.driver-pagination button {
-  @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line;
-}
 @keyframes driver-refresh-progress {
   0% { transform: scaleX(0.12); opacity: 0.55; }
   50% { transform: scaleX(0.72); opacity: 1; }

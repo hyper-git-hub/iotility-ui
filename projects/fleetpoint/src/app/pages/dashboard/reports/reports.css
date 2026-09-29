@@ -179,15 +179,6 @@
 .report-error button {
   @apply cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-[10px] font-semibold text-white;
 }
-.report-pagination {
-  @apply flex shrink-0 items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-xs text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
-}
-.report-pagination div {
-  @apply flex gap-2;
-}
-.report-pagination button {
-  @apply cursor-pointer rounded-lg border border-line px-3 py-1.5 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-dark-line;
-}
 @media (max-width: 760px) {
   .reports-panel {
     @apply w-60;

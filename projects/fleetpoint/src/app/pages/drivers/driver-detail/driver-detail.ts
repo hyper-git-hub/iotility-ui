@@ -76,10 +76,6 @@ export class DriverDetail implements OnInit {
   protected readonly maxIdle = computed(() =>
     Math.max(1, ...this.graphs().idle_history.map((item) => Number(item.value || 0))),
   );
-  protected readonly pageStart = computed(() => (this.violationCount() ? this.offset() + 1 : 0));
-  protected readonly pageEnd = computed(() =>
-    Math.min(this.offset() + this.limit, this.violationCount()),
-  );
   protected readonly alertColumns: TableColumn[] = [
     { key: 'violation', label: 'Violation' },
     { key: 'vehicle', label: 'Vehicle' },
@@ -238,17 +234,9 @@ export class DriverDetail implements OnInit {
       this.cardPeriodOptions.find((option) => option.id === this.cardPeriod())?.label || 'Overall'
     );
   }
-  protected previous(): void {
-    if (this.offset() > 0) {
-      this.offset.update((value) => Math.max(0, value - this.limit));
-      this.loadViolationPage();
-    }
-  }
-  protected next(): void {
-    if (this.offset() + this.limit < this.violationCount()) {
-      this.offset.update((value) => value + this.limit);
-      this.loadViolationPage();
-    }
+  protected goToAlertPage(page: number): void {
+    this.offset.set((page - 1) * this.limit);
+    this.loadViolationPage();
   }
   protected back(): void {
     void this.router.navigateByUrl('/fleetpoint/drivers');

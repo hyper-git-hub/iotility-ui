@@ -70,8 +70,6 @@ export class Reports implements OnInit, OnDestroy {
   protected readonly error = signal('');
   protected readonly interval = signal<ReportDateFilter>('month');
   protected readonly tripSearch = signal('');
-  protected readonly start = computed(() => (this.total() ? this.offset() + 1 : 0));
-  protected readonly end = computed(() => Math.min(this.offset() + this.limit, this.total()));
   protected readonly columnLabels = computed(() =>
     this.selectedReport().columns.map((column) => column.label),
   );
@@ -109,15 +107,9 @@ export class Reports implements OnInit, OnDestroy {
       this.load();
     }, 400);
   }
-  protected previous(): void {
-    this.offset.update((value) => Math.max(0, value - this.limit));
+  protected goToPage(page: number): void {
+    this.offset.set((page - 1) * this.limit);
     this.load();
-  }
-  protected next(): void {
-    if (this.offset() + this.limit < this.total()) {
-      this.offset.update((value) => value + this.limit);
-      this.load();
-    }
   }
   protected retry(): void {
     this.load();

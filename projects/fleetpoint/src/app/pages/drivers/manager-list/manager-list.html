@@ -8,14 +8,9 @@
   } @else {
     <div class="driver-table-wrap" [class.refreshing]="refreshing()">
       @if (refreshing()) { <div class="driver-refresh-progress"><i></i></div> }
-      <shared-data-table title="Manager List" [subtitle]="'Showing ' + start() + '–' + end() + ' of ' + total()" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showPrimaryAction]="false" [showExport]="false" searchPlaceholder="Search managers or employee ID" (searchChange)="searchChanged($event)" (rowAction)="action($event)" />
+      <shared-data-table title="Manager List" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showPrimaryAction]="false" [showExport]="false" [pagination]="{ totalItems: total(), pageSize: limit, page: offset() / limit + 1, loading: loading() }" (pageChange)="goToPage($event)" searchPlaceholder="Search managers or employee ID" (searchChange)="searchChanged($event)" (rowAction)="action($event)" />
     </div>
   }
 
-  <nav class="driver-pagination">
-    @if (initialLoading()) { <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" /> }
-    @else { <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span> }
-    <div><button [disabled]="loading() || offset() === 0" (click)="previous()">Previous</button><button [disabled]="loading() || offset() + limit >= total()" (click)="next()">Next</button></div>
-  </nav>
   <app-manager-form [open]="formOpen()" [manager]="selected()" (cancelled)="close()" (saved)="saved()" />
 </section>

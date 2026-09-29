@@ -97,14 +97,14 @@
       }
     </div>
     }
-    @if (total() > limit) {
-      <nav class="driver-pagination">
-        <span>Showing {{ start() }}–{{ end() }} of {{ total() }}</span>
-        <div>
-          <button [disabled]="offset() === 0" (click)="previous()">Previous</button
-          ><button [disabled]="offset() + limit >= total()" (click)="next()">Next</button>
-        </div>
-      </nav>
+    @if (total() > 0) {
+      <shared-data-table-pagination
+        [totalItems]="total()"
+        [pageSize]="limit"
+        [currentPage]="offset() / limit + 1"
+        [loading]="loading()"
+        (pageChange)="goToPage($event)"
+      />
     }
   </section>
   <app-allocation-form

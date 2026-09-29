@@ -17,6 +17,14 @@ import {
 } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
 import { Tooltip } from '../tooltip/tooltip';
+import { DataTablePagination } from './data-table-pagination';
+
+export interface DataTablePaginationConfig {
+  totalItems: number;
+  pageSize: number;
+  page: number;
+  loading?: boolean;
+}
 export type TableColumnType =
   | 'text'
   | 'user'
@@ -70,7 +78,7 @@ export class DataTableCellTemplate {
 }
 @Component({
   selector: 'shared-data-table',
-  imports: [Dropdown, NgTemplateOutlet, Tooltip],
+  imports: [DataTablePagination, Dropdown, NgTemplateOutlet, Tooltip],
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
   // The card header already renders the title, so keep it out of the browser's native tooltip.
@@ -104,6 +112,9 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly minTableWidth = input(760);
   readonly bodyBottomPadding = input(0);
   readonly showBottomPanel = input(true);
+  readonly pagination = input<DataTablePaginationConfig | null>(null);
+  readonly clientSidePagination = input(false);
+  readonly pageChange = output<number>();
   readonly primaryAction = output<void>();
   readonly searchChange = output<string>();
   readonly headerFilterChange = output<DropdownOption>();
@@ -127,6 +138,13 @@ export class DataTable implements AfterViewInit, OnDestroy {
     return q
       ? this.rows().filter((r) => Object.values(r).some((v) => String(v).toLowerCase().includes(q)))
       : this.rows();
+  });
+  protected readonly displayedRows = computed(() => {
+    const rows = this.filteredRows();
+    const pagination = this.pagination();
+    if (!this.clientSidePagination() || !pagination) return rows;
+    const start = (pagination.page - 1) * pagination.pageSize;
+    return rows.slice(start, start + pagination.pageSize);
   });
   protected readonly resolvedBodyHeight = computed(
     () => this.viewportHeight() ?? this.bodyHeight(),

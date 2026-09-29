@@ -166,14 +166,6 @@ export class UsersRolesPage implements OnInit {
       0,
     ),
   );
-  protected readonly userStart = computed(() => (this.userTotal() ? this.userOffset() + 1 : 0));
-  protected readonly userEnd = computed(() =>
-    Math.min(this.userOffset() + this.limit, this.userTotal()),
-  );
-  protected readonly roleStart = computed(() => (this.roleTotal() ? this.roleOffset() + 1 : 0));
-  protected readonly roleEnd = computed(() =>
-    Math.min(this.roleOffset() + this.limit, this.roleTotal()),
-  );
   protected readonly userForm;
   protected readonly roleForm;
   protected readonly assignForm;
@@ -461,25 +453,13 @@ export class UsersRolesPage implements OnInit {
       });
   }
 
-  protected previousUsers(): void {
-    this.userOffset.update((value) => Math.max(0, value - this.limit));
+  protected userPageChange(page: number): void {
+    this.userOffset.set((page - 1) * this.limit);
     this.loadUsers();
   }
-  protected nextUsers(): void {
-    if (this.userOffset() + this.limit < this.userTotal()) {
-      this.userOffset.update((value) => value + this.limit);
-      this.loadUsers();
-    }
-  }
-  protected previousRoles(): void {
-    this.roleOffset.update((value) => Math.max(0, value - this.limit));
+  protected rolePageChange(page: number): void {
+    this.roleOffset.set((page - 1) * this.limit);
     this.loadRoles();
-  }
-  protected nextRoles(): void {
-    if (this.roleOffset() + this.limit < this.roleTotal()) {
-      this.roleOffset.update((value) => value + this.limit);
-      this.loadRoles();
-    }
   }
 
   private loadUsers(): void {
