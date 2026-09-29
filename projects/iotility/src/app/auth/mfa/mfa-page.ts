@@ -14,6 +14,7 @@ import {
 } from '../../shared/services/auth-api.service';
 import { AuthSessionService } from '../../shared/services/auth-session.service';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
+import { RecentAppsService } from '../../shared/services/recent-apps.service';
 
 type MfaView = 'loading' | 'choose' | 'setup-code' | 'setup-passkey' | 'verify';
 type MfaMode = 'otp' | 'passkey';
@@ -43,6 +44,7 @@ export class MfaPage implements OnInit, OnDestroy {
     private readonly authApi: AuthApiService,
     private readonly authSession: AuthSessionService,
     private readonly feedbackDialog: FeedbackDialogService,
+    private readonly recentApps: RecentAppsService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
   ) {
@@ -211,6 +213,7 @@ export class MfaPage implements OnInit, OnDestroy {
       if (this.profile?.user_type === 5 && !features.some((id) => Number(id) === 70)) features.push(70);
       const user = { ...(this.profile ?? {}), use_cases: 6, menuaccess: features };
       secureStorage.set('user', JSON.stringify(user));
+      this.recentApps.reload();
       localStorage.setItem('language', this.profile?.language || 'en');
       secureStorage.set('menuaccess', JSON.stringify(features));
       secureStorage.set('roleAccess', JSON.stringify(roleData));

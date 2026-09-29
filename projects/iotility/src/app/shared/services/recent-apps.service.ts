@@ -46,7 +46,7 @@ export class RecentAppsService {
   }
 
   private get storageKey(): string {
-    const email = this.authSession.email;
+    const email = this.authSession.email.trim().toLowerCase();
     return email ? `${this.storageKeyBase}-${email}` : this.storageKeyBase;
   }
 

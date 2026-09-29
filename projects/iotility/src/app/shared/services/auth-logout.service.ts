@@ -45,6 +45,11 @@ export class AuthLogoutService {
 
   private finish(): void {
     this.authSession.clear();
+    try {
+      localStorage.removeItem('firstLoginCompleted');
+    } catch {
+      // Ignore storage failures while completing logout.
+    }
     this.recentApps.reload();
     void this.router.navigateByUrl('/auth/login');
   }
