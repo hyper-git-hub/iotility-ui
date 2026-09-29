@@ -2,7 +2,7 @@ import {
   AfterViewInit, Component, ElementRef, OnDestroy, effect, inject, input, output, signal, untracked,
   viewChild,
 } from '@angular/core';
-import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
+import maplibregl, { LngLatBounds, Map as MapLibreMap } from 'maplibre-gl';
 import {
   LatLng, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
   polygonFeature, popupHtml, removeGeoJson, timezoneCountryCenter, upsertGeoJson,
@@ -57,9 +57,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private readonly fullscreenUi = inject(FullscreenUiService);
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
+  private readonly markerVehicles = new Map<string, TrackedVehicle>();
+  private readonly markerPopupContent = new Map<string, string>();
   private clusterEnabled = false;
   private readonly clusterBadges = new Map<string, maplibregl.Marker>();
   private readonly clusterBadgeDivs = new Map<string, HTMLElement>();
+  private clusteredPairs = new Set<string>();
   private clusterMoveBound = false;
   private clusterSyncFrame?: number;
   private readonly onClusterMove = () => this.queueClusterRerender();
@@ -153,7 +156,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.map = createIotMap(this.mapElement().nativeElement, timezoneCountryCenter(), 4);
+    this.map = createIotMap(this.mapElement().nativeElement, timezoneCountryCenter(), 4, {
+      maxZoom: 24,
+    });
     this.resizeObserver = new ResizeObserver(() => {
       this.map?.resize();
       if (this.initialFitPending && this.vehicles().length)
@@ -235,38 +240,65 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     selectedId: string | null = this.selectedVehicleId(),
   ): void {
     if (!this.map) return;
-    this.markers.forEach((item) => item.remove());
-    this.markers.clear();
     this.clusterEnabled = cluster;
     if (!cluster) {
       this.clearClusterBadges();
+      this.clusteredPairs.clear();
       this.unbindClusterMove();
     }
-    for (const vehicle of show ? vehicles : []) {
-      const element = this.createVehicleMarker(vehicle, selectedId);
-      element.addEventListener('click', () => {
-        this.focusVehicle(vehicle);
-        if (this.isFullscreen()) {
-          this.fullscreenVehicleClick.emit(vehicle);
-        } else {
-          this.vehicleSelected.emit(vehicle);
+    const visibleVehicles = show ? vehicles : [];
+    const visibleIds = new Set(visibleVehicles.map(({ id }) => id));
+    this.markers.forEach((marker, id) => {
+      if (visibleIds.has(id)) return;
+      marker.remove();
+      this.markers.delete(id);
+      this.markerVehicles.delete(id);
+      this.markerPopupContent.delete(id);
+    });
+
+    for (const vehicle of visibleVehicles) {
+      this.markerVehicles.set(vehicle.id, vehicle);
+      let item = this.markers.get(vehicle.id);
+      if (!item) {
+        const element = this.createVehicleMarker(vehicle, selectedId);
+        element.addEventListener('click', () => {
+          const current = this.markerVehicles.get(vehicle.id);
+          if (!current) return;
+          this.focusVehicle(current);
+          if (this.isFullscreen()) {
+            this.fullscreenVehicleClick.emit(current);
+          } else {
+            this.vehicleSelected.emit(current);
+          }
+        });
+        item = new maplibregl.Marker({ element })
+          .setLngLat([vehicle.lng, vehicle.lat])
+          .setPopup(popupHtml(this.vehiclePopupHtml(vehicle)))
+          .addTo(this.map);
+        element.addEventListener('mouseenter', () => {
+          if (item?.getPopup() && !item.getPopup()?.isOpen()) item.togglePopup();
+        });
+        element.addEventListener('mouseleave', () => {
+          if (item?.getPopup()?.isOpen()) item.togglePopup();
+        });
+        this.markers.set(vehicle.id, item);
+        this.markerPopupContent.set(vehicle.id, this.vehiclePopupHtml(vehicle));
+      } else {
+        const position = item.getLngLat();
+        if (position.lng !== vehicle.lng || position.lat !== vehicle.lat) {
+          item.setLngLat([vehicle.lng, vehicle.lat]);
         }
-      });
-      const item = new maplibregl.Marker({ element })
-        .setLngLat([vehicle.lng, vehicle.lat])
-        .setPopup(popupHtml(this.vehiclePopupHtml(vehicle)))
-        .addTo(this.map);
-      element.addEventListener('mouseenter', () => {
-        if (item.getPopup() && !item.getPopup()?.isOpen()) item.togglePopup();
-      });
-      element.addEventListener('mouseleave', () => {
-        if (item.getPopup()?.isOpen()) item.togglePopup();
-      });
-      this.markers.set(vehicle.id, item);
+        const popupContent = this.vehiclePopupHtml(vehicle);
+        if (this.markerPopupContent.get(vehicle.id) !== popupContent) {
+          item.setPopup(popupHtml(popupContent));
+          this.markerPopupContent.set(vehicle.id, popupContent);
+        }
+        this.updateVehicleMarker(item, vehicle, selectedId);
+      }
     }
     if (cluster) {
       this.bindClusterMove();
-      this.recomputeClusters();
+      this.queueClusterRerender();
     }
     const selected = vehicles.find(({ id }) => id === selectedId);
     if (selected && this.markers.has(selected.id)) this.updateMarkerSelection(selected.id);
@@ -298,20 +330,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   private updateMarkerSelection(selectedId: string | null): void {
     this.markers.forEach((item, id) => {
-      const vehicle = this.vehicles().find((v) => v.id === id);
+      const vehicle = this.markerVehicles.get(id);
       if (!vehicle) return;
-      const selected = id === selectedId;
-      const size = selected ? 44 : 34;
-      const color = this.statusColor(vehicle.status);
-      const element = item.getElement();
-      if (!element) return;
-      const markerDiv = element.querySelector('.vehicle-marker') as HTMLElement | null;
-      if (!markerDiv) return;
-      markerDiv.className = `vehicle-marker${selected ? ' selected' : ''}`;
-      markerDiv.style.width = `${size}px`;
-      markerDiv.style.height = `${size}px`;
-      markerDiv.style.borderColor = color;
-      markerDiv.style.boxShadow = `0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}`;
+      this.updateVehicleMarker(item, vehicle, selectedId);
     });
   }
 
@@ -327,6 +348,29 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         <img src="${image}" alt="${vehicle.id}" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'">
       </div>
     `);
+  }
+
+  private updateVehicleMarker(
+    marker: maplibregl.Marker,
+    vehicle: TrackedVehicle,
+    selectedId: string | null,
+  ): void {
+    const element = marker.getElement().querySelector<HTMLElement>('.vehicle-marker');
+    if (!element) return;
+    const selected = vehicle.id === selectedId;
+    const size = selected ? 44 : 34;
+    const width = `${size}px`;
+    const color = this.statusColor(vehicle.status);
+    element.className = `vehicle-marker${selected ? ' selected' : ''}`;
+    if (element.style.width !== width) element.style.width = width;
+    if (element.style.height !== width) element.style.height = width;
+    if (element.style.borderColor !== color) element.style.borderColor = color;
+    const shadow = `0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}`;
+    if (element.style.boxShadow !== shadow) element.style.boxShadow = shadow;
+    const image = element.querySelector('img');
+    const imageUrl = this.vehicleImageUrl(vehicle.image);
+    if (image && image.getAttribute('src') !== imageUrl) image.src = imageUrl;
+    if (image && image.alt !== vehicle.id) image.alt = vehicle.id;
   }
 
   private vehiclePopupHtml(vehicle: TrackedVehicle): string {
@@ -375,11 +419,13 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   // changed meaning by latitude and zoom level, which made identical camera
   // views occasionally disagree about whether markers should be grouped.
   private static readonly CLUSTER_PIXEL_RADIUS = 56;
+  private static readonly CLUSTER_EXIT_PIXEL_RADIUS = 68;
 
   private bindClusterMove(): void {
     if (!this.map || this.clusterMoveBound) return;
     this.clusterMoveBound = true;
     this.map.on('zoom', this.onClusterMove);
+    this.map.on('move', this.onClusterMove);
     this.map.on('zoomend', this.onClusterMove);
     this.map.on('moveend', this.onClusterMove);
   }
@@ -388,6 +434,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     if (!this.map || !this.clusterMoveBound) return;
     this.clusterMoveBound = false;
     this.map.off('zoom', this.onClusterMove);
+    this.map.off('move', this.onClusterMove);
     this.map.off('zoomend', this.onClusterMove);
     this.map.off('moveend', this.onClusterMove);
   }
@@ -408,17 +455,22 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     this.clusterBadges.clear();
     this.clusterBadgeDivs.clear();
     this.markers.forEach((marker) => {
-      marker.getElement().style.display = '';
+      const element = marker.getElement();
+      if (element.style.display) element.style.display = '';
     });
   }
 
   private recomputeClusters(): void {
     if (!this.map?.isStyleLoaded() || !this.clusterEnabled) return;
+    if (this.map.getZoom() >= this.map.getMaxZoom() - 0.01) {
+      this.clusteredPairs.clear();
+      this.clearClusterBadges();
+      return;
+    }
 
     interface ClusterGroup { lng: number; lat: number; ids: string[]; key: string; color: string; }
     const visibleVehicles = this.vehicles()
-      .filter(({ id }) => this.markers.has(id))
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .filter(({ id }) => this.markers.has(id));
     const projected = visibleVehicles.map(({ lng, lat }) => this.map!.project([lng, lat]));
     const parents = visibleVehicles.map((_, index) => index);
     const find = (index: number): number => {
@@ -433,13 +485,50 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const rightRoot = find(right);
       if (leftRoot !== rightRoot) parents[rightRoot] = leftRoot;
     };
-    for (let left = 0; left < projected.length; left += 1) {
-      for (let right = left + 1; right < projected.length; right += 1) {
-        const dx = projected[left].x - projected[right].x;
-        const dy = projected[left].y - projected[right].y;
-        if (Math.hypot(dx, dy) <= FleetMap.CLUSTER_PIXEL_RADIUS) join(left, right);
+    const cellSize = FleetMap.CLUSTER_PIXEL_RADIUS / Math.SQRT2;
+    const neighborCellRadius = Math.ceil(FleetMap.CLUSTER_EXIT_PIXEL_RADIUS / cellSize);
+    const cellBuckets = new Map<string, number[]>();
+    const nextClusteredPairs = new Set<string>();
+    const enterRadiusSquared = FleetMap.CLUSTER_PIXEL_RADIUS ** 2;
+    const exitRadiusSquared = FleetMap.CLUSTER_EXIT_PIXEL_RADIUS ** 2;
+    const pairKey = (first: string, second: string) =>
+      first < second ? `${first}\u0000${second}` : `${second}\u0000${first}`;
+
+    for (let index = 0; index < projected.length; index += 1) {
+      const point = projected[index];
+      const cellX = Math.floor(point.x / cellSize);
+      const cellY = Math.floor(point.y / cellSize);
+      for (let offsetX = -neighborCellRadius; offsetX <= neighborCellRadius; offsetX += 1) {
+        for (let offsetY = -neighborCellRadius; offsetY <= neighborCellRadius; offsetY += 1) {
+          const neighbors = cellBuckets.get(`${cellX + offsetX}:${cellY + offsetY}`);
+          if (!neighbors) continue;
+          if (offsetX === 0 && offsetY === 0) {
+            const representative = neighbors[0];
+            const key = pairKey(visibleVehicles[index].id, visibleVehicles[representative].id);
+            join(index, representative);
+            nextClusteredPairs.add(key);
+            continue;
+          }
+          if (find(index) === find(neighbors[0])) continue;
+          for (const neighborIndex of neighbors) {
+            if (find(index) === find(neighborIndex)) continue;
+            const dx = point.x - projected[neighborIndex].x;
+            const dy = point.y - projected[neighborIndex].y;
+            const key = pairKey(visibleVehicles[index].id, visibleVehicles[neighborIndex].id);
+            const limit = this.clusteredPairs.has(key) ? exitRadiusSquared : enterRadiusSquared;
+            if (dx * dx + dy * dy > limit) continue;
+            join(index, neighborIndex);
+            nextClusteredPairs.add(key);
+            break;
+          }
+        }
       }
+      const cellKey = `${cellX}:${cellY}`;
+      const bucket = cellBuckets.get(cellKey) ?? [];
+      bucket.push(index);
+      cellBuckets.set(cellKey, bucket);
     }
+    this.clusteredPairs = nextClusteredPairs;
     const membersByRoot = new Map<number, TrackedVehicle[]>();
     visibleVehicles.forEach((vehicle, index) => {
       const root = find(index);
@@ -447,11 +536,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       members.push(vehicle);
       membersByRoot.set(root, members);
     });
+    const statusById = new Map(visibleVehicles.map(({ id, status }) => [id, status]));
     const groups: ClusterGroup[] = [...membersByRoot.values()].map((members) => {
       const ids = members.map(({ id }) => id).sort();
       const lng = members.reduce((sum, vehicle) => sum + vehicle.lng, 0) / members.length;
       const lat = members.reduce((sum, vehicle) => sum + vehicle.lat, 0) / members.length;
-      return { lng, lat, ids, key: ids.join('|'), color: this.badgeColor(ids) };
+      return { lng, lat, ids, key: ids.join('|'), color: this.badgeColor(ids, statusById) };
     });
 
     // 1) Hide grouped vehicle markers and reveal ungrouped ones instantly.
@@ -460,7 +550,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       if (group.ids.length > 1) group.ids.forEach((id) => groupedAtLeastTwo.add(id));
     }
     this.markers.forEach((marker, id) => {
-      marker.getElement().style.display = groupedAtLeastTwo.has(id) ? 'none' : '';
+      const display = groupedAtLeastTwo.has(id) ? 'none' : '';
+      if (marker.getElement().style.display !== display) marker.getElement().style.display = display;
     });
 
     // 2) Remove stale cluster badges first (immediate, no overlap).
@@ -476,6 +567,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     }
 
     // 3) Reuse existing badges (update position/count/ring) or create new ones.
+    const clusterBrand = this.brandColor();
     for (const group of groups) {
       if (group.ids.length < 2) continue;
       let marker = this.clusterBadges.get(group.key);
@@ -487,18 +579,27 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         const countLabel = document.createElement('span');
         countLabel.className = 'vehicle-cluster__count';
         div.append(countLabel);
-        const expand = () => {
+        const expand = (event?: Event) => {
+          event?.preventDefault();
+          event?.stopPropagation();
           const lng = Number(div.dataset['lng']);
           const lat = Number(div.dataset['lat']);
-          const clusterCount = Number(div.dataset['count']);
-          if (Number.isFinite(lng) && Number.isFinite(lat) && Number.isFinite(clusterCount)) {
-            this.expandCluster([lng, lat], clusterCount);
+          const ids = JSON.parse(div.dataset['ids'] ?? '[]') as string[];
+          if (Number.isFinite(lng) && Number.isFinite(lat) && ids.length > 1) {
+            this.expandCluster([lng, lat], ids);
           }
         };
-        div.addEventListener('click', expand);
+        div.addEventListener('pointerdown', (event) => {
+          if (event.button === 0) expand(event);
+        }, { capture: true });
+        div.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }, { capture: true });
         div.addEventListener('keydown', (event) => {
           if (event.key !== 'Enter' && event.key !== ' ') return;
           event.preventDefault();
+          event.stopPropagation();
           expand();
         });
         marker = new maplibregl.Marker({ element: div, anchor: 'center' }).setLngLat([group.lng, group.lat]).addTo(this.map!);
@@ -509,40 +610,61 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const count = group.ids.length;
       const size = count >= 100 ? 44 : count >= 50 ? 41 : count >= 10 ? 38 : 34;
       const label = count >= 100 ? '99+' : String(count);
-      div.style.width = `${size}px`;
-      div.style.height = `${size}px`;
-      div.style.setProperty('--cluster-font-size', `${Math.round(size * 0.35)}px`);
-      div.style.setProperty('--cluster-brand', this.brandColor());
-      div.style.setProperty('--cluster-status', group.color);
-      div.dataset['lng'] = String(group.lng);
-      div.dataset['lat'] = String(group.lat);
-      div.dataset['count'] = String(count);
+      const width = `${size}px`;
+      const fontSize = `${Math.round(size * 0.35)}px`;
+      if (div.style.width !== width) div.style.width = width;
+      if (div.style.height !== width) div.style.height = width;
+      if (div.style.getPropertyValue('--cluster-font-size') !== fontSize)
+        div.style.setProperty('--cluster-font-size', fontSize);
+      if (div.style.getPropertyValue('--cluster-brand') !== clusterBrand)
+        div.style.setProperty('--cluster-brand', clusterBrand);
+      if (div.style.getPropertyValue('--cluster-status') !== group.color)
+        div.style.setProperty('--cluster-status', group.color);
+      const positionKey = `${group.lng},${group.lat}`;
+      if (div.dataset['position'] !== positionKey) {
+        marker.setLngLat([group.lng, group.lat]);
+        div.dataset['position'] = positionKey;
+      }
+      if (div.dataset['count'] !== String(count)) div.dataset['count'] = String(count);
+      const ids = JSON.stringify(group.ids);
+      if (div.dataset['ids'] !== ids) div.dataset['ids'] = ids;
       const countLabel = div.querySelector<HTMLElement>('.vehicle-cluster__count');
-      if (countLabel) countLabel.textContent = label;
-      div.setAttribute('aria-label', `${count} vehicles`);
-      marker.setLngLat([group.lng, group.lat]);
+      if (countLabel && countLabel.textContent !== label) countLabel.textContent = label;
+      const ariaLabel = `${count} vehicles`;
+      if (div.getAttribute('aria-label') !== ariaLabel) div.setAttribute('aria-label', ariaLabel);
     }
   }
 
   // Highest-severity status among the grouped vehicles → badge ring color:
   // Alert > Moving (online) > Idling > Offline.
-  private badgeColor(ids: string[]): string {
+  private badgeColor(ids: string[], statusById: ReadonlyMap<string, VehicleStatus>): string {
     const rank: Record<string, number> = { Alert: 3, Moving: 2, Idling: 1, Offline: 0 };
     let best = 'Offline';
     for (const id of ids) {
-      const vehicle = this.vehicles().find((item) => item.id === id);
-      const status = vehicle?.status ?? 'Offline';
+      const status = statusById.get(id) ?? 'Offline';
       if ((rank[status] ?? 0) > (rank[best] ?? 0)) best = status;
     }
     return this.statusColor(best as VehicleStatus);
   }
 
-  private expandCluster(center: [number, number], count: number): void {
+  private expandCluster(center: [number, number], ids: string[]): void {
     if (!this.map) return;
-    this.map.easeTo({
-      center,
-      zoom: Math.min(this.map.getZoom() + 3, count >= 50 ? 18 : 21),
-      duration: 500,
+    const vehicles = ids
+      .map((id) => this.markerVehicles.get(id))
+      .filter((vehicle): vehicle is TrackedVehicle => vehicle !== undefined);
+    if (!vehicles.length) return;
+    const bounds = new LngLatBounds();
+    for (const vehicle of vehicles) bounds.extend([vehicle.lng, vehicle.lat]);
+    this.map.stop();
+    if (bounds.getWest() === bounds.getEast() && bounds.getSouth() === bounds.getNorth()) {
+      this.map.jumpTo({ center, zoom: Math.min(this.map.getMaxZoom(), this.map.getZoom() + 8) });
+      this.recomputeClusters();
+      return;
+    }
+    this.map.fitBounds(bounds, {
+      padding: 96,
+      maxZoom: this.map.getMaxZoom(),
+      duration: 450,
     });
   }
 
