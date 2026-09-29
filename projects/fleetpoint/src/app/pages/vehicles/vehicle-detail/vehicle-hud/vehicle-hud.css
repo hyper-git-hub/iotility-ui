@@ -63,8 +63,8 @@
   height: 44px;
   margin: -22px 0 0 -22px;
   border-radius: 9999px;
-  background: rgb(82 93 247 / 0.4);
-  box-shadow: 0 0 18px rgb(82 93 247 / 0.5);
+  background: color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 40%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 50%, transparent);
   opacity: 0;
   transform: scale(0.35);
   pointer-events: none;
@@ -81,7 +81,8 @@
   @apply block overflow-visible;
   width: 44px;
   height: 45px;
-  fill: #525df7;
+  color: var(--hud-nav-marker-color, #525df7);
+  fill: currentColor;
   filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.45));
 }
 /* Dark scrim + progressive blur over the map band — clear on the far left,

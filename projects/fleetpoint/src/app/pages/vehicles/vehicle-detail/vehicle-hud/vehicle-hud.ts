@@ -340,7 +340,16 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   /* Blink the marker only while the vehicle reports online — toggles the
      hud-live class that drives the CSS pulse halo. */
   private syncMarkerLive(): void {
-    this.marker?.getElement().classList.toggle('hud-live', this.online());
+    const element = this.marker?.getElement();
+    if (!element) return;
+    element.classList.toggle('hud-live', this.online());
+    const status = this.vehicle()?.online_status;
+    const color = status === true
+      ? '#22c55e'
+      : status === false
+        ? '#9ca3af'
+        : '#525DF7';
+    element.style.setProperty('--hud-nav-marker-color', color);
   }
 
   /* The nav-arrow marker from the SVG map, verbatim: a blurred #525DF7 glow
@@ -361,8 +370,8 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
             <feGaussianBlur stdDeviation="4.39"></feGaussianBlur>
           </filter>
         </defs>
-        <path d="${path}" fill="#525DF7" filter="url(#hudNavGlowFilter)"></path>
-        <path d="${path}" fill="#525DF7"></path>
+        <path d="${path}" fill="currentColor" filter="url(#hudNavGlowFilter)"></path>
+        <path d="${path}" fill="currentColor"></path>
       </svg>`;
     return new maplibregl.Marker({ element, anchor: 'center', rotationAlignment: 'map' })
       .setLngLat([coords.lng, coords.lat])
@@ -406,7 +415,10 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     this.map = undefined;
   }
 
-  protected readonly online = computed(() => Boolean(this.vehicle()?.online_status));
+  protected readonly online = computed(() => {
+    const status = this.vehicle()?.online_status;
+    return status === true;
+  });
 
   /* The needle shares the tick angle math: it rests on the 0 km/h tick (162°)
      and sweeps the full 216° dial — 1.2° per km/h, landing on every tick. */

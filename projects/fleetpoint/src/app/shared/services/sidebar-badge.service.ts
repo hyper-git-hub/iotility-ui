@@ -34,9 +34,13 @@ export class SidebarBadgeService {
     ).length;
     this.maintenanceCount.set(activeWorkOrders);
 
-    // Violations: fetch default month-range count (empty dates => API default month view,
-    // matching the Violations page's default filter, per design requirement).
-    // Update badgeCounts after the response arrives so the sidebar never shows a stale 0.
+    // Count today's violations using the same local-day range as the alert navigation.
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const formatDateTime = (date: Date) => {
+      const pad = (value: number) => String(value).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
     const filters: ViolationFilters = {
       offset: 0,
       limit: 0,
@@ -45,11 +49,20 @@ export class SidebarBadgeService {
       search_text: '',
       violation_type: '',
       driver_id: '',
-      start_datetime: '',
-      end_datetime: '',
+      start_datetime: formatDateTime(start),
+      end_datetime: formatDateTime(now),
       time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       group: '0',
     };
+    // Publish synchronous badges before subscribing so a cached response
+    // cannot be overwritten by the initial zero-count state.
+    this.badgeCounts.set({
+      jobs: this.jobsCount(),
+      maintenance: this.maintenanceCount(),
+      violations: 0,
+      dashcam: this.dashcamCount(),
+    });
+
     this.violationsApi.getViolations(filters).subscribe({
       next: (response) => {
         const total = response.data?.count ?? 0;
@@ -69,12 +82,5 @@ export class SidebarBadgeService {
     ).length;
     this.dashcamCount.set(unreviewedEvents);
 
-    // Jobs + maintenance are synchronous (static data), publish immediately
-    this.badgeCounts.set({
-      jobs: this.jobsCount(),
-      maintenance: this.maintenanceCount(),
-      violations: 0,
-      dashcam: this.dashcamCount(),
-    });
   }
 }
