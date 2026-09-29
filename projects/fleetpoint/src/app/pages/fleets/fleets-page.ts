@@ -160,12 +160,14 @@ export class FleetsPage implements OnInit, OnDestroy {
     this.offset.set(0);
     this.loadFleets();
   }
-  protected trackFleet(): void {
-    void this.router.navigateByUrl('/fleetpoint/live-tracking');
+  protected trackFleet(fleet: FleetSummary): void {
+    void this.router.navigate(['/fleetpoint/live-tracking'], {
+      queryParams: { fleet_id: fleet.id },
+    });
   }
   protected handleFleetAction(action: DropdownOption, fleet: FleetSummary): void {
     if (action.id === 'view') {
-      this.trackFleet();
+      this.trackFleet(fleet);
       return;
     }
     this.selectedFleet.set(this.fleetRecords().find((record) => record.id === fleet.id) ?? null);

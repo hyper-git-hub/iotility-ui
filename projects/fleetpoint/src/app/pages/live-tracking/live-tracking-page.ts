@@ -244,6 +244,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.requestedVehicleId = String(
       navigationState?.['vehicleId'] ?? route.snapshot.queryParamMap.get('vehicle_id') ?? '',
     );
+    this.selectedFleet.set(route.snapshot.queryParamMap.get('fleet_id') ?? 'all');
     effect(() => {
       if (!this.isFullscreen() || !this.liveTrackingEnabled() || !this.selectedVehicle()) {
         this.fullscreenTrackingState.set('idle');
@@ -275,7 +276,16 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
         .getFleets({ limit: 100, offset: 0, id: '', search: '' })
         .pipe(finalize(() => this.fleetsLoading.set(false)))
         .subscribe({
-          next: (response) => this.fleetRecords.set(response.data?.data ?? []),
+          next: (response) => {
+            const records = response.data?.data ?? [];
+            this.fleetRecords.set(records);
+            if (
+              this.selectedFleet() !== 'all' &&
+              !records.some((fleet) => String(fleet.id) === this.selectedFleet())
+            ) {
+              this.selectedFleet.set('all');
+            }
+          },
           error: () => this.fleetRecords.set([]),
         }),
     );
