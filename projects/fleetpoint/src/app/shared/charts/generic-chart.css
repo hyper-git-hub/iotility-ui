@@ -8,6 +8,9 @@
 .chart-card header {
   @apply mb-3 flex items-start justify-between gap-3;
 }
+.chart-card header > div {
+  @apply min-w-0;
+}
 .chart-card h2 {
   @apply text-sm font-semibold text-ink dark:text-white;
 }
@@ -18,10 +21,11 @@
   @apply rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-medium text-success;
 }
 .status-legend {
-  @apply flex items-center gap-3 text-[11px] text-ink dark:text-white;
+  justify-content: flex-end;
+  @apply flex max-w-[65%] flex-wrap items-center gap-x-3 gap-y-1 text-right text-[11px] text-ink dark:text-white;
 }
 .status-legend > span {
-  @apply inline-flex items-center gap-1.5;
+  @apply inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap;
 }
 .status-legend i {
   @apply size-2 rounded-full;

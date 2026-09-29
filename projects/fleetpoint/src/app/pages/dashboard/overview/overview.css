@@ -143,20 +143,29 @@
 .graph-skeleton-bar:nth-child(4) { height: 81%; }
 .graph-skeleton-bar:nth-child(5) { height: 62%; }
 
-.graph-skeleton-legend {
-  @apply mt-5 flex justify-center gap-4;
+/* Graph legends render in the card header (top-right). */
+.graph-skeleton-legend-header {
+  @apply flex items-start justify-between gap-3;
 }
 
-.graph-skeleton-legend span {
-  @apply flex items-center gap-1.5;
+.graph-skeleton-legend-header > div:first-child {
+  @apply grid;
 }
 
-.graph-skeleton-legend i {
-  @apply size-2 rounded-sm bg-slate-200/65 dark:bg-slate-700/45;
+.graph-skeleton-status-legend {
+  @apply flex items-center gap-3;
 }
 
-.graph-skeleton-legend b {
-  @apply h-2 w-12 rounded bg-slate-200/65 dark:bg-slate-700/45;
+.graph-skeleton-status-legend span {
+  @apply inline-flex items-center gap-1.5;
+}
+
+.graph-skeleton-status-legend i {
+  @apply size-2 rounded-full bg-slate-200/65 dark:bg-slate-700/45;
+}
+
+.graph-skeleton-status-legend b {
+  @apply h-2 w-10 rounded bg-slate-200/65 dark:bg-slate-700/45;
 }
 
 .skeleton-report-count {

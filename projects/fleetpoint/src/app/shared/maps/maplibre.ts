@@ -1,4 +1,11 @@
-import maplibregl, { GeoJSONSource, IControl, LngLatBounds, Map, MapOptions } from 'maplibre-gl';
+import maplibregl, {
+  GeoJSONSource,
+  IControl,
+  LngLatBounds,
+  Map,
+  MapOptions,
+  PaddingOptions,
+} from 'maplibre-gl';
 import { attachTooltip } from '@iotility/shared-ui';
 import { environment } from '../../../environments/environment';
 
@@ -169,7 +176,14 @@ export function removeGeoJson(map: Map, id: string, layerIds: string[]): void {
   if (map.getSource(id)) map.removeSource(id);
 }
 
-export function fitLatLngs(map: Map, coordinates: LatLng[], padding = 40, maxZoom = 14): void {
+// `padding` accepts a single value for all sides or per-side insets, so callers
+// can reserve room for overlaid panels (e.g. a details drawer) when re-framing.
+export function fitLatLngs(
+  map: Map,
+  coordinates: LatLng[],
+  padding: number | PaddingOptions = 40,
+  maxZoom = 14,
+): void {
   if (!coordinates.length) return;
   const bounds = new LngLatBounds();
   for (const [lat, lng] of coordinates) bounds.extend([lng, lat]);

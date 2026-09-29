@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
-import { Skeleton, StatusBadge } from '@iotility/shared-ui';
+import { Skeleton } from '@iotility/shared-ui';
 import { finalize, interval } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCardTone } from '../../../shared/stat-card/stat-card';
@@ -22,7 +22,7 @@ interface OverviewSkeleton {
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [Skeleton, StatusBadge, DashboardGraphComponent],
+  imports: [Skeleton, DashboardGraphComponent],
   templateUrl: './overview.html',
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })
@@ -31,7 +31,6 @@ export class Overview implements OnInit {
   private readonly overviewCards = computed<DashboardGraph[]>(() => {
     const driverCard = this.cards().find((card) => card?.code === 'DOW');
     return [
-      { code: 'ANT', name: 'Actions Needed Today', chart_type: null, data: null },
       {
         code: 'DOW',
         name: driverCard?.name ?? 'Driver of the Week',
@@ -40,6 +39,44 @@ export class Overview implements OnInit {
       },
     ];
   });
+  protected readonly actionsNeededTodayGraph = computed(() => {
+    const actionsCard = this.cards().find((card) => card?.code === 'ANT');
+    if (!actionsCard?.data || typeof actionsCard.data !== 'object' || !('items' in actionsCard.data)) {
+      return { code: 'ANT', name: 'Actions Needed Today', chart_type: 'list', data: null };
+    }
+    
+    // Transform the API response to match the expected format for actionItems()
+    const items = (actionsCard.data as { items: Array<{ type: string; title: string; detail: string; priority: string }> }).items.map(item => ({
+      icon: this.getIconForType(item.type),
+      tone: this.getToneForPriority(item.priority),
+      title: item.title,
+      detail: item.detail,
+      priority: item.priority
+    }));
+    
+    return {
+      code: 'ANT',
+      name: actionsCard.name ?? 'Actions Needed Today',
+      chart_type: 'list',
+      data: items
+    };
+  });
+
+  private getIconForType(type: string): string {
+    switch (type) {
+      case 'alert_vehicles': return '!';
+      case 'license_expiring': return '⏰';
+      default: return '!';
+    }
+  }
+
+  private getToneForPriority(priority: string): string {
+    switch (priority) {
+      case 'high': return 'danger';
+      case 'low': return 'info';
+      default: return 'info';
+    }
+  }
   private readonly widgetService = inject(DashboardWidgetsService);
   protected readonly fleetStatusVisible = computed(() =>
     this.widgetService.isVisible('overview', 'fleet-status'),
@@ -99,25 +136,22 @@ export class Overview implements OnInit {
       ? (data as DashboardGraphData & { total?: number })
       : null;
   });
-  protected readonly fleetStatusTotal = computed<number>(() => {
-    const data = this.fleetStatusData();
-    if (typeof data?.total === 'number') return data.total;
-    return (data?.values ?? []).reduce<number>((sum, value) => sum + (Number(value) || 0), 0);
-  });
   protected readonly fleetStatus = computed(() => {
-    const status = { moving: 0, idling: 0, stopped: 0, alert: 0, offline: 0 };
+    const status = { total_vehicles: 0, moving: 0, idling: 0, stopped: 0, alert: 0, offline: 0 };
     const data = this.fleetStatusData();
     if (!data) return status;
     const values = data.values ?? [];
     (data.categories ?? []).forEach((category, index) => {
-      const key = category.trim().toLowerCase();
+      const key = category.trim().toLowerCase().replace(/\s+/g, '_');
       if (key in status) status[key as keyof typeof status] = Number(values[index]) || 0;
     });
     return status;
   });
-  protected readonly fleetStatusOnline = computed<boolean>(
-    () => this.fleetStatusTotal() > this.fleetStatus().offline,
-  );
+  protected readonly fleetStatusTotal = computed<number>(() => {
+    const data = this.fleetStatusData();
+    if (typeof data?.total === 'number') return data.total;
+    return this.fleetStatus().total_vehicles;
+  });
   protected readonly fleetStatusItems = computed(() => {
     const status = this.fleetStatus();
     return [
@@ -128,6 +162,16 @@ export class Overview implements OnInit {
       { key: 'offline', label: 'Offline', value: status.offline, tone: 'offline' },
     ];
   });
+  /* Tiles lead with the total-vehicles card from the same LFS payload. */
+  protected readonly fleetStatusTiles = computed(() => [
+    {
+      key: 'total',
+      label: 'Total Vehicles',
+      value: this.fleetStatusTotal(),
+      tone: 'total',
+    },
+    ...this.fleetStatusItems(),
+  ]);
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(private readonly api: FleetDashboardApiService) {}

@@ -84,6 +84,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly error = signal('');
   protected readonly search = signal('');
   protected readonly statusFilter = signal<VehicleStatus | 'All'>('All');
+  protected readonly driverSearch = signal('');
+  protected readonly driverStatusFilter = signal<VehicleStatus | 'All'>('All');
   protected readonly selectedFleet = signal('all');
   protected readonly trackingView = signal<'vehicles' | 'drivers'>('vehicles');
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
@@ -158,6 +160,21 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     );
     return drivers;
   });
+  /** Status chips filter drivers by the live status of their assigned vehicle. */
+  protected driverVehicleStatus(driver: TrackingDriver): VehicleStatus {
+    return this.vehicles().find((vehicle) => vehicle.numericId === driver.vehicleId)?.status ??
+      'Offline';
+  }
+  protected readonly filteredDrivers = computed(() => {
+    const query = this.driverSearch().trim().toLowerCase();
+    const status = this.driverStatusFilter();
+    return this.drivers().filter(
+      (driver) =>
+        (status === 'All' || this.driverVehicleStatus(driver) === status) &&
+        (!query ||
+          `${driver.name} ${driver.role} ${driver.vehicle}`.toLowerCase().includes(query)),
+    );
+  });
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
     const fleetVehicleIds = new Set(
@@ -179,6 +196,16 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.filteredVehicles().filter(
       (vehicle) => Number.isFinite(vehicle.lat) && Number.isFinite(vehicle.lng),
     ),
+  );
+  /**
+   * Filter signature handed to the fleet map. Changing a filter that reshapes
+   * the visible markers (fleet dropdown, status chips, search) re-frames the
+   * camera on the new marker set, instead of leaving the zoom where the
+   * previously focused vehicle was. Realtime updates keep this key stable, so
+   * they never move the camera.
+   */
+  protected readonly mapFilterKey = computed(
+    () => `${this.selectedFleet()}|${this.statusFilter()}|${this.search().trim().toLowerCase()}`,
   );
   protected readonly onlineVehicleCount = computed(
     () => this.mapVehicles().filter((vehicle) => vehicle.status !== 'Offline').length,
@@ -339,6 +366,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   }
   protected updateSearchValue(value: string): void {
     this.search.set(value);
+  }
+  protected updateDriverSearch(event: Event): void {
+    this.driverSearch.set((event.target as HTMLInputElement).value);
   }
   protected selectFleet(option: DropdownOption): void {
     this.selectedFleet.set(option.id);

@@ -52,22 +52,6 @@
   @apply bg-success;
 }
 
-/* live-pill — live sensor pill (vehicle detail telemetry) */
-.status-badge.live-pill {
-  @apply gap-1.5 rounded-full bg-success/10 px-2 py-1 text-[10px] text-success;
-}
-.status-badge.live-pill .status-dot {
-  @apply size-1.5 bg-success;
-  animation: status-pulse-sensor 1.8s ease-in-out infinite;
-}
-.status-badge.live-pill.offline {
-  @apply bg-muted/10 text-muted;
-}
-.status-badge.live-pill.offline .status-dot {
-  @apply bg-muted;
-  animation: none;
-}
-
 /* header — platform header live badge */
 .status-badge.header {
   @apply w-16 justify-center gap-2 rounded-full border border-line bg-transparent px-2 py-1.5 text-xs text-muted dark:border-dark-line;
@@ -108,12 +92,6 @@
   100% {
     transform: scale(2);
     opacity: 0;
-  }
-}
-@keyframes status-pulse-sensor {
-  50% {
-    opacity: 0.3;
-    transform: scale(0.7);
   }
 }
 @keyframes status-pulse-header {
