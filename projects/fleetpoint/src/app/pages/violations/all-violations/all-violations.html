@@ -23,7 +23,7 @@
       <ng-template tableCell="timestamp" let-row>{{timeOnly(row['timestamp'])}}</ng-template>
       <ng-template tableCell="fineDisplay" let-row>{{row['fine']>0?('£'+row['fine']):'—'}}</ng-template>
       <ng-template tableCell="review" let-row><span class="review" [attr.data-review]="row['review'].toLowerCase()">{{row['review']}}</span></ng-template>
-      <ng-template tableBottomPanel>@if(selected();as item){<section class="violation-details"><button type="button" aria-label="Close details" (click)="selected.set(null);$event.stopPropagation()">×</button><strong>{{item.type}}</strong><p>{{item.driver}} · {{item.vehicle}} · {{item.location}}</p><span>{{item.description}}</span></section>}<footer><span>Showing {{filtered().length}} of {{totalCount()}} violations</span><span>Click row to see details · Click map pin to highlight</span></footer></ng-template>
+      <ng-template tableBottomPanel>@if(selected();as item){<section class="violation-details"><button type="button" aria-label="Close details" (click)="selected.set(null);$event.stopPropagation()">×</button><strong>{{item.type}}</strong><p>{{item.driver}} · {{item.vehicle}} · {{item.location}}</p><span>{{item.description}}</span></section>}<footer><span>Showing {{filtered().length}} of {{filteredTotalCount()}} violations</span><span>Click row to see details · Click map pin to highlight</span></footer></ng-template>
     </shared-data-table>
   </div>
 </section>

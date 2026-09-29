@@ -1,6 +1,7 @@
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import {
   DataTable,
@@ -139,6 +140,12 @@ export class AllViolations implements OnInit, OnDestroy {
     );
   });
   protected readonly hasMore = computed(() => this.violations().length < this.totalCount());
+  protected readonly filteredTotalCount = computed(() => {
+    const filtersPending = this.search().trim() !== this.filters.search_text;
+    return this.severity() === 'all' && this.source() === 'all' && !filtersPending && !this.loading()
+      ? this.totalCount()
+      : this.filtered().length;
+  });
   protected readonly rows = computed<TableRow[]>(() =>
     this.filtered().map((item) => ({ ...item })),
   );
@@ -157,15 +164,35 @@ export class AllViolations implements OnInit, OnDestroy {
     group: '0',
   };
   private searchTimer?: ReturnType<typeof setTimeout>;
+  private requestSequence = 0;
+  private requestSubscription?: Subscription;
 
-  constructor(private readonly api: ViolationsApiService, private readonly sanitizer: DomSanitizer) {}
+  constructor(
+    private readonly api: ViolationsApiService,
+    private readonly sanitizer: DomSanitizer,
+    private readonly route: ActivatedRoute,
+  ) {
+    effect(() => {
+      const rows = this.filtered();
+      this.api.setPageSummary({
+        total: this.filteredTotalCount(),
+        critical: rows.filter((row) => row.severity === 'Critical').length,
+        pending: rows.filter((row) => row.review === 'Pending').length,
+        finesPending: rows.filter((row) => row.fineStatus === 'Pending').length,
+        totalFines: `£${rows.reduce((sum, row) => sum + row.fine, 0).toLocaleString('en-GB')}`,
+        scoreImpact: rows.reduce((sum, row) => sum + row.scoreImpact, 0),
+      });
+    });
+  }
 
   ngOnInit(): void {
-    this.selectDateRange('month');
+    this.selectDateRange(this.route.snapshot.queryParamMap.get('range') === 'today' ? 'today' : 'month');
   }
 
   ngOnDestroy(): void {
     clearTimeout(this.searchTimer);
+    this.requestSequence++;
+    this.requestSubscription?.unsubscribe();
   }
 
   protected selectFilter(control: 'category' | 'severity' | 'source', option: DropdownOption): void {
@@ -303,19 +330,26 @@ export class AllViolations implements OnInit, OnDestroy {
   }
 
   private loadViolations(append = false): void {
+    const requestSequence = ++this.requestSequence;
+    this.requestSubscription?.unsubscribe();
     if (append) this.loadingMore.set(true);
-    else this.loading.set(true);
+    else {
+      this.loading.set(true);
+      this.loadingMore.set(false);
+    }
     const filters = {
       ...this.filters,
       offset: append ? this.violations().length : 0,
     };
-    this.api.getViolations(filters).pipe(
+    this.requestSubscription = this.api.getViolations(filters).pipe(
       finalize(() => {
+        if (requestSequence !== this.requestSequence) return;
         if (append) this.loadingMore.set(false);
         else this.loading.set(false);
       }),
     ).subscribe({
       next: (response: { data?: { count: number; data: ApiViolation[] } }) => {
+        if (requestSequence !== this.requestSequence) return;
         const data = response.data?.data ?? [];
         this.totalCount.set(response.data?.count ?? data.length);
         const mapped = data.map((record: ApiViolation, index: number) =>

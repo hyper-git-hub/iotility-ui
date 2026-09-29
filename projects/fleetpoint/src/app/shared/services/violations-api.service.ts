@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Observable, shareReplay } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { environment } from '../../../environments/environment';
@@ -49,14 +49,35 @@ export interface ViolationFilters {
   group: string;
 }
 
+export interface ViolationPageSummary {
+  total: number;
+  critical: number;
+  pending: number;
+  finesPending: number;
+  totalFines: string;
+  scoreImpact: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ViolationsApiService {
+  readonly pageSummary = signal<ViolationPageSummary>({
+    total: 0,
+    critical: 0,
+    pending: 0,
+    finesPending: 0,
+    totalFines: '£0',
+    scoreImpact: 0,
+  });
   private readonly violationRequests = new Map<
     string,
     Observable<ApiResponse<{ count: number; data: ViolationRecord[] }>>
   >();
 
   constructor(private readonly http: HttpClient) {}
+
+  setPageSummary(summary: ViolationPageSummary): void {
+    this.pageSummary.set(summary);
+  }
 
   getViolations(filters: ViolationFilters): Observable<ApiResponse<{ count: number; data: ViolationRecord[] }>> {
     let params = new HttpParams()

@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import { DestroyRef } from '@angular/core';
 import { Skeleton } from '@iotility/shared-ui';
 import { finalize, interval } from 'rxjs';
@@ -174,7 +175,10 @@ export class Overview implements OnInit {
   ]);
   private readonly destroyRef = inject(DestroyRef);
 
-  constructor(private readonly api: FleetDashboardApiService) {}
+  constructor(
+    private readonly api: FleetDashboardApiService,
+    private readonly router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.loadDashboard();
@@ -250,5 +254,10 @@ export class Overview implements OnInit {
   protected statusPercentage(value: number): number {
     const total: number = this.fleetStatusTotal();
     return total > 0 ? (value / total) * 100 : 0;
+  }
+
+  protected openTodaysViolations(item: { key: string; value: number }): void {
+    if (item.key !== 'alert' || item.value <= 0) return;
+    void this.router.navigate(['/fleetpoint/violations/all'], { queryParams: { range: 'today' } });
   }
 }
