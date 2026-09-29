@@ -54,7 +54,7 @@
               />
             }
             @if (item.badgeKey && badgeCounts[item.badgeKey] && badgeCounts[item.badgeKey] > 0) {
-              <em>{{ badgeCounts[item.badgeKey] }}</em>
+              <em>{{ badgeLabel(badgeCounts[item.badgeKey]) }}</em>
             }
           </a>
         }

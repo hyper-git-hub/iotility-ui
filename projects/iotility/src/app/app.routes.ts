@@ -4,6 +4,9 @@ import { authGuard, guestGuard } from './shared/guards/auth.guard';
 
 const fleetpointDashboard = 'fleetpoint/dashboard';
 
+/** Shows the onboarding home page only until the user has visited another app. */
+const returningUser = () => localStorage.getItem('firstLoginCompleted') === 'true';
+
 export const routes: Routes = [
   {
     path: '',
@@ -24,6 +27,11 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        canMatch: [returningUser],
+        loadComponent: () => import('./pages/home/home-dashboard/home-dashboard').then((module) => module.HomeDashboardPage),
+      },
+      {
+        path: '',
         loadComponent: () => import('./pages/home/home-page').then((module) => module.HomePage),
       },
     ],
@@ -33,11 +41,6 @@ export const routes: Routes = [
     canMatch: [authGuard],
     loadComponent: () => import('./layout/host-layout').then((module) => module.HostLayout),
     children: [
-      {
-        path: 'use-cases',
-        title: 'Use Cases | IoTility',
-        loadComponent: () => import('./pages/home/home-page').then((module) => module.HomePage),
-      },
       {
         path: 'users',
         title: 'Users | IoTility',

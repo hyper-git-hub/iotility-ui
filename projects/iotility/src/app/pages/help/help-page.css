@@ -1,0 +1,23 @@
+@reference "../../../styles.css";
+
+.page-shell { @apply flex min-h-full flex-col gap-6 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white sm:p-8; }
+.page-heading { @apply flex items-start justify-between gap-4; }
+.page-heading h1 { @apply mt-1 text-2xl font-semibold text-ink dark:text-white; }
+.page-heading p:not(.eyebrow) { @apply mt-2 text-sm text-muted dark:text-brand-300; }
+.eyebrow { @apply text-xs font-medium text-brand-600 dark:text-brand-300; }
+.primary, .secondary { @apply inline-flex cursor-pointer items-center justify-center rounded-lg px-4 py-2 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-brand-500/40; }
+.primary { @apply border border-ink bg-ink text-white hover:bg-brand-600 dark:border-brand-600 dark:bg-brand-600 dark:hover:bg-brand-500; }
+.secondary { @apply border border-line bg-white text-ink hover:border-brand-500 hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface dark:text-white dark:hover:border-brand-500 dark:hover:text-brand-300; }
+.search-panel { @apply flex items-center gap-3 rounded-xl border border-line bg-white px-4 py-3 transition focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-500/25 dark:border-dark-line dark:bg-dark-surface dark:focus-within:border-brand-500; }
+.search-icon { @apply text-xl text-muted dark:text-brand-300; }
+.search-panel input { @apply flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted dark:text-white dark:placeholder:text-brand-300; }
+.search-panel > span { @apply rounded-md border border-line bg-canvas px-1.5 py-0.5 text-[10px] text-muted dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300; }
+.help-grid { @apply grid gap-4 lg:grid-cols-3; }
+.panel { @apply rounded-xl border border-line bg-white p-5 text-ink dark:border-dark-line dark:bg-dark-surface dark:text-white; }
+.help-card { @apply transition hover:-translate-y-0.5 hover:border-brand-400 dark:hover:border-brand-500; }
+.help-icon { @apply grid size-10 place-items-center rounded-xl bg-brand-50 text-lg text-brand-600 dark:bg-brand-600/15 dark:text-brand-300; }
+.help-card h2 { @apply mt-5 text-sm font-medium; }
+.help-card p { @apply mt-2 text-xs leading-5 text-muted dark:text-brand-300; }
+.help-card a { @apply mt-5 inline-flex cursor-pointer gap-2 text-xs font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200; }
+.contact-card { @apply flex items-center justify-between gap-4; }
+.contact-card p { @apply mt-2 text-xs text-muted dark:text-brand-300; }

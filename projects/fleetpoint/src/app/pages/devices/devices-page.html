@@ -43,7 +43,7 @@
         (input)="search.set($any($event.target).value)" /></label
     ><shared-dropdown
       class="filter-dropdown"
-      [options]="statusOptions"
+      [options]="statusOptions()"
       mode="single"
       align="left"
       [showOptionIcons]="false"
@@ -51,11 +51,11 @@
       [selected]="[status()]"
       (optionSelected)="select('status', $event)"
       ><button dropdown-trigger type="button">
-        {{ label(statusOptions, status()) }}
+        {{ label(statusOptions(), status()) }}
       </button></shared-dropdown
     ><shared-dropdown
       class="filter-dropdown type-filter"
-      [options]="categoryOptions"
+      [options]="categoryOptions()"
       mode="single"
       align="left"
       [showOptionIcons]="false"
@@ -63,7 +63,7 @@
       [selected]="[category()]"
       (optionSelected)="select('category', $event)"
       ><button dropdown-trigger type="button">
-        {{ label(categoryOptions, category()) }}
+        {{ label(categoryOptions(), category()) }}
       </button></shared-dropdown
     ><button type="button" class="clear" (click)="clear()">Clear</button>
     <div class="view-toggle">
@@ -75,9 +75,21 @@
     </div>
   </section>
   @if (view() === 'list') {
+    @if (hardwareError()) {
+      <p class="device-table-error">{{ hardwareError() }}</p>
+    }
+    @if (hardwareLoading()) {
+      <ui-data-table-skeleton
+        title="Device Inventory"
+        [columns]="columns.length"
+        [columnLabels]="columnLabels"
+        [rows]="6"
+        [showToolbar]="false"
+      />
+    } @else {
     <shared-data-table
       title="Device Inventory"
-      [subtitle]="'Showing ' + filtered().length + ' of ' + devices().length + ' devices'"
+      [subtitle]="'Showing ' + hardwarePageStart() + '–' + hardwarePageEnd() + ' of ' + hardwareTotal() + ' devices'"
       [columns]="columns"
       [rows]="rows()"
       [actions]="actions"
@@ -121,16 +133,14 @@
           ><strong>{{ row['identifier'] }}</strong
           ><small>{{ row['serial'] }}</small></span
         ></ng-template
+      ><ng-template tableCell="vehicle" let-row
+        ><span class="unavailable-value">—</span></ng-template
       ><ng-template tableCell="firmware" let-row
-        ><code class="firmware-cell">{{ row['firmware'] }}</code></ng-template
+        ><span class="unavailable-value">—</span></ng-template
       ><ng-template tableCell="lastPing" let-row
-        ><span class="ping-value" [attr.data-state]="row['pingState']">{{
-          row['lastPing']
-        }}</span></ng-template
+        ><span class="unavailable-value">—</span></ng-template
       ><ng-template tableCell="warranty" let-row
-        ><strong class="warranty-value" [attr.data-state]="row['warrantyState']">{{
-          row['warranty']
-        }}</strong></ng-template
+        ><span class="unavailable-value">—</span></ng-template
       ><ng-template tableCell="statusLabel" let-row
         ><span class="device-status" [attr.data-status]="row['status']">{{
           row['statusLabel']
@@ -144,16 +154,33 @@
             >{{ row['signal'] }}%</span
           >
         } @else {
-          <span class="no-signal" title="No signal"
+          <span class="no-signal" aria-label="No signal" tooltip="No signal"
             ><img src="assets/fleetpoint/icons/no-signal.svg" alt="" aria-hidden="true" /></span
           >
         }</ng-template
       ><ng-template tableCell="battery" let-row
-        ><span class="meter battery"
-          ><i><b [style.width.%]="row['battery']"></b></i>{{ row['battery'] }}%</span
-        ></ng-template
+        ><span class="unavailable-value">—</span></ng-template
       ></shared-data-table
     >
+    }
+    <nav class="device-pagination" aria-label="Device pages">
+      @if (hardwareLoading()) {
+        <ui-skeleton width="8rem" height="0.75rem" radius="0.3rem" />
+      } @else {
+        <span>Showing {{ hardwarePageStart() }}–{{ hardwarePageEnd() }} of {{ hardwareTotal() }}</span>
+      }
+      <div>
+        <button type="button" [disabled]="hardwareLoading() || hardwareOffset() === 0" (click)="previousHardwarePage()">
+          Previous</button
+        ><button
+          type="button"
+          [disabled]="hardwareLoading() || hardwareOffset() + hardwareLimit >= hardwareTotal()"
+          (click)="nextHardwarePage()"
+        >
+          Next
+        </button>
+      </div>
+    </nav>
   } @else {
     <section class="bundle-list">
       @for (bundle of bundles(); track bundle.vehicle) {

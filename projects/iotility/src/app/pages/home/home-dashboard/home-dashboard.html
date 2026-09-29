@@ -1,0 +1,125 @@
+<main class="home-shell">
+  <section class="addon-panel" aria-labelledby="addon-heading">
+    <h1 id="addon-heading">Browse IoTility Addon Use Cases</h1>
+
+    <div class="addon-grid">
+      @for (addon of addons; track addon.id) {
+        <article class="addon-card">
+          <div class="addon-copy">
+            <h2>{{ addon.name }}</h2>
+            <p>{{ addon.tagline }}</p>
+          </div>
+          <div class="addon-bottom">
+            @if (addon.available) {
+              <button type="button" class="addon-action" (click)="addon.action()">
+                Access
+                <span
+                  class="color-icon size-3"
+                  style="--icon: url('/assets/icons/chevron-right.svg')"
+                  aria-hidden="true"
+                ></span>
+              </button>
+            } @else {
+              <button type="button" class="addon-action" (click)="addon.action()">
+                <span
+                  class="color-icon size-3.5"
+                  style="--icon: url('/assets/icons/shopping-cart.svg')"
+                  aria-hidden="true"
+                ></span>
+                Buy Now
+              </button>
+            }
+            <img
+              class="addon-logo"
+              [class.addon-logo-muted]="!addon.available"
+              [src]="addon.icon"
+              [alt]="addon.name"
+            />
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+
+  <shared-data-table
+    title="User Activities"
+    searchPlaceholder="search for users"
+    [columns]="columns"
+    [rows]="visibleActivities()"
+    [clientSideSearch]="false"
+    [showPrimaryAction]="false"
+    [minTableWidth]="920"
+    (searchChange)="updateSearch($event)"
+  >
+    <ng-template tableCell="user" let-row>
+      <span class="activity-user">
+        <span class="activity-avatar">{{ initials(row.user) }}</span>
+        <span><strong>{{ row.user }}</strong><small>{{ row.role }}</small></span>
+      </span>
+    </ng-template>
+
+    <ng-template tableCell="narration" let-row>
+      <span class="activity-narration">{{ row.narration }}</span>
+    </ng-template>
+
+    <ng-template tableCell="usecase" let-row>
+      <span class="usecase-label">
+        <img [src]="row.usecaseIcon" alt="" aria-hidden="true" />
+        {{ row.usecase }}
+      </span>
+    </ng-template>
+
+    <ng-template tableCell="time" let-row>
+      <span class="activity-meta">
+        <span
+          class="color-icon size-3.5"
+          style="--icon: url('/assets/fleetpoint/icons/clock.svg')"
+          aria-hidden="true"
+        ></span>
+        {{ row.time }}
+      </span>
+    </ng-template>
+
+    <ng-template tableCell="date" let-row>
+      <span class="activity-meta">
+        <span
+          class="color-icon size-3.5"
+          style="--icon: url('/assets/fleetpoint/icons/calendar.svg')"
+          aria-hidden="true"
+        ></span>
+        {{ row.date }}
+      </span>
+    </ng-template>
+
+    <ng-template tableBottomPanel>
+      <nav class="activity-pagination" aria-label="User activity pages">
+        <button type="button" class="page-step" [disabled]="page() === 1" (click)="previousPage()">
+          Prev
+        </button>
+
+        <div class="page-numbers">
+          @for (number of pageNumbers(); track number) {
+            <button
+              type="button"
+              class="page-number"
+              [class.active]="number === page()"
+              [attr.aria-current]="number === page() ? 'page' : null"
+              (click)="goToPage(number)"
+            >
+              {{ pageLabel(number) }}
+            </button>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="page-step"
+          [disabled]="page() === pageCount()"
+          (click)="nextPage()"
+        >
+          Next
+        </button>
+      </nav>
+    </ng-template>
+  </shared-data-table>
+</main>

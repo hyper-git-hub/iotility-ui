@@ -28,6 +28,73 @@
   @apply bg-brand-600 text-white hover:bg-brand-600;
 }
 
+/* Use Cases window anchored next to the Use Cases button */
+.use-cases-backdrop {
+  @apply fixed inset-0 z-[1499];
+  visibility: hidden;
+  transition: visibility 0s linear 700ms;
+}
+.use-cases-window {
+  @apply absolute left-[calc(100%+28px)] top-0 z-[1500] w-fit overflow-hidden rounded-2xl border border-line bg-white shadow-2xl dark:border-dark-line dark:bg-dark-surface;
+  visibility: hidden;
+  opacity: 1;
+  transform: translateX(calc(-100% - 28px));
+  transition:
+    transform 700ms linear,
+    visibility 0s linear 700ms;
+}
+.use-cases-backdrop.use-open {
+  visibility: visible;
+  transition: visibility 0s;
+}
+.use-cases-window.use-open {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    transform 700ms linear,
+    visibility 0s;
+}
+.use-cases-logos {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  align-items: start;
+  gap: 20px 32px;
+  padding: 24px 32px;
+}
+.use-case-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 4px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  transition: box-shadow 150ms ease;
+}
+.use-case-logo:hover,
+.use-case-logo:focus,
+.use-case-logo:focus-visible,
+.use-case-logo:active {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+.use-case-logo:hover {
+  filter: brightness(1.1);
+}
+.use-case-logo img {
+  @apply size-14 object-contain;
+}
+.use-case-logo span {
+  @apply text-[11px] font-semibold text-ink dark:text-white;
+}
+
 .app-close-button {
   position: absolute;
   top: -7px;

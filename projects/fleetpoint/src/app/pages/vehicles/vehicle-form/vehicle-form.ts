@@ -21,6 +21,7 @@ import {
   DropdownOption,
   SmoothHeight,
 } from '@iotility/shared-ui';
+import { secureStorage } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import { Modal } from '../../../shared/modal/modal';
 import {
@@ -33,7 +34,12 @@ import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { FeatureAccessService } from '../../../shared/services/feature-access.service';
 
-const DASHCAM_DEVICE_TYPES = new Set(['ConcoxDC', 'Howen DC', 'BSJ Single Channel']);
+const DASHCAM_DEVICE_TYPES = new Set(['concoxdc', 'howen dc']);
+
+function isDashcamDevice(device: DeviceOption): boolean {
+  const type = device.type?.trim().toLowerCase() ?? '';
+  return DASHCAM_DEVICE_TYPES.has(type) || type.includes('bsj');
+}
 
 function evenWheelCount(control: AbstractControl): ValidationErrors | null {
   const value = Number(control.value);
@@ -333,10 +339,8 @@ export class VehicleForm implements OnChanges {
         const primaryDevices =
           this.customerType === '1'
             ? available
-            : available.filter((device) => !DASHCAM_DEVICE_TYPES.has(device.type || ''));
-        const secondaryDevices = available.filter((device) =>
-          DASHCAM_DEVICE_TYPES.has(device.type || ''),
-        );
+            : available.filter((device) => !isDashcamDevice(device));
+        const secondaryDevices = available.filter(isDashcamDevice);
         this.devices.set(
           vehicle?.device &&
             !primaryDevices.some((device) => String(device.id) === String(vehicle.device))
@@ -464,7 +468,7 @@ export class VehicleForm implements OnChanges {
 
   private storedUser(): any {
     try {
-      return JSON.parse(localStorage.getItem('user') ?? 'null');
+      return JSON.parse(secureStorage.get('user') ?? 'null');
     } catch {
       return null;
     }

@@ -34,8 +34,19 @@
     0 2px 9px #18223866;
 }
 
-:host ::ng-deep .maplibregl-popup-content {
+/* Custom props must live on .maplibregl-popup (tip's ancestor), not only on
+   the content box — the tip is a sibling of the content, so a var declared
+   only on content leaves the tip's border-color invalid (renders black). */
+:host ::ng-deep .maplibregl-popup {
   --event-popup-surface: #fff;
+}
+:host-context(.dark) ::ng-deep .maplibregl-popup {
+  --event-popup-surface: var(--color-dark-surface);
+}
+:host ::ng-deep .maplibregl-popup-tip {
+  display: none;
+}
+:host ::ng-deep .maplibregl-popup-content {
   min-width: 9rem;
   border-radius: 0.75rem;
   padding: 0.625rem 0.75rem;
@@ -44,27 +55,9 @@
   color: var(--color-ink);
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
 }
-:host ::ng-deep .maplibregl-popup-anchor-top .maplibregl-popup-tip,
-:host ::ng-deep .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
-:host ::ng-deep .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-  border-bottom-color: var(--event-popup-surface);
-}
-:host ::ng-deep .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
-:host ::ng-deep .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
-:host ::ng-deep .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-  border-top-color: var(--event-popup-surface);
-}
-:host ::ng-deep .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: var(--event-popup-surface);
-}
-:host ::ng-deep .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: var(--event-popup-surface);
-}
 :host-context(.dark) ::ng-deep .maplibregl-popup-content {
-  --event-popup-surface: var(--color-dark-surface);
   color: #fff;
 }
-
 :host ::ng-deep .trip-event-popup {
   display: grid;
   gap: 2px;

@@ -79,7 +79,7 @@
                       <b>{{ notification.driver_name || 'No driver allocated' }}</b>
                       @if (isSpeedNotification(notification)) { <b>{{ notification.threshold_value }} km/h</b> }
                     </span>
-                    @if (notification.location) { <span class="notification-location" [title]="notification.location">{{ notification.location }}</span> }
+                    @if (notification.location) { <span class="notification-location" [tooltip]="notification.location">{{ notification.location }}</span> }
                     <small>{{ notification.duration || 'Just now' }} @if (notification.notf_created_at) { · {{ notification.notf_created_at }} }</small>
                   </div>
                 </button>

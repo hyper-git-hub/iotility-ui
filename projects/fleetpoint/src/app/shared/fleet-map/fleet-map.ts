@@ -1,5 +1,6 @@
 import {
-  AfterViewInit, Component, ElementRef, OnDestroy, effect, inject, input, output, signal, viewChild,
+  AfterViewInit, Component, ElementRef, OnDestroy, effect, inject, input, output, signal, untracked,
+  viewChild,
 } from '@angular/core';
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
 import {
@@ -37,6 +38,13 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly showMarkers = input(true);
   readonly clusterMarkers = input(true);
   readonly fitZoomOffset = input(0);
+  /**
+   * Filter signature (fleet / status / search). Changing it re-frames the
+   * camera on the currently visible markers instead of leaving the map parked
+   * at the zoom of the vehicle that was focused before the filter changed.
+   * Realtime ticks and polls reuse the same key, so they never move the camera.
+   */
+  readonly fitKey = input('');
   readonly selectedVehicleId = input<string | null>(null);
   readonly showOverlays = input(true);
   readonly isFullscreen = input(false);
@@ -55,8 +63,15 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private clusterMoveBound = false;
   private clusterSyncFrame?: number;
   private readonly onClusterMove = () => this.queueClusterRerender();
-  private fittedVehicleSet = '';
   private initialFitPending = true;
+  private lastFitKey = '';
+  private lastCenterKey = '';
+  // Camera-follow bookkeeping for the selected vehicle: which selection the
+  // camera follows, the last filter key observed, and whether a filter edit
+  // suspended the follow (only the next selection change resumes it).
+  private followedSelectionId: string | null = null;
+  private observedFitKey = '';
+  private followSuspended = false;
   private resizeObserver?: ResizeObserver;
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
@@ -71,26 +86,65 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         this.renderMarkers(vehicles, false, showMarkers, clusterMarkers);
       }
     });
+    // A filter edit (fleet / status / search) reshapes the visible marker set,
+    // so re-frame the camera on it — otherwise the map stays parked at the zoom
+    // of the vehicle that was focused before the filter changed. Only `fitKey`
+    // edits re-fit: realtime ticks and 30s polls reuse the same key, so they
+    // never reset a manual pan/zoom or collapse every marker into one cluster.
+    effect(() => {
+      const fitKey = this.fitKey();
+      const vehicles = this.vehicles();
+      if (!this.map || !vehicles.length || fitKey === this.lastFitKey) return;
+      // `fitVehicles` records the key it framed, so this only runs when a
+      // filter edit lands without a concurrent size/load fit.
+      this.fitVehicles(vehicles);
+    });
     effect(() => {
       const zones = this.zones();
       if (this.map?.isStyleLoaded()) this.renderZones(zones);
     });
+    // Keeps the selected marker clear of the details panel. Driven by the
+    // selection and the panel width only: realtime ticks reshape the vehicle
+    // array every few seconds and must not re-aim the camera, or they would undo
+    // a filter-driven re-fit moments after it lands.
     effect(() => {
-      const panelOpen = this.detailsPanelOpen();
-      const isFullscreen = this.isFullscreen();
-      const panelPadding = panelOpen && !isFullscreen && !matchMedia('(max-width: 900px)').matches ? 320 : 0;
-      const selected = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
-      this.map?.easeTo({
+      const selectedId = this.selectedVehicleId();
+      const padding = this.panelPadding();
+      const key = `${selectedId}|${padding}`;
+      if (key === this.lastCenterKey) return;
+      this.lastCenterKey = key;
+      if (!this.map) return;
+      const selected = untracked(() => this.vehicles()).find(({ id }) => id === selectedId);
+      this.map.easeTo({
         ...(selected ? { center: [selected.lng, selected.lat] as [number, number] } : {}),
-        padding: { top: 0, bottom: 0, left: 0, right: panelPadding },
+        padding,
         duration: 400,
         easing: (t) => 1 - Math.pow(1 - t, 3),
       });
     });
+    // Locks the camera onto the selected vehicle (zoom 14, panel-padded) and
+    // follows it as its position updates — but only for a selection made after
+    // the last filter edit. A fleet / status / search change re-frames the whole
+    // visible marker set (see the `fitKey` effect above), so the follow is
+    // suspended instead of snapping back to the vehicle that was zoomed in
+    // before the filter changed; selecting a vehicle resumes it.
     effect(() => {
       const selectedId = this.selectedVehicleId();
+      const fitKey = this.fitKey();
       const vehicle = this.vehicles().find(({ id }) => id === selectedId);
-      if (vehicle && this.map) this.focusVehicle(vehicle);
+      if (!this.map) return;
+      if (fitKey !== this.observedFitKey) {
+        this.observedFitKey = fitKey;
+        this.followSuspended = true;
+      }
+      if (this.followedSelectionId !== selectedId) {
+        this.followedSelectionId = selectedId;
+        this.followSuspended = false;
+        if (selectedId && vehicle) this.focusVehicle(vehicle);
+        return;
+      }
+      if (!selectedId || this.followSuspended || !vehicle) return;
+      this.focusVehicle(vehicle);
     });
     effect(() => {
       const selectedId = this.selectedVehicleId();
@@ -216,13 +270,30 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     }
     const selected = vehicles.find(({ id }) => id === selectedId);
     if (selected && this.markers.has(selected.id)) this.updateMarkerSelection(selected.id);
-    if (fit && vehicles.length) {
-      fitLatLngs(this.map, vehicles.map(({ lat, lng }) => [lat, lng]), 48, 15 + this.fitZoomOffset());
-      if (this.map.getContainer().clientWidth > 0 && this.map.getContainer().clientHeight > 0) {
-        this.fittedVehicleSet = this.vehicleSetKey(vehicles);
-        this.initialFitPending = false;
-      }
-    }
+    if (fit) this.fitVehicles(vehicles);
+  }
+
+  // Frames the given markers, reserving room for the details panel so a re-fit
+  // never parks markers underneath it. Shared by the initial load/resize fit and
+  // the filter-driven re-fit in the constructor effect.
+  private fitVehicles(vehicles: TrackedVehicle[]): void {
+    if (!this.map || !vehicles.length) return;
+    const container = this.map.getContainer();
+    if (container.clientWidth <= 0 || container.clientHeight <= 0) return;
+    const panelPadding = this.panelPadding();
+    const padding = panelPadding
+      ? { top: 48, bottom: 48, left: 48, right: 48 + panelPadding }
+      : 48;
+    fitLatLngs(
+      this.map,
+      vehicles.map(({ lat, lng }) => [lat, lng]),
+      padding,
+      15 + this.fitZoomOffset(),
+    );
+    // Every fit consumes the filter key it framed, so the `fitKey` effect above
+    // only re-fits on the next filter edit (never on a realtime tick or poll).
+    this.lastFitKey = this.fitKey();
+    this.initialFitPending = false;
   }
 
   private updateMarkerSelection(selectedId: string | null): void {
@@ -481,10 +552,6 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     return value || '#7c3aed';
   }
 
-  private vehicleSetKey(vehicles: TrackedVehicle[]): string {
-    return vehicles.map(({ id }) => id).sort().join('|');
-  }
-
   private renderZones(zones: MapZoneOverlay[]): void {
     if (!this.map?.isStyleLoaded()) return;
     if (!zones.length) {
@@ -524,16 +591,22 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     }
   }
 
+  // Width the details panel steals from the map on desktop, so camera framing
+  // can keep markers clear of it (0 when the panel is closed, mobile or fullscreen).
+  private panelPadding(): number {
+    const desktopPanelOpen =
+      this.detailsPanelOpen() && !this.isFullscreen() && !matchMedia('(max-width: 900px)').matches;
+    return desktopPanelOpen ? 320 : 0;
+  }
+
   private focusVehicle(vehicle: TrackedVehicle): void {
     if (!this.map) return;
-    const panelPadding = this.detailsPanelOpen() && !this.isFullscreen() &&
-      !matchMedia('(max-width: 900px)').matches ? 320 : 0;
     this.map.flyTo({
       center: [vehicle.lng, vehicle.lat],
       zoom: 14,
       duration: 1200,
       essential: true,
-      padding: { top: 0, bottom: 0, left: 0, right: panelPadding },
+      padding: { top: 0, bottom: 0, left: 0, right: this.panelPadding() },
     });
     const marker = this.markers.get(vehicle.id);
     if (marker && marker.getPopup() && !marker.getPopup()?.isOpen()) marker.togglePopup();

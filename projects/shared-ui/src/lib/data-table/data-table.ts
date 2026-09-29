@@ -16,6 +16,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
+import { Tooltip } from '../tooltip/tooltip';
 export type TableColumnType =
   | 'text'
   | 'user'
@@ -69,9 +70,11 @@ export class DataTableCellTemplate {
 }
 @Component({
   selector: 'shared-data-table',
-  imports: [Dropdown, NgTemplateOutlet],
+  imports: [Dropdown, NgTemplateOutlet, Tooltip],
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
+  // The card header already renders the title, so keep it out of the browser's native tooltip.
+  host: { '[attr.title]': 'null' },
 })
 export class DataTable implements AfterViewInit, OnDestroy {
   readonly title = input('Data');

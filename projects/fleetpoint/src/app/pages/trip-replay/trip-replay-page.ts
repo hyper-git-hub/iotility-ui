@@ -1,4 +1,5 @@
 import { DecimalPipe } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
@@ -20,6 +21,7 @@ import {
   TripReplayEvent,
   TripReplayMap,
 } from '../../shared/trip-replay-map/trip-replay-map';
+import { VIOLATION_ICON } from '../violations/all-violations/all-violations';
 
 interface ReplayStop {
   location: string;
@@ -107,7 +109,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly legendItems: Array<{ label: string; color: string }> = [
     { label: 'Travelled', color: 'var(--color-brand-500)' },
     { label: 'Start', color: 'var(--color-success)' },
-    { label: 'End', color: 'var(--color-danger)' },
+    { label: 'End', color: 'color-mix(in srgb, var(--color-danger) 65%, white)' },
     { label: 'Violation', color: 'var(--color-danger)' },
     { label: 'DashCam', color: 'var(--color-warning)' },
     { label: 'Stop', color: 'var(--color-info)' },
@@ -135,6 +137,12 @@ export class TripReplayPage implements OnInit, OnDestroy {
   });
   protected readonly selectedTrip = computed(() => this.trip());
   protected readonly stopEvents = computed(() => this.trip().events.filter((e) => e.type === 'stop'));
+  // Tab counts: violations/dashcam alerts live under Events (stops have their
+  // own tab), so the badge must mirror exactly what each list renders.
+  protected readonly eventCount = computed(
+    () => this.trip().events.length - this.stopEvents().length,
+  );
+  protected readonly stopCount = computed(() => this.stopEvents().length);
   protected readonly currentPosition = computed(
     () =>
       this.trip().positions[this.positionIndex()] ?? {
@@ -186,6 +194,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   constructor(
     private readonly api: TripReplayApiService,
     private readonly feedback: FeedbackDialogBridgeService,
+    private readonly sanitizer: DomSanitizer,
     private readonly zone: NgZone,
     router: Router,
   ) {
@@ -414,6 +423,11 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected markerPosition(event: TripReplayEvent): number {
     const last = this.maxPosition();
     return last > 0 ? (event.positionIndex / last) * 100 : 0;
+  }
+  // Violation icon markup from the Violations page icon set (colour stays red
+  // via the existing text-danger / stroke styles).
+  protected eventIcon(event: TripReplayEvent): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(event.icon ?? VIOLATION_ICON['Default']);
   }
   protected clockTime(value: string | undefined): string {
     if (!value || value === '—') return '—:—';
@@ -651,6 +665,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
               type: 'violation' as const,
               positionIndex: index,
               detail: row.location || 'Safety alert',
+              icon: this.violationIcon('seatbelt'),
             },
           ]
         : [],
@@ -803,9 +818,39 @@ export class TripReplayPage implements OnInit, OnDestroy {
             type: 'violation' as const,
             positionIndex,
             detail: `${record.description || label}${speed ? ` · ${speed} km/h` : ''}${when}`,
+            icon: this.violationIcon(record.violation_type || record.name || ''),
           },
         ];
       });
+  }
+  // Same type-key aliases as the Violations page so the icon set stays in sync.
+  private violationTypeKey(value: string): string {
+    const compact = String(value ?? '')
+      .replace(/[\s_-]+/g, '')
+      .toLowerCase();
+    const aliases: Record<string, string> = {
+      speed: 'Speed',
+      speeding: 'Speed',
+      overspeed: 'Speed',
+      harshbraking: 'HarshBraking',
+      harshacceleration: 'HarshAcceleration',
+      sharpturn: 'SharpTurn',
+      idle: 'Idle',
+      idling: 'Idle',
+      territoryviolation: 'TerritoryViolation',
+      geozone: 'Geozone',
+      geozoneviolation: 'Geozone',
+      inzone: 'InZone',
+      outofzone: 'OutOfZone',
+      roaddeparture: 'RoadDeparture',
+      roaddeparturewarning: 'RoadDeparture',
+      forwardcollision: 'ForwardCollision',
+      forwardcollisionwarning: 'ForwardCollision',
+    };
+    return aliases[compact] ?? String(value ?? '');
+  }
+  private violationIcon(value: string): string {
+    return VIOLATION_ICON[this.violationTypeKey(value)] ?? VIOLATION_ICON['Default'];
   }
   private nearestPosition(positions: TripPosition[], lat: number, lng: number): number {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return 0;

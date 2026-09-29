@@ -1,50 +1,76 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   DataTable,
   DataTableCellTemplate,
+  DataTableSkeleton,
   Dropdown,
   DropdownOption,
+  Skeleton,
   SmoothHeight,
   TableAction,
   TableColumn,
   TableRow,
+  Tooltip,
 } from '@iotility/shared-ui';
+import { finalize } from 'rxjs';
 import { StatCard } from '../../shared/stat-card/stat-card';
+import {
+  CustomerHardwareRecord,
+  DeviceHardwareApiService,
+} from '../../shared/services/device-hardware-api.service';
 import {
   CATEGORY_LABELS,
   DEVICES,
-  DeviceCategory,
   DeviceRecord,
   DeviceStatus,
 } from './devices.data';
 import { DeviceForm, DeviceFormValue } from './device-form/device-form';
 @Component({
   selector: 'app-devices-page',
-  imports: [DataTable, DataTableCellTemplate, DeviceForm, Dropdown, SmoothHeight, StatCard],
+  imports: [
+    DataTable,
+    DataTableCellTemplate,
+    DataTableSkeleton,
+    DeviceForm,
+    Dropdown,
+    Skeleton,
+    SmoothHeight,
+    StatCard,
+    Tooltip,
+  ],
   templateUrl: './devices-page.html',
   styleUrl: './devices-page.css',
 })
-export class DevicesPage {
+export class DevicesPage implements OnInit {
   protected readonly CATEGORY_LABELS = CATEGORY_LABELS;
   protected readonly devices = signal(DEVICES);
+  protected readonly hardware = signal<CustomerHardwareRecord[]>([]);
+  protected readonly hardwareLoading = signal(true);
+  protected readonly hardwareTotal = signal(0);
+  protected readonly hardwareError = signal('');
+  protected readonly hardwareOffset = signal(0);
+  protected readonly hardwareLimit = 10;
   protected readonly search = signal('');
-  protected readonly status = signal<'all' | DeviceStatus>('all');
-  protected readonly category = signal<'all' | DeviceCategory>('all');
+  protected readonly status = signal('all');
+  protected readonly category = signal('all');
   protected readonly view = signal<'list' | 'bundle'>('list');
   protected readonly expanded = signal<string[]>(['LP-4821']);
   protected readonly formOpen = signal(false);
-  protected readonly statusOptions: DropdownOption[] = [
+  protected readonly statusOptions = computed<DropdownOption[]>(() => [
     { id: 'all', label: 'All Statuses' },
-    ...['active', 'faulty', 'in-stock', 'installed', 'uninstalled'].map((id) => ({
-      id,
-      label: this.statusLabel(id as DeviceStatus),
+    ...[...new Set(this.hardware().map((device) => device.status).filter(Boolean))].map((value) => ({
+      id: String(value).toLowerCase(),
+      label: String(value),
     })),
-  ];
-  protected readonly categoryOptions: DropdownOption[] = [
+  ]);
+  protected readonly categoryOptions = computed<DropdownOption[]>(() => [
     { id: 'all', label: 'All Device Types' },
-    ...Object.entries(CATEGORY_LABELS).map(([id, label]) => ({ id, label })),
-  ];
+    ...[...new Set(this.hardware().map((device) => device.device_type_name).filter(Boolean))].map((value) => ({
+      id: String(value),
+      label: String(value),
+    })),
+  ]);
   protected readonly columns: TableColumn[] = [
     { key: 'device', label: 'Device' },
     { key: 'type', label: 'Type' },
@@ -66,7 +92,47 @@ export class DevicesPage {
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];
   protected readonly actions: TableAction[] = ['view', 'edit', 'delete'];
-  constructor(private readonly router: Router) {}
+  protected readonly columnLabels = this.columns.map((column) => column.label);
+  constructor(
+    private readonly router: Router,
+    private readonly hardwareApi: DeviceHardwareApiService,
+  ) {}
+  ngOnInit(): void {
+    this.loadHardware();
+  }
+  protected loadHardware(): void {
+    this.hardwareLoading.set(true);
+    this.hardwareError.set('');
+    this.hardwareApi
+      .getHardware(this.hardwareLimit, this.hardwareOffset())
+      .pipe(finalize(() => this.hardwareLoading.set(false)))
+      .subscribe({
+        next: (response) => {
+          this.hardware.set(response.data?.data ?? []);
+          this.hardwareTotal.set(response.data?.total ?? 0);
+        },
+        error: (response) => {
+          this.hardware.set([]);
+          this.hardwareTotal.set(0);
+          this.hardwareError.set(response.error?.message || 'Device inventory could not be loaded.');
+        },
+      });
+  }
+  protected readonly hardwarePageStart = computed(() =>
+    this.hardwareTotal() ? this.hardwareOffset() + 1 : 0,
+  );
+  protected readonly hardwarePageEnd = computed(() =>
+    Math.min(this.hardwareOffset() + this.hardware().length, this.hardwareTotal()),
+  );
+  protected previousHardwarePage(): void {
+    this.hardwareOffset.update((offset) => Math.max(0, offset - this.hardwareLimit));
+    this.loadHardware();
+  }
+  protected nextHardwarePage(): void {
+    if (this.hardwareOffset() + this.hardwareLimit >= this.hardwareTotal()) return;
+    this.hardwareOffset.update((offset) => offset + this.hardwareLimit);
+    this.loadHardware();
+  }
   protected readonly filtered = computed(() => {
     const q = this.search().trim().toLowerCase();
     return this.devices().filter(
@@ -76,35 +142,35 @@ export class DevicesPage {
         (!q || `${d.name} ${d.imei} ${d.serial} ${d.model} ${d.vehicle}`.toLowerCase().includes(q)),
     );
   });
+  protected readonly filteredHardware = computed(() => {
+    const query = this.search().trim().toLowerCase();
+    return this.hardware().filter((device) =>
+      (this.status() === 'all' || device.status?.toLowerCase() === this.status()) &&
+      (this.category() === 'all' || device.device_type_name === this.category()) &&
+      (!query || `${device.device_id ?? ''} ${device.device_type_name ?? ''} ${device.sim_msisdn ?? ''} ${device.customer_name ?? ''}`.toLowerCase().includes(query)),
+    );
+  });
   protected readonly rows = computed<TableRow[]>(() =>
-    this.filtered().map((d) => ({
-      id: d.id,
-      device: d.model,
-      manufacturer: d.manufacturer,
-      category: d.category,
-      type: CATEGORY_LABELS[d.category],
-      identifier: d.imei,
-      serial: d.serial,
-      status: d.status,
-      statusLabel: this.statusLabel(d.status),
-      vehicle: d.vehicle || 'Unassigned',
-      vehicleAssigned: Boolean(d.vehicle),
-      vehicleModel: d.vehicleModel,
-      signal: d.signal,
-      battery: d.battery,
-      firmware: d.firmware,
-      lastPing: d.lastPing,
-      pingState: /hour|[3-9]\d min/i.test(d.lastPing)
-        ? 'stale'
-        : d.lastPing === 'Never'
-          ? 'never'
-          : 'current',
-      warranty: d.warranty,
-      warrantyState: /expired/i.test(d.warranty)
-        ? 'expired'
-        : /^[1-4]\smonth/i.test(d.warranty)
-          ? 'warning'
-          : 'valid',
+    this.filteredHardware().map((device) => ({
+      id: device.id,
+      device: device.device_type_name || '—',
+      manufacturer: device.customer_name || '—',
+      category: 'hardware',
+      type: device.device_type_name || '—',
+      identifier: device.device_id || '—',
+      serial: device.sim_msisdn || '—',
+      status: (device.status || 'unknown').toLowerCase(),
+      statusLabel: device.status || '—',
+      vehicle: '—',
+      vehicleAssigned: false,
+      vehicleModel: '',
+      signal: 0,
+      battery: '—',
+      firmware: '—',
+      lastPing: '—',
+      pingState: 'never',
+      warranty: '—',
+      warrantyState: 'unknown',
       actions: '',
     })),
   );
@@ -129,8 +195,8 @@ export class DevicesPage {
   });
   protected readonly unassigned = computed(() => this.filtered().filter((d) => !d.vehicle));
   protected select(kind: 'status' | 'category', option: DropdownOption): void {
-    if (kind === 'status') this.status.set(option.id as 'all' | DeviceStatus);
-    else this.category.set(option.id as 'all' | DeviceCategory);
+    if (kind === 'status') this.status.set(option.id);
+    else this.category.set(option.id);
   }
   protected label(options: DropdownOption[], id: string): string {
     return options.find((o) => o.id === id)?.label ?? '';

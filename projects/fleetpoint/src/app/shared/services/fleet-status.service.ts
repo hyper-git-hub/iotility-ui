@@ -1,10 +1,11 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
+import { secureStorage } from '@iotility/shared-ui';
 import { LiveTrackingApiService } from './live-tracking-api.service';
 
 const hasSessionToken = () =>
-  Boolean(localStorage.getItem('userMS-token') || localStorage.getItem('token'));
+  Boolean(secureStorage.get('userMS-token') || secureStorage.get('token'));
 
 @Injectable({ providedIn: 'root' })
 export class FleetStatusService {

@@ -1,5 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { secureStorage } from '@iotility/shared-ui';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from './fleet-dashboard-api.service';
@@ -74,7 +75,7 @@ export class ReportsApiService {
 
   private groupFlag(): number {
     try {
-      const user = JSON.parse(localStorage.getItem('user') ?? '{}');
+      const user = JSON.parse(secureStorage.get('user') ?? '{}');
       return user?.customer?.groups?.[0]?.name === 'UK' ? 1 : 0;
     } catch {
       return 0;

@@ -6,12 +6,16 @@ Chart.register(...registerables);
   selector: 'app-fleet-doughnut-chart',
   templateUrl: '../generic-chart.html',
   styleUrl: '../generic-chart.css',
+  // The card header already renders the title, so keep it out of the browser's native tooltip.
+  host: { '[attr.title]': 'null' },
 })
 export class FleetDoughnutChart implements AfterViewInit, OnDestroy {
   readonly title = input.required<string>();
   readonly subtitle = input('');
   readonly badge = input('');
   readonly statusLegend = input(false);
+  /** Colored items rendered in the card header (top-right), e.g. jobs graph legends. */
+  readonly legendItems = input<{ label: string; color: string }[]>([]);
   readonly filterLabel = input('');
   readonly height = input(320);
   readonly data = input.required<ChartData<'doughnut', number[], string>>();

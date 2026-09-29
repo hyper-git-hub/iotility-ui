@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { secureStorage } from '@iotility/shared-ui';
 import { UserProfile } from './auth-api.service';
 import { FirebaseAuthService } from './firebase-auth.service';
 
@@ -21,7 +22,7 @@ export class AuthSessionService {
   ];
 
   get user(): UserProfile | null {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = secureStorage.get('user');
     if (!storedUser) return null;
     try {
       return JSON.parse(storedUser) as UserProfile;
@@ -35,12 +36,12 @@ export class AuthSessionService {
   }
 
   get isAuthenticated(): boolean {
-    const token = localStorage.getItem('userMS-token') || localStorage.getItem('token');
+    const token = secureStorage.get('userMS-token') || secureStorage.get('token');
     return Boolean(token && this.user && !this.isTokenExpired(token));
   }
 
   clear(): void {
-    this.sessionKeys.forEach((key) => localStorage.removeItem(key));
+    this.sessionKeys.forEach((key) => secureStorage.remove(key));
     void this.firebaseAuth.signOut();
   }
 

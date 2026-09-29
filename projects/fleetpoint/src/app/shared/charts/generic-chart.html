@@ -13,6 +13,13 @@
         <span><i class="low" aria-hidden="true"></i>Low</span>
       </span>
     }
+    @if (legendItems().length) {
+      <span class="status-legend">
+        @for (item of legendItems(); track $index) {
+          <span><i [style.background]="item.color" aria-hidden="true"></i>{{ item.label }}</span>
+        }
+      </span>
+    }
     @if (badge()) {
       <span class="badge">{{ badge() }}</span>
     }

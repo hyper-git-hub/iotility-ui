@@ -6,6 +6,7 @@ import {
   DropdownOption,
   TableColumn,
   TableRow,
+  Tooltip,
 } from '@iotility/shared-ui';
 import {
   CATEGORY_LABELS,
@@ -22,7 +23,7 @@ import { DashcamVideoTile } from '../video-tile/video-tile';
 
 @Component({
   selector: 'app-dashcam-events',
-  imports: [DashcamVideoTile, DataTable, DataTableCellTemplate, Dropdown],
+  imports: [DashcamVideoTile, DataTable, DataTableCellTemplate, Dropdown, Tooltip],
   templateUrl: './dashcam-events.html',
   styleUrl: './dashcam-events.css',
 })

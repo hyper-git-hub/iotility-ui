@@ -1,5 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { secureStorage } from '@iotility/shared-ui';
 import { Observable } from 'rxjs';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { environment } from '../../../environments/environment';
@@ -173,7 +174,7 @@ export class VehicleInventoryApiService {
     };
   } | null {
     try {
-      return JSON.parse(localStorage.getItem('user') ?? 'null');
+      return JSON.parse(secureStorage.get('user') ?? 'null');
     } catch {
       return null;
     }

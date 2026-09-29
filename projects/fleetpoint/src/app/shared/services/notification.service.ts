@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { initializeApp, getApps } from 'firebase/app';
 import { getDatabase, onValue, ref } from 'firebase/database';
 import { interval } from 'rxjs';
+import { secureStorage } from '@iotility/shared-ui';
 import { environment } from '../../../environments/environment';
 
 export interface FleetNotification {
@@ -107,13 +108,13 @@ export class NotificationService {
 
   private userGuid(): string {
     try {
-      return String(JSON.parse(localStorage.getItem('user') || '{}')?.guid ?? '');
+      return String(JSON.parse(secureStorage.get('user') || '{}')?.guid ?? '');
     } catch {
       return '';
     }
   }
 
   private hasSession(): boolean {
-    return Boolean(localStorage.getItem('userMS-token') || localStorage.getItem('token'));
+    return Boolean(secureStorage.get('userMS-token') || secureStorage.get('token'));
   }
 }

@@ -20,13 +20,29 @@
         background-color: #3b0764;
       }
 
+      /* Base gradient + soft glow */
       .bootstrap-loading::before {
         content: '';
         position: absolute;
         inset: 0;
         background:
           radial-gradient(circle at 50% 45%, rgb(147 51 234 / 34%) 0%, transparent 36%),
+          radial-gradient(circle at 85% 90%, rgb(57 120 212 / 18%) 0%, transparent 40%),
           linear-gradient(145deg, #09090f, #3b0764);
+        animation: bootstrap-loading-glow 6s ease-in-out infinite alternate;
+      }
+
+      /* Faint connected-grid texture, fading toward the edges */
+      .bootstrap-loading::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgb(216 180 254 / 6%) 1px, transparent 1px),
+          linear-gradient(90deg, rgb(216 180 254 / 6%) 1px, transparent 1px);
+        background-size: 44px 44px;
+        -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 65%);
+        mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 65%);
       }
 
       .bootstrap-loading__content {
@@ -38,14 +54,34 @@
         text-align: center;
       }
 
+      /* Hero: logos inside a glass panel */
+      .bootstrap-loading__hero {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 2.5rem;
+      }
+
       .bootstrap-loading__logos {
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 1.5rem;
-        margin: 0 auto 2rem;
+        padding: 1.25rem 2rem;
+        border: 1px solid rgb(255 255 255 / 12%);
+        border-radius: 1.25rem;
+        background: linear-gradient(145deg, rgb(255 255 255 / 9%), rgb(255 255 255 / 3%));
+        box-shadow:
+          0 20px 50px -12px rgb(9 9 15 / 65%),
+          0 0 60px -10px rgb(147 51 234 / 45%),
+          inset 0 1px 0 rgb(255 255 255 / 12%);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        animation: bootstrap-loading-float 4.5s ease-in-out infinite;
       }
-      
+
       .bootstrap-loading__product-logo {
         display: block;
         width: auto;
@@ -53,7 +89,7 @@
         height: 2.5rem;
         flex-shrink: 0;
       }
-      
+
       .bootstrap-loading__label-logo {
         display: block;
         width: auto;
@@ -66,11 +102,11 @@
         width: 1px;
         height: 2.5rem;
         flex-shrink: 0;
-        background: rgb(255 255 255 / 25%);
+        background: linear-gradient(180deg, transparent, rgb(255 255 255 / 35%), transparent);
       }
 
       .bootstrap-loading__title {
-        margin: 0.75rem 0 0;
+        margin: 0;
         font-size: 1.875rem;
         font-weight: 700;
         line-height: 2.25rem;
@@ -85,27 +121,50 @@
       }
 
       .bootstrap-loading__track {
-        margin-top: 2rem;
-        padding: 0.1875rem;
+        position: relative;
+        width: 100%;
+        max-width: 16rem;
+        height: 0.25rem;
+        margin: 2rem auto 0;
         overflow: hidden;
         border-radius: 9999px;
         background: rgb(255 255 255 / 10%);
       }
 
       .bootstrap-loading__bar {
-        width: 55%;
-        height: 0.25rem;
+        width: 40%;
+        height: 100%;
         border-radius: 9999px;
         background: linear-gradient(90deg, #c084fc, #a855f7, #3978d4);
-        animation: bootstrap-loading-progress 2.2s ease-in-out infinite;
+        animation: bootstrap-loading-bar 1.8s ease-in-out infinite;
       }
 
-      @keyframes bootstrap-loading-progress {
-        0% { transform: translateX(-120%); }
-        100% { transform: translateX(405%); }
+      @keyframes bootstrap-loading-bar {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(250%); }
+      }
+
+      @keyframes bootstrap-loading-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
+
+      @keyframes bootstrap-loading-glow {
+        from { opacity: 0.85; }
+        to { opacity: 1; }
+      }
+
+      @media (max-width: 480px) {
+        .bootstrap-loading__logos { gap: 1rem; padding: 1rem 1.25rem; }
+        .bootstrap-loading__product-logo,
+        .bootstrap-loading__label-logo { height: 1.75rem; max-width: 7.5rem; }
+        .bootstrap-loading__separator { height: 1.75rem; }
+        .bootstrap-loading__title { font-size: 1.5rem; line-height: 2rem; }
       }
 
       @media (prefers-reduced-motion: reduce) {
+        .bootstrap-loading::before,
+        .bootstrap-loading__logos { animation: none; }
         .bootstrap-loading__bar { animation-timing-function: linear; }
       }
     </style>
@@ -117,18 +176,20 @@
         aria-live="polite"
         aria-busy="true"
       >
-        <div class="bootstrap-loading__logos">
-          <img
-            src="assets/iotility-loader-light.svg"
-            alt="IoTility"
-            class="bootstrap-loading__product-logo"
-          />
-          <div class="bootstrap-loading__separator" aria-hidden="true"></div>
-          <img
-            src="assets/hypernym-loader-full.svg"
-            alt="Hypernym"
-            class="bootstrap-loading__label-logo"
-          />
+        <div class="bootstrap-loading__hero" aria-hidden="true">
+          <div class="bootstrap-loading__logos">
+            <img
+              src="assets/iotility-loader-light.svg"
+              alt="IoTility"
+              class="bootstrap-loading__product-logo"
+            />
+            <div class="bootstrap-loading__separator"></div>
+            <img
+              src="assets/hypernym-loader-full.svg"
+              alt="Hypernym"
+              class="bootstrap-loading__label-logo"
+            />
+          </div>
         </div>
         <h1 class="bootstrap-loading__title">Loading IoTility</h1>
         <p class="bootstrap-loading__message">
@@ -137,21 +198,21 @@
         <div class="bootstrap-loading__track" aria-hidden="true">
           <div class="bootstrap-loading__bar"></div>
         </div>
-        </section>
-      </main>
-      <app-root></app-root>
-      <script>
-        document.addEventListener('DOMContentLoaded', () => {
-          const saved = localStorage.getItem('iotility-theme');
-          const html = document.documentElement;
-          if (saved === 'dark') {
-            html.classList.add('dark');
-          } else if (saved === 'light') {
-            html.classList.remove('dark');
-          } else {
-            html.classList.add('dark');
-          }
-        });
-      </script>
-    </body>
-  </html>
+      </section>
+    </main>
+    <app-root></app-root>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const saved = localStorage.getItem('iotility-theme');
+        const html = document.documentElement;
+        if (saved === 'dark') {
+          html.classList.add('dark');
+        } else if (saved === 'light') {
+          html.classList.remove('dark');
+        } else {
+          html.classList.add('dark');
+        }
+      });
+    </script>
+  </body>
+</html>

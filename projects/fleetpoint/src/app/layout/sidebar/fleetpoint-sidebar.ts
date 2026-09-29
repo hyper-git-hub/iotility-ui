@@ -56,6 +56,11 @@ export class FleetpointSidebar {
     return this.router.url.startsWith('/fleetpoint') ? `/fleetpoint${route}` : route;
   }
 
+  // Badge pills cap at 99+ once the count reaches 100; the tooltip keeps the exact number.
+  protected badgeLabel(count: number): string | number {
+    return count >= 100 ? '99+' : count;
+  }
+
   protected toggleCollapsed(): void {
     this.collapsed.update((value) => !value);
     try {
