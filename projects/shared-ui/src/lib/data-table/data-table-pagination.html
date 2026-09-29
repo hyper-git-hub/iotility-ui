@@ -2,7 +2,8 @@
   <nav class="table-pagination" aria-label="Table pages">
     <span class="pagination-range">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ totalItems() }}</span>
     <div class="pagination-controls">
-      <button type="button" class="page-step" [disabled]="loading() || normalizedPage() <= 1" (click)="goTo(normalizedPage() - 1)">
+      <button type="button" class="page-step" [disabled]="loading() || normalizedPage() <= 1"
+        [attr.aria-label]="'Previous page'" (click)="goTo(normalizedPage() - 1)">
         Prev
       </button>
       <div class="page-numbers">
@@ -22,7 +23,8 @@
           }
         }
       </div>
-      <button type="button" class="page-step" [disabled]="loading() || normalizedPage() >= totalPages()" (click)="goTo(normalizedPage() + 1)">
+      <button type="button" class="page-step" [disabled]="loading() || normalizedPage() >= totalPages()"
+        [attr.aria-label]="'Next page'" (click)="goTo(normalizedPage() + 1)">
         Next
       </button>
     </div>
