@@ -14,6 +14,8 @@ export class FleetBarChart implements AfterViewInit, OnDestroy {
   readonly subtitle = input('');
   readonly badge = input('');
   readonly statusLegend = input(false);
+  /** Colored items rendered in the card header (top-right), e.g. jobs graph legends. */
+  readonly legendItems = input<{ label: string; color: string }[]>([]);
   readonly filterLabel = input('');
   readonly height = input(320);
   readonly data = input.required<ChartData<'bar', number[], string>>();

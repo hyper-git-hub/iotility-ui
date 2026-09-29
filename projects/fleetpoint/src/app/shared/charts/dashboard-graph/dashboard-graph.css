@@ -17,7 +17,7 @@ header span { @apply rounded-full bg-brand-50 px-2 py-1 text-[9px] capitalize te
 
 .actions-card header { @apply items-center; }
 .urgent-pill { @apply rounded-full bg-danger px-2 py-1 text-[10px] font-semibold text-white; }
-.action-list { @apply flex flex-1 flex-col justify-around; }
+.action-list { @apply flex min-h-0 flex-1 flex-col justify-start gap-3 overflow-y-auto; }
 .action-row { @apply grid grid-cols-[2rem_minmax(0,1fr)_auto_auto] items-center gap-3 px-2; }
 .action-icon { @apply grid size-8 place-items-center rounded-lg text-sm not-italic; }
 .action-icon.danger { @apply bg-danger/10 text-danger; }

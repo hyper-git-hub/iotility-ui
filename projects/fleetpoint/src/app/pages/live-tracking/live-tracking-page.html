@@ -118,8 +118,31 @@
       }
     </div>
     } @else {
+      <label class="fleet-search-field"
+        ><img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" /><input
+          type="search"
+          placeholder="Search drivers..."
+          [value]="driverSearch()"
+          (input)="updateDriverSearch($event)"
+      /></label>
+      <div class="status-filters">
+        @for (filter of filters; track filter) {
+          <button
+            type="button"
+            (click)="driverStatusFilter.set(filter)"
+            [class.active]="driverStatusFilter() === filter"
+          >
+            @if (filter === 'All') {
+              <span>All({{ drivers().length }})</span>
+            } @else {
+              <span class="filter-dot" [style.background]="statusColor(filter)"></span>
+              <span>{{ filter }}</span>
+            }
+          </button>
+        }
+      </div>
       <div class="driver-list">
-        @for (driver of drivers(); track driver.id) {
+        @for (driver of filteredDrivers(); track driver.id) {
           <button
             type="button"
             class="driver-row"
@@ -137,7 +160,7 @@
             <span class="driver-rating"><b>★</b> {{ driver.rating }}</span>
           </button>
         } @empty {
-          <p class="empty-list">No drivers are assigned to this fleet.</p>
+          <p class="empty-list">No drivers match your search.</p>
         }
       </div>
     }
@@ -152,6 +175,7 @@
       [class.map-loaded]="mapLoaded()"
       [class.details-panel-open]="!isFullscreen() && selectedVehicle() !== null"
       [vehicles]="mapVehicles()"
+      [fitKey]="mapFilterKey()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
       [isFullscreen]="isFullscreen()"
       [detailsPanelOpen]="!isFullscreen() && selectedVehicle() !== null"

@@ -14,15 +14,11 @@ import { FleetLineChart } from '../line-chart/line-chart';
 })
 export class DashboardGraphComponent {
   readonly graph = input.required<DashboardGraph>();
+  /** Where the chart legend renders: top-right of the graph card or the classic bottom. */
+  readonly legendPosition = input<'top' | 'bottom'>('bottom');
   private readonly colors = getFleetChartColors();
-  private readonly palette = [
-    this.colors.brand,
-    this.colors.info,
-    this.colors.success,
-    this.colors.warning,
-    this.colors.danger,
-    this.colors.grid,
-  ];
+  /** One distinct color per series so multi-fleet charts (e.g. Driver Violations) stay readable. */
+  private readonly palette = this.colors.series;
 
   protected allocations() {
     const data = this.graph().data;
@@ -116,6 +112,34 @@ export class DashboardGraphComponent {
         }],
       };
     }
+    /* Named series win over plain values: multi-series payloads (e.g. one series per
+       fleet in Driver Violations) must render as separate datasets, otherwise the
+       chart collapses to a single dataset labelled with the graph name. */
+    const series = this.chartSeries(data.series);
+    if (series.length) {
+      if (series.length === (data.categories?.length ?? 0) && series.every((item) => item.data.length === 1)) {
+        return {
+          labels: data.categories ?? [],
+          datasets: series.map((item, seriesIndex) => ({
+            label: this.readableLabel(item.name),
+            data: (data.categories ?? []).map((_, categoryIndex) =>
+              categoryIndex === seriesIndex ? item.data[0] ?? 0 : 0,
+            ),
+            backgroundColor: this.palette[seriesIndex % this.palette.length],
+            borderRadius: 5,
+          })),
+        };
+      }
+      return {
+        labels: data.categories ?? [],
+        datasets: series.map((item, index) => ({
+          label: this.readableLabel(item.name),
+          data: item.data,
+          backgroundColor: this.palette[index % this.palette.length],
+          borderRadius: 5,
+        })),
+      };
+    }
     if (data.values) {
       const values = data.values.map((value) => this.numericValue(value));
       return {
@@ -128,28 +152,7 @@ export class DashboardGraphComponent {
         }],
       };
     }
-    const series = this.chartSeries(data.series);
-    if (series.length === (data.categories?.length ?? 0) && series.every((item) => item.data.length === 1)) {
-      const values = series.map((item) => item.data[0] ?? 0);
-      return {
-        labels: data.categories ?? [],
-        datasets: [{
-          label: this.graph().name,
-          data: values,
-          backgroundColor: this.barColors(values),
-          borderRadius: 5,
-        }],
-      };
-    }
-    return {
-      labels: data.categories ?? [],
-      datasets: series.map((item, index) => ({
-        label: this.readableLabel(item.name),
-        data: item.data,
-        backgroundColor: this.palette[index % this.palette.length],
-        borderRadius: 5,
-      })),
-    };
+    return { labels: data.categories ?? [], datasets: [] };
   }
 
   protected lineData(): ChartData<'line', number[], string> {
@@ -228,7 +231,7 @@ export class DashboardGraphComponent {
     return {
       indexAxis: horizontal ? 'y' : 'x',
       interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { position: 'bottom', display: !this.isFleetUtilisation() } },
+      plugins: { legend: this.legendOptions() },
       scales: {
         x: {
           stacked,
@@ -248,7 +251,7 @@ export class DashboardGraphComponent {
   protected get lineOptions(): ChartOptions<'line'> {
     return {
       interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { position: 'bottom', display: !this.isFleetUtilisation() } },
+      plugins: { legend: this.legendOptions() },
       scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
     };
   }
@@ -256,8 +259,56 @@ export class DashboardGraphComponent {
   protected doughnutOptions(): ChartOptions<'doughnut'> {
     return {
       cutout: this.graph().chart_type === 'piechart' ? '0%' : '60%',
-      plugins: { legend: { position: 'bottom', display: !this.isFleetUtilisation() } },
+      plugins: { legend: this.legendOptions() },
     };
+  }
+
+  private legendOptions() {
+    const position = this.legendPosition();
+    return {
+      position,
+      align: position === 'top' ? ('end' as const) : undefined,
+      // Top legends are rendered in the card header instead of the canvas.
+      display: !this.isFleetUtilisation() && position !== 'top',
+    };
+  }
+
+  /** Header (top-right) legend items derived from the chart data/colors. */
+  protected legendItems(): { label: string; color: string }[] {
+    if (this.legendPosition() !== 'top' || this.isFleetUtilisation() || !this.hasChartData()) {
+      return [];
+    }
+    if (this.isDoughnut()) {
+      const data = this.doughnutData();
+      const colors = (data.datasets[0]?.backgroundColor as string[] | undefined) ?? [];
+      return (data.labels ?? []).map((label, index) => ({
+        label: String(label),
+        color: colors[index] ?? this.palette[0],
+      }));
+    }
+    const datasets = this.isLine() ? this.lineData().datasets : this.barData().datasets;
+    return datasets
+      .map((dataset) => ({
+        label: String(dataset.label ?? ''),
+        color: this.datasetColor(dataset),
+      }))
+      .filter((item) => item.label.length > 0);
+  }
+
+  private datasetColor(dataset: { backgroundColor?: unknown; borderColor?: unknown }): string {
+    const opaque = (color: unknown): color is string =>
+      typeof color === 'string' &&
+      color.length > 0 &&
+      !color.includes('color-mix') &&
+      !color.includes('transparent') &&
+      !/^rgba\([^)]*,\s*0?\.\d/.test(color);
+    const background = Array.isArray(dataset.backgroundColor)
+      ? dataset.backgroundColor[0]
+      : dataset.backgroundColor;
+    // Line datasets carry a translucent fill color, so prefer the stroke color.
+    if (opaque(dataset.borderColor)) return dataset.borderColor;
+    if (opaque(background)) return background;
+    return this.palette[0];
   }
 
   private readableLabel(value: string): string {

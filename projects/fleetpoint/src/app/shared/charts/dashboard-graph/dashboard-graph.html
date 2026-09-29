@@ -82,11 +82,11 @@
     }
   </article>
 } @else if (hasChartData() && isDoughnut()) {
-  <app-fleet-doughnut-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [height]="380" [data]="doughnutData()" [options]="doughnutOptions()" />
+  <app-fleet-doughnut-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="doughnutData()" [options]="doughnutOptions()" />
 } @else if (hasChartData() && isLine()) {
-  <app-fleet-line-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [height]="380" [data]="lineData()" [options]="lineOptions" />
+  <app-fleet-line-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="lineData()" [options]="lineOptions" />
 } @else if (hasChartData()) {
-  <app-fleet-bar-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [height]="380" [data]="barData()" [options]="barOptions()" />
+  <app-fleet-bar-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="barData()" [options]="barOptions()" />
 } @else {
   <article class="graph-card">
     <header><div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div></header>

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { Skeleton } from '../skeleton/skeleton';
 import { Tooltip } from '../tooltip/tooltip';
 
-export type StatusBadgeVariant = 'dot' | 'ping' | 'pill' | 'live-pill' | 'header' | 'map';
+export type StatusBadgeVariant = 'dot' | 'ping' | 'pill' | 'header' | 'map';
 
 @Component({
   selector: 'shared-status-badge',

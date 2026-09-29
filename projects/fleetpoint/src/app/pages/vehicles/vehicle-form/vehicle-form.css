@@ -32,6 +32,7 @@
 .monitor-check { @apply absolute right-3 top-3 hidden size-5 place-items-center rounded-full border border-brand-600 bg-brand-600 text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(124,58,237,0.3)]; }
 .violations label:has(input:checked) { @apply border-brand-600 bg-brand-600 text-white shadow-md; }
 .violations label:has(input:checked) .monitor-check { @apply grid; }
+.violations label:has(input:checked) .selected-white-icon { filter: brightness(0) invert(1); }
 .device-fields { @apply grid gap-4 md:grid-cols-2; }
 .documents-heading { @apply mb-4 mt-7; }.documents-heading h3,.driver-step h3 { @apply text-base font-bold text-ink dark:text-white; }.documents-heading p,.driver-step header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
 .document-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5; }
@@ -67,6 +68,7 @@
 .form-dropdown [dropdown-trigger] span { @apply min-w-0 truncate; }
 .form-dropdown [dropdown-trigger] svg { @apply size-4 shrink-0 text-muted; fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8; }
 .shared-form-field:has(.field-error) .form-dropdown [dropdown-trigger] { @apply border-danger; }
-:host ::ng-deep app-modal .modal-panel { overflow: visible; }
-:host ::ng-deep app-modal .modal-content { max-height: 82vh; overflow-y: auto; overflow-x: visible; }
+:host ::ng-deep .step-content .height-frame { overflow: visible; }
+:host ::ng-deep app-modal .modal-panel,
+:host ::ng-deep app-modal .modal-content { overflow: visible; }
 @media (min-width: 1024px) { .vehicle-form-actions { width: calc(100% - 14rem); } }
