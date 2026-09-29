@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { DataTable, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { UserRoles } from './user-roles/user-roles';
 
@@ -9,6 +9,16 @@ import { UserRoles } from './user-roles/user-roles';
 })
 export class UsersPage {
   protected readonly tableActions: TableAction[] = ['view', 'edit', 'delete'];
+  protected readonly pageSize = 5;
+  protected readonly page = signal(1);
+
+  protected onPageChange(page: number): void {
+    this.page.set(page);
+  }
+
+  protected onSearch(): void {
+    this.page.set(1);
+  }
   protected readonly columns: TableColumn[] = [
     { key: 'name', label: 'Name', type: 'user', secondaryKey: 'role', widthClass: 'min-w-44' },
     { key: 'email', label: 'Email', type: 'email', widthClass: 'min-w-48' },
