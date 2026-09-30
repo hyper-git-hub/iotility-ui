@@ -1,5 +1,17 @@
-:host { display: block; min-width: 0; }
+/* One source of truth for the expand/collapse height animation: the frame
+   tweens to whatever height its projected content reports (ResizeObserver), so
+   both grow and shrink animate — including content that appears/disappears via
+   structural @if inside the component. Override the custom properties on :host
+   to retune the motion per usage. */
+:host {
+  --smooth-height-duration: 420ms;
+  --smooth-height-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  display: block;
+  min-width: 0;
+}
 .height-frame { overflow: hidden; }
-.height-frame.ready { transition: height 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+.height-frame.ready {
+  transition: height var(--smooth-height-duration) var(--smooth-height-easing);
+}
 .height-content { min-width: 0; }
 @media (prefers-reduced-motion: reduce) { .height-frame.ready { transition: none; } }

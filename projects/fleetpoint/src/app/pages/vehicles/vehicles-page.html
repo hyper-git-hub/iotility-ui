@@ -99,26 +99,28 @@
     </section>
   }
 
-  @if (initialLoading()) {
-    <section class="attention-card attention-card-skeleton" aria-hidden="true">
-      <p><ui-skeleton width="12rem" height="0.625rem" radius="0.25rem" /></p>
-      <div>
-        <ui-skeleton class="attention-chip-skeleton" width="27rem" height="2.125rem" radius="0.75rem" />
-      </div>
-    </section>
-  } @else if (attentionItems().length) {
-    <section class="attention-card">
-      <p>Compliance &amp; attention required</p>
-      <div>
-        @for (item of attentionItems(); track item.label) {
-          <div [class]="'attention-chip ' + item.tone">
-            <span class="color-icon size-3.5" [style.--icon]="'url(' + item.icon + ')'" aria-hidden="true"></span>
-            <span><strong>{{ item.vehicles.length }} {{ item.label }}</strong> — {{ item.registrations }}</span>
-          </div>
-        }
-      </div>
-    </section>
-  }
+  <shared-smooth-height>
+    @if (initialLoading()) {
+      <section class="attention-card attention-card-skeleton" aria-hidden="true">
+        <p><ui-skeleton width="12rem" height="0.625rem" radius="0.25rem" /></p>
+        <div>
+          <ui-skeleton class="attention-chip-skeleton" width="27rem" height="2.125rem" radius="0.75rem" />
+        </div>
+      </section>
+    } @else if (attentionItems().length) {
+      <section class="attention-card">
+        <p>Compliance &amp; attention required</p>
+        <div>
+          @for (item of attentionItems(); track item.label) {
+            <div [class]="'attention-chip ' + item.tone">
+              <span class="color-icon size-3.5" [style.--icon]="'url(' + item.icon + ')'" aria-hidden="true"></span>
+              <span><strong>{{ item.vehicles.length }} {{ item.label }}</strong> — {{ item.registrations }}</span>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  </shared-smooth-height>
 
   <section class="vehicle-filters" aria-label="Vehicle filters">
     <div class="filter-search-row">
@@ -147,8 +149,9 @@
         Filters
       </button>
     </div>
-    @if (filtersOpen()) {
-      <div class="filter-options-row">
+    <shared-smooth-height>
+      @if (filtersOpen()) {
+        <div class="filter-options-row">
         <shared-dropdown
           class="filter-dropdown"
           [options]="fleetDropdownOptions()"
@@ -208,7 +211,8 @@
         >
         <button type="button" class="clear-filters" (click)="resetFilters()">Clear all filters</button>
       </div>
-    }
+      }
+    </shared-smooth-height>
   </section>
 
   @if (error() && !initialLoading()) {

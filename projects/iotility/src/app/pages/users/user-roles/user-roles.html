@@ -24,8 +24,8 @@
       </article>
     }
   </div>
-  <div class="smooth-height" [class.smooth-height-expanded]="showAll()">
-    <div class="smooth-height-content">
+  <shared-smooth-height>
+    @if (showAll()) {
       <div class="roles-grid roles-grid-extra">
         @for (role of roles.slice(5); track role.name) {
           <article class="role-card">
@@ -42,6 +42,6 @@
           </article>
         }
       </div>
-    </div>
-  </div>
+    }
+  </shared-smooth-height>
 </section>

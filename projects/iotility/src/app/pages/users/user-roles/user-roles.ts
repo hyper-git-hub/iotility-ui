@@ -1,7 +1,9 @@
 import { Component, signal } from '@angular/core';
+import { SmoothHeight } from '@iotility/shared-ui';
 
 @Component({
   selector: 'app-user-roles',
+  imports: [SmoothHeight],
   templateUrl: './user-roles.html',
   styleUrl: './user-roles.css',
 })
