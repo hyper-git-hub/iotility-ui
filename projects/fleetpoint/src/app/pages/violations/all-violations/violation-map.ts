@@ -7,6 +7,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
@@ -72,15 +73,19 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
         // Close popup for non-selected markers
         if (markerId !== id && marker.getPopup()?.isOpen()) marker.togglePopup();
       });
-      // Fly to and open popup for selected violation
+      // Fly to and open popup for selected violation. Only plotted records can
+      // be framed — the rest have no coordinates on the map to fly to.
       const record = this.violations().find((item) => item.id === id);
-      if (record && this.instance) {
+      if (this.instance && this.isPlottable(record)) {
+        // Selecting a row must always pull the violation closer: the previous
+        // fixed zoom 10 sat below the zoom the user had already reached, so a
+        // click from the list visibly zoomed back out.
         this.instance.flyTo({
-          center: [record.longitude, record.latitude],
-          zoom: 10,
+          center: [Number(record.longitude), Number(record.latitude)],
+          zoom: Math.max(this.instance.getZoom(), 12),
           duration: 700,
         });
-        const marker = this.markers.get(id!);
+        const marker = this.markers.get(record.id);
         if (marker && !marker.getPopup()?.isOpen()) marker.togglePopup();
       }
     });
@@ -134,13 +139,7 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
     if (!this.instance) return;
     this.markers.forEach((item) => item.remove());
     this.markers.clear();
-    const validRecords = records.filter(
-      (r) =>
-        Number.isFinite(Number(r.latitude)) &&
-        Number.isFinite(Number(r.longitude)) &&
-        Math.abs(Number(r.latitude)) <= 90 &&
-        Math.abs(Number(r.longitude)) <= 180,
-    );
+    const validRecords = records.filter((record) => this.isPlottable(record));
     validRecords.forEach((record) => {
       const color = this.categoryColor(record.category);
       const latitude = Number(record.latitude);
@@ -155,7 +154,13 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
         .addTo(this.instance!);
       this.markers.set(record.id, item);
     });
-    if (validRecords.length)
+    // Frame the whole set only while nothing is selected: appending the next
+    // page of the list (scroll-to-bottom) re-runs this, and re-framing every
+    // violation would drag the camera back out off the one just selected.
+    // Read untracked: re-rendering is a data concern, and tracking the
+    // selection here would rebuild every marker on each row click.
+    const selection = untracked(() => this.selectedId());
+    if (validRecords.length && !validRecords.some((record) => record.id === selection))
       fitLatLngs(
         this.instance,
         validRecords.map((r) => [Number(r.latitude), Number(r.longitude)]),
@@ -163,6 +168,20 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
         8,
       );
     requestAnimationFrame(() => this.instance?.resize());
+  }
+
+  // A record is only mappable when its coordinates are real numbers within
+  // latitude/longitude bounds — the API returns '' or null for missing fixes.
+  private isPlottable(record: ViolationDisplay | null | undefined): record is ViolationDisplay {
+    const latitude = Number(record?.latitude);
+    const longitude = Number(record?.longitude);
+    return (
+      !!record &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      Math.abs(latitude) <= 90 &&
+      Math.abs(longitude) <= 180
+    );
   }
 
   private violationPopupHtml(record: ViolationDisplay): string {

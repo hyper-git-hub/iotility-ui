@@ -34,6 +34,16 @@
     0 2px 9px #18223866;
 }
 
+/* MapLibre gives popups and markers no z-index, while the deck overlay canvas
+   lives inside .maplibregl-ctrl-top-right, which MapLibre paints at z-index 2.
+   Without this lift the 3D vehicle model draws over the event cards and dots,
+   and even hides the card text. 3 keeps the HTML UI above the overlay while
+   staying under the map-controls overlay (z-[500]) and the page HUD. */
+:host ::ng-deep .maplibregl-popup,
+:host ::ng-deep .maplibregl-marker {
+  z-index: 3;
+}
+
 /* Custom props must live on .maplibregl-popup (tip's ancestor), not only on
    the content box — the tip is a sibling of the content, so a var declared
    only on content leaves the tip's border-color invalid (renders black). */
