@@ -78,7 +78,6 @@
           >
             <i aria-hidden="true"></i>
             <span>All</span>
-            <strong>{{ total() }}</strong>
           </button>
           @for (fleet of fleetChips(); track fleet.id; let index = $index) {
             <button
@@ -91,7 +90,6 @@
             >
               <i aria-hidden="true"></i>
               <span>{{ fleet.name }}</span>
-              <strong>{{ fleet.count }}</strong>
             </button>
           }
         </div>
@@ -122,98 +120,16 @@
     }
   </shared-smooth-height>
 
-  <section class="vehicle-filters" aria-label="Vehicle filters">
-    <div class="filter-search-row">
-      <label class="row-search">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-        <input
-          type="search"
-          placeholder="Search plate, make, driver, location..."
-          aria-label="Search vehicles"
-          [value]="search()"
-          (input)="tableSearchChanged($any($event.target).value)"
-        />
-      </label>
-      <button
-        type="button"
-        class="filters-toggle"
-        [attr.aria-expanded]="filtersOpen()"
-        (click)="filtersOpen.set(!filtersOpen())"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
-        </svg>
-        Filters
-      </button>
-    </div>
-    <shared-smooth-height>
-      @if (filtersOpen()) {
-        <div class="filter-options-row">
-        <shared-dropdown
-          class="filter-dropdown"
-          [options]="fleetDropdownOptions()"
-          mode="single"
-          align="left"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [searchable]="true"
-          searchPlaceholder="Search fleets"
-          [selected]="[fleetId()]"
-          (optionSelected)="selectFleet($event)"
-          ><button dropdown-trigger type="button" aria-label="Filter by fleet" [disabled]="optionsLoading() || loading()">
-            @if (optionsLoading()) {
-              <ui-skeleton width="5rem" height="0.75rem" radius="0.3rem" />
-            } @else {
-              <span>{{ selectedLabel(fleetDropdownOptions(), fleetId(), 'All fleets') }}</span>
-            }
-          </button></shared-dropdown
-        >
-        <shared-dropdown
-          class="filter-dropdown"
-          [options]="categoryDropdownOptions()"
-          mode="single"
-          align="left"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [searchable]="true"
-          searchPlaceholder="Search categories"
-          [selected]="[categoryId()]"
-          (optionSelected)="selectCategory($event)"
-          ><button dropdown-trigger type="button" aria-label="Filter by category" [disabled]="optionsLoading() || loading()">
-            @if (optionsLoading()) {
-              <ui-skeleton width="6rem" height="0.75rem" radius="0.3rem" />
-            } @else {
-              <span>{{ selectedLabel(categoryDropdownOptions(), categoryId(), 'All categories') }}</span>
-            }
-          </button></shared-dropdown
-        >
-        <shared-dropdown
-          class="filter-dropdown"
-          [options]="vehicleTypeDropdownOptions()"
-          mode="single"
-          align="left"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [searchable]="true"
-          searchPlaceholder="Search vehicle types"
-          [selected]="[vehicleTypeId()]"
-          (optionSelected)="selectVehicleType($event)"
-          ><button dropdown-trigger type="button" aria-label="Filter by vehicle type" [disabled]="optionsLoading() || loading()">
-            @if (optionsLoading()) {
-              <ui-skeleton width="7rem" height="0.75rem" radius="0.3rem" />
-            } @else {
-              <span>{{ selectedLabel(vehicleTypeDropdownOptions(), vehicleTypeId(), 'All vehicle types') }}</span>
-            }
-          </button></shared-dropdown
-        >
-        <button type="button" class="clear-filters" (click)="resetFilters()">Clear all filters</button>
-      </div>
-      }
-    </shared-smooth-height>
-  </section>
+  <shared-filter-bar
+    ariaLabel="Vehicle filters"
+    searchPlaceholder="Search plate, make, driver, location..."
+    searchAriaLabel="Search vehicles"
+    [search]="search()"
+    [dropdowns]="filterDropdowns()"
+    (searchChange)="tableSearchChanged($event)"
+    (filterChange)="selectFilter($event)"
+    (cleared)="resetFilters()"
+  />
 
   @if (error() && !initialLoading()) {
     <div class="vehicles-error">

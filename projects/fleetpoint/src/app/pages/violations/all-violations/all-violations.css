@@ -6,7 +6,7 @@
 :host ::ng-deep .source-icon svg{display:block;width:.625rem;height:.625rem;max-width:none}
 .type-icon-badge{width:1.5rem;height:1.5rem;border-radius:.5rem}
 :host ::ng-deep .type-icon-badge svg{display:block;width:.75rem;height:.75rem;max-width:none}
-.violations-list{border:0;background:transparent;overflow:visible}
+.violations-list{border:0;background:transparent;border-radius:1rem;overflow:hidden}
 .violations-list shared-data-table{display:block;width:100%;height:520px}
 :host ::ng-deep .violations-list .table-card{height:520px;border-radius:1rem}
 :host ::ng-deep .violations-list .table-height{min-height:0;flex:1}
@@ -162,6 +162,6 @@
 .violations-workspace.refreshing .map-panel,.violations-workspace.refreshing .violations-list{@apply pointer-events-none opacity-[0.65];transition:opacity 160ms ease}
 .violations-list shared-data-table,
 :host ::ng-deep .violations-list .table-card{height:490px}
-/* Keep the loading bar's rounded caps inside the table panel's border radius */
-:host ::ng-deep .violations-list .progress-bar{top:0;left:12px;right:12px}
+/* The list panel clips the loader (see .violations-list above), so the bar's ends
+   follow the table card's top corner radius exactly like the vehicles table. */
 @media(max-width:1279px){.map-panel,.violations-list,.violations-list shared-data-table,:host ::ng-deep .violations-list .table-card{height:30rem}}

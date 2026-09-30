@@ -10,6 +10,10 @@
   min-width: 0;
 }
 .height-frame { overflow: hidden; }
+/* Opt-in (`unclip`): stop clipping once a size settles so overlays rendered by
+   the content (e.g. absolutely positioned dropdown panels) stay visible. Still
+   clipped while tweening so the reveal/collapse stays clean. */
+.height-frame.unclip:not(.animating) { overflow: visible; }
 .height-frame.ready {
   transition: height var(--smooth-height-duration) var(--smooth-height-easing);
 }

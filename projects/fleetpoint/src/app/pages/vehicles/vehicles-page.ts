@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { BlockingLoader, DataTable, DataTableSkeleton, Dropdown, DropdownOption, Skeleton, SmoothHeight, StatusBadge, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
+import { BlockingLoader, DataTable, DataTableSkeleton, DropdownOption, FilterBar, FilterChangeEvent, FilterDropdown, Skeleton, SmoothHeight, StatusBadge, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import { ProgressBar } from '../../shared/progress-bar/progress-bar';
 import {
@@ -16,7 +16,7 @@ import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dial
 
 @Component({
   selector: 'app-vehicles-page',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, Dropdown, ProgressBar, Skeleton, SmoothHeight, StatusBadge, VehicleForm],
+  imports: [BlockingLoader, DataTable, DataTableSkeleton, FilterBar, ProgressBar, Skeleton, SmoothHeight, StatusBadge, VehicleForm],
   templateUrl: './vehicles-page.html',
   styleUrl: './vehicles-page.css',
 })
@@ -40,7 +40,6 @@ export class VehiclesPage implements OnInit {
       .map((fleet) => ({
         id: String(fleet.id),
         name: fleet.name || `Fleet ${fleet.id}`,
-        count: fleet.total_vehicles ?? fleet.assigned_vehicles?.length ?? 0,
       })),
   );
   protected readonly fleetOptions = signal<InventoryOption[]>([]);
@@ -56,7 +55,44 @@ export class VehiclesPage implements OnInit {
   protected readonly fleetId = signal('');
   protected readonly categoryId = signal('');
   protected readonly vehicleTypeId = signal('');
-  protected readonly filtersOpen = signal(true);
+  protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
+    {
+      id: 'fleet',
+      ariaLabel: 'Filter by fleet',
+      options: this.fleetDropdownOptions(),
+      selected: this.fleetId(),
+      placeholder: 'All fleets',
+      searchable: true,
+      searchPlaceholder: 'Search fleets',
+      skeletonWidth: '5rem',
+      loading: this.optionsLoading(),
+      disabled: this.optionsLoading() || this.loading(),
+    },
+    {
+      id: 'category',
+      ariaLabel: 'Filter by category',
+      options: this.categoryDropdownOptions(),
+      selected: this.categoryId(),
+      placeholder: 'All categories',
+      searchable: true,
+      searchPlaceholder: 'Search categories',
+      skeletonWidth: '6rem',
+      loading: this.optionsLoading(),
+      disabled: this.optionsLoading() || this.loading(),
+    },
+    {
+      id: 'vehicleType',
+      ariaLabel: 'Filter by vehicle type',
+      options: this.vehicleTypeDropdownOptions(),
+      selected: this.vehicleTypeId(),
+      placeholder: 'All vehicle types',
+      searchable: true,
+      searchPlaceholder: 'Search vehicle types',
+      skeletonWidth: '7rem',
+      loading: this.optionsLoading(),
+      disabled: this.optionsLoading() || this.loading(),
+    },
+  ]);
   protected readonly offset = signal(0);
   protected readonly limit = 10;
   protected readonly tableActions: TableAction[] = ['map', 'history', 'edit', 'delete'];
@@ -216,7 +252,11 @@ export class VehiclesPage implements OnInit {
     this.offset.set(0);
     this.loadVehicles();
   }
-  protected selectedLabel(options: DropdownOption[], id: string, fallback: string): string { return options.find((option) => option.id === id)?.label || fallback; }
+  protected selectFilter(event: FilterChangeEvent): void {
+    if (event.id === 'fleet') this.selectFleet(event.option);
+    else if (event.id === 'category') this.selectCategory(event.option);
+    else if (event.id === 'vehicleType') this.selectVehicleType(event.option);
+  }
   protected goToPage(page: number): void { this.offset.set((page - 1) * this.limit); this.loadVehicles(); }
 
   protected openCreateForm(): void { this.selectedVehicle.set(null); this.formOpen.set(true); }

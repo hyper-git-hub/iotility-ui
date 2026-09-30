@@ -1,0 +1,73 @@
+<section class="filter-bar" [attr.aria-label]="ariaLabel()">
+  <div class="filter-search-row" [class.no-search]="!showSearch()">
+    @if (showSearch()) {
+      <label class="row-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input
+          type="search"
+          [placeholder]="searchPlaceholder()"
+          [attr.aria-label]="searchAriaLabel()"
+          [value]="search()"
+          [disabled]="searchDisabled()"
+          (input)="toggleSearch($event)"
+        />
+      </label>
+    }
+    @if (collapsible()) {
+      <button
+        type="button"
+        class="filters-toggle"
+        [attr.aria-expanded]="expanded()"
+        (click)="expanded.set(!expanded())"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+        </svg>
+        {{ toggleLabel() }}
+      </button>
+    }
+  </div>
+  <shared-smooth-height [unclip]="true">
+    @if (expandedState()) {
+      <div class="filter-options-row">
+        @for (dropdown of dropdowns(); track dropdown.id) {
+          <shared-dropdown
+            class="filter-dropdown"
+            [style.width]="dropdown.width || null"
+            [options]="dropdown.options"
+            [mode]="dropdown.mode || 'single'"
+            [align]="dropdown.align || 'left'"
+            [placement]="dropdown.placement || 'bottom'"
+            [density]="dropdown.density || 'default'"
+            [showOptionIcons]="dropdown.showOptionIcons ?? false"
+            [matchTriggerWidth]="dropdown.matchTriggerWidth ?? true"
+            [searchable]="dropdown.searchable ?? false"
+            [searchPlaceholder]="dropdown.searchPlaceholder || 'Search options'"
+            [selected]="selectedIds(dropdown)"
+            (optionSelected)="select(dropdown, $event)"
+            (selectionChange)="selectionChanged(dropdown, $event)"
+            ><button
+              dropdown-trigger
+              type="button"
+              [attr.aria-label]="dropdown.ariaLabel || dropdown.id"
+              [disabled]="!!dropdown.disabled || !!dropdown.loading"
+            >
+              @if (dropdown.loading) {
+                <ui-skeleton [width]="dropdown.skeletonWidth || '6rem'" height="0.75rem" radius="0.3rem" />
+              } @else {
+                <span>{{ label(dropdown) }}</span>
+              }
+            </button></shared-dropdown
+          >
+        }
+        <ng-content />
+        @if (showClear()) {
+          <button type="button" class="clear-filters" (click)="clear()">{{ clearLabel() }}</button>
+        }
+      </div>
+    }
+  </shared-smooth-height>
+</section>

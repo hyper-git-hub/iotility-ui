@@ -1,3 +1,10 @@
-<div class="height-frame" [class.ready]="ready()" [style.height.px]="height()">
+<div
+  #frame
+  class="height-frame"
+  [class.ready]="ready()"
+  [class.unclip]="unclip()"
+  [class.animating]="animating()"
+  [style.height.px]="height()"
+>
   <div class="height-content" #content><ng-content /></div>
 </div>
