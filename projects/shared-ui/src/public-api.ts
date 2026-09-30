@@ -1,3 +1,4 @@
+export * from './lib/input/input';
 export * from './lib/dropdown/dropdown';
 export * from './lib/filter-bar/filter-bar';
 export * from './lib/data-table/data-table';

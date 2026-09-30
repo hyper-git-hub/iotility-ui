@@ -1,0 +1,254 @@
+@reference "../../styles/theme.css";
+@reference "tailwindcss";
+
+:host {
+  @apply block min-w-0;
+}
+
+/* --- field wrapper: mirrors .shared-form-field (label above, control, error) --- */
+.input-field {
+  @apply flex min-w-0 flex-col;
+}
+.input-label {
+  @apply mb-1.5 block text-xs font-medium text-ink dark:text-brand-300;
+}
+.input-label b {
+  @apply text-danger;
+}
+.input-hint {
+  @apply mt-1 block text-[10px] text-muted dark:text-brand-300;
+}
+.input-error {
+  @apply mt-1 block text-[10px] text-danger;
+}
+
+/* --- control box: mirrors .shared-form-control / .row-search --- */
+.input-control {
+  @apply flex min-w-0 items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 transition focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/15 dark:border-dark-line dark:bg-dark-canvas;
+}
+.input-control.range {
+  @apply p-0;
+}
+.input-control.bare {
+  @apply border-0 bg-transparent p-0 focus-within:ring-0 dark:bg-transparent;
+}
+:host-context(.dark) .input-control {
+  background: var(--color-dark-canvas);
+  border-color: var(--color-dark-line);
+}
+.input-element {
+  @apply min-w-0 w-full flex-1 border-0 bg-transparent text-sm text-ink outline-none placeholder:text-muted/70 dark:text-white dark:placeholder:text-brand-300;
+}
+textarea.input-element {
+  @apply resize-y;
+}
+.input-element:disabled {
+  @apply cursor-not-allowed opacity-60;
+}
+.input-element[readonly] {
+  @apply cursor-not-allowed text-muted dark:text-brand-300;
+}
+.input-icon {
+  @apply size-4 shrink-0 text-muted;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+img.input-icon {
+  stroke: none;
+}
+
+/* Theme the native date/time picker indicator to match the rest of the theme. */
+.input-element[type='date'],
+.input-element[type='datetime-local'],
+.input-element[type='time'],
+.input-element[type='month'] {
+  color-scheme: light;
+}
+:host-context(.dark) .input-element[type='date'],
+:host-context(.dark) .input-element[type='datetime-local'],
+:host-context(.dark) .input-element[type='time'],
+:host-context(.dark) .input-element[type='month'] {
+  color-scheme: dark;
+}
+.input-element[type='date']::-webkit-calendar-picker-indicator,
+.input-element[type='datetime-local']::-webkit-calendar-picker-indicator,
+.input-element[type='time']::-webkit-calendar-picker-indicator,
+.input-element[type='month']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  filter: invert(38%) sepia(11%) saturate(1120%) hue-rotate(196deg);
+  transition: opacity 150ms ease;
+}
+.input-element[type='date']::-webkit-calendar-picker-indicator:hover,
+.input-element[type='datetime-local']::-webkit-calendar-picker-indicator:hover,
+.input-element[type='time']::-webkit-calendar-picker-indicator:hover,
+.input-element[type='month']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+:host-context(.dark) .input-element[type='date']::-webkit-calendar-picker-indicator,
+:host-context(.dark) .input-element[type='datetime-local']::-webkit-calendar-picker-indicator,
+:host-context(.dark) .input-element[type='time']::-webkit-calendar-picker-indicator,
+:host-context(.dark) .input-element[type='month']::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.6);
+}
+
+/* Number spinners are hidden by default in this UI; opt back in explicitly. */
+:host-context(.dark) .input-element:-webkit-autofill,
+:host-context(.dark) .input-element:-webkit-autofill:hover,
+:host-context(.dark) .input-element:-webkit-autofill:focus {
+  -webkit-text-fill-color: white;
+  box-shadow: 0 0 0 1000px var(--color-dark-canvas) inset;
+  caret-color: white;
+}
+.input-element:-webkit-autofill,
+.input-element:-webkit-autofill:hover,
+.input-element:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  box-shadow: 0 0 0 1000px white inset;
+  caret-color: var(--color-ink);
+}
+
+/* --- optional numeric unit (e.g. "km/h", "m", "min") --- */
+.input-unit {
+  @apply shrink-0 text-xs text-muted dark:text-brand-300;
+}
+
+/* --- password show/hide + search clear button --- */
+.input-action {
+  @apply flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[10px] font-semibold text-brand-600 transition hover:text-brand-700 dark:text-brand-300 dark:hover:text-white;
+}
+.input-action svg {
+  @apply size-3.5;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+/* --- checkbox: mirrors .fleet-checkbox --- */
+.input-check {
+  @apply flex min-w-0 items-center gap-2;
+}
+.input-check input {
+  @apply relative size-5 shrink-0 cursor-pointer appearance-none rounded-full border border-line bg-white transition dark:border-dark-line dark:bg-dark-canvas;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.input-check input:checked {
+  @apply border-brand-600 bg-brand-600 shadow-[0_2px_6px_rgba(124,58,237,0.3)];
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m5.5 10.2 2.8 2.8 6.2-6.2' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+.input-check input:focus-visible {
+  @apply outline-2 outline-offset-2 outline-brand-400;
+}
+.check-hint {
+  @apply text-[10px] text-muted dark:text-brand-300;
+}
+
+/* --- range: mirrors the .speed-range / .scrub sliders --- */
+.input-element[type='range'] {
+  @apply h-5 cursor-pointer appearance-none bg-transparent;
+}
+.input-element[type='range']::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-brand-600) 0 var(--input-range-progress, 0%),
+    var(--color-line) var(--input-range-progress, 0%) 100%
+  );
+}
+.input-element[type='range']::-webkit-slider-thumb {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: -0.2rem;
+  appearance: none;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: var(--color-brand-600);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.input-element[type='range']:hover::-webkit-slider-thumb,
+.input-element[type='range']:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-600) 16%, transparent);
+}
+.input-element[type='range']::-moz-range-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-line);
+}
+.input-element[type='range']::-moz-range-progress {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-brand-600);
+}
+.input-element[type='range']::-moz-range-thumb {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: var(--color-brand-600);
+}
+
+/* --- file: "Choose picture" button (mirrors .image-button) --- */
+.file-button {
+  @apply inline-flex w-fit cursor-pointer items-center rounded-lg border border-line px-3 py-1.5 text-[10px] font-semibold text-brand-600 transition hover:border-brand-500 dark:border-dark-line dark:text-brand-300;
+}
+.file-button input {
+  @apply hidden;
+}
+.file-button-text {
+  @apply truncate;
+}
+
+/* --- file: dashed dropzone (mirrors .upload-drop) --- */
+.file-drop {
+  @apply relative grid cursor-pointer place-items-center rounded-xl border-2 border-dashed border-line bg-white p-5 text-center transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas;
+}
+.file-drop input {
+  @apply absolute inset-0 cursor-pointer opacity-0;
+}
+.file-drop svg,
+.file-drop img {
+  @apply size-6 text-brand-600;
+}
+.file-drop svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.file-drop strong {
+  @apply mt-2 text-xs text-ink dark:text-white;
+}
+.file-drop small {
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
+
+:host.is-disabled {
+  @apply opacity-60;
+}
+:host.is-invalid .input-control {
+  @apply border-danger focus-within:border-danger focus-within:ring-danger/15;
+}
+:host.is-invalid .input-check input {
+  @apply border-danger;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input-control,
+  .input-check input,
+  .input-element[type='range']::-webkit-slider-thumb {
+    transition: none;
+  }
+}

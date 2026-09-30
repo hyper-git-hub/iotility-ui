@@ -1,0 +1,113 @@
+<label class="input-field">
+  @if (label()) {
+    <span class="input-label">{{ label() }} @if (required()) {<b aria-hidden="true">*</b>}</span>
+  }
+
+  @if (isCheckable()) {
+    <span class="input-check">
+      <input
+        #field
+        type="checkbox"
+        [checked]="checked()"
+        [disabled]="effectiveDisabled()"
+        [attr.aria-label]="ariaLabel() || label()"
+        [attr.aria-invalid]="hasError()"
+        (change)="onChange($event)"
+        (blur)="onBlur()"
+      />
+      @if (hint()) {<small class="check-hint">{{ hint() }}</small>}
+    </span>
+  } @else if (isFile() && appearance() !== 'file-drop') {
+    <span class="file-button">
+      <input
+        #field
+        type="file"
+        [accept]="accept()"
+        [multiple]="multiple()"
+        [disabled]="effectiveDisabled()"
+        [attr.aria-label]="ariaLabel() || label() || 'Choose file'"
+        (change)="pickFile($event)"
+      />
+      <span class="file-button-text">{{ fileName() || 'Choose file' }}</span>
+    </span>
+    @if (hint()) {<small class="input-hint">{{ hint() }}</small>}
+  } @else if (appearance() === 'file-drop') {
+    <span class="file-drop">
+      <input
+        #field
+        type="file"
+        [accept]="accept()"
+        [multiple]="multiple()"
+        [disabled]="effectiveDisabled()"
+        [attr.aria-label]="ariaLabel() || label() || 'Upload file'"
+        (change)="pickFile($event)"
+      />
+      @if (icon()) {
+        <img [src]="icon()" alt="" aria-hidden="true" />
+      } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      }
+      <strong>{{ fileName() || placeholder() || 'Click to upload or drag and drop' }}</strong>
+      @if (hint()) {<small>{{ hint() }}</small>}
+    </span>
+  } @else {
+    <span class="input-control" [class.bare]="appearance() === 'bare'" [class.range]="isRange()" [style.--input-range-progress]="rangeProgress()">
+      @if (hasLeadingIcon()) {
+        @if (appearance() === 'search') {
+          <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        } @else {
+          <img class="input-icon" [src]="icon()" alt="" aria-hidden="true" />
+        }
+      }
+      @if (multiline()) {
+        <textarea
+          #field
+          class="input-element"
+          [rows]="rows()"
+          [placeholder]="placeholder()"
+          [disabled]="effectiveDisabled()"
+          [readOnly]="readOnly()"
+          [attr.aria-label]="ariaLabel() || label()"
+          [attr.aria-invalid]="hasError()"
+          [value]="textValue()"
+          (input)="onInput($event)"
+          (blur)="onBlur()"
+        ></textarea>
+      } @else {
+        <input
+          #field
+          class="input-element"
+          [type]="resolvedType()"
+          [placeholder]="placeholder()"
+          [disabled]="effectiveDisabled()"
+          [readOnly]="readOnly() || isFile()"
+          [min]="min()"
+          [max]="max()"
+          [step]="step()"
+          [attr.accept]="accept()"
+          [attr.inputmode]="resolvedType() === 'number' ? 'decimal' : null"
+          [attr.aria-label]="ariaLabel() || label()"
+          [attr.aria-invalid]="hasError()"
+          [attr.aria-required]="required()"
+          [value]="textValue()"
+          (input)="onInput($event)"
+          (change)="onChange($event)"
+          (blur)="onBlur()"
+        />
+      }
+      @if (unit()) {<span class="input-unit">{{ unit() }}</span>}
+      @if (hasTrailing()) {
+        <button type="button" class="input-action" [attr.aria-label]="type() === 'password' ? 'Toggle password visibility' : 'Clear search'" (click)="type() === 'password' ? togglePassword() : clear()">
+          @if (type() === 'password') {
+            {{ revealed() ? 'Hide' : 'Show' }}
+          } @else {
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          }
+        </button>
+      }
+    </span>
+    @if (hint()) {<small class="input-hint">{{ hint() }}</small>}
+  }
+
+  @if (error()) {<small class="input-error">{{ error() }}</small>}
+</label>
