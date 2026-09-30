@@ -5,82 +5,26 @@
     <button type="button" class="add-driver" (click)="openCreateForm()"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add Driver</button>
   </div>
 
-  <section class="driver-filters">
-    <div class="filter-controls">
-      <label>
-        <span>Group</span>
-        <shared-dropdown
-          class="filter-dropdown"
-          [options]="groupOptions()"
-          mode="single"
-          align="left"
-          [searchable]="true"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [selected]="[groupId()]"
-          (optionSelected)="selectGroup($event)"
-        >
-          <button dropdown-trigger type="button" [disabled]="initialLoading()">
-            @if (initialLoading()) {
-              <ui-skeleton width="5rem" height="0.75rem" radius="0.3rem" />
-            } @else {
-              <span>{{ optionLabel(groupOptions(), groupId(), 'All groups') }}</span>
-            }
-          </button>
-        </shared-dropdown>
-      </label>
-      <label>
-        <span>Driver</span>
-        <shared-dropdown
-          class="filter-dropdown"
-          [options]="driverOptions()"
-          mode="single"
-          align="left"
-          [searchable]="true"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [selected]="[driverId()]"
-          (optionSelected)="selectDriver($event)"
-        >
-          <button dropdown-trigger type="button" [disabled]="initialLoading()">
-            @if (initialLoading()) {
-              <ui-skeleton width="5.5rem" height="0.75rem" radius="0.3rem" />
-            } @else {
-              <span>{{ optionLabel(driverOptions(), driverId(), 'All drivers') }}</span>
-            }
-          </button>
-        </shared-dropdown>
-      </label>
-      <label>
-        <span>Type</span>
-        <shared-dropdown
-          class="filter-dropdown"
-          [options]="typeOptions"
-          mode="single"
-          align="left"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [selected]="[cardType()]"
-          (optionSelected)="selectType($event)"
-        >
-          <button dropdown-trigger type="button">
-            <span>{{ optionLabel(typeOptions, cardType(), 'All types') }}</span>
-          </button>
-        </shared-dropdown>
-      </label>
-      <button type="button" class="reset-filter" [disabled]="loading()" (click)="resetFilters()">
-        Reset
+  <shared-filter-bar
+    ariaLabel="Driver filters"
+    searchPlaceholder="Search drivers or employee ID..."
+    searchAriaLabel="Search drivers"
+    [search]="search()"
+    [dropdowns]="filterDropdowns()"
+    clearLabel="Reset"
+    (searchChange)="tableSearchChanged($event)"
+    (filterChange)="selectFilter($event)"
+    (cleared)="resetFilters()"
+  >
+    <div filter-trailing class="driver-view-switch" aria-label="Driver view">
+      <button type="button" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
+        <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/list.svg')" aria-hidden="true"></span>List
       </button>
-      <div class="driver-view-switch" aria-label="Driver view">
-        <button type="button" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
-          <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/list.svg')" aria-hidden="true"></span>List
-        </button>
-        <button type="button" [class.active]="viewMode() === 'grid'" (click)="setViewMode('grid')">
-          <span class="driver-grid-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Grid
-        </button>
-      </div>
+      <button type="button" [class.active]="viewMode() === 'grid'" (click)="setViewMode('grid')">
+        <span class="driver-grid-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Grid
+      </button>
     </div>
-  </section>
+  </shared-filter-bar>
 
   @if (initialLoading()) {
     <ui-data-table-skeleton
@@ -91,6 +35,8 @@
       [rowHeight]="58"
       [minTableWidth]="1250"
       [showToolbar]="true"
+      [showSearch]="false"
+      [showExport]="true"
       [twoLineFirstColumn]="true"
     />
   } @else if (viewMode() === 'list') {
@@ -107,6 +53,7 @@
         [clientSideSearch]="false"
         [showPrimaryAction]="false"
         [showExport]="true"
+        [showSearch]="false"
         [minTableWidth]="1250"
         [pagination]="groupId() || driverId() ? null : { totalItems: total(), pageSize: limit, page: offset() / limit + 1, loading: loading() }"
         searchPlaceholder="Search drivers or employee ID"

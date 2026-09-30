@@ -24,14 +24,22 @@
   </section>
 
   @if (activeView() === 'list') {
-  <section class="job-filters view-enter smooth-reveal" aria-label="Job filters">
-    <div class="filter-controls">
-      <label><span>Job Type</span><shared-dropdown class="filter-dropdown" [options]="jobTypeOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[jobTypeFilter()]" (optionSelected)="selectJobType($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(jobTypeOptions, jobTypeFilter(), 'All job types') }}</span></button></shared-dropdown></label>
-      <label><span>Driver</span><shared-dropdown class="filter-dropdown" [options]="driverOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search drivers" [selected]="[driverFilter()]" (optionSelected)="selectDriver($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(driverOptions, driverFilter(), 'All drivers') }}</span></button></shared-dropdown></label>
-      <label><span>Status</span><shared-dropdown class="filter-dropdown" [options]="filterOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[filter()]" (optionSelected)="selectFilter($event)"><button dropdown-trigger type="button"><span>{{ optionLabel(filterOptions, filter(), 'All statuses') }}</span></button></shared-dropdown></label>
-      <div class="filter-actions"><button type="button" class="reset-filter" (click)="resetFilters()">Reset</button><button type="button" class="apply-filter" (click)="applyFilters()">Apply filters</button></div>
+  <shared-filter-bar
+    class="job-filters view-enter smooth-reveal"
+    ariaLabel="Job filters"
+    searchPlaceholder="Search job name, driver, vehicle, location..."
+    searchAriaLabel="Search jobs"
+    [search]="search()"
+    [dropdowns]="filterDropdowns()"
+    (searchChange)="tableSearchChanged($event)"
+    (filterChange)="selectFilter($event)"
+    (cleared)="resetFilters()"
+  >
+    <div filter-trailing class="filter-actions">
+      <button type="button" class="reset-filter" (click)="resetFilters()">Reset</button>
+      <button type="button" class="apply-filter" (click)="applyFilters()">Apply filters</button>
     </div>
-  </section>
+  </shared-filter-bar>
   <section class="jobs-workspace view-enter smooth-reveal" [class.details-open]="selectedJob()">
     <div class="jobs-list-column">
     <shared-data-table
@@ -44,6 +52,7 @@
       [clientSidePagination]="true"
       [pagination]="{ totalItems: filteredTotal(), pageSize: limit, page: offset() / limit + 1 }"
       [showExport]="false"
+      [showSearch]="false"
       [showPrimaryAction]="false"
       [minTableWidth]="1450"
       [rowsClickable]="true"

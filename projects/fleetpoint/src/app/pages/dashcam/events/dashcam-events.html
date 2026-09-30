@@ -1,43 +1,13 @@
-<section class="event-filters">
-  <label class="event-search"
-    ><img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" /><input
-      type="search"
-      placeholder="Search event, driver, vehicle or location..."
-      [value]="search()"
-      (input)="search.set($any($event.target).value)"
-  /></label>
-  <shared-dropdown
-    [options]="categoryOptions"
-    mode="single"
-    [showOptionIcons]="false"
-    [selected]="[category()]"
-    (optionSelected)="filter('category', $event)"
-    ><button dropdown-trigger type="button">
-      {{ label(categoryOptions, category()) }}
-    </button></shared-dropdown
-  >
-  <shared-dropdown
-    [options]="severityOptions"
-    mode="single"
-    [showOptionIcons]="false"
-    [selected]="[severity()]"
-    (optionSelected)="filter('severity', $event)"
-    ><button dropdown-trigger type="button">
-      {{ label(severityOptions, severity()) }}
-    </button></shared-dropdown
-  >
-  <shared-dropdown
-    [options]="reviewOptions"
-    mode="single"
-    align="right"
-    [showOptionIcons]="false"
-    [selected]="[review()]"
-    (optionSelected)="filter('review', $event)"
-    ><button dropdown-trigger type="button">
-      {{ label(reviewOptions, review()) }}
-    </button></shared-dropdown
-  >
-</section>
+<shared-filter-bar
+  ariaLabel="DashCam event filters"
+  searchPlaceholder="Search event, driver, vehicle or location..."
+  searchAriaLabel="Search DashCam events"
+  [search]="search()"
+  [dropdowns]="filterDropdowns()"
+  (searchChange)="search.set($event)"
+  (filterChange)="filter($event)"
+  (cleared)="clearFilters()"
+/>
 <section class="events-workspace" [class.details-open]="selected()">
   <div class="events-table">
     <shared-data-table

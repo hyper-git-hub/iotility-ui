@@ -1,28 +1,14 @@
 <section class="zone-list-page">
-  <div class="zone-list-controls">
-    <label class="zone-search">
-      <img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" />
-      <input
-        type="search"
-        placeholder="Search zones..."
-        [value]="search()"
-        (input)="search.set($any($event.target).value)"
-      />
-    </label>
-    <shared-dropdown
-      class="zone-filter"
-      [options]="options"
-      mode="single"
-      align="right"
-      [showOptionIcons]="false"
-      [selected]="[type()]"
-      (optionSelected)="choose($event)"
-    >
-      <button dropdown-trigger type="button">
-        <span>{{ selectedTypeLabel() }}</span>
-      </button>
-    </shared-dropdown>
-  </div>
+  <shared-filter-bar
+    ariaLabel="Geozone filters"
+    searchPlaceholder="Search zones..."
+    searchAriaLabel="Search geozones"
+    [search]="search()"
+    [dropdowns]="filterDropdowns()"
+    (searchChange)="search.set($event)"
+    (filterChange)="choose($event)"
+    (cleared)="clearFilters()"
+  />
 
   <div class="zone-cards">
     @for (zone of filtered(); track zone.id) {

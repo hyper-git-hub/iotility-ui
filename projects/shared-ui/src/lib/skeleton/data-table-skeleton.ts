@@ -15,6 +15,10 @@ export class DataTableSkeleton {
   readonly columnLabels = input<string[]>([]);
   readonly rows = input(10);
   readonly showToolbar = input(true);
+  /** Mirrors DataTable.showSearch: hide the toolbar search when a filter bar owns it. */
+  readonly showSearch = input(true);
+  /** Mirrors DataTable.showExport so the placeholder row matches the real toolbar. */
+  readonly showExport = input(false);
   readonly showHeaderFilter = input(false);
   readonly leadingVisual = input(false);
   readonly twoLineFirstColumn = input(false);

@@ -144,6 +144,7 @@
       [columnLabels]="columnLabels"
       [rows]="6"
       [showToolbar]="true"
+      [showSearch]="false"
       [leadingVisual]="true"
     />
   } @else {
@@ -160,10 +161,10 @@
         [rowsClickable]="false"
         [showToolbar]="true"
         [showExport]="false"
+        [showSearch]="false"
         [showPrimaryAction]="false"
         [clientSideSearch]="false"
         [pagination]="{ totalItems: total(), pageSize: limit, page: offset() / limit + 1, loading: loading() }"
-        searchPlaceholder="Search vehicles"
         (pageChange)="goToPage($event)"
         (searchChange)="tableSearchChanged($event)"
         (rowAction)="handleRowAction($event)"

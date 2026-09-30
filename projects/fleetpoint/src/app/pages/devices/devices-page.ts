@@ -4,8 +4,10 @@ import {
   DataTable,
   DataTableCellTemplate,
   DataTableSkeleton,
-  Dropdown,
   DropdownOption,
+  FilterBar,
+  FilterChangeEvent,
+  FilterDropdown,
   SmoothHeight,
   TableAction,
   TableColumn,
@@ -32,7 +34,7 @@ import { DeviceForm, DeviceFormValue } from './device-form/device-form';
     DataTableCellTemplate,
     DataTableSkeleton,
     DeviceForm,
-    Dropdown,
+    FilterBar,
     SmoothHeight,
     StatCard,
     Tooltip,
@@ -68,6 +70,24 @@ export class DevicesPage implements OnInit {
       id: String(value),
       label: String(value),
     })),
+  ]);
+  protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
+    {
+      id: 'status',
+      ariaLabel: 'Filter by status',
+      options: this.statusOptions(),
+      selected: this.status(),
+      placeholder: 'All Statuses',
+      width: '11rem',
+    },
+    {
+      id: 'category',
+      ariaLabel: 'Filter by device type',
+      options: this.categoryOptions(),
+      selected: this.category(),
+      placeholder: 'All Device Types',
+      width: '13rem',
+    },
   ]);
   protected readonly columns: TableColumn[] = [
     { key: 'device', label: 'Device' },
@@ -181,12 +201,9 @@ export class DevicesPage implements OnInit {
     }));
   });
   protected readonly unassigned = computed(() => this.filtered().filter((d) => !d.vehicle));
-  protected select(kind: 'status' | 'category', option: DropdownOption): void {
-    if (kind === 'status') this.status.set(option.id);
-    else this.category.set(option.id);
-  }
-  protected label(options: DropdownOption[], id: string): string {
-    return options.find((o) => o.id === id)?.label ?? '';
+  protected select(event: FilterChangeEvent): void {
+    if (event.id === 'status') this.status.set(event.option.id);
+    else if (event.id === 'category') this.category.set(event.option.id);
   }
   protected toggle(vehicle: string): void {
     this.expanded.update((items) =>

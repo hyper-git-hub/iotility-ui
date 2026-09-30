@@ -34,46 +34,25 @@
         <path d="M5 9a10 10 0 0 1 14 0M8 12a6 6 0 0 1 8 0m-5 4a2 2 0 0 1 2 0M3 3l18 18" /></svg
     ></app-stat-card>
   </section>
-  <section class="device-filters">
-    <label class="search"
-      ><img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true" /><input
-        type="search"
-        placeholder="Search IMEI, serial, model or vehicle..."
-        [value]="search()"
-        (input)="search.set($any($event.target).value)" /></label
-    ><shared-dropdown
-      class="filter-dropdown"
-      [options]="statusOptions()"
-      mode="single"
-      align="left"
-      [showOptionIcons]="false"
-      [matchTriggerWidth]="true"
-      [selected]="[status()]"
-      (optionSelected)="select('status', $event)"
-      ><button dropdown-trigger type="button">
-        {{ label(statusOptions(), status()) }}
-      </button></shared-dropdown
-    ><shared-dropdown
-      class="filter-dropdown type-filter"
-      [options]="categoryOptions()"
-      mode="single"
-      align="left"
-      [showOptionIcons]="false"
-      [matchTriggerWidth]="true"
-      [selected]="[category()]"
-      (optionSelected)="select('category', $event)"
-      ><button dropdown-trigger type="button">
-        {{ label(categoryOptions(), category()) }}
-      </button></shared-dropdown
-    ><button type="button" class="clear" (click)="clear()">Clear</button>
-    <div class="view-toggle">
+  <shared-filter-bar
+    ariaLabel="Device filters"
+    searchPlaceholder="Search IMEI, serial, model or vehicle..."
+    searchAriaLabel="Search devices"
+    [search]="search()"
+    [dropdowns]="filterDropdowns()"
+    clearLabel="Clear"
+    (searchChange)="search.set($event)"
+    (filterChange)="select($event)"
+    (cleared)="clear()"
+  >
+    <div filter-trailing class="view-toggle">
       <button type="button" [class.active]="view() === 'list'" (click)="view.set('list')">
         <img src="assets/fleetpoint/icons/list.svg" alt="" aria-hidden="true" />List</button
       ><button type="button" [class.active]="view() === 'bundle'" (click)="view.set('bundle')">
         <img src="assets/fleetpoint/icons/link.svg" alt="" aria-hidden="true" />Bundle
       </button>
     </div>
-  </section>
+  </shared-filter-bar>
   @if (view() === 'list') {
     @if (hardwareError()) {
       <p class="device-table-error">{{ hardwareError() }}</p>

@@ -98,6 +98,8 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly headerFilterTitle = input('Filter');
   readonly headerFilterLabel = input('Filters');
   readonly showToolbar = input(true);
+  /** Hides just the toolbar search box, for pages that own search in a filter bar. */
+  readonly showSearch = input(true);
   readonly showHeader = input(true);
   readonly showExport = input(true);
   readonly showPrimaryAction = input(true);

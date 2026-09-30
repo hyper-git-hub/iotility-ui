@@ -1,18 +1,6 @@
 @reference "../../../../styles.css";
-.event-filters {
-  @apply relative z-20 mb-4 grid grid-cols-[minmax(15rem,1fr)_repeat(3,12rem)] gap-3 rounded-2xl border border-line bg-white p-3 dark:border-dark-line dark:bg-dark-surface;
-}
-.event-search {
-  @apply flex h-10 items-center gap-2 rounded-xl border border-line bg-canvas px-3 dark:border-dark-line dark:bg-dark-canvas;
-}
-.event-search img {
-  @apply size-4 shrink-0;
-}
-.event-search input {
-  @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-muted dark:text-white;
-}
-.event-filters shared-dropdown button {
-  @apply w-full;
+:host > shared-filter-bar {
+  @apply relative z-20 mb-4 block;
 }
 .events-workspace {
   @apply flex min-w-0 items-start gap-0;
@@ -166,9 +154,6 @@
   @apply bg-danger text-white;
 }
 @media (max-width: 1050px) {
-  .event-filters {
-    @apply grid-cols-2;
-  }
   .details-open .event-details,
   .event-details > header,
   .event-details > .detail-body,
@@ -177,9 +162,6 @@
   }
 }
 @media (max-width: 620px) {
-  .event-filters {
-    @apply grid-cols-1;
-  }
   .detail-grid,
   .footage > div {
     @apply grid-cols-1;

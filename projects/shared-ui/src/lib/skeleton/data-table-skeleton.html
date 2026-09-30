@@ -6,15 +6,23 @@
     </div>
     @if (showToolbar()) {
       <div class="toolbar-skeleton">
-        <div class="search-field-skeleton">
-          <ui-skeleton variant="circle" width="1rem" height="1rem" />
-          <ui-skeleton width="7rem" height="0.75rem" radius="0.3rem" />
-        </div>
+        @if (showSearch()) {
+          <div class="search-field-skeleton">
+            <ui-skeleton variant="circle" width="1rem" height="1rem" />
+            <ui-skeleton width="7rem" height="0.75rem" radius="0.3rem" />
+          </div>
+        }
         @if (showHeaderFilter()) {
           <div class="filter-field-skeleton">
             <ui-skeleton width="2.5rem" height="0.5625rem" radius="0.25rem" />
             <span><ui-skeleton width="4.5rem" height="0.75rem" radius="0.3rem" /></span>
           </div>
+        }
+        @if (showExport()) {
+          <span class="export-skeleton">
+            <ui-skeleton variant="circle" width="1rem" height="1rem" />
+            <ui-skeleton width="2.75rem" height="0.75rem" radius="0.3rem" />
+          </span>
         }
       </div>
     }

@@ -76,27 +76,15 @@
   </nav>
   <router-outlet />
 
-  <section class="filter-bar">
-    <label
-      ><span class="search-icon">⌕</span
-      ><input
-        type="search"
-        placeholder="Search document name, vehicle, driver or issuer..."
-        [value]="search()"
-        (input)="search.set($any($event.target).value)"
-    /></label>
-    <shared-dropdown
-      class="status-dropdown"
-      [options]="categoryOptions"
-      mode="single"
-      align="right"
-      [showOptionIcons]="false"
-      [matchTriggerWidth]="true"
-      [selected]="[status()]"
-      (optionSelected)="chooseStatus($event)"
-      ><button dropdown-trigger type="button">{{ selectedStatusLabel() }}</button></shared-dropdown
-    >
-  </section>
+  <shared-filter-bar
+    ariaLabel="Document filters"
+    searchPlaceholder="Search document name, vehicle, driver or issuer..."
+    searchAriaLabel="Search documents"
+    [search]="search()"
+    [dropdowns]="filterDropdowns()"
+    (searchChange)="search.set($event)"
+    (filterChange)="chooseStatus($event)"
+  />
 
   <section class="documents-workspace" [class.with-detail]="selected()">
     <div class="documents-list">

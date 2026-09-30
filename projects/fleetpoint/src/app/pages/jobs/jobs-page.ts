@@ -1,6 +1,15 @@
 import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { DataTable, Dropdown, DropdownOption, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
+import {
+  DataTable,
+  DropdownOption,
+  FilterBar,
+  FilterChangeEvent,
+  FilterDropdown,
+  TableAction,
+  TableColumn,
+  TableRow,
+} from '@iotility/shared-ui';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { JobForm, JobFormValue } from './job-form/job-form';
 
@@ -23,7 +32,7 @@ interface JobRecord {
 
 @Component({
   selector: 'app-jobs-page',
-  imports: [DataTable, Dropdown, JobForm, StatCard],
+  imports: [DataTable, FilterBar, JobForm, StatCard],
   templateUrl: './jobs-page.html',
   styleUrl: './jobs-page.css',
 })
@@ -139,11 +148,40 @@ export class JobsPage {
   protected readonly rows = computed(() => this.filteredRows());
   protected readonly filteredTotal = computed(() => this.filteredRows().length);
 
-  protected selectFilter(option: DropdownOption): void { this.filter.set(option.id); }
-  protected selectJobType(option: DropdownOption): void { this.jobTypeFilter.set(option.id); }
-  protected selectDriver(option: DropdownOption): void { this.driverFilter.set(option.id); }
-  protected optionLabel(options: DropdownOption[], selected: string, fallback: string): string {
-    return options.find((option) => option.id === selected)?.label ?? fallback;
+  // Selections stay "pending" until Apply filters commits them, matching the
+  // previous Reset/Apply behaviour.
+  protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
+    {
+      id: 'jobType',
+      label: 'Job Type',
+      ariaLabel: 'Filter by job type',
+      options: this.jobTypeOptions,
+      selected: this.jobTypeFilter(),
+      placeholder: 'All job types',
+    },
+    {
+      id: 'driver',
+      label: 'Driver',
+      ariaLabel: 'Filter by driver',
+      options: this.driverOptions,
+      selected: this.driverFilter(),
+      placeholder: 'All drivers',
+      searchable: true,
+      searchPlaceholder: 'Search drivers',
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      ariaLabel: 'Filter by status',
+      options: this.filterOptions,
+      selected: this.filter(),
+      placeholder: 'All statuses',
+    },
+  ]);
+  protected selectFilter(event: FilterChangeEvent): void {
+    if (event.id === 'status') this.filter.set(event.option.id);
+    else if (event.id === 'jobType') this.jobTypeFilter.set(event.option.id);
+    else if (event.id === 'driver') this.driverFilter.set(event.option.id);
   }
   protected resetFilters(): void {
     this.filter.set('all');

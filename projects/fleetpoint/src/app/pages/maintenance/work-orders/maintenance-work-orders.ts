@@ -1,8 +1,8 @@
 import { Component, computed, signal } from '@angular/core';
-import { DataTable, Dropdown, DropdownOption, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
+import { DataTable, DropdownOption, FilterBar, FilterChangeEvent, FilterDropdown, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { MaintenanceWorkOrder, STATUS_OPTIONS, WORK_ORDERS } from '../maintenance.data';
 
-@Component({selector:'app-maintenance-work-orders',imports:[DataTable,Dropdown],templateUrl:'./maintenance-work-orders.html',styleUrl:'./maintenance-work-orders.css'})
+@Component({selector:'app-maintenance-work-orders',imports:[DataTable,FilterBar],templateUrl:'./maintenance-work-orders.html',styleUrl:'./maintenance-work-orders.css'})
 export class MaintenanceWorkOrders {
   protected readonly total=WORK_ORDERS.length;
   protected readonly selectedOrder=signal<MaintenanceWorkOrder|null>(null);
@@ -13,8 +13,16 @@ export class MaintenanceWorkOrders {
   protected readonly columns:TableColumn[]=[{key:'id',label:'Work Order'},{key:'vehicle',label:'Vehicle',clickable:true},{key:'service',label:'Service'},{key:'type',label:'Type'},{key:'priority',label:'Priority',type:'priority'},{key:'status',label:'Status',type:'status'},{key:'workshop',label:'Workshop'},{key:'target',label:'Target Date'},{key:'cost',label:'Est. Cost'},{key:'actions',label:'Actions',type:'actions'}];
   protected readonly filtered=computed(()=>{const query=this.search().toLowerCase();return WORK_ORDERS.filter(item=>(this.status()==='all'||item.status===this.status())&&(this.priority()==='all'||item.priority===this.priority())&&(this.type()==='all'||item.type===this.type())&&(!query||`${item.id} ${item.vehicle} ${item.service} ${item.workshop}`.toLowerCase().includes(query)));});
   protected readonly rows=computed<TableRow[]>(()=>this.filtered().map(item=>({...item,actions:''})));
-  protected selectFilter(control:'status'|'priority'|'type',option:DropdownOption):void{({status:this.status,priority:this.priority,type:this.type})[control].set(option.id);}
-  protected filterLabel(options:DropdownOption[],value:string,fallback:string):string{return options.find(option=>option.id===value)?.label??fallback;}
+  protected readonly filterDropdowns=computed<FilterDropdown[]>(()=>[
+    {id:'status',label:'Status',ariaLabel:'Filter by status',options:this.statusOptions,selected:this.status(),placeholder:'All Status'},
+    {id:'priority',label:'Priority',ariaLabel:'Filter by priority',options:this.priorityOptions,selected:this.priority(),placeholder:'All Priority'},
+    {id:'type',label:'Type',ariaLabel:'Filter by type',options:this.typeOptions,selected:this.type(),placeholder:'All types'},
+  ]);
+  protected selectFilter(event:FilterChangeEvent):void{
+    const control=event.id as 'status'|'priority'|'type';
+    ({status:this.status,priority:this.priority,type:this.type})[control].set(event.option.id);
+  }
+  protected clearFilters():void{this.status.set('all');this.priority.set('all');this.type.set('all');}
   protected selectOrder(row:TableRow):void{this.selectedOrder.set(WORK_ORDERS.find(order=>order.id===String(row['id']))??null);}
   protected closeDetails():void{this.selectedOrder.set(null);}
   protected workflowStep(order:MaintenanceWorkOrder):number{return ({Raised:1,Assigned:2,Accepted:3,Diagnosing:4,'Awaiting Parts':5,'In Progress':6,'Quality Check':7,Completed:8}[order.status]??1);}

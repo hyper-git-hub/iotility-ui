@@ -54,6 +54,18 @@
 .filter-options-row .filter-dropdown {
   @apply w-44;
 }
+/* Dropdowns may carry a visible caption above the trigger (jobs, work orders,
+   driver list). The wrapper is a plain block so unlabelled dropdowns keep the
+   exact same box as before. */
+.filter-control {
+  @apply block min-w-0;
+}
+.filter-control.labelled {
+  @apply grid content-start gap-1;
+}
+.filter-control-label {
+  @apply text-[10px] font-medium text-muted dark:text-brand-300;
+}
 .filter-dropdown {
   @apply block;
 }

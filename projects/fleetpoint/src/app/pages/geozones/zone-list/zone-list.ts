@@ -1,10 +1,17 @@
 import { Component, computed, signal } from '@angular/core';
-import { Dropdown, DropdownOption, SmoothHeight, Tooltip } from '@iotility/shared-ui';
+import {
+  DropdownOption,
+  FilterBar,
+  FilterChangeEvent,
+  FilterDropdown,
+  SmoothHeight,
+  Tooltip,
+} from '@iotility/shared-ui';
 import { GEOZONES, GeozoneRecord, GeozoneType, ZONE_TYPE_LABELS } from '../geozones.data';
 
 @Component({
   selector: 'app-zone-list',
-  imports: [Dropdown, SmoothHeight, Tooltip],
+  imports: [FilterBar, SmoothHeight, Tooltip],
   templateUrl: './zone-list.html',
   styleUrl: './zone-list.css',
 })
@@ -16,9 +23,16 @@ export class ZoneList {
     { id: 'all', label: 'All Types' },
     ...Object.entries(ZONE_TYPE_LABELS).map(([id, label]) => ({ id, label })),
   ];
-  protected readonly selectedTypeLabel = computed(
-    () => this.options.find((option) => option.id === this.type())?.label ?? 'All Types',
-  );
+  protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
+    {
+      id: 'type',
+      ariaLabel: 'Filter by geozone type',
+      options: this.options,
+      selected: this.type(),
+      placeholder: 'All Types',
+      align: 'left',
+    },
+  ]);
   protected readonly filtered = computed(() => {
     const query = this.search().trim().toLowerCase();
     return GEOZONES.filter(
@@ -29,8 +43,14 @@ export class ZoneList {
     );
   });
 
-  protected choose(option: DropdownOption): void {
-    this.type.set(option.id as 'all' | GeozoneType);
+  protected choose(event: FilterChangeEvent): void {
+    this.type.set(event.option.id as 'all' | GeozoneType);
+    this.expandedId.set(null);
+  }
+
+  protected clearFilters(): void {
+    this.search.set('');
+    this.type.set('all');
     this.expandedId.set(null);
   }
 

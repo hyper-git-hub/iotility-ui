@@ -16,6 +16,9 @@
 .search-field-skeleton {
   @apply flex h-9 w-64 shrink-0 items-center gap-2 rounded-lg border border-line px-3 dark:border-dark-line;
 }
+.export-skeleton {
+  @apply flex h-9 shrink-0 items-center gap-2 rounded-lg border border-line px-3 dark:border-dark-line;
+}
 .filter-field-skeleton {
   @apply grid w-32 shrink-0 gap-1;
 }

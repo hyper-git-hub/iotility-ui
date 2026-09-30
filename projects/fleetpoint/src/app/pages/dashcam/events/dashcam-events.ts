@@ -2,8 +2,9 @@ import { Component, computed, signal } from '@angular/core';
 import {
   DataTable,
   DataTableCellTemplate,
-  Dropdown,
-  DropdownOption,
+  FilterBar,
+  FilterChangeEvent,
+  FilterDropdown,
   TableColumn,
   TableRow,
   Tooltip,
@@ -23,7 +24,7 @@ import { DashcamVideoTile } from '../video-tile/video-tile';
 
 @Component({
   selector: 'app-dashcam-events',
-  imports: [DashcamVideoTile, DataTable, DataTableCellTemplate, Dropdown, Tooltip],
+  imports: [DashcamVideoTile, DataTable, DataTableCellTemplate, FilterBar, Tooltip],
   templateUrl: './dashcam-events.html',
   styleUrl: './dashcam-events.css',
 })
@@ -82,14 +83,44 @@ export class DashcamEvents {
       scoreLabel: event.scoreImpact ? String(event.scoreImpact) : '—',
     })),
   );
-  protected filter(kind: 'category' | 'severity' | 'review', option: DropdownOption): void {
-    if (kind === 'category') this.category.set(option.id as 'all' | DashcamCategory);
-    if (kind === 'severity') this.severity.set(option.id as 'all' | DashcamSeverity);
-    if (kind === 'review') this.review.set(option.id as 'all' | DashcamReview);
+  protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
+    {
+      id: 'category',
+      ariaLabel: 'Filter by category',
+      options: this.categoryOptions,
+      selected: this.category(),
+      placeholder: 'All categories',
+      width: '12rem',
+    },
+    {
+      id: 'severity',
+      ariaLabel: 'Filter by severity',
+      options: this.severityOptions,
+      selected: this.severity(),
+      placeholder: 'All severities',
+      width: '12rem',
+    },
+    {
+      id: 'review',
+      ariaLabel: 'Filter by review status',
+      options: this.reviewOptions,
+      selected: this.review(),
+      placeholder: 'All reviews',
+      width: '12rem',
+    },
+  ]);
+  protected filter(event: FilterChangeEvent): void {
+    if (event.id === 'category') this.category.set(event.option.id as 'all' | DashcamCategory);
+    if (event.id === 'severity') this.severity.set(event.option.id as 'all' | DashcamSeverity);
+    if (event.id === 'review') this.review.set(event.option.id as 'all' | DashcamReview);
     this.selected.set(null);
   }
-  protected label(options: DropdownOption[], value: string): string {
-    return options.find((option) => option.id === value)?.label ?? '';
+  protected clearFilters(): void {
+    this.search.set('');
+    this.category.set('all');
+    this.severity.set('all');
+    this.review.set('all');
+    this.selected.set(null);
   }
   protected selectRow(row: TableRow): void {
     this.selected.set(DASHCAM_EVENTS.find((event) => event.id === row['id']) ?? null);

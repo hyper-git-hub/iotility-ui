@@ -16,10 +16,12 @@
     }
     @if (showToolbar()) {
       <div class="toolbar">
-        <label>
-          <img class="search-icon" src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true"/>
-          <input type="search" [placeholder]="searchPlaceholder()" (input)="updateSearch($event)" />
-        </label>
+        @if (showSearch()) {
+          <label>
+            <img class="search-icon" src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true"/>
+            <input type="search" [placeholder]="searchPlaceholder()" (input)="updateSearch($event)" />
+          </label>
+        }
         @if (headerFilterOptions().length) {
           <div class="header-filter-field">
             <span>{{ headerFilterTitle() }}</span>

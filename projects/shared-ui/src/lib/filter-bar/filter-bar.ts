@@ -10,6 +10,8 @@ export interface FilterDropdown {
   options: DropdownOption[];
   /** Selected option id (or ids for `multi`). */
   selected?: string | string[];
+  /** Optional visible caption rendered above the trigger. */
+  label?: string;
   /** Label shown when the selected id is not present in `options`. */
   placeholder?: string;
   ariaLabel?: string;
@@ -44,8 +46,9 @@ export interface FilterSelectionEvent {
  * Generic filter bar: search box + collapse toggle + any number/kind of
  * config-driven dropdowns. Arbitrary extra filters can be projected as
  * content, e.g. `<shared-filter-bar ...><shared-date-range /></shared-filter-bar>`.
- * Always-visible extra controls (segmented ranges, chips, ...) can be projected
- * into the search row with a `filter-leading` attribute.
+ * Always-visible extra controls (segmented ranges, chips, view switches, ...)
+ * slot into the search row via `filter-leading` / `filter-trailing`, and the
+ * collapsible row renders each dropdown's optional `label` above its trigger.
  */
 @Component({
   selector: 'shared-filter-bar',
@@ -73,7 +76,8 @@ export class FilterBar {
   readonly filterSelectionChange = output<FilterSelectionEvent>();
   readonly cleared = output<void>();
 
-  protected readonly expanded = signal(true);
+  /** The filter row starts collapsed, so the bar reads as a single search row. */
+  protected readonly expanded = signal(false);
   protected readonly expandedState = computed(() => !this.collapsible() || this.expanded());
 
   protected selectedIds(dropdown: FilterDropdown): string[] {

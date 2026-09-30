@@ -7,6 +7,9 @@ import {
   DateTimePicker,
   Dropdown,
   DropdownOption,
+  FilterBar,
+  FilterChangeEvent,
+  FilterDropdown,
   TableAction,
   TableColumn,
   TableRow,
@@ -24,6 +27,7 @@ import { UploadDocumentForm, UploadDocumentValue } from './upload-document-form/
     DataTableCellTemplate,
     DateTimePicker,
     Dropdown,
+    FilterBar,
     Modal,
     ReactiveFormsModule,
     RouterLink,
@@ -122,8 +126,18 @@ export class DocumentsPage {
   protected setStatus(value: 'all' | DocumentStatus): void {
     this.status.set(value);
   }
-  protected chooseStatus(option: DropdownOption): void {
-    this.setStatus(option.id as 'all' | DocumentStatus);
+  protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
+    {
+      id: 'status',
+      ariaLabel: 'Filter by status',
+      options: this.categoryOptions,
+      selected: this.status(),
+      placeholder: 'All statuses',
+      width: '11.875rem',
+    },
+  ]);
+  protected chooseStatus(event: FilterChangeEvent): void {
+    this.setStatus(event.option.id as 'all' | DocumentStatus);
   }
   protected selectRow(row: TableRow): void {
     this.selected.set(this.selected()?.id === row['id'] ? null : this.find(row));
@@ -190,9 +204,6 @@ export class DocumentsPage {
   }
   protected categoryLabel(value: DocumentCategory): string {
     return { vehicle: 'Vehicle', driver: 'Driver', company: 'Company' }[value];
-  }
-  protected selectedStatusLabel(): string {
-    return this.categoryOptions.find((item) => item.id === this.status())?.label ?? 'All statuses';
   }
   protected deadline(item: FleetDocument): string {
     if (item.daysUntilExpiry === null) return '';

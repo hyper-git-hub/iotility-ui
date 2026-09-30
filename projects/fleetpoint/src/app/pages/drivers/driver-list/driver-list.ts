@@ -4,9 +4,10 @@ import {
   BlockingLoader,
   DataTable,
   DataTableSkeleton,
-  Dropdown,
   DropdownOption,
-  Skeleton,
+  FilterBar,
+  FilterChangeEvent,
+  FilterDropdown,
   TableAction,
   TableColumn,
   TableRow,
@@ -31,8 +32,7 @@ import { DriverForm } from '../driver-form/driver-form';
     DataTable,
     DataTableSkeleton,
     DriverForm,
-    Dropdown,
-    Skeleton,
+    FilterBar,
   ],
   templateUrl: './driver-list.html',
   styleUrl: '../drivers-page.css',
@@ -171,17 +171,51 @@ export class DriverList implements OnInit, OnDestroy {
       this.loadDrivers();
     }, 400);
   }
-  protected selectGroup(o: DropdownOption): void {
-    this.groupId.set(o.id);
-    this.driverId.set('');
-  }
-  protected selectDriver(o: DropdownOption): void {
-    this.driverId.set(o.id);
-  }
-  protected selectType(o: DropdownOption): void {
-    this.cardType.set(o.id);
-    this.offset.set(0);
-    this.loadDrivers();
+  protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
+    {
+      id: 'group',
+      label: 'Group',
+      ariaLabel: 'Filter by group',
+      options: this.groupOptions(),
+      selected: this.groupId(),
+      placeholder: 'All groups',
+      searchable: true,
+      loading: this.initialLoading(),
+      skeletonWidth: '5rem',
+      disabled: this.initialLoading(),
+    },
+    {
+      id: 'driver',
+      label: 'Driver',
+      ariaLabel: 'Filter by driver',
+      options: this.driverOptions(),
+      selected: this.driverId(),
+      placeholder: 'All drivers',
+      searchable: true,
+      loading: this.initialLoading(),
+      skeletonWidth: '5.5rem',
+      disabled: this.initialLoading(),
+    },
+    {
+      id: 'type',
+      label: 'Type',
+      ariaLabel: 'Filter by driver type',
+      options: this.typeOptions,
+      selected: this.cardType(),
+      placeholder: 'All types',
+    },
+  ]);
+  protected selectFilter(event: FilterChangeEvent): void {
+    if (event.id === 'group') {
+      this.groupId.set(event.option.id);
+      this.driverId.set('');
+    } else if (event.id === 'driver') {
+      this.driverId.set(event.option.id);
+    } else if (event.id === 'type') {
+      this.cardType.set(event.option.id);
+      this.offset.set(0);
+      this.loadDrivers();
+    }
   }
   ngOnDestroy(): void {
     clearTimeout(this.searchTimer);
@@ -199,9 +233,6 @@ export class DriverList implements OnInit, OnDestroy {
     this.cardType.set('');
     this.offset.set(0);
     this.loadDrivers();
-  }
-  protected optionLabel(options: DropdownOption[], id: string, fallback: string): string {
-    return options.find((o) => o.id === id)?.label || fallback;
   }
   protected openCreateForm(): void {
     this.selectedDriver.set(null);

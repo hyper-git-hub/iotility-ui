@@ -1,11 +1,16 @@
-<section class="work-order-filters">
-  <label><span>Status</span><shared-dropdown class="filter-dropdown" [options]="statusOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[status()]" (optionSelected)="selectFilter('status',$event)"><button dropdown-trigger type="button">{{filterLabel(statusOptions,status(),'All Status')}}</button></shared-dropdown></label>
-  <label><span>Priority</span><shared-dropdown class="filter-dropdown" [options]="priorityOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[priority()]" (optionSelected)="selectFilter('priority',$event)"><button dropdown-trigger type="button">{{filterLabel(priorityOptions,priority(),'All Priority')}}</button></shared-dropdown></label>
-  <label><span>Type</span><shared-dropdown class="filter-dropdown" [options]="typeOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[type()]" (optionSelected)="selectFilter('type',$event)"><button dropdown-trigger type="button">{{filterLabel(typeOptions,type(),'All types')}}</button></shared-dropdown></label>
-</section>
+<shared-filter-bar
+  ariaLabel="Work order filters"
+  searchPlaceholder="Search work order, vehicle, service or workshop..."
+  searchAriaLabel="Search work orders"
+  [search]="search()"
+  [dropdowns]="filterDropdowns()"
+  (searchChange)="search.set($event)"
+  (filterChange)="selectFilter($event)"
+  (cleared)="clearFilters()"
+/>
 <section class="work-orders-workspace" [class.details-open]="selectedOrder()">
   <div class="work-orders-list">
-    <shared-data-table class="work-orders-table" title="Work Orders" [subtitle]="'Showing '+filtered().length+' of '+total+' work orders · Click a row to view details'" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showExport]="false" [showPrimaryAction]="false" [minTableWidth]="selectedOrder()?1180:1380" searchPlaceholder="Search work order, vehicle, service or workshop..." [rowsClickable]="true" [selectedRowId]="selectedOrder()?.id??null" (searchChange)="search.set($event)" (rowSelected)="selectOrder($event)"/>
+    <shared-data-table class="work-orders-table" title="Work Orders" [subtitle]="'Showing '+filtered().length+' of '+total+' work orders · Click a row to view details'" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showExport]="false" [showSearch]="false" [showPrimaryAction]="false" [minTableWidth]="selectedOrder()?1180:1380"  [rowsClickable]="true" [selectedRowId]="selectedOrder()?.id??null"  (rowSelected)="selectOrder($event)"/>
   </div>
   <aside class="work-order-details" [attr.aria-hidden]="!selectedOrder()">
     @if(selectedOrder();as order){
