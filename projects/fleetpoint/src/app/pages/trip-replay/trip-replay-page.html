@@ -110,6 +110,7 @@
           [playbackActive]="playing()"
           [playbackSpeed]="speed()"
           [playbackStepDuration]="stepDurationMs()"
+          (playbackEngaged)="engagePlaybackClock()"
           [selectedEventId]="selectedEventId()"
           (ready)="mapLoaded.set(true)"
           (eventSelected)="jumpToEventFromMap($event)"

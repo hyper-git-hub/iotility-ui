@@ -117,6 +117,10 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
   private playbackFrame?: number;
+  // Cleared by play() so the clock waits for the map's playbackEngaged notice;
+  // set again once that notice (or the fallback frame) has started the clock.
+  private playbackArmed = false;
+  private pendingEngageFrame?: number;
   // Playback timeline origin. Kept as instance state (not closure locals) so a
   // mid-playback seek can re-anchor the wall clock and offset table to the new
   // position, letting the marker keep advancing from where the user dropped it
@@ -354,14 +358,45 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.playbackStartIndex = this.positionIndex();
     this.playbackOffsets = this.buildTimeOffsets(positions, this.playbackStartIndex);
     this.playbackTotalMs = this.playbackOffsets[this.playbackOffsets.length - 1] || 1;
+    // The map drives the marker toward the sample *after* the reported index,
+    // so the step duration handed over here is the segment that starts at the
+    // current index — that is what starts the vehicle and the timeline bar on
+    // the same frame.
+    this.stepDurationMs.set(this.stepSegmentDuration(this.playbackOffsets, 0, this.playbackSpeed));
+    // The clock stays parked until the map reports the marker leaving its
+    // sample (see engagePlaybackClock). Starting it here advances the timeline
+    // bar and the point counter while the 3D marker still sits on the old
+    // sample, which is what makes the player look a step ahead of the vehicle.
+    this.playbackArmed = false;
+    this.armEngageFallback();
+  }
+  // Marker-synchronised start: pressing play only arms the map's engagement
+  // notice, and the clock starts when the vehicle actually begins travelling,
+  // so the timeline bar and the marker leave the start sample on the same
+  // frame. The single-frame fallback keeps playback alive when the map cannot
+  // engage (route not rendered yet), where waiting for the notice would stall.
+  protected engagePlaybackClock(): void {
+    if (!this.playing() || this.playbackArmed) return;
+    this.playbackArmed = true;
+    this.cancelEngageFallback();
     this.playbackWallStart = performance.now();
-    const lastIndex = positions.length - 1;
+    this.runPlaybackClock();
+  }
+  private armEngageFallback(): void {
+    this.cancelEngageFallback();
+    this.pendingEngageFrame = requestAnimationFrame(() => this.engagePlaybackClock());
+  }
+  private cancelEngageFallback(): void {
+    if (this.pendingEngageFrame !== undefined) cancelAnimationFrame(this.pendingEngageFrame);
+    this.pendingEngageFrame = undefined;
+  }
+  private runPlaybackClock(): void {
+    const lastIndex = Math.max(this.trip().positions.length - 1, 0);
     const wallStart = this.playbackWallStart;
     const startIdx = this.playbackStartIndex;
     const speed = this.playbackSpeed;
     const offsets = this.playbackOffsets;
     const totalTripMs = this.playbackTotalMs;
-    let lastIdx = 0;
     this.zone.runOutsideAngular(() => {
       const advance = (now: number) => {
         if (!this.playing()) return;
@@ -378,10 +413,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
         }
         const nextIndex = Math.min(startIdx + idx, lastIndex);
         if (nextIndex !== this.positionIndex()) {
-          const segmentDuration = offsets[idx] - offsets[lastIdx];
-          this.stepDurationMs.set(Math.max(40, segmentDuration / speed));
+          this.stepDurationMs.set(this.stepSegmentDuration(offsets, idx, speed));
           this.positionIndex.set(nextIndex);
-          lastIdx = idx;
         }
         if (elapsedTripMs >= totalTripMs) { this.pause(); return; }
         this.playbackFrame = requestAnimationFrame(advance);
@@ -924,6 +957,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
   private clearPlaybackFrame(): void {
     if (this.playbackFrame !== undefined) cancelAnimationFrame(this.playbackFrame);
     this.playbackFrame = undefined;
+    this.cancelEngageFallback();
   }
   private buildTimeOffsets(positions: TripPosition[], startIdx: number): number[] {
     const offsets = [0];
@@ -937,6 +971,15 @@ export class TripReplayPage implements OnInit, OnDestroy {
       offsets.push(offsets[offsets.length - 1] + gap);
     }
     return offsets;
+  }
+  // Wall-clock time the marker needs to travel the segment that starts at
+  // `offsets[index]`, i.e. the gap between that sample and the following one.
+  // The last sample has no segment after it, so its preceding gap is reused.
+  private stepSegmentDuration(offsets: number[], index: number, speed: number): number {
+    const next = offsets[index + 1];
+    const previousGap = offsets[index] - offsets[Math.max(0, index - 1)];
+    const tripMs = next === undefined ? previousGap : next - offsets[index];
+    return Math.max(40, tripMs / speed);
   }
   private parseTimestamp(value?: string): number {
     if (!value) return NaN;

@@ -158,7 +158,7 @@
           </article>
           <article class="workspace-group map-panel">
             <div class="trail-wrap">
-              <app-trip-replay-map class="trail-map" [positions]="tripPositions()" [events]="replayEvents()" [positionIndex]="replayPositionIndex()" [playbackActive]="playing()" [playbackSpeed]="replaySpeed()" [playbackStepDuration]="stepDurationMs()" (routeLoadingChange)="routeLoading.set($event)" />
+              <app-trip-replay-map class="trail-map" [positions]="tripPositions()" [events]="replayEvents()" [positionIndex]="replayPositionIndex()" [playbackActive]="playing()" [playbackSpeed]="replaySpeed()" [playbackStepDuration]="stepDurationMs()" (playbackEngaged)="engagePlaybackClock()" (routeLoadingChange)="routeLoading.set($event)" />
               @if (!tripPositions().length) {
                 <p class="map-empty">{{ trailLoading() ? 'Loading trail…' : 'No trail points for this range' }}</p>
               }

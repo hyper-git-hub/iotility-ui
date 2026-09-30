@@ -7,6 +7,7 @@ import {
   effect,
   input,
   output,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { AmbientLight, DirectionalLight, LightingEffect } from '@deck.gl/core';
@@ -45,6 +46,10 @@ const VEHICLE_HEADING_DAMPING = 10;
 const CAMERA_BEARING_DEAD_ZONE = 1.2;
 const CAMERA_MAX_ROTATION_SPEED = 100;
 const CAMERA_SETTLE_SECONDS = 1.25;
+// Duration of the overview → nav-mode hand-off that runs when playback starts:
+// the centre glides from the framed trail onto the vehicle instead of jumping.
+const CAMERA_ENGAGE_SECONDS = 1.2;
+const CAMERA_ENGAGE_DAMPING = 4.5;
 const CAMERA_ZOOM_EPSILON = 0.008;
 const CAMERA_PITCH_EPSILON = 0.08;
 const OSRM_REQUEST_TIMEOUT_MS = 10000;
@@ -149,6 +154,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly eventSelected = output<TripReplayEvent>();
   readonly routeLoadingChange = output<boolean>();
   readonly displayedSpeedChange = output<number>();
+  // Fires once per play run, the moment the marker actually starts travelling.
+  // Pages hold their playback clock until then so the timeline bar and the
+  // vehicle leave the start sample on the same frame instead of the bar
+  // running ahead of a parked marker.
+  readonly playbackEngaged = output<void>();
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
@@ -188,6 +198,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private cameraFrame?: number;
   private lastCameraFrameTime?: number;
   private cameraSettledFor = 0;
+  // Nav mode (camera locked onto the vehicle with speed-based zoom/pitch) only
+  // takes over once the replay actually starts. A freshly loaded trip first
+  // frames the whole trail so the route is readable before the zoom onto the
+  // 3D marker, which happens on the first play.
+  private navCameraEngaged = false;
+  // Damped overview → vehicle centre, seeded from the map at engagement so the
+  // first play eases across instead of snapping sideways.
+  private displayedCameraCenter?: [number, number];
+  private cameraEngageElapsed = 0;
   private movementFinished = true;
   private lastRenderedRouteIndex = -1;
   private readonly vehicleModelData: VehicleModelState[] = [
@@ -204,6 +223,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   ];
   private movementStartedAt = 0;
   private movementDuration = 1;
+  // Guards the one-shot playbackEngaged notice so the page is told exactly
+  // once per play run that the marker has left its sample.
+  private playbackEngagedNotified = false;
   private movementStartDistance = 0;
   private targetRoadDistance = 0;
   private movementStartPosition: LatLng = [0, 0];
@@ -244,9 +266,30 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       if (this.map) this.updateVehicle(index);
     });
     effect(() => {
+      const active = this.playbackActive();
+      // Every play run starts with the marker parked on a sample, so the
+      // engagement notice has to be re-armed while the replay is idle.
+      if (!active) this.playbackEngagedNotified = false;
+      if (!this.map || !active) return;
+      // Playback engagement: the reported index only changes once a whole step
+      // has elapsed, so the marker has to be pushed toward the following sample
+      // the moment play starts — otherwise the vehicle would sit still while
+      // the timeline bar already advances, and stay a step behind afterwards.
+      this.updateVehicle(untracked(() => this.positionIndex()));
+    });
+    effect(() => {
       if (!this.map) return;
       this.selectedEventId();
       this.applyEventSelection();
+    });
+    effect(() => {
+      if (!this.map || !this.playbackActive()) return;
+      // Pressing play hands the camera to nav mode right away — the framing
+      // seeds itself from whatever the map currently shows (the fitted trail
+      // overview) and eases onto the vehicle marker.
+      this.navCameraEngaged = true;
+      this.cameraEngageElapsed = 0;
+      this.startCameraLoop();
     });
   }
 
@@ -512,6 +555,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   private clearMarkers(): void {
     this.vehicleVisible = false;
+    this.navCameraEngaged = false;
+    this.displayedCameraCenter = undefined;
+    this.cameraEngageElapsed = 0;
     this.stopCameraLoop();
     this.displayedCameraBearing = undefined;
     this.displayedCameraZoom = undefined;
@@ -1110,45 +1156,63 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     // Sparse GPS spanning a long road segment still moves the marker steadily
     // because interpolation happens along the drawn geometry, not raw samples.
     const clampedIndex = Math.max(0, Math.min(index, positions.length - 1));
-    const targetDistance = this.targetDistanceForIndex(clampedIndex, positions.length);
-    const position = this.coordinateAtDistance(targetDistance);
-    const heading = this.rawHeadingAtDistance(targetDistance);
-    this.targetSpeedKph = positions[clampedIndex]?.speed ?? this.targetSpeedKph;
     // Forward playback must never walk the marker backwards: residual
     // geometry back-steps hold the marker in place instead of retracing.
     // Backward steps only occur on an explicit seek, which teleports straight
     // to the target.
     const forwardStep = index >= this.lastVehicleIndex;
     this.lastVehicleIndex = index;
+    const forwardPlayback = this.playbackActive() && forwardStep;
+    const currentDistance = this.targetDistanceForIndex(clampedIndex, positions.length);
+    // While playing, the marker aims one sample past the reported index: the
+    // vehicle leaves the sample it has just reached immediately, so it covers
+    // that step in the same wall-clock window as the timeline bar. Aiming at
+    // the current sample instead parks the marker for a whole step while the
+    // bar and the point counter have already advanced.
+    const targetDistance = forwardPlayback
+      ? this.targetDistanceForIndex(
+          Math.min(clampedIndex + 1, positions.length - 1),
+          positions.length,
+        )
+      : currentDistance;
+    const targetPosition = this.coordinateAtDistance(targetDistance);
+    const targetHeading = this.rawHeadingAtDistance(targetDistance);
+    this.targetSpeedKph = positions[clampedIndex]?.speed ?? this.targetSpeedKph;
     if (this.vehicleVisible) {
-      if (this.playbackActive() && forwardStep)
+      if (forwardPlayback)
         this.animateVehicleTo(
-          position,
+          targetPosition,
           Math.max(targetDistance, this.displayedRoadDistance),
         );
-      else if (this.playbackActive())
+      else
         // Backward playback never happens during normal playback, so a step
         // backwards is always an explicit seek (scrub to an earlier point,
         // event jump, restart). Teleport straight there instead of retracing
         // the drawn trail in reverse at the forward step rate.
-        this.teleportVehicle(position, heading, targetDistance);
-      else this.teleportVehicle(position, heading, targetDistance);
+        this.teleportVehicle(targetPosition, targetHeading, targetDistance);
     } else {
+      // First appearance: sit exactly on the reported sample so the marker is
+      // never placed ahead of the timeline position it was asked for.
+      const startPosition = this.coordinateAtDistance(currentDistance);
+      const startHeading = this.rawHeadingAtDistance(currentDistance);
+      // A play run that starts before the marker was ever on screen puts it on
+      // screen here, so the player may start together with this appearance.
+      if (this.playbackActive()) this.notifyPlaybackEngaged();
       this.vehicleVisible = true;
-      this.targetRoadDistance = targetDistance;
-      this.displayedRoadDistance = targetDistance;
-      this.movementStartDistance = targetDistance;
-      this.movementStartPosition[0] = position[0];
-      this.movementStartPosition[1] = position[1];
-      this.targetPosition[0] = position[0];
-      this.targetPosition[1] = position[1];
+      this.targetRoadDistance = currentDistance;
+      this.displayedRoadDistance = currentDistance;
+      this.movementStartDistance = currentDistance;
+      this.movementStartPosition[0] = startPosition[0];
+      this.movementStartPosition[1] = startPosition[1];
+      this.targetPosition[0] = startPosition[0];
+      this.targetPosition[1] = startPosition[1];
       this.movementStartedAt = performance.now();
-      this.displayedRoadProgress = this.progressAtDistance(targetDistance);
-      this.displayedHeading = heading;
+      this.displayedRoadProgress = this.progressAtDistance(currentDistance);
+      this.displayedHeading = startHeading;
       this.displayedSpeedKph = this.targetSpeedKph;
-      this.displayedPosition[0] = position[0];
-      this.displayedPosition[1] = position[1];
-      this.renderVehicleModel(position, heading);
+      this.displayedPosition[0] = startPosition[0];
+      this.displayedPosition[1] = startPosition[1];
+      this.renderVehicleModel(startPosition, startHeading);
       this.renderRouteLayersIfNeeded(true);
       this.startCameraLoop();
     }
@@ -1185,6 +1249,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   private animateVehicleTo(targetPosition: LatLng, targetDistance: number): void {
     if (!this.map || !this.vehicleOverlay || !this.vehicleVisible) return;
+    // Real travel (target ahead of where the marker sits) means the vehicle is
+    // about to move: the page may start its timeline clock now. A stationary
+    // run keeps the notice back, so the player stays parked with the marker.
+    if (this.playbackActive() && targetDistance !== this.displayedRoadDistance)
+      this.notifyPlaybackEngaged();
     this.movementStartDistance = this.displayedRoadDistance;
     this.targetRoadDistance = targetDistance;
     this.movementStartPosition[0] = this.displayedPosition[0];
@@ -1427,6 +1496,24 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return this.cameraCenterScratch;
   }
 
+  // Camera centre for this frame: the marker-following point once nav mode has
+  // settled, damped across during the short overview hand-off after play starts
+  // (a hard cut there would read as a sideways jump of the whole map).
+  private blendedCameraCenter(lookAheadMetres: number, dt: number): [number, number] {
+    const target = this.cameraCenterAhead(lookAheadMetres);
+    const center = this.displayedCameraCenter;
+    if (!center) return target;
+    if (this.cameraEngageElapsed >= CAMERA_ENGAGE_SECONDS) {
+      center[0] = target[0];
+      center[1] = target[1];
+      return center;
+    }
+    const t = 1 - Math.exp(-CAMERA_ENGAGE_DAMPING * dt);
+    center[0] += (target[0] - center[0]) * t;
+    center[1] += (target[1] - center[1]) * t;
+    return center;
+  }
+
   private startCameraLoop(): void {
     if (this.cameraFrame !== undefined || !this.map) return;
     this.zone.runOutsideAngular(() => {
@@ -1464,6 +1551,19 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.displayedSpeedKph +=
       (this.targetSpeedKph - this.displayedSpeedKph) * Math.min(1, dt * SPEED_DAMPING);
     this.emitDisplayedSpeed();
+    // Until the replay is played, keep the camera on the trail overview the
+    // route render fitted. This stops the very first vehicle frame from
+    // yanking the view onto the marker before the user starts the playback.
+    if (this.playbackActive()) this.navCameraEngaged = true;
+    if (!this.navCameraEngaged) {
+      this.cameraSettledFor = CAMERA_SETTLE_SECONDS;
+      return;
+    }
+    this.cameraEngageElapsed += dt;
+    if (this.displayedCameraCenter === undefined) {
+      const center = this.map.getCenter();
+      this.displayedCameraCenter = [center.lng, center.lat];
+    }
     const {
       zoom: targetZoom,
       pitch: targetPitch,
@@ -1513,7 +1613,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.cameraSettledFor = cameraIsSettled ? this.cameraSettledFor + dt : 0;
 
     const camera: maplibregl.JumpToOptions = {
-      center: this.cameraCenterAhead(lookAhead),
+      center: this.blendedCameraCenter(lookAhead, dt),
     };
     // MapLibre treats every supplied camera property as an update. Leave
     // settled values out so high-refresh displays do less transform/event work
@@ -1526,6 +1626,12 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     if (Math.abs(this.displayedCameraZoom - this.map.getZoom()) >= 0.0005)
       camera.zoom = this.displayedCameraZoom;
     this.map.jumpTo(camera);
+  }
+
+  private notifyPlaybackEngaged(): void {
+    if (this.playbackEngagedNotified) return;
+    this.playbackEngagedNotified = true;
+    this.zone.run(() => this.playbackEngaged.emit());
   }
 
   private emitDisplayedSpeed(): void {
@@ -1573,6 +1679,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return (
       !this.movementFinished ||
       this.playbackActive() ||
+      // Finish the overview → nav hand-off even if the user pauses mid-way.
+      (this.navCameraEngaged && this.cameraEngageElapsed < CAMERA_ENGAGE_SECONDS) ||
       this.cameraSettledFor < CAMERA_SETTLE_SECONDS
     );
   }

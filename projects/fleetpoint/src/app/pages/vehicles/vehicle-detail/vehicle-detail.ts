@@ -143,6 +143,10 @@ export class VehicleDetail implements OnInit, OnDestroy {
     }));
   });
   private playbackFrame?: number;
+  // Cleared by play() so the clock waits for the map's playbackEngaged notice;
+  // set again once that notice (or the fallback frame) has started the clock.
+  private playbackArmed = false;
+  private pendingEngageFrame?: number;
   private playbackWallStart = 0;
   private playbackStartIndex = 0;
   private playbackOffsets: number[] = [];
@@ -650,14 +654,43 @@ export class VehicleDetail implements OnInit, OnDestroy {
     this.playbackStartIndex = this.replayPositionIndex();
     this.playbackOffsets = this.buildTimeOffsets(positions, this.playbackStartIndex);
     this.playbackTotalMs = this.playbackOffsets[this.playbackOffsets.length - 1] || 1;
+    /* The map drives the marker toward the sample *after* the reported index, so
+       the step duration handed over now is the segment that starts at the
+       current index — that starts the vehicle and the timeline bar together. */
+    this.stepDurationMs.set(this.stepSegmentDuration(this.playbackOffsets, 0, this.playbackRate));
+    /* The clock stays parked until the map reports that the marker has left its
+       sample (see engagePlaybackClock), so the timeline bar cannot start
+       running while the vehicle marker is still sitting on the old point. */
+    this.playbackArmed = false;
+    this.armEngageFallback();
+  }
+  /* Marker-synchronised start: pressing play only arms the map's engagement
+     notice, and the clock starts when the vehicle actually begins travelling,
+     so the timeline bar and the marker leave the start sample on the same
+     frame. The single-frame fallback keeps playback alive when the map cannot
+     engage (route not rendered yet), where waiting would stall the player. */
+  protected engagePlaybackClock(): void {
+    if (!this.playing() || this.playbackArmed) return;
+    this.playbackArmed = true;
+    this.cancelEngageFallback();
     this.playbackWallStart = performance.now();
-    const lastIndex = positions.length - 1;
+    this.runPlaybackClock();
+  }
+  private armEngageFallback(): void {
+    this.cancelEngageFallback();
+    this.pendingEngageFrame = requestAnimationFrame(() => this.engagePlaybackClock());
+  }
+  private cancelEngageFallback(): void {
+    if (this.pendingEngageFrame !== undefined) cancelAnimationFrame(this.pendingEngageFrame);
+    this.pendingEngageFrame = undefined;
+  }
+  private runPlaybackClock(): void {
+    const lastIndex = Math.max(this.tripPositions().length - 1, 0);
     const wallStart = this.playbackWallStart;
     const startIdx = this.playbackStartIndex;
     const rate = this.playbackRate;
     const offsets = this.playbackOffsets;
     const totalTripMs = this.playbackTotalMs;
-    let lastIdx = 0;
     this.zone.runOutsideAngular(() => {
       const advance = (now: number) => {
         if (!this.playing()) return;
@@ -672,9 +705,8 @@ export class VehicleDetail implements OnInit, OnDestroy {
         }
         const nextIndex = Math.min(startIdx + idx, lastIndex);
         if (nextIndex !== this.replayPositionIndex()) {
-          this.stepDurationMs.set(Math.max(40, (offsets[idx] - offsets[lastIdx]) / rate));
+          this.stepDurationMs.set(this.stepSegmentDuration(offsets, idx, rate));
           this.replayPositionIndex.set(nextIndex);
-          lastIdx = idx;
         }
         if (elapsedTripMs >= totalTripMs) { this.pause(); return; }
         this.playbackFrame = requestAnimationFrame(advance);
@@ -735,9 +767,19 @@ export class VehicleDetail implements OnInit, OnDestroy {
     }
     return offsets;
   }
+  /* Wall-clock time the marker needs to travel the segment that starts at
+     `offsets[index]`, i.e. the gap to the following sample; the final sample
+     has no segment after it, so its preceding gap is reused. */
+  private stepSegmentDuration(offsets: number[], index: number, speed: number): number {
+    const next = offsets[index + 1];
+    const previousGap = offsets[index] - offsets[Math.max(0, index - 1)];
+    const tripMs = next === undefined ? previousGap : next - offsets[index];
+    return Math.max(40, tripMs / speed);
+  }
   private clearPlaybackFrame(): void {
     if (this.playbackFrame !== undefined) cancelAnimationFrame(this.playbackFrame);
     this.playbackFrame = undefined;
+    this.cancelEngageFallback();
   }
 
   private toApiDatetime(date: Date): string {
