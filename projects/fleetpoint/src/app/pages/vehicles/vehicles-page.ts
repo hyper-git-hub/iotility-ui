@@ -56,6 +56,7 @@ export class VehiclesPage implements OnInit {
   protected readonly fleetId = signal('');
   protected readonly categoryId = signal('');
   protected readonly vehicleTypeId = signal('');
+  protected readonly filtersOpen = signal(true);
   protected readonly offset = signal(0);
   protected readonly limit = 10;
   protected readonly tableActions: TableAction[] = ['map', 'history', 'edit', 'delete'];
@@ -156,7 +157,6 @@ export class VehiclesPage implements OnInit {
     });
   }
 
-  protected applyFilters(): void { this.offset.set(0); this.loadVehicles(); }
   protected resetFilters(): void {
     this.search.set(''); this.fleetId.set(''); this.categoryId.set(''); this.vehicleTypeId.set(''); this.offset.set(0);
     this.loadCategories();
@@ -168,8 +168,16 @@ export class VehiclesPage implements OnInit {
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => { this.offset.set(0); this.loadVehicles(); }, 400);
   }
-  protected selectFleet(option: DropdownOption): void { this.fleetId.set(option.id); this.categoryId.set(''); this.loadCategories(option.id); }
+  protected selectFleet(option: DropdownOption): void {
+    this.fleetId.set(option.id);
+    this.categoryId.set('');
+    this.offset.set(0);
+    this.loadCategories(option.id);
+    this.loadVehicles();
+  }
   protected toggleFleetChip(id: string): void {
+    // "All" while nothing is selected is already the current state.
+    if (id === '' && this.fleetId() === '') return;
     const selectedId = this.fleetId() === id ? '' : id;
     this.fleetId.set(selectedId);
     this.categoryId.set('');
@@ -198,8 +206,16 @@ export class VehiclesPage implements OnInit {
         ? 'var(--color-brand-600)'
         : 'var(--color-muted)';
   }
-  protected selectCategory(option: DropdownOption): void { this.categoryId.set(option.id); }
-  protected selectVehicleType(option: DropdownOption): void { this.vehicleTypeId.set(option.id); }
+  protected selectCategory(option: DropdownOption): void {
+    this.categoryId.set(option.id);
+    this.offset.set(0);
+    this.loadVehicles();
+  }
+  protected selectVehicleType(option: DropdownOption): void {
+    this.vehicleTypeId.set(option.id);
+    this.offset.set(0);
+    this.loadVehicles();
+  }
   protected selectedLabel(options: DropdownOption[], id: string, fallback: string): string { return options.find((option) => option.id === id)?.label || fallback; }
   protected goToPage(page: number): void { this.offset.set((page - 1) * this.limit); this.loadVehicles(); }
 

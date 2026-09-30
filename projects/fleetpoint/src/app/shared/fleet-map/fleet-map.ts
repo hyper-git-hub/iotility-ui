@@ -5,7 +5,7 @@ import {
 import maplibregl, { LngLatBounds, Map as MapLibreMap } from 'maplibre-gl';
 import {
   LatLng, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
-  polygonFeature, popupHtml, removeGeoJson, timezoneCountryCenter, upsertGeoJson,
+  overlaySafePadding, polygonFeature, popupHtml, removeGeoJson, timezoneCountryCenter, upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
 import { FullscreenUiService } from '../services/fullscreen-ui.service';
@@ -313,9 +313,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const container = this.map.getContainer();
     if (container.clientWidth <= 0 || container.clientHeight <= 0) return;
     const panelPadding = this.panelPadding();
-    const padding = panelPadding
-      ? { top: 48, bottom: 48, left: 48, right: 48 + panelPadding }
-      : 48;
+    // Fullscreen shows the search overlay along the top-left edge of the map, so
+    // that side needs the extra room the drawer takes on the right.
+    const searchPadding = this.isFullscreen() ? 400 : 0;
+    const padding = { top: 48, bottom: 48, left: 48 + searchPadding, right: 48 + panelPadding };
     fitLatLngs(
       this.map,
       vehicles.map(({ lat, lng }) => [lat, lng]),
@@ -662,7 +663,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       return;
     }
     this.map.fitBounds(bounds, {
-      padding: 96,
+      // Uniform band already covers the overlay-safe insets on every side.
+      padding: overlaySafePadding(96),
       maxZoom: this.map.getMaxZoom(),
       duration: 450,
     });

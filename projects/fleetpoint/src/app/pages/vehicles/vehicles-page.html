@@ -31,11 +31,9 @@
           }
         </div>
         <span class="vehicle-filter-separator" aria-hidden="true"></span>
-        <div class="fleet-filter-skeletons">
-          @for (_ of [1, 2, 3]; track $index) {
-            <ui-skeleton width="7rem" height="1.75rem" radius="9999px" />
-          }
-        </div>
+        <ui-skeleton width="7rem" height="1.75rem" radius="9999px" />
+        <ui-skeleton width="7rem" height="1.75rem" radius="9999px" />
+        <ui-skeleton width="7rem" height="1.75rem" radius="9999px" />
       </div>
     </section>
   } @else {
@@ -69,25 +67,34 @@
           <span class="alert"><i></i>Alert {{ alerts() }}</span>
           <span class="offline"><i></i>Offline {{ offline() }}</span>
         </div>
-        @if (fleetChips().length) {
-          <span class="vehicle-filter-separator" aria-hidden="true"></span>
-          <div class="fleet-filter-chips" aria-label="Filter vehicles by fleet">
-            @for (fleet of fleetChips(); track fleet.id; let index = $index) {
-              <button
-                type="button"
-                class="fleet-filter-chip"
-                [class.active]="fleetId() === fleet.id"
-                [style.--fleet-chip-color]="fleetChipColor(index)"
-                [attr.aria-pressed]="fleetId() === fleet.id"
-                (click)="toggleFleetChip(fleet.id)"
-              >
-                <i aria-hidden="true"></i>
-                <span>{{ fleet.name }}</span>
-                <strong>{{ fleet.count }}</strong>
-              </button>
-            }
-          </div>
-        }
+        <span class="vehicle-filter-separator" aria-hidden="true"></span>
+        <div class="fleet-filter-chips" aria-label="Filter vehicles by fleet">
+          <button
+            type="button"
+            class="fleet-filter-chip all"
+            [class.active]="fleetId() === ''"
+            [attr.aria-pressed]="fleetId() === ''"
+            (click)="toggleFleetChip('')"
+          >
+            <i aria-hidden="true"></i>
+            <span>All</span>
+            <strong>{{ total() }}</strong>
+          </button>
+          @for (fleet of fleetChips(); track fleet.id; let index = $index) {
+            <button
+              type="button"
+              class="fleet-filter-chip"
+              [class.active]="fleetId() === fleet.id"
+              [style.--fleet-chip-color]="fleetChipColor(index)"
+              [attr.aria-pressed]="fleetId() === fleet.id"
+              (click)="toggleFleetChip(fleet.id)"
+            >
+              <i aria-hidden="true"></i>
+              <span>{{ fleet.name }}</span>
+              <strong>{{ fleet.count }}</strong>
+            </button>
+          }
+        </div>
       </div>
     </section>
   }
@@ -114,10 +121,35 @@
   }
 
   <section class="vehicle-filters" aria-label="Vehicle filters">
-    <div class="filter-controls">
-      <label
-        ><span>Fleet</span
-        ><shared-dropdown
+    <div class="filter-search-row">
+      <label class="row-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input
+          type="search"
+          placeholder="Search plate, make, driver, location..."
+          aria-label="Search vehicles"
+          [value]="search()"
+          (input)="tableSearchChanged($any($event.target).value)"
+        />
+      </label>
+      <button
+        type="button"
+        class="filters-toggle"
+        [attr.aria-expanded]="filtersOpen()"
+        (click)="filtersOpen.set(!filtersOpen())"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+        </svg>
+        Filters
+      </button>
+    </div>
+    @if (filtersOpen()) {
+      <div class="filter-options-row">
+        <shared-dropdown
           class="filter-dropdown"
           [options]="fleetDropdownOptions()"
           mode="single"
@@ -128,18 +160,15 @@
           searchPlaceholder="Search fleets"
           [selected]="[fleetId()]"
           (optionSelected)="selectFleet($event)"
-          ><button dropdown-trigger type="button" [disabled]="optionsLoading() || loading()">
+          ><button dropdown-trigger type="button" aria-label="Filter by fleet" [disabled]="optionsLoading() || loading()">
             @if (optionsLoading()) {
               <ui-skeleton width="5rem" height="0.75rem" radius="0.3rem" />
             } @else {
               <span>{{ selectedLabel(fleetDropdownOptions(), fleetId(), 'All fleets') }}</span>
             }
           </button></shared-dropdown
-        ></label
-      >
-      <label
-        ><span>Category</span
-        ><shared-dropdown
+        >
+        <shared-dropdown
           class="filter-dropdown"
           [options]="categoryDropdownOptions()"
           mode="single"
@@ -150,20 +179,15 @@
           searchPlaceholder="Search categories"
           [selected]="[categoryId()]"
           (optionSelected)="selectCategory($event)"
-          ><button dropdown-trigger type="button" [disabled]="optionsLoading() || loading()">
+          ><button dropdown-trigger type="button" aria-label="Filter by category" [disabled]="optionsLoading() || loading()">
             @if (optionsLoading()) {
               <ui-skeleton width="6rem" height="0.75rem" radius="0.3rem" />
             } @else {
-              <span>{{
-                selectedLabel(categoryDropdownOptions(), categoryId(), 'All categories')
-              }}</span>
+              <span>{{ selectedLabel(categoryDropdownOptions(), categoryId(), 'All categories') }}</span>
             }
           </button></shared-dropdown
-        ></label
-      >
-      <label
-        ><span>Vehicle Type</span
-        ><shared-dropdown
+        >
+        <shared-dropdown
           class="filter-dropdown"
           [options]="vehicleTypeDropdownOptions()"
           mode="single"
@@ -174,25 +198,17 @@
           searchPlaceholder="Search vehicle types"
           [selected]="[vehicleTypeId()]"
           (optionSelected)="selectVehicleType($event)"
-          ><button dropdown-trigger type="button" [disabled]="optionsLoading() || loading()">
+          ><button dropdown-trigger type="button" aria-label="Filter by vehicle type" [disabled]="optionsLoading() || loading()">
             @if (optionsLoading()) {
               <ui-skeleton width="7rem" height="0.75rem" radius="0.3rem" />
             } @else {
-              <span>{{
-                selectedLabel(vehicleTypeDropdownOptions(), vehicleTypeId(), 'All vehicle types')
-              }}</span>
+              <span>{{ selectedLabel(vehicleTypeDropdownOptions(), vehicleTypeId(), 'All vehicle types') }}</span>
             }
           </button></shared-dropdown
-        ></label
-      >
-      <div class="filter-actions">
-        <button type="button" class="reset-filter" [disabled]="loading()" (click)="resetFilters()">
-          Reset</button
-        ><button type="button" class="apply-filter" [disabled]="loading()" (click)="applyFilters()">
-          Apply filters
-        </button>
+        >
+        <button type="button" class="clear-filters" (click)="resetFilters()">Clear all filters</button>
       </div>
-    </div>
+    }
   </section>
 
   @if (error() && !initialLoading()) {

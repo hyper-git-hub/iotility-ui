@@ -176,8 +176,35 @@ export function removeGeoJson(map: Map, id: string, layerIds: string[]): void {
   if (map.getSource(id)) map.removeSource(id);
 }
 
+// Overlay chrome (zoom/3D/rotate control stacks, search forms, legends and
+// playback toolbars) floats above the map, usually hugging a corner. Framing a
+// marker set edge-to-edge parks those corner markers underneath the chrome, so
+// every fit keeps at least this inset per side. Callers can still request more
+// (e.g. the live-tracking details drawer or fullscreen search overlay).
+const OVERLAY_INSET = { top: 80, right: 104, bottom: 120, left: 80 };
+
+/** Raises scalar or per-side padding to the overlay-safe minimums. */
+export function overlaySafePadding(padding: number | PaddingOptions): PaddingOptions {
+  if (typeof padding === 'number') {
+    return {
+      top: Math.max(padding, OVERLAY_INSET.top),
+      right: Math.max(padding, OVERLAY_INSET.right),
+      bottom: Math.max(padding, OVERLAY_INSET.bottom),
+      left: Math.max(padding, OVERLAY_INSET.left),
+    };
+  }
+  return {
+    top: Math.max(padding.top ?? 0, OVERLAY_INSET.top),
+    right: Math.max(padding.right ?? 0, OVERLAY_INSET.right),
+    bottom: Math.max(padding.bottom ?? 0, OVERLAY_INSET.bottom),
+    left: Math.max(padding.left ?? 0, OVERLAY_INSET.left),
+  };
+}
+
 // `padding` accepts a single value for all sides or per-side insets, so callers
 // can reserve room for overlaid panels (e.g. a details drawer) when re-framing.
+// Either way the overlay-safe minimums from `overlaySafePadding` apply, keeping
+// fitted markers clear of the map controls.
 export function fitLatLngs(
   map: Map,
   coordinates: LatLng[],
@@ -187,7 +214,7 @@ export function fitLatLngs(
   if (!coordinates.length) return;
   const bounds = new LngLatBounds();
   for (const [lat, lng] of coordinates) bounds.extend([lng, lat]);
-  map.fitBounds(bounds, { padding, maxZoom, duration: 700 });
+  map.fitBounds(bounds, { padding: overlaySafePadding(padding), maxZoom, duration: 700 });
 }
 
 export function markerElement(html: string, className = 'iotility-map-marker'): HTMLElement {
