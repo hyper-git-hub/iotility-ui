@@ -7,15 +7,20 @@ import {
   DataTable,
   DataTableBottomPanel,
   DataTableCellTemplate,
-  Dropdown,
   DropdownOption,
+  FilterBar,
+  FilterChangeEvent,
+  FilterDropdown,
+  Skeleton,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
 import {
   ViolationsApiService,
+  ViolationDateRange,
   ViolationRecord as ApiViolation,
   ViolationFilters,
+  violationDateRange,
 } from '../../../shared/services/violations-api.service';
 import { ViolationMap } from './violation-map';
 
@@ -97,7 +102,7 @@ const SOURCE_OPTIONS: DropdownOption[] = [
 
 @Component({
   selector: 'app-all-violations',
-  imports: [DataTable, DataTableBottomPanel, DataTableCellTemplate, Dropdown, ProgressBar, ViolationMap],
+  imports: [DataTable, DataTableBottomPanel, DataTableCellTemplate, FilterBar, ProgressBar, Skeleton, ViolationMap],
   templateUrl: './all-violations.html',
   styleUrl: './all-violations.css',
 })
@@ -108,14 +113,18 @@ export class AllViolations implements OnInit, OnDestroy {
   protected readonly loadingMore = signal(false);
   protected readonly selected = signal<ViolationDisplay | null>(null);
   protected readonly search = signal('');
-  protected readonly dateRange = signal<'today' | 'week' | 'month'>('month');
-  protected readonly filtersVisible = signal(false);
+  protected readonly dateRange = signal<ViolationDateRange>('today');
   protected readonly category = signal('all');
   protected readonly severity = signal('all');
   protected readonly source = signal('all');
   protected readonly categoryOptions = CATEGORY_OPTIONS;
   protected readonly severityOptions = SEVERITY_OPTIONS;
   protected readonly sourceOptions = SOURCE_OPTIONS;
+  protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
+    { id: 'category', ariaLabel: 'Filter by category', options: this.categoryOptions, selected: this.category(), placeholder: 'All Categories' },
+    { id: 'severity', ariaLabel: 'Filter by severity', options: this.severityOptions, selected: this.severity(), placeholder: 'All Severity' },
+    { id: 'source', ariaLabel: 'Filter by source', options: this.sourceOptions, selected: this.source(), placeholder: 'All Sources' },
+  ]);
   protected readonly columns: TableColumn[] = [
     { key: 'type', label: 'Violation' },
     { key: 'driver', label: 'Driver' },
@@ -186,25 +195,26 @@ export class AllViolations implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.selectDateRange(this.route.snapshot.queryParamMap.get('range') === 'today' ? 'today' : 'month');
+    const requested = this.route.snapshot.queryParamMap.get('range');
+    const range: ViolationDateRange =
+      requested === 'week' || requested === 'month' ? requested : 'today';
+    this.selectDateRange(range);
   }
 
   ngOnDestroy(): void {
     clearTimeout(this.searchTimer);
     this.requestSequence++;
     this.requestSubscription?.unsubscribe();
+    this.api.pageSummaryLoading.set(false);
   }
 
-  protected selectFilter(control: 'category' | 'severity' | 'source', option: DropdownOption): void {
+  protected selectFilter(event: FilterChangeEvent): void {
+    const control = event.id as 'category' | 'severity' | 'source';
     ({ category: this.category, severity: this.severity, source: this.source })[control].set(
-      option.id,
+      event.option.id,
     );
-    if (control === 'category') this.filters.violation_type = this.violationTypeFilter(option.id);
+    if (control === 'category') this.filters.violation_type = this.violationTypeFilter(event.option.id);
     this.reloadViolations();
-  }
-
-  protected label(options: DropdownOption[], value: string): string {
-    return options.find((option) => option.id === value)?.label ?? 'All';
   }
 
   protected selectViolation(item: ViolationDisplay): void {
@@ -220,8 +230,7 @@ export class AllViolations implements OnInit, OnDestroy {
     if (item) this.toggleSelection(item);
   }
 
-  protected updateSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  protected updateSearch(value: string): void {
     this.search.set(value);
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => {
@@ -230,27 +239,12 @@ export class AllViolations implements OnInit, OnDestroy {
     }, 350);
   }
 
-  protected selectDateRange(range: 'today' | 'week' | 'month'): void {
+  protected selectDateRange(range: ViolationDateRange): void {
     this.dateRange.set(range);
-    const now = new Date();
-    const start = new Date(now);
-    if (range === 'today') start.setHours(0, 0, 0, 0);
-    if (range === 'week') {
-      const weekday = now.getDay();
-      start.setDate(now.getDate() - (weekday === 0 ? 6 : weekday - 1));
-      start.setHours(0, 0, 0, 0);
-    }
-    if (range === 'month') {
-      start.setDate(1);
-      start.setHours(0, 0, 0, 0);
-    }
-    this.filters.start_datetime = this.utcDateTime(start);
-    this.filters.end_datetime = this.utcDateTime(now);
+    const { start_datetime, end_datetime } = violationDateRange(range);
+    this.filters.start_datetime = start_datetime;
+    this.filters.end_datetime = end_datetime;
     this.reloadViolations();
-  }
-
-  protected toggleFilters(): void {
-    this.filtersVisible.update((value) => !value);
   }
 
   protected clearFilters(): void {
@@ -336,6 +330,9 @@ export class AllViolations implements OnInit, OnDestroy {
     else {
       this.loading.set(true);
       this.loadingMore.set(false);
+      // Card values on the violations page are filter-driven, so they show
+      // skeletons until the new range/filter response lands.
+      this.api.pageSummaryLoading.set(true);
     }
     const filters = {
       ...this.filters,
@@ -345,7 +342,10 @@ export class AllViolations implements OnInit, OnDestroy {
       finalize(() => {
         if (requestSequence !== this.requestSequence) return;
         if (append) this.loadingMore.set(false);
-        else this.loading.set(false);
+        else {
+          this.loading.set(false);
+          this.api.pageSummaryLoading.set(false);
+        }
       }),
     ).subscribe({
       next: (response: { data?: { count: number; data: ApiViolation[] } }) => {
@@ -369,11 +369,6 @@ export class AllViolations implements OnInit, OnDestroy {
   private violationTypeFilter(category: string): string {
     // IDs used by hypernym-fms-fe/development for /api/common/violation.
     return { Speeding: '1', Behaviour: '21,22,23', Geozone: '36' }[category] ?? '';
-  }
-
-  private utcDateTime(date: Date): string {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
   private mapRecord(record: ApiViolation, index: number): ViolationDisplay {

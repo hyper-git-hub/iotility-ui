@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { FleetDashboardApiService } from './fleet-dashboard-api.service';
-import { ViolationsApiService, ViolationFilters } from './violations-api.service';
+import { ViolationsApiService, ViolationFilters, violationDateRange } from './violations-api.service';
 import { WORK_ORDERS } from '../../pages/maintenance/maintenance.data';
 import { DASHCAM_EVENTS } from '../../pages/dashcam/dashcam.data';
 import { jobsData } from '../../pages/jobs/jobs.data';
@@ -34,13 +34,8 @@ export class SidebarBadgeService {
     ).length;
     this.maintenanceCount.set(activeWorkOrders);
 
-    // Count today's violations using the same local-day range as the alert navigation.
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const formatDateTime = (date: Date) => {
-      const pad = (value: number) => String(value).padStart(2, '0');
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-    };
+    // Count today's violations using the same local-day range as the All Violations page.
+    const { start_datetime, end_datetime } = violationDateRange('today');
     const filters: ViolationFilters = {
       offset: 0,
       limit: 0,
@@ -49,8 +44,8 @@ export class SidebarBadgeService {
       search_text: '',
       violation_type: '',
       driver_id: '',
-      start_datetime: formatDateTime(start),
-      end_datetime: formatDateTime(now),
+      start_datetime,
+      end_datetime,
       time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       group: '0',
     };

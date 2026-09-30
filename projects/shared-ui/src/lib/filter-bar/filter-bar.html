@@ -1,5 +1,7 @@
 <section class="filter-bar" [attr.aria-label]="ariaLabel()">
   <div class="filter-search-row" [class.no-search]="!showSearch()">
+    <!-- Arbitrary always-visible controls (segmented ranges, chips, ...) sit before the search box. -->
+    <ng-content select="[filter-leading]" />
     @if (showSearch()) {
       <label class="row-search">
         <svg viewBox="0 0 24 24" aria-hidden="true">

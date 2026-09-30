@@ -1,17 +1,23 @@
 <section class="violations-page">
   <header class="heading">
-    <div><h1>Violations</h1><p>{{summary().total}} violations · {{summary().critical}} critical · {{summary().pending}} pending review · {{summary().totalFines}} in fines</p></div>
+    <div><h1>Violations</h1>
+      @if (summaryLoading()) {
+        <ui-skeleton class="heading-summary" variant="text" width="17rem" height="0.75rem" />
+      } @else {
+        <p>{{summary().total}} violations · {{summary().critical}} critical · {{summary().pending}} pending review · {{summary().totalFines}} in fines</p>
+      }
+    </div>
     <div><button class="export" type="button"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export XLS</button><button class="export" type="button"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export PDF</button><button class="create" type="button" (click)="manualViolationOpen.set(true)"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/plus.svg')" aria-hidden="true"></span>Add Manual Violation</button></div>
   </header>
   <section class="stats">
-    <app-stat-card label="Total" [value]="summary().total" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg></app-stat-card>
-    <app-stat-card label="Critical" [value]="summary().critical" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg></app-stat-card>
-    <app-stat-card label="Pending Review" [value]="summary().pending" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></app-stat-card>
-    <app-stat-card label="Fines Pending" [value]="summary().finesPending" tone="priority" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 2v20m5-16H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></app-stat-card>
-    <app-stat-card label="Total Fines" [value]="summary().totalFines" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></app-stat-card>
-    <app-stat-card label="Score Impact" [value]="summary().scoreImpact" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="m13 2-9 12h8l-1 8 9-12h-8l1-8Z"/></svg></app-stat-card>
+    <app-stat-card label="Total" [value]="summary().total" tone="brand" [compact]="true" [loading]="summaryLoading()"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg></app-stat-card>
+    <app-stat-card label="Critical" [value]="summary().critical" tone="danger" [compact]="true" [loading]="summaryLoading()"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg></app-stat-card>
+    <app-stat-card label="Pending Review" [value]="summary().pending" tone="warning" [compact]="true" [loading]="summaryLoading()"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></app-stat-card>
+    <app-stat-card label="Fines Pending" [value]="summary().finesPending" tone="priority" [compact]="true" [loading]="summaryLoading()"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 2v20m5-16H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></app-stat-card>
+    <app-stat-card label="Total Fines" [value]="summary().totalFines" tone="brand" [compact]="true" [loading]="summaryLoading()"><svg stat-card-icon viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></app-stat-card>
+    <app-stat-card label="Score Impact" [value]="summary().scoreImpact" tone="danger" [compact]="true" [loading]="summaryLoading()"><svg stat-card-icon viewBox="0 0 24 24"><path d="m13 2-9 12h8l-1 8 9-12h-8l1-8Z"/></svg></app-stat-card>
   </section>
-  <nav class="tabs"><a routerLink="all" routerLinkActive="active">All Violations <span>{{summary().total}}</span></a><a routerLink="fines" routerLinkActive="active">Fines &amp; Penalties <span>{{summary().finesPending}}</span></a><a routerLink="configuration" routerLinkActive="active">Configuration</a></nav>
+  <nav class="tabs"><a routerLink="all" routerLinkActive="active">All Violations <span>@if (summaryLoading()) { <ui-skeleton width="1.25rem" height="0.5rem" radius="9999px" /> } @else { {{summary().total}} }</span></a><a routerLink="fines" routerLinkActive="active">Fines &amp; Penalties <span>@if (summaryLoading()) { <ui-skeleton width="1.25rem" height="0.5rem" radius="9999px" /> } @else { {{summary().finesPending}} }</span></a><a routerLink="configuration" routerLinkActive="active">Configuration</a></nav>
   <router-outlet/>
   <app-manual-violation-form [open]="manualViolationOpen()" (cancelled)="manualViolationOpen.set(false)" (created)="manualViolationOpen.set(false)"/>
 </section>

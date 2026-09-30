@@ -5,7 +5,7 @@
   @apply block min-w-0;
 }
 .filter-bar {
-  @apply grid gap-3 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
+  @apply grid rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
 }
 .filter-search-row {
   @apply flex items-center gap-3;
@@ -44,8 +44,12 @@
 .filters-toggle[aria-expanded='true'] {
   @apply border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300;
 }
+/* Padding (not margin) so the row's own box carries the spacing: the
+   smooth-height frame measures the content's border box, and the row is
+   removed entirely by @if when collapsed, so the bar returns to a single
+   row with no leftover gap. */
 .filter-options-row {
-  @apply flex flex-wrap items-center gap-3;
+  @apply flex flex-wrap items-center gap-3 pt-3;
 }
 .filter-options-row .filter-dropdown {
   @apply w-44;

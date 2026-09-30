@@ -9,6 +9,16 @@
   @if (showIcon()) {
     <span class="stat-card-icon"><ng-content select="[stat-card-icon]" /></span>
   }
-  <strong>{{ value() }}</strong>
+  @if (loading()) {
+    <ui-skeleton
+      class="stat-card-value-skeleton"
+      variant="text"
+      [width]="compact() ? '2.5rem' : '3.5rem'"
+      height="1.5rem"
+      radius="0.3rem"
+    />
+  } @else {
+    <strong>{{ value() }}</strong>
+  }
   <span>{{ label() }}</span>
 </article>

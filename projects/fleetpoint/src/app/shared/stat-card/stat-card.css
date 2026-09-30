@@ -21,6 +21,9 @@
 .stat-card strong {
   @apply text-2xl text-ink dark:text-white;
 }
+.stat-card-value-skeleton {
+  @apply mt-0.5;
+}
 .stat-card > span:last-child {
   @apply mt-0.5 text-xs text-muted dark:text-brand-300;
 }

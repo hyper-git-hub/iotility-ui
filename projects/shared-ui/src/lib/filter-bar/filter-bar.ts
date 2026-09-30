@@ -44,6 +44,8 @@ export interface FilterSelectionEvent {
  * Generic filter bar: search box + collapse toggle + any number/kind of
  * config-driven dropdowns. Arbitrary extra filters can be projected as
  * content, e.g. `<shared-filter-bar ...><shared-date-range /></shared-filter-bar>`.
+ * Always-visible extra controls (segmented ranges, chips, ...) can be projected
+ * into the search row with a `filter-leading` attribute.
  */
 @Component({
   selector: 'shared-filter-bar',

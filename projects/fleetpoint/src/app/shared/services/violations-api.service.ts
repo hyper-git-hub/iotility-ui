@@ -58,6 +58,42 @@ export interface ViolationPageSummary {
   scoreImpact: number;
 }
 
+export type ViolationDateRange = 'today' | 'week' | 'month';
+
+function formatViolationDateTime(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+/**
+ * Local-day window for the shared violation date-range control. Today starts at
+ * midnight, week on Monday and month on the 1st; the API is called with the
+ * resolved `time_zone` so these stay local wall-clock bounds.
+ */
+export function violationDateRange(range: ViolationDateRange): {
+  start_datetime: string;
+  end_datetime: string;
+} {
+  const now = new Date();
+  const start = new Date(now);
+  if (range === 'today') {
+    start.setHours(0, 0, 0, 0);
+  }
+  if (range === 'week') {
+    const weekday = now.getDay();
+    start.setDate(now.getDate() - (weekday === 0 ? 6 : weekday - 1));
+    start.setHours(0, 0, 0, 0);
+  }
+  if (range === 'month') {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+  }
+  return {
+    start_datetime: formatViolationDateTime(start),
+    end_datetime: formatViolationDateTime(now),
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class ViolationsApiService {
   readonly pageSummary = signal<ViolationPageSummary>({
@@ -68,6 +104,8 @@ export class ViolationsApiService {
     totalFines: '£0',
     scoreImpact: 0,
   });
+  /** True while a filtered violations request is in flight, so cards can show skeletons. */
+  readonly pageSummaryLoading = signal(false);
   private readonly violationRequests = new Map<
     string,
     Observable<ApiResponse<{ count: number; data: ViolationRecord[] }>>
