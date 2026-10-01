@@ -59,6 +59,11 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private readonly markers = new Map<string, maplibregl.Marker>();
   private readonly markerVehicles = new Map<string, TrackedVehicle>();
   private readonly markerPopupContent = new Map<string, string>();
+  /**
+   * Vehicle whose popup was opened by selection. It behaves like a pinned card:
+   * it stays open until another vehicle is selected or the selection is cleared.
+   */
+  private pinnedPopupId: string | null = null;
   private clusterEnabled = false;
   private readonly clusterBadges = new Map<string, maplibregl.Marker>();
   private readonly clusterBadgeDivs = new Map<string, HTMLElement>();
@@ -153,7 +158,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     });
     effect(() => {
       const selectedId = this.selectedVehicleId();
-      if (this.map) this.updateMarkerSelection(selectedId);
+      if (!this.map) return;
+      // Selecting another vehicle, or clearing the selection, dismisses the
+      // previously pinned card — only one selection popup may stay open.
+      if (this.pinnedPopupId !== selectedId) {
+        this.pinnedPopupId = selectedId;
+        this.closeOtherPopups(selectedId);
+      }
+      this.updateMarkerSelection(selectedId);
     });
   }
 
@@ -278,9 +290,16 @@ export class FleetMap implements AfterViewInit, OnDestroy {
           .setPopup(popupHtml(this.vehiclePopupHtml(vehicle)))
           .addTo(this.map);
         element.addEventListener('mouseenter', () => {
-          if (item?.getPopup() && !item.getPopup()?.isOpen()) item.togglePopup();
+          if (!item) return;
+          // Only one card may be open: a pinned selection popup is closed when
+          // another marker is hovered.
+          if (this.pinnedPopupId !== vehicle.id) this.closeOtherPopups(vehicle.id);
+          if (item.getPopup() && !item.getPopup()?.isOpen()) item.togglePopup();
         });
         element.addEventListener('mouseleave', () => {
+          // The popup opened by selection stays open until the selection is
+          // replaced or cleared; hover release must not dismiss it.
+          if (this.pinnedPopupId === vehicle.id) return;
           if (item?.getPopup()?.isOpen()) item.togglePopup();
         });
         this.markers.set(vehicle.id, item);
@@ -786,6 +805,15 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     return desktopPanelOpen ? 320 : 0;
   }
 
+  /** Closes every open marker popup except the one belonging to `keepId`. */
+  private closeOtherPopups(keepId: string | null): void {
+    this.markers.forEach((marker, id) => {
+      if (id === keepId) return;
+      const popup = marker.getPopup();
+      if (popup?.isOpen()) marker.togglePopup();
+    });
+  }
+
   private focusVehicle(vehicle: TrackedVehicle): void {
     if (!this.map) return;
     this.map.flyTo({
@@ -796,6 +824,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       padding: { top: 0, bottom: 0, left: 0, right: this.panelPadding() },
     });
     const marker = this.markers.get(vehicle.id);
+    if (this.selectedVehicleId() === vehicle.id) {
+      // Selection-driven opens are exclusive; follow ticks never dismiss a
+      // popup the user opened by hovering another marker.
+      this.pinnedPopupId = vehicle.id;
+      this.closeOtherPopups(vehicle.id);
+    }
     if (marker && marker.getPopup() && !marker.getPopup()?.isOpen()) marker.togglePopup();
   }
 
