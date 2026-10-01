@@ -198,6 +198,13 @@ export class AllViolations implements OnInit, OnDestroy {
     const requested = this.route.snapshot.queryParamMap.get('range');
     const range: ViolationDateRange =
       requested === 'week' || requested === 'month' ? requested : 'today';
+    // Vehicle deep link (e.g. "View all alerts" from live tracking): the vehicle
+    // is applied as the API search term so the list only shows its violations.
+    const vehicle = this.route.snapshot.queryParamMap.get('vehicle')?.trim() ?? '';
+    if (vehicle) {
+      this.search.set(vehicle);
+      this.filters.search_text = vehicle;
+    }
     this.selectDateRange(range);
   }
 

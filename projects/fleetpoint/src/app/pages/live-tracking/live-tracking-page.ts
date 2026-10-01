@@ -492,6 +492,34 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
         state: { vehicleId: vehicle.numericId },
       });
   }
+  /** Opens the violations list pre-filtered to the selected vehicle's alerts. */
+  protected viewAllAlerts(): void {
+    const vehicle = this.selectedVehicle();
+    if (!vehicle) return;
+    void this.router.navigate(['/fleetpoint/violations/all'], {
+      queryParams: { vehicle: vehicle.id, range: 'month' },
+    });
+  }
+  /** Opens the driver detail page of the driver assigned to the selected vehicle. */
+  protected contactDriver(): void {
+    const vehicle = this.selectedVehicle();
+    if (!vehicle) return;
+    const driverId = this.assignedDriverId(vehicle.numericId);
+    if (!driverId) {
+      void this.router.navigate(['/fleetpoint/drivers']);
+      return;
+    }
+    void this.router.navigate(['/fleetpoint/drivers', driverId]);
+  }
+  /** Driver id taken from the fleet inventory assignment for this vehicle. */
+  private assignedDriverId(vehicleId: number): number | null {
+    const record = this.fleetRecords()
+      .flatMap((fleet) => fleet.assigned_vehicles ?? [])
+      .find((item) => item.id === vehicleId);
+    const driver = record?.associated_drivers_name?.find((item) => item.driver_id != null);
+    const id = Number(driver?.driver_id);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }
 
   protected onMapReady(_fleetMap: FleetMap): void {
     this.mapLoaded.set(true);
