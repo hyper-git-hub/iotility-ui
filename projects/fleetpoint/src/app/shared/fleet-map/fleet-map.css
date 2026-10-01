@@ -65,6 +65,87 @@
 :host ::ng-deep .vehicle-marker:hover {
   transform: scale(1.08);
 }
+/* Directional (navigation arrow) variant. The chip's circular mask, background
+   and fixed square size would clip a tall pointer glyph, so this variant drops
+   all of that and lets the arrow render at full scale. The halo behind it
+   pulses only while the record is live. */
+:host ::ng-deep .vehicle-marker--arrow,
+.vehicle-marker--arrow {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 45px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+:host ::ng-deep .vehicle-marker--arrow img,
+.vehicle-marker--arrow img {
+  display: block;
+  width: 44px;
+  height: 45px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.45));
+}
+:host ::ng-deep .vehicle-marker--arrow .vehicle-marker-halo,
+.vehicle-marker--arrow .vehicle-marker-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 9999px;
+  opacity: 0;
+  transform: scale(0.35);
+  pointer-events: none;
+  background: color-mix(in srgb, var(--marker-color, #7c3aed) 40%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--marker-color, #7c3aed) 50%, transparent);
+}
+:host ::ng-deep .vehicle-marker--arrow.live .vehicle-marker-halo,
+.vehicle-marker--arrow.live .vehicle-marker-halo {
+  animation: vehicle-marker-halo 1.6s ease-out infinite;
+}
+@keyframes vehicle-marker-halo {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.35);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vehicle-marker--arrow.live .vehicle-marker-halo {
+    animation: none;
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}
+/* Live halo: pulses only while the record reports live, so a moving vehicle is
+   distinguishable from a static one at a glance. */
+:host ::ng-deep .vehicle-marker.live:not(.vehicle-marker--arrow),
+.vehicle-marker.live:not(.vehicle-marker--arrow) {
+  animation: vehicle-marker-pulse 1.8s ease-out infinite;
+}
+@keyframes vehicle-marker-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand-600) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-brand-600) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vehicle-marker.live {
+    animation: none;
+  }
+}
 
 :host ::ng-deep .vehicle-cluster,
 .vehicle-cluster {

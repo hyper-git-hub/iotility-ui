@@ -4,17 +4,54 @@ import {
 } from '@angular/core';
 import maplibregl, { LngLatBounds, Map as MapLibreMap } from 'maplibre-gl';
 import {
-  LatLng, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
+  LatLng, LayerWithoutSource, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
   overlaySafePadding, polygonFeature, popupHtml, removeGeoJson, timezoneCountryCenter, upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
 import { FullscreenUiService } from '../services/fullscreen-ui.service';
+import { environment } from '../../../environments/environment';
+
+/** Road-snapped trail: a soft casing under a crisp core line. */
+const TRAIL_LAYER_IDS = ['fleet-trail-casing', 'fleet-trail-core'];
+function TRAIL_LAYERS(color: string): LayerWithoutSource[] {
+  return [
+    {
+      id: 'fleet-trail-casing',
+      type: 'line',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': color, 'line-width': 9, 'line-opacity': 0.2 },
+    },
+    {
+      id: 'fleet-trail-core',
+      type: 'line',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': color, 'line-width': 3.5, 'line-opacity': 0.95 },
+    },
+  ];
+}
 
 export type VehicleStatus = 'Moving' | 'Idling' | 'Alert' | 'Offline';
+/**
+ * Marker shape.
+ * - `chip` (default): circular status-coloured chip with the vehicle image inside.
+ * - `arrow`: plain directional glyph shown at full size, for navigation-style
+ *   cursors that must not be clipped by the chip's circular mask.
+ */
+export type VehicleMarkerVariant = 'chip' | 'arrow';
 export interface TrackedVehicle {
   id: string; model: string; driver: string; status: VehicleStatus; speed: number;
   fuel: number; location: string; updated: string; lat: number; lng: number;
   image?: string | null;
+  /**
+   * Compass bearing (degrees clockwise from north) the marker points along.
+   * A live feed sets this from the snapped trail so the marker follows the road
+   * instead of the raw GPS heading.
+   */
+  heading?: number | null;
+  /** Pulses the marker halo while the record is live. */
+  live?: boolean;
+  /** Marker shape; defaults to the circular `chip`. */
+  variant?: VehicleMarkerVariant;
 }
 export interface MapZoneOverlay {
   id: string;
@@ -49,6 +86,29 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly showOverlays = input(true);
   readonly isFullscreen = input(false);
   readonly detailsPanelOpen = input(false);
+  /**
+   * Screen-space placement of the followed marker: 0.5 centres it, lower values
+   * park it toward the left edge. Expressed as a fraction so it stays exact at
+   * any container width (the vehicle HUD uses 0.32 to clear its speedometer).
+   */
+  readonly cameraOffsetX = input(0.5);
+  /** Zoom used while following the selected marker. */
+  readonly followZoom = input(14);
+  /**
+   * Ordered breadcrumb of the followed vehicle's positions. Each new point is
+   * snapped to the road network with OSRM and appended to an animated trail, so
+   * the path drawn on the map follows real roads rather than cutting corners.
+   * Pass an empty array to clear the trail.
+   */
+  readonly liveTrail = input<LatLng[]>([]);
+  readonly trailColor = input('');
+  /**
+   * Optional popup body builder. The default card is vehicle-shaped (thumbnail,
+   * driver, speed/fuel), so a page with a different record shape — POIs, for
+   * instance — supplies its own markup here and keeps the same themed popup
+   * surface, close button and anchor behaviour.
+   */
+  readonly popupTemplate = input<((vehicle: TrackedVehicle) => string) | null>(null);
   readonly vehicleSelected = output<TrackedVehicle>();
   readonly fullscreenVehicleClick = output<TrackedVehicle>();
   readonly fullscreenChanged = output<boolean>();
@@ -166,6 +226,26 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         this.closeOtherPopups(selectedId);
       }
       this.updateMarkerSelection(selectedId);
+    });
+    effect(() => {
+      const trail = this.liveTrail();
+      if (!this.map) return;
+      this.renderLiveTrail(trail);
+    });
+    // The trail decides which way the marker points, so re-apply the rotation
+    // whenever a new hop lands. Without this the arrow keeps the heading from
+    // the last realtime tick instead of the road it is travelling along.
+    effect(() => {
+      this.liveTrail();
+      const selectedId = this.selectedVehicleId();
+      if (!this.map || !selectedId) return;
+      const marker = this.markers.get(selectedId);
+      const vehicle = this.markerVehicles.get(selectedId);
+      if (!marker || !vehicle) return;
+      const bearing = this.trailBearing() ?? Number(vehicle.heading);
+      if (!Number.isFinite(bearing)) return;
+      marker.setRotationAlignment('map');
+      marker.setRotation((bearing + 360) % 360);
     });
   }
 
@@ -360,9 +440,20 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   private createVehicleMarker(vehicle: TrackedVehicle, selectedId: string | null): HTMLElement {
     const selected = vehicle.id === selectedId;
-    const size = selected ? 44 : 34;
     const color = this.statusColor(vehicle.status);
     const image = this.vehicleImageUrl(vehicle.image);
+    if (vehicle.variant === 'arrow') {
+      // Directional glyph: no chip, no circular mask, sized so the arrow reads at
+      // full scale and the bearing rotation is visible.
+      return markerElement(`
+        <div class="vehicle-marker vehicle-marker--arrow${selected ? ' selected' : ''}"
+          style="--marker-color:${color}">
+          <span class="vehicle-marker-halo"></span>
+          <img src="${image}" alt="${vehicle.id}" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'">
+        </div>
+      `);
+    }
+    const size = selected ? 44 : 34;
     return markerElement(`
       <div class="vehicle-marker${selected ? ' selected' : ''}"
         style="width:${size}px;height:${size}px;border-color:${color};
@@ -383,19 +474,39 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const size = selected ? 44 : 34;
     const width = `${size}px`;
     const color = this.statusColor(vehicle.status);
-    element.className = `vehicle-marker${selected ? ' selected' : ''}`;
-    if (element.style.width !== width) element.style.width = width;
-    if (element.style.height !== width) element.style.height = width;
-    if (element.style.borderColor !== color) element.style.borderColor = color;
-    const shadow = `0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}`;
-    if (element.style.boxShadow !== shadow) element.style.boxShadow = shadow;
+    const arrow = vehicle.variant === 'arrow';
+    element.className = `vehicle-marker${arrow ? ' vehicle-marker--arrow' : ''}${selected ? ' selected' : ''}${vehicle.live ? ' live' : ''}`;
+    if (element.style.getPropertyValue('--marker-color') !== color)
+      element.style.setProperty('--marker-color', color);
+    // The arrow variant is sized entirely by CSS, so only the shared image
+    // swap below applies to it; the chip keeps its own size/border/shadow.
+    if (!arrow) {
+      if (element.style.width !== width) element.style.width = width;
+      if (element.style.height !== width) element.style.height = width;
+      if (element.style.borderColor !== color) element.style.borderColor = color;
+      const shadow = `0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}`;
+      if (element.style.boxShadow !== shadow) element.style.boxShadow = shadow;
+    }
     const image = element.querySelector('img');
     const imageUrl = this.vehicleImageUrl(vehicle.image);
     if (image && image.getAttribute('src') !== imageUrl) image.src = imageUrl;
     if (image && image.alt !== vehicle.id) image.alt = vehicle.id;
+    // A heading rotates the marker with the map, so the icon stays aligned to
+    // the street it is travelling along under any pitch or bearing.
+    const heading = Number(vehicle.heading);
+    if (Number.isFinite(heading)) {
+      marker.setRotationAlignment('map');
+      marker.setRotation((heading + 360) % 360);
+    } else {
+      marker.setRotation(0);
+    }
   }
 
   private vehiclePopupHtml(vehicle: TrackedVehicle): string {
+    // A page-supplied builder takes over the body; the popup surface, close
+    // button and hover/pin behaviour are unchanged.
+    const custom = this.popupTemplate();
+    if (custom) return custom(vehicle);
     const statusColor = this.statusColor(vehicle.status);
     const speed = vehicle.speed > 0 ? `<span class="vp-detail">${Math.round(vehicle.speed)} km/h</span>` : '';
     const fuel = vehicle.fuel > 0 ? `<span class="vp-detail">Fuel ${Math.round(vehicle.fuel)}%</span>` : '';
@@ -752,6 +863,121 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     return this.minMemberSeparation(vehicles) >= FleetMap.CLUSTER_EXIT_PIXEL_RADIUS;
   }
 
+  // ── Live road-snapped trail ────────────────────────────────
+  // Positions arrive as raw GPS breadcrumbs. Each hop is snapped to the road
+  // network with OSRM so the trail never cuts across blocks, and the newly added
+  // hop is revealed with a dash-offset animation rather than appearing (and
+  // vanishing) in one step.
+  private trailSettled: LatLng[] = [];
+  private trailPending: LatLng[] = [];
+  private trailRaw: LatLng[] = [];
+  private trailToken = 0;
+  private trailFrame?: number;
+
+  private renderLiveTrail(raw: LatLng[]): void {
+    if (!this.map?.isStyleLoaded()) return;
+    // A shrinking breadcrumb means the consumer reset (or re-seeded) the trail.
+    if (raw.length < this.trailRaw.length) {
+      this.trailRaw = [];
+      this.trailSettled = [];
+      this.trailPending = [];
+      cancelAnimationFrame(this.trailFrame as number);
+    }
+    this.trailRaw = raw;
+    if (raw.length < 2) { this.paintTrail(); return; }
+    const from = this.trailRaw[this.trailRaw.length - 2];
+    const to = this.trailRaw[this.trailRaw.length - 1];
+    if (Math.abs(from[0] - to[0]) < 1e-6 && Math.abs(from[1] - to[1]) < 1e-6) return;
+    const token = ++this.trailToken;
+    void this.snapToRoad(from, to).then((geometry) => {
+      if (token !== this.trailToken || !geometry.length) return;
+      this.trailPending = geometry;
+      this.animateTrailIn();
+    });
+  }
+
+  /** OSRM driving route between two fixes, falling back to the straight line. */
+  private async snapToRoad(from: LatLng, to: LatLng): Promise<LatLng[]> {
+    const fallback: LatLng[] = [from, to];
+    const coordinates = `${from[1]},${from[0]};${to[1]},${to[0]}`;
+    for (const baseUrl of [environment.osrmBaseUrl, environment.osrmFallbackUrl]) {
+      try {
+        const response = await fetch(
+          `${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson&alternatives=false&steps=false`,
+        );
+        if (!response.ok) continue;
+        const result = await response.json() as {
+          code?: string;
+          routes?: { geometry?: { coordinates?: [number, number][] } }[];
+        };
+        if (result.code !== 'Ok') continue;
+        const points = result.routes?.[0]?.geometry?.coordinates;
+        if (points?.length) return points.map(([lng, lat]) => [lat, lng]);
+      } catch {
+        // Try the next host; the straight line is the last resort.
+      }
+    }
+    return fallback;
+  }
+
+  /**
+   * Reveals the pending hop by trimming the visible coordinate window, so the
+   * line grows along the road instead of being redrawn. On completion the hop
+   * joins the settled trail and the marker heading follows its final bearing.
+   */
+  private animateTrailIn(): void {
+    cancelAnimationFrame(this.trailFrame as number);
+    const full = this.trailPending;
+    if (full.length < 2) { this.paintTrail(); return; }
+    const start = performance.now();
+    const duration = 700;
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      // Ease-out so the head decelerates into the new position.
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const visible = Math.max(2, Math.ceil(eased * full.length));
+      this.paintTrail(full.slice(0, visible));
+      if (progress < 1) {
+        this.trailFrame = requestAnimationFrame(step);
+        return;
+      }
+      this.trailSettled = this.trailSettled.concat(full.slice(1));
+      this.trailPending = [];
+      this.paintTrail();
+    };
+    this.trailFrame = requestAnimationFrame(step);
+  }
+
+  private paintTrail(pending: LatLng[] = this.trailPending): void {
+    if (!this.map) return;
+    const points = this.trailSettled.concat(pending);
+    if (points.length < 2) {
+      removeGeoJson(this.map, 'fleet-trail', TRAIL_LAYER_IDS);
+      return;
+    }
+    const color = this.trailColor() || this.brandColor();
+    upsertGeoJson(
+      this.map,
+      'fleet-trail',
+      lineFeature(points, { color }),
+      TRAIL_LAYERS(color),
+    );
+  }
+
+  /** Bearing of the last drawn segment, so the marker points the way it travels. */
+  private trailBearing(): number | null {
+    const points = this.trailSettled.concat(this.trailPending);
+    if (points.length < 2) return null;
+    const [fromLat, fromLng] = points[points.length - 2];
+    const [toLat, toLng] = points[points.length - 1];
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const y = Math.sin(toRad(toLng - fromLng)) * Math.cos(toRad(toLat));
+    const x = Math.cos(toRad(fromLat)) * Math.sin(toRad(toLat))
+      - Math.sin(toRad(fromLat)) * Math.cos(toRad(toLat)) * Math.cos(toRad(toLng - fromLng));
+    const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+    return (bearing + 360) % 360;
+  }
+
   private brandColor(): string {
     const styles = getComputedStyle(document.documentElement);
     const value = styles.getPropertyValue('--color-brand-600').trim();
@@ -818,10 +1044,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     if (!this.map) return;
     this.map.flyTo({
       center: [vehicle.lng, vehicle.lat],
-      zoom: 14,
+      zoom: this.followZoom(),
       duration: 1200,
       essential: true,
-      padding: { top: 0, bottom: 0, left: 0, right: this.panelPadding() },
+      padding: this.followPadding(),
     });
     const marker = this.markers.get(vehicle.id);
     if (this.selectedVehicleId() === vehicle.id) {
@@ -831,6 +1057,21 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.closeOtherPopups(vehicle.id);
     }
     if (marker && marker.getPopup() && !marker.getPopup()?.isOpen()) marker.togglePopup();
+  }
+
+  /**
+   * Padding that places the followed marker `cameraOffsetX` of the way across
+   * the container. A centred marker (0.5) yields no padding, so the existing
+   * live-tracking behaviour is unchanged; the HUD passes 0.32 to keep the arrow
+   * clear of its speedometer.
+   */
+  private followPadding(): maplibregl.PaddingOptions {
+    const width = this.map?.getContainer().clientWidth ?? 0;
+    const offset = Math.min(0.98, Math.max(0.02, this.cameraOffsetX()));
+    // Left padding pushes the centre point to the right of the inset, so the
+    // marker lands at `offset * width` from the left edge.
+    const left = width * offset;
+    return { top: 0, bottom: 0, left, right: Math.max(this.panelPadding(), width - left * 2) };
   }
 
   private statusColor(status: VehicleStatus): string {
@@ -843,6 +1084,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.clusterSyncFrame !== undefined) cancelAnimationFrame(this.clusterSyncFrame);
+    cancelAnimationFrame(this.trailFrame as number);
     clearTimeout(this.readyFallback);
     this.resizeObserver?.disconnect();
     this.map?.remove();

@@ -1,6 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { SmoothHeight, Tooltip } from '@iotility/shared-ui';
-import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
+import { FleetMap, MapZoneOverlay, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { PoiForm, PoiFormValue } from './poi-form/poi-form';
 
@@ -62,7 +62,57 @@ const POI_TYPE_CONFIG: Array<{ id: PoiType; label: string; paths: string[] }> = 
     ] },
 ];
 
+/** Legacy minimum accepted radius, reused as the floor for area footprints. */
+const POI_RADIUS_MIN = 50;
+
 interface PoiVisit { vehicle: string; driver: string; time: string; dwell: string; breach?: boolean; }
+/**
+ * Per-type map marker art. The fleet map draws whatever image the marker
+ * record carries, so POIs point at the type pin/asset set instead of the
+ * default vehicle silhouette.
+ */
+const POI_MARKER_ASSETS: Record<PoiType, string> = {
+  depot: 'assets/fleetpoint/icons/poi-type-depot.svg',
+  customer: 'assets/fleetpoint/icons/poi-type-customer.svg',
+  fuel: 'assets/fleetpoint/icons/poi-type-fuel.svg',
+  rest: 'assets/fleetpoint/icons/poi-type-rest.svg',
+  exclusion: 'assets/fleetpoint/icons/poi-type-exclusion.svg',
+  unsafe: 'assets/fleetpoint/icons/poi-type-unsafe.svg',
+  competitor: 'assets/fleetpoint/icons/poi-type-competitor.svg',
+  route: 'assets/fleetpoint/icons/poi-type-route.svg',
+  custom: 'assets/fleetpoint/icons/poi-type-custom.svg',
+};
+
+/**
+ * Types that describe an AREA rather than a single point. These are drawn on the
+ * map as a geozone footprint — a filled polygon with an outline — using the POI
+ * radius, instead of (or alongside) a pin. The remaining types are explicitly
+ * location-based, so they keep a marker only.
+ */
+const POI_AREA_TYPES: Record<PoiType, boolean> = {
+  depot: false,
+  customer: false,
+  fuel: false,
+  rest: false,
+  exclusion: true,
+  unsafe: true,
+  competitor: false,
+  route: true,
+  custom: false,
+};
+
+/** Map colours, matching the legend and the main-branch type palette. */
+const POI_MAP_COLORS: Record<PoiType, string> = {
+  depot: '#7c3aed',
+  customer: '#2563eb',
+  fuel: '#d97706',
+  rest: '#16a34a',
+  exclusion: '#dc2626',
+  unsafe: '#ea580c',
+  competitor: '#e11d48',
+  route: '#0d9488',
+  custom: '#6b7280',
+};
 interface PoiRecord {
   id: string; name: string; address: string; type: PoiType; visitsToday: number; assigned: string;
   radius: number; geozone: boolean; alerts: number; sla?: number; lat: number; lng: number;
@@ -99,18 +149,19 @@ export class PoiPage {
     { id: 'unsafe', label: 'Unsafe Area' }, { id: 'competitor', label: 'Competitor' },
     { id: 'route', label: 'Route' }, { id: 'custom', label: 'Custom' },
   ];
+  /** Seeded listing, all placed across the Islamabad–Rawalpindi corridor. */
   private readonly records: PoiRecord[] = [
-    { id:'POI01',name:'Stratford Logistics Park — HQ',address:'Stratford Logistics Park, London E15 2NW',type:'depot',visitsToday:8,assigned:'All vehicles',radius:200,geozone:true,alerts:0,lat:51.542,lng:-0.003,visitsWeek:42,avgDwell:'34min',contact:'James Hartley',phone:'+44 7700 100001',visits:[{vehicle:'LP-4821',driver:'James Hartley',time:'06:12 → 06:48',dwell:'36min'},{vehicle:'LP-7734',driver:'Mohammed Al-Rashid',time:'07:05 → 07:31',dwell:'26min'}]},
-    { id:'POI02',name:'Trafford Park DC — Manchester',address:'Trafford Park Distribution Centre, Manchester M17',type:'depot',visitsToday:5,assigned:'1 fleet',radius:150,geozone:true,alerts:0,lat:53.467,lng:-2.311,visitsWeek:31,avgDwell:'29min',visits:[{vehicle:'LP-6612',driver:'Thomas Griffiths',time:'07:02 → 07:38',dwell:'36min'}]},
-    { id:'POI03',name:'Aston Depot — Birmingham',address:'Aston Industrial Estate, Birmingham B6 4BN',type:'depot',visitsToday:3,assigned:'1 fleet',radius:120,geozone:false,alerts:0,lat:52.501,lng:-1.884,visitsWeek:18,avgDwell:'41min',visits:[]},
-    { id:'POI04',name:'Amazon BHX2 Fulfilment Centre',address:'Amazon Fulfilment Centre, Birmingham B26 3QJ',type:'customer',visitsToday:4,assigned:'All vehicles',radius:300,geozone:true,alerts:1,sla:82,lat:52.455,lng:-1.743,visitsWeek:22,avgDwell:'68min',visits:[{vehicle:'LP-4821',driver:'James Hartley',time:'08:51 → 10:08',dwell:'77min',breach:true}]},
-    { id:'POI05',name:'Tesco RDC — Daventry',address:'Tesco Regional Distribution Centre, Daventry NN11 8QH',type:'customer',visitsToday:2,assigned:'2 fleets',radius:250,geozone:false,alerts:0,sla:94,lat:52.278,lng:-1.157,visitsWeek:15,avgDwell:'52min',visits:[{vehicle:'LP-3312',driver:'Oliver Pemberton',time:'09:10 → 09:54',dwell:'44min'}]},
-    { id:'POI06',name:'M1 Northbound Fuel Station',address:'Watford Gap Services, M1 Northbound',type:'fuel',visitsToday:4,assigned:'All vehicles',radius:100,geozone:false,alerts:0,lat:52.308,lng:-1.122,visitsWeek:27,avgDwell:'18min',visits:[]},
-    { id:'POI07',name:'London Low Emission Exclusion',address:'Central London exclusion boundary',type:'exclusion',visitsToday:6,assigned:'All vehicles',radius:500,geozone:true,alerts:1,lat:51.507,lng:-0.128,visitsWeek:36,avgDwell:'12min',visits:[{vehicle:'LP-5531',driver:'Priya Sharma',time:'10:22 → 10:34',dwell:'12min',breach:true}]},
-    { id:'POI08',name:'Leicester Driver Rest Area',address:'Leicester Forest East Services',type:'rest',visitsToday:0,assigned:'All vehicles',radius:120,geozone:false,alerts:0,lat:52.618,lng:-1.205,visitsWeek:9,avgDwell:'27min',visits:[]},
-    { id:'POI09',name:'Manchester Unsafe Loading Area',address:'Northern Quarter, Manchester',type:'unsafe',visitsToday:0,assigned:'2 vehicles',radius:80,geozone:true,alerts:0,lat:53.484,lng:-2.236,visitsWeek:3,avgDwell:'8min',visits:[]},
-    { id:'POI10',name:'Bristol Custom Checkpoint',address:'Avonmouth, Bristol BS11',type:'custom',visitsToday:0,assigned:'1 fleet',radius:90,geozone:false,alerts:0,lat:51.502,lng:-2.699,visitsWeek:6,avgDwell:'14min',visits:[]},
-    { id:'POI11',name:'Birmingham Airport Fuel Station',address:'Birmingham Airport, B26',type:'fuel',visitsToday:0,assigned:'All vehicles',radius:110,geozone:false,alerts:0,lat:52.452,lng:-1.734,visitsWeek:5,avgDwell:'22min',visits:[]},
+    { id:'POI01',name:'Islamabad Logistics Park — HQ',address:'Islamabad Industrial Zone, Sector I-9',type:'depot',visitsToday:8,assigned:'All vehicles',radius:200,geozone:true,alerts:0,lat:33.6989,lng:73.0665,visitsWeek:42,avgDwell:'34min',contact:'James Hartley',phone:'+92 300 1234501',visits:[{vehicle:'LP-4821',driver:'James Hartley',time:'06:12 → 06:48',dwell:'36min'},{vehicle:'LP-7734',driver:'Mohammed Al-Rashid',time:'07:05 → 07:31',dwell:'26min'}]},
+    { id:'POI02',name:'Rawalpindi Distribution Centre',address:'Rawat Industrial Estate, Rawalpindi',type:'depot',visitsToday:5,assigned:'1 fleet',radius:150,geozone:true,alerts:0,lat:33.6010,lng:73.0479,visitsWeek:31,avgDwell:'29min',visits:[{vehicle:'LP-6612',driver:'Thomas Griffiths',time:'07:02 → 07:38',dwell:'36min'}]},
+    { id:'POI03',name:'Sahiwal Road Depot',address:'Sahiwal Road, Rawalpindi',type:'depot',visitsToday:3,assigned:'1 fleet',radius:120,geozone:false,alerts:0,lat:33.6540,lng:73.0760,visitsWeek:18,avgDwell:'41min',visits:[]},
+    { id:'POI04',name:'Saidpur Fulfilment Centre',address:'Saidpur Road, Saidpur, Islamabad',type:'customer',visitsToday:4,assigned:'All vehicles',radius:300,geozone:true,alerts:1,sla:82,lat:33.6350,lng:73.0400,visitsWeek:22,avgDwell:'68min',visits:[{vehicle:'LP-4821',driver:'James Hartley',time:'08:51 → 10:08',dwell:'77min',breach:true}]},
+    { id:'POI05',name:'Blue Area RDC — Islamabad',address:'Fazal-e-Haq Road, Blue Area, Islamabad',type:'customer',visitsToday:2,assigned:'2 fleets',radius:250,geozone:false,alerts:0,sla:94,lat:33.7100,lng:73.0600,visitsWeek:15,avgDwell:'52min',visits:[{vehicle:'LP-3312',driver:'Oliver Pemberton',time:'09:10 → 09:54',dwell:'44min'}]},
+    { id:'POI06',name:'M-2 Northbound Fuel Station',address:'M-2 Motorway, Kaharwan Interchange, Islamabad',type:'fuel',visitsToday:4,assigned:'All vehicles',radius:100,geozone:false,alerts:0,lat:33.7300,lng:72.8500,visitsWeek:27,avgDwell:'18min',visits:[]},
+    { id:'POI07',name:'Islamabad Low Emission Exclusion',address:'Red Zone restricted boundary, Islamabad',type:'exclusion',visitsToday:6,assigned:'All vehicles',radius:500,geozone:true,alerts:1,lat:33.6844,lng:73.0479,visitsWeek:36,avgDwell:'12min',visits:[{vehicle:'LP-5531',driver:'Priya Sharma',time:'10:22 → 10:34',dwell:'12min',breach:true}]},
+    { id:'POI08',name:'Rawalpindi Driver Rest Area',address:'Pir Wadhai Road Service Area, Rawalpindi',type:'rest',visitsToday:0,assigned:'All vehicles',radius:120,geozone:false,alerts:0,lat:33.5900,lng:73.0400,visitsWeek:9,avgDwell:'27min',visits:[]},
+    { id:'POI09',name:'Taxila Unsafe Loading Area',address:'Margalla Industrial Zone, Taxila',type:'unsafe',visitsToday:0,assigned:'2 vehicles',radius:80,geozone:true,alerts:0,lat:33.7450,lng:72.7900,visitsWeek:3,avgDwell:'8min',visits:[]},
+    { id:'POI10',name:'Chakri Custom Checkpoint',address:'Chakri Interchange, Rawalpindi',type:'custom',visitsToday:0,assigned:'1 fleet',radius:90,geozone:false,alerts:0,lat:33.6700,lng:72.9400,visitsWeek:6,avgDwell:'14min',visits:[]},
+    { id:'POI11',name:'Islamabad Airport Fuel Station',address:'Islamabad International Airport, Attock',type:'fuel',visitsToday:0,assigned:'All vehicles',radius:110,geozone:false,alerts:0,lat:33.5600,lng:72.8517,visitsWeek:5,avgDwell:'22min',visits:[]},
   ];
   protected readonly visibleTabs = computed(() => this.typeTabs
     .filter((tab) => tab.id === 'all' || this.count(tab.id) > 0));
@@ -136,8 +187,47 @@ export class PoiPage {
   );
   protected readonly mapPois = computed<TrackedVehicle[]>(() => this.filtered().map((poi) => ({
     id: poi.id, model: poi.name, driver: this.typeLabel(poi.type), status: this.mapStatus(poi),
-    speed: 0, fuel: 0, location: poi.address, updated: `${poi.visitsToday} visits today`, lat: poi.lat, lng: poi.lng,
+    speed: 0, fuel: 0, location: poi.address, updated: `${poi.visitsToday} visits today`,
+    lat: poi.lat, lng: poi.lng, image: POI_MARKER_ASSETS[poi.type],
   })));
+  /** True when the POI covers an area rather than a single location. */
+  protected isArea(poi: PoiRecord): boolean { return POI_AREA_TYPES[poi.type]; }
+  /**
+   * Area-typed POIs are handed to the map as zone overlays, so they render as a
+   * geozone footprint (filled area + outline) built from the POI radius. Their
+   * pin is kept as well, so the marker stays clickable and the popup keeps
+   * working exactly as it does for point POIs.
+   */
+  protected readonly mapZones = computed<MapZoneOverlay[]>(() => this.filtered()
+    .filter((poi) => POI_AREA_TYPES[poi.type])
+    .map((poi) => ({
+      id: poi.id,
+      label: poi.name,
+      geometry: 'circle' as const,
+      color: POI_MAP_COLORS[poi.type],
+      center: [poi.lat, poi.lng] as [number, number],
+      radius: Math.max(POI_RADIUS_MIN, poi.radius),
+    })));
+  /**
+   * Popup body for a POI marker, matching the `main` design: title, address,
+   * type with today's visit count, and an alert line when the POI has active
+   * alerts. Colours come from the app theme tokens, so it follows light/dark.
+   */
+  protected readonly poiPopupTemplate = (item: TrackedVehicle): string => {
+    const poi = this.records.find((record) => record.id === item.id);
+    const visits = poi?.visitsToday ?? 0;
+    const alerts = poi?.alerts ?? 0;
+    const alertRow = alerts
+      ? `<p class="poi-popup-alert"><span aria-hidden="true">⚠</span> ${alerts} active alert${alerts === 1 ? '' : 's'}</p>`
+      : '';
+    return `
+      <div class="poi-popup">
+        <h4 class="poi-popup-title">${item.model}</h4>
+        <p class="poi-popup-address">${item.location}</p>
+        <p class="poi-popup-meta"><span>${item.driver}</span><b>·</b><span>${visits} visits today</span></p>
+        ${alertRow}
+      </div>`;
+  };
   protected updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); }
   protected selectType(type: 'all' | PoiType): void { this.typeFilter.set(type); this.expandedId.set(null); }
   protected toggle(poi: PoiRecord): void { this.expandedId.update((id) => id === poi.id ? null : poi.id); }

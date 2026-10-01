@@ -98,7 +98,8 @@ export function timezoneCountryCenter(): LatLng {
   const lat = offsetMinutes >= 0 ? 25 : 40;
   return [lat, lng];
 }
-type LayerWithoutSource<T = maplibregl.LayerSpecification> = T extends { source: unknown }
+/** A style layer with its `source` omitted — `upsertGeoJson` supplies it. */
+export type LayerWithoutSource<T = maplibregl.LayerSpecification> = T extends { source: unknown }
   ? Omit<T, 'source'>
   : T;
 
