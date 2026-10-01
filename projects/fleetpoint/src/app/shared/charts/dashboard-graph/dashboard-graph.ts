@@ -230,7 +230,13 @@ export class DashboardGraphComponent {
       chartType === 'horizontal_stackbar_chart' || chartType === 'stackbar_chart';
     return {
       indexAxis: horizontal ? 'y' : 'x',
-      interaction: { mode: 'index', intersect: false },
+      // On a horizontal chart the index must be resolved on the category (y)
+      // axis. Without `axis: 'y'` Chart.js resolves it on the value (x) axis
+      // and returns whichever row's segment is nearest the cursor's x
+      // position, so hovering one driver can show another driver's data.
+      interaction: horizontal
+        ? { mode: 'nearest', axis: 'y', intersect: true }
+        : { mode: 'index', intersect: false },
       plugins: { legend: this.legendOptions() },
       scales: {
         x: {
