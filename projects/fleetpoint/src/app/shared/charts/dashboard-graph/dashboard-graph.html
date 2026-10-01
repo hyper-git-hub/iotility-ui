@@ -57,7 +57,17 @@
   </article>
 } @else if (graph().code === 'DA') {
   <article class="graph-card">
-    <header><div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div></header>
+    <header>
+      <div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div>
+      @if (filterOptions().length) {
+        <app-graph-filter
+        [options]="filterOptions()"
+        [ariaLabel]="filterAriaLabel()"
+        [selectedId]="selectedFilterId()"
+        (selected)="onFilterSelected($event)"
+        />
+      }
+    </header>
     @if (allocations().length) {
       <div class="allocation-list">
         @for (fleet of allocations(); track fleet.name) {
@@ -82,14 +92,30 @@
     }
   </article>
 } @else if (hasChartData() && isDoughnut()) {
-  <app-fleet-doughnut-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="doughnutData()" [options]="doughnutOptions()" />
+  <app-fleet-doughnut-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="doughnutData()" [options]="doughnutOptions()"  [filterOptions]="filterOptions()" [filterAriaLabel]="filterAriaLabel()"
+  [selectedFilterId]="selectedFilterId()"
+  (filterSelected)="onFilterSelected($event)"/>
 } @else if (hasChartData() && isLine()) {
-  <app-fleet-line-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="lineData()" [options]="lineOptions" />
+  <app-fleet-line-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="lineData()" [options]="lineOptions"  [filterOptions]="filterOptions()" [filterAriaLabel]="filterAriaLabel()"
+  [selectedFilterId]="selectedFilterId()"
+  (filterSelected)="onFilterSelected($event)"/>
 } @else if (hasChartData()) {
-  <app-fleet-bar-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="barData()" [options]="barOptions()" />
+  <app-fleet-bar-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="barData()" [options]="barOptions()"  [filterOptions]="filterOptions()" [filterAriaLabel]="filterAriaLabel()"
+  [selectedFilterId]="selectedFilterId()"
+  (filterSelected)="onFilterSelected($event)"/>
 } @else {
   <article class="graph-card">
-    <header><div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div></header>
+    <header>
+      <div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div>
+      @if (filterOptions().length) {
+        <app-graph-filter
+        [options]="filterOptions()"
+        [ariaLabel]="filterAriaLabel()"
+        [selectedId]="selectedFilterId()"
+        (selected)="onFilterSelected($event)"
+        />
+      }
+    </header>
     <div class="empty">
       <span class="empty-icon" aria-hidden="true">
         <svg viewBox="0 0 48 48">

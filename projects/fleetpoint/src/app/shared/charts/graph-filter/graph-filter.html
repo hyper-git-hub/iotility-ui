@@ -1,0 +1,18 @@
+@if (options().length) {
+  <span class="graph-filters">
+    <shared-dropdown
+      class="graph-filter"
+      [options]="options()"
+      mode="single"
+      align="right"
+      [showOptionIcons]="false"
+      [matchTriggerWidth]="true"
+      [selected]="[activeId()]"
+      (optionSelected)="selected.emit($event)"
+    >
+      <button dropdown-trigger type="button" [attr.aria-label]="ariaLabel()">
+        {{ label() }}
+      </button>
+    </shared-dropdown>
+  </span>
+}

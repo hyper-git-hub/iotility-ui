@@ -17,7 +17,7 @@ export class Maintenance {
 
   protected readonly maintenanceGraphs = computed(() => {
     const codes = ['MS', 'POVM'];
-    const cached = this.api.cachedGraphs().filter((graph) => codes.includes(graph.code));
+    const cached = this.api.graphs().filter((graph) => codes.includes(graph.code));
     return (cached.length ? cached : emptyDashboardGraphs().filter((graph) => codes.includes(graph.code)))
       .filter((graph) => this.widgets.isVisible('maintenance', graph.code))
       .sort((first, second) => codes.indexOf(first.code) - codes.indexOf(second.code));

@@ -23,10 +23,13 @@
     @if (badge()) {
       <span class="badge">{{ badge() }}</span>
     }
-    @if (filterLabel()) {
-      <select class="filter" [attr.aria-label]="title() + ' filter'">
-        <option>{{ filterLabel() }}</option>
-      </select>
+    @if (filterOptions().length) {
+      <app-graph-filter
+        [options]="filterOptions()"
+        [ariaLabel]="filterAriaLabel()"
+        [selectedId]="selectedFilterId()"
+        (selected)="filterSelected.emit($event)"
+      />
     }
   </header>
   <div class="chart-wrap"><canvas #canvas></canvas></div>

@@ -18,7 +18,7 @@ export class Safety {
 
   protected readonly safetyGraphs = computed(() => {
     const order = ['DSS', 'ADF', 'DVG', 'DCE'];
-    const cached = this.api.cachedGraphs().filter((graph) => order.includes(graph.code));
+    const cached = this.api.graphs().filter((graph) => order.includes(graph.code));
     const graphs = cached.length ? cached : emptyDashboardGraphs().filter((graph) => order.includes(graph.code));
     return [...graphs, this.dashcamEventsGraph]
       .filter((graph) => this.widgets.isVisible('safety', graph.code))

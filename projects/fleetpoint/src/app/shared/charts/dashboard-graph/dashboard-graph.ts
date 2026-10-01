@@ -1,14 +1,70 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { ChartData, ChartOptions } from 'chart.js';
-import { DashboardGraph, GraphSeries } from '../../services/fleet-dashboard-api.service';
+import { DashboardGraph, GraphSeries, FleetDashboardApiService } from '../../services/fleet-dashboard-api.service';
 import { FleetBarChart } from '../bar-chart/bar-chart';
 import { getFleetChartColors } from '../chart-colors';
+import { GraphFilter } from '../graph-filter/graph-filter';
 import { FleetDoughnutChart } from '../doughnut-chart/doughnut-chart';
 import { FleetLineChart } from '../line-chart/line-chart';
+import { DropdownOption } from '@iotility/shared-ui';
+
+/** One option in a graph's filter dropdown; `id` is sent as `filter_by`. */
+export interface DashboardGraphFilter {
+  ariaLabel: string;
+  options: DropdownOption[];
+}
+
+const CALENDER: DropdownOption[] = [
+  { id: 'Month', label: 'Month' },
+  { id: 'Week', label: 'Week' },
+  { id: 'Today', label: 'Today' },
+];
+
+const JOB_CALENDER: DropdownOption[] = [
+  { id: 'today', label: 'Today' },
+  { id: 'last_week', label: 'Last Week' },
+  { id: 'this_month', label: 'This Month' },
+  { id: 'last_month', label: 'Last Month' },
+];
+
+/**
+ * Filter options per graph code, matching the legacy FMS dashboard exactly so
+ * both apps send identical `filter_by` values to the backend.
+ *
+ * Only graphs FleetPoint actually renders are listed. The legacy app also
+ * filters DP, FE, FU, FC, FUT and DA; those need a live fleet list or a
+ * second `order` param, so they are left out until a page needs them.
+ */
+export const DASHBOARD_GRAPH_FILTERS: Record<string, DashboardGraphFilter> = {
+  // Aggressively Driven Fleets — Month / Week / Today
+  ADF: { ariaLabel: 'Filter aggressively driven fleets by period', options: CALENDER },
+  // Driver Safety Scorecard — Month / Week / Today
+  DSS: { ariaLabel: 'Filter driver safety scorecard by period', options: CALENDER },
+  // Driver Violations — group by Fleet or Type
+  DVG: {
+    ariaLabel: 'Group driver violations',
+    options: [
+      { id: 'fleet', label: 'Fleet' },
+      { id: 'type', label: 'Type' },
+    ],
+  },
+  // Statistics of Jobs — Today / Last Week / This Month / Last Month
+  JSJ: { ariaLabel: 'Filter job statistics by period', options: JOB_CALENDER },
+  // Staff Statistics — same periods as JSJ
+  JSS: { ariaLabel: 'Filter staff statistics by period', options: JOB_CALENDER },
+  // Maintenance status — group by Service Type or Status Type
+  MS: {
+    ariaLabel: 'Group maintenance status',
+    options: [
+      { id: 'service', label: 'Service Type' },
+      { id: 'status', label: 'Status Type' },
+    ],
+  },
+};
 
 @Component({
   selector: 'app-dashboard-graph',
-  imports: [FleetBarChart, FleetDoughnutChart, FleetLineChart],
+  imports: [FleetBarChart, FleetDoughnutChart, FleetLineChart, GraphFilter],
   templateUrl: './dashboard-graph.html',
   styleUrl: './dashboard-graph.css',
 })
@@ -19,6 +75,23 @@ export class DashboardGraphComponent {
   private readonly colors = getFleetChartColors();
   /** One distinct color per series so multi-fleet charts (e.g. Driver Violations) stay readable. */
   private readonly palette = this.colors.series;
+
+  private readonly api = inject(FleetDashboardApiService);
+
+  /** Per-graph filter choice, so switching dashboard tabs keeps it. */
+  private readonly selections = signal<Record<string, string>>({});
+
+  protected readonly graphFilter = computed(() => DASHBOARD_GRAPH_FILTERS[this.graph().code] ?? null);
+  protected readonly filterOptions = computed<DropdownOption[]>(() => this.graphFilter()?.options ?? []);
+  protected readonly selectedFilterId = computed(() => this.selections()[this.graph().code] ?? '');
+  
+  protected readonly filterAriaLabel = computed(() => this.graphFilter()?.ariaLabel ?? 'Filter');
+
+  protected onFilterSelected(option: DropdownOption): void {
+    const code = this.graph().code;
+    this.selections.update((state) => ({ ...state, [code]: option.id }));
+    this.api.applyGraphFilter(code, option.id);
+  }
 
   protected allocations() {
     const data = this.graph().data;
@@ -97,7 +170,7 @@ export class DashboardGraphComponent {
     );
   }
 
-  protected barData(): ChartData<'bar', number[], string> {
+  protected readonly barData = computed<ChartData<'bar', number[], string>>(() => {
     const data = this.graph().data;
     if (!data) return { labels: [], datasets: [] };
     if (Array.isArray(data)) {
@@ -153,9 +226,10 @@ export class DashboardGraphComponent {
       };
     }
     return { labels: data.categories ?? [], datasets: [] };
-  }
+    });
 
-  protected lineData(): ChartData<'line', number[], string> {
+
+  protected readonly lineData = computed<ChartData<'line', number[], string>>(() => {
     const data = this.graph().data;
     if (!data || Array.isArray(data)) return { labels: [], datasets: [] };
     return {
@@ -173,9 +247,10 @@ export class DashboardGraphComponent {
         pointRadius: 3,
       })),
     };
-  }
+    });
 
-  protected doughnutData(): ChartData<'doughnut', number[], string> {
+
+  protected readonly doughnutData = computed<ChartData<'doughnut', number[], string>>(() => {
     const graph = this.graph();
     if (!graph.data) return { labels: [], datasets: [] };
     if (Array.isArray(graph.data)) {
@@ -219,7 +294,8 @@ export class DashboardGraphComponent {
         borderWidth: 0,
       }],
     };
-  }
+    });
+
 
   protected barOptions(): ChartOptions<'bar'> {
     const graph = this.graph();

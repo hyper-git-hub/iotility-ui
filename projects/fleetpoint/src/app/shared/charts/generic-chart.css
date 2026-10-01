@@ -33,9 +33,6 @@
 .status-legend i.good { @apply bg-success; }
 .status-legend i.ok { @apply bg-warning; }
 .status-legend i.low { @apply bg-danger; }
-.filter {
-  @apply h-8 cursor-pointer rounded-lg border border-line bg-white px-2.5 text-[10px] text-muted outline-none dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
-}
 .chart-wrap {
   @apply relative h-56 min-h-56 flex-1;
 }

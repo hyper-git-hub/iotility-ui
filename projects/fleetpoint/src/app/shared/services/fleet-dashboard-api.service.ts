@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -43,12 +43,14 @@ export interface DriverAllocationFleet {
   name: string;
   data: Array<{ vehicle: string; driver: string }>;
 }
+
 export interface DashboardGraph {
   code: string;
   analytics_type?: string;
   name: string;
   data: DashboardGraphData | DashboardGraphRow[] | null;
   chart_type: string | null;
+  /** Value sent back as `filter_by` when this graph's filter changes. */
   filter_by?: string;
 }
 
@@ -92,6 +94,21 @@ export interface DashcamDevice {
 export class FleetDashboardApiService {
   private readonly graphCache = signal<DashboardGraph[]>(this.readGraphCache());
   readonly cachedGraphs = this.graphCache.asReadonly();
+  /**
+   * Filtered results keyed by graph code. Held in memory only — a reload must
+   * restore the unfiltered graphs rather than a stale scoped selection.
+   */
+  private readonly graphFilterOverrides = signal<Record<string, DashboardGraphData | DashboardGraphRow[]>>({});
+  /** Graph codes with an in-flight filter request, so cards can show a loader. */
+  private readonly graphFilterLoading = signal<Record<string, boolean>>({});
+  readonly graphs = computed(() => {
+    const overrides = this.graphFilterOverrides();
+    if (!Object.keys(overrides).length) return this.graphCache();
+    return this.graphCache().map((graph) =>
+      overrides[graph.code] === undefined ? graph : { ...graph, data: overrides[graph.code] },
+    );
+  });
+  readonly filteringGraphs = this.graphFilterLoading.asReadonly();
 
   constructor(private readonly http: HttpClient) {}
 
@@ -125,6 +142,53 @@ export class FleetDashboardApiService {
     return this.http.get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
       params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
     });
+  }
+
+  /**
+   * Re-fetches a single graph through its filter, mirroring the reference
+   * app's dashboard contract: `analytics_id` selects the graph and `filter_by`
+   * carries the chosen filter value (e.g. DSS + `Week`).
+   */
+  getGraphByFilter(code: string, filterBy: string): Observable<ApiResponse<DashboardAnalytics>> {
+    return this.http.get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
+      params: new HttpParams()
+        .set('dashboard_id', DASHBOARD_ID)
+        .set('analytics_id', code)
+        .set('filter_by', filterBy),
+    });
+  }
+
+  /**
+   * Applies a filter value to a graph and keeps the scoped data as an in-memory
+   * override. Passing `null` clears the override so the graph falls back to its
+   * unfiltered data.
+   */
+  applyGraphFilter(code: string, filterBy: string | null): void {
+    this.graphFilterLoading.update((state) => ({ ...state, [code]: true }));
+    if (!filterBy) {
+      this.patchFilter(code, null);
+      return;
+    }
+    this.getGraphByFilter(code, filterBy).subscribe({
+      next: (response) => {
+        const graphs = response?.data?.graphs;
+        const graph = Array.isArray(graphs) ? graphs.find((item) => item.code === code) : undefined;
+        const data = graph?.data ?? graphs?.[0]?.data ?? null;
+        this.patchFilter(code, data);
+      },
+      error: () => this.patchFilter(code, null),
+    });
+  }
+
+  private patchFilter(code: string, data: DashboardGraphData | DashboardGraphRow[] | null): void {
+    this.graphFilterOverrides.update((state) => {
+      if (data === null) {
+        const { [code]: _removed, ...rest } = state;
+        return rest;
+      }
+      return { ...state, [code]: data };
+    });
+    this.graphFilterLoading.update((state) => ({ ...state, [code]: false }));
   }
 
   getFleets(): Observable<ApiResponse<{ count: number; data: Fleet[] }>> {

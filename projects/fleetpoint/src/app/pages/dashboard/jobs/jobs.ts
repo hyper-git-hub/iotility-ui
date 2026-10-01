@@ -15,7 +15,7 @@ export class Jobs {
 
   protected readonly jobGraphs = computed(() => {
     const codes = ['JJ', 'JSJ', 'DTS', 'JSS'];
-    const cached = this.api.cachedGraphs().filter((graph) => codes.includes(graph.code));
+    const cached = this.api.graphs().filter((graph) => codes.includes(graph.code));
     return (cached.length ? cached : emptyDashboardGraphs().filter((graph) => codes.includes(graph.code)))
       .filter((graph) => this.widgets.isVisible('jobs', graph.code))
       .sort((first, second) => codes.indexOf(first.code) - codes.indexOf(second.code));
