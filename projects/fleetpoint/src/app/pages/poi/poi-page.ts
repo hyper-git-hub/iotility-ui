@@ -52,6 +52,16 @@ export class PoiPage {
     return this.records.filter((poi) => (this.typeFilter() === 'all' || poi.type === this.typeFilter())
       && (!query || `${poi.name} ${poi.address}`.toLowerCase().includes(query)));
   });
+  /**
+   * Filter signature handed to the fleet map. The type tabs and the search box
+   * reshape the visible POI set, so the map must re-frame on them — without
+   * this the camera stays parked on whichever POI was last focused and a
+   * filtered set that does not contain it renders off-screen. Static data, so
+   * the key is stable between edits and never re-fits on its own.
+   */
+  protected readonly mapFilterKey = computed(
+    () => `${this.typeFilter()}|${this.search().trim().toLowerCase()}`,
+  );
   protected readonly mapPois = computed<TrackedVehicle[]>(() => this.filtered().map((poi) => ({
     id: poi.id, model: poi.name, driver: this.typeLabel(poi.type), status: this.mapStatus(poi),
     speed: 0, fuel: 0, location: poi.address, updated: `${poi.visitsToday} visits today`, lat: poi.lat, lng: poi.lng,

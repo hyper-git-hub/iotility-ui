@@ -114,9 +114,11 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const selectedId = this.selectedVehicleId();
       const padding = this.panelPadding();
       const key = `${selectedId}|${padding}`;
-      if (key === this.lastCenterKey) return;
+      // Claim the key only once the camera is actually available. Recording it
+      // before this guard let a selection made during startup consume the key
+      // while the map was still null, so that centre-on-select never ran.
+      if (!this.map || key === this.lastCenterKey) return;
       this.lastCenterKey = key;
-      if (!this.map) return;
       const selected = untracked(() => this.vehicles()).find(({ id }) => id === selectedId);
       this.map.easeTo({
         ...(selected ? { center: [selected.lng, selected.lat] as [number, number] } : {}),
@@ -625,6 +627,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       if (div.dataset['position'] !== positionKey) {
         marker.setLngLat([group.lng, group.lat]);
         div.dataset['position'] = positionKey;
+        // The expand handler reads the cluster centre back off the dataset.
+        // Without these the click resolves lng/lat to NaN and does nothing.
+        div.dataset['lng'] = String(group.lng);
+        div.dataset['lat'] = String(group.lat);
       }
       if (div.dataset['count'] !== String(count)) div.dataset['count'] = String(count);
       const ids = JSON.stringify(group.ids);
@@ -657,17 +663,24 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const bounds = new LngLatBounds();
     for (const vehicle of vehicles) bounds.extend([vehicle.lng, vehicle.lat]);
     this.map.stop();
+    // Cap how far one click may travel. A tight group fits at a very high zoom,
+    // so honouring the fit exactly (or the old +8 jump) rockets the camera past
+    // the members and leaves the viewport empty. Members sit at the group
+    // centre, so a bounded step keeps them framed.
+    const ceiling = Math.min(this.map.getMaxZoom(), this.map.getZoom() + 4);
     if (bounds.getWest() === bounds.getEast() && bounds.getSouth() === bounds.getNorth()) {
-      this.map.jumpTo({ center, zoom: Math.min(this.map.getMaxZoom(), this.map.getZoom() + 8) });
+      this.map.easeTo({ center, zoom: ceiling, duration: 450 });
       this.recomputeClusters();
       return;
     }
-    this.map.fitBounds(bounds, {
-      // Uniform band already covers the overlay-safe insets on every side.
+    // Two zoom levels quadruple the on-screen separation, which clears the
+    // 68px exit radius and actually splits the group; union-find can otherwise
+    // chain markers into a wide box that still clusters at the fit zoom.
+    const camera = this.map.cameraForBounds(bounds, {
       padding: overlaySafePadding(96),
-      maxZoom: this.map.getMaxZoom(),
-      duration: 450,
     });
+    const zoom = Math.min(ceiling, Math.max(camera?.zoom ?? 0, this.map.getZoom() + 2));
+    this.map.easeTo({ center: camera?.center ?? center, zoom, duration: 450 });
   }
 
   private brandColor(): string {
