@@ -4,13 +4,82 @@ import { FleetMap, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { PoiForm, PoiFormValue } from './poi-form/poi-form';
 
-type PoiType = 'depot' | 'customer' | 'fuel' | 'rest' | 'exclusion' | 'unsafe' | 'custom';
+type PoiType =
+  | 'depot' | 'customer' | 'fuel' | 'rest' | 'exclusion'
+  | 'unsafe' | 'competitor' | 'route' | 'custom';
+
+/**
+ * Type vocabulary and icons from the `main` branch POI_TYPE_CONFIG
+ * (Building2, Users, Fuel, Coffee, Shield, AlertOctagon, Zap, MapPin).
+ * Inlined rather than <img> so `currentColor` applies and the chips follow the
+ * app theme instead of a baked-in stroke colour.
+ */
+const POI_TYPE_CONFIG: Array<{ id: PoiType; label: string; paths: string[] }> = [
+  { id: 'depot', label: 'Depot', paths: [
+      'M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z',
+      'M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2',
+      'M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2',
+      'M10 6h4',
+      'M10 10h4',
+      'M10 14h4',
+      'M10 18h4',
+    ] },
+  { id: 'customer', label: 'Customer Site', paths: [
+      'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2',
+      'M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8',
+      'M22 21v-2a4 4 0 0 0-3-3.87',
+      'M16 3.13a4 4 0 0 1 0 7.75',
+    ] },
+  { id: 'fuel', label: 'Fuel Station', paths: [
+      'M3 22h12',
+      'M4 9h10',
+      'M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18',
+      'M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5',
+    ] },
+  { id: 'rest', label: 'Rest Stop', paths: [
+      'M10 2v2',
+      'M14 2v2',
+      'M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1',
+    ] },
+  { id: 'exclusion', label: 'Exclusion Zone', paths: [
+      'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z',
+    ] },
+  { id: 'unsafe', label: 'Unsafe Area', paths: [
+      'M8.7 3.7 2.4 10a2 2 0 0 0 0 2.8l6.3 6.3a2 2 0 0 0 2.8 0l6.3-6.3a2 2 0 0 0 0-2.8l-6.3-6.3a2 2 0 0 0-2.8 0',
+      'M12 8v4',
+      'M12 16h.01',
+    ] },
+  { id: 'competitor', label: 'Competitor', paths: [
+      'M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z',
+    ] },
+  { id: 'route', label: 'Route', paths: [
+      'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0',
+      'M12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6',
+    ] },
+  { id: 'custom', label: 'Custom', paths: [
+      'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0',
+      'M12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6',
+    ] },
+];
+
 interface PoiVisit { vehicle: string; driver: string; time: string; dwell: string; breach?: boolean; }
 interface PoiRecord {
   id: string; name: string; address: string; type: PoiType; visitsToday: number; assigned: string;
   radius: number; geozone: boolean; alerts: number; sla?: number; lat: number; lng: number;
   visitsWeek: number; avgDwell: string; contact?: string; phone?: string; visits: PoiVisit[];
 }
+
+/** Lucide icon paths from the `main` branch POI card (Clock, Users, MapPin, ShieldCheck, ChevronDown). */
+const ICONS: Record<string, string[]> = {
+  clock: ['M12 6v6l4 2', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20'],
+  users: ['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8', 'M22 21v-2a4 4 0 0 0-3-3.87'],
+  pin: ['M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0', 'M12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6'],
+  shield: ['M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z', 'm9 12 2 2 4-4'],
+  chevron: ['m6 9 6 6 6-6'],
+  eye: ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6'],
+  pencil: ['M12 20h9', 'M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z'],
+  trash: ['M3 6h18', 'M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2', 'M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6', 'M10 11v6', 'M14 11v6'],
+};
 
 @Component({
   selector: 'app-poi-page',
@@ -27,7 +96,8 @@ export class PoiPage {
     { id: 'all', label: 'All POIs' }, { id: 'depot', label: 'Depot' },
     { id: 'customer', label: 'Customer Site' }, { id: 'fuel', label: 'Fuel Station' },
     { id: 'rest', label: 'Rest Stop' }, { id: 'exclusion', label: 'Exclusion Zone' },
-    { id: 'unsafe', label: 'Unsafe Area' }, { id: 'custom', label: 'Custom' },
+    { id: 'unsafe', label: 'Unsafe Area' }, { id: 'competitor', label: 'Competitor' },
+    { id: 'route', label: 'Route' }, { id: 'custom', label: 'Custom' },
   ];
   private readonly records: PoiRecord[] = [
     { id:'POI01',name:'Stratford Logistics Park — HQ',address:'Stratford Logistics Park, London E15 2NW',type:'depot',visitsToday:8,assigned:'All vehicles',radius:200,geozone:true,alerts:0,lat:51.542,lng:-0.003,visitsWeek:42,avgDwell:'34min',contact:'James Hartley',phone:'+44 7700 100001',visits:[{vehicle:'LP-4821',driver:'James Hartley',time:'06:12 → 06:48',dwell:'36min'},{vehicle:'LP-7734',driver:'Mohammed Al-Rashid',time:'07:05 → 07:31',dwell:'26min'}]},
@@ -40,8 +110,10 @@ export class PoiPage {
     { id:'POI08',name:'Leicester Driver Rest Area',address:'Leicester Forest East Services',type:'rest',visitsToday:0,assigned:'All vehicles',radius:120,geozone:false,alerts:0,lat:52.618,lng:-1.205,visitsWeek:9,avgDwell:'27min',visits:[]},
     { id:'POI09',name:'Manchester Unsafe Loading Area',address:'Northern Quarter, Manchester',type:'unsafe',visitsToday:0,assigned:'2 vehicles',radius:80,geozone:true,alerts:0,lat:53.484,lng:-2.236,visitsWeek:3,avgDwell:'8min',visits:[]},
     { id:'POI10',name:'Bristol Custom Checkpoint',address:'Avonmouth, Bristol BS11',type:'custom',visitsToday:0,assigned:'1 fleet',radius:90,geozone:false,alerts:0,lat:51.502,lng:-2.699,visitsWeek:6,avgDwell:'14min',visits:[]},
-    { id:'POI11',name:'Birmingham Airport Rest Stop',address:'Birmingham Airport, B26',type:'rest',visitsToday:0,assigned:'All vehicles',radius:110,geozone:false,alerts:0,lat:52.452,lng:-1.734,visitsWeek:5,avgDwell:'22min',visits:[]},
+    { id:'POI11',name:'Birmingham Airport Fuel Station',address:'Birmingham Airport, B26',type:'fuel',visitsToday:0,assigned:'All vehicles',radius:110,geozone:false,alerts:0,lat:52.452,lng:-1.734,visitsWeek:5,avgDwell:'22min',visits:[]},
   ];
+  protected readonly visibleTabs = computed(() => this.typeTabs
+    .filter((tab) => tab.id === 'all' || this.count(tab.id) > 0));
   protected readonly total = this.records.length;
   protected readonly visitsToday = this.records.reduce((sum, poi) => sum + poi.visitsToday, 0);
   protected readonly activeAlerts = this.records.filter((poi) => poi.alerts > 0).length;
@@ -74,7 +146,12 @@ export class PoiPage {
   protected closePoiForm(): void { this.poiFormOpen.set(false); }
   protected createPoi(_: PoiFormValue): void { this.closePoiForm(); }
   protected count(type: 'all' | PoiType): number { return type === 'all' ? this.total : this.records.filter((poi) => poi.type === type).length; }
+  protected typeIconPaths(type: PoiType): string[] {
+    return POI_TYPE_CONFIG.find((config) => config.id === type)?.paths ?? POI_TYPE_CONFIG[8].paths;
+  }
+
   protected typeLabel(type: PoiType): string { return this.typeTabs.find((item) => item.id === type)?.label ?? 'Custom'; }
+  protected icon(name: keyof typeof ICONS): string[] { return ICONS[name]; }
   protected typeIconPath(type: PoiType): string {
     return ({
       depot: 'M4 20V7l8-4 8 4v13M8 20v-4h8v4M8 9h.01M12 9h.01M16 9h.01M8 12h.01M12 12h.01M16 12h.01',

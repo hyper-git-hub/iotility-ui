@@ -18,6 +18,18 @@
 .poi-map-title { @apply flex items-center gap-2; }
 .poi-map-title strong { @apply text-ink dark:text-white; }
 .poi-map-card > header .poi-legend { @apply ml-auto border-0 p-0; }
+/* Map header shares the app card surface colours (white / dark-surface). */
+.poi-map-card > header { @apply rounded-t-2xl border-b border-line bg-white px-4 py-3 dark:border-dark-line dark:bg-dark-surface; }
+.poi-map-card > header strong { @apply text-ink dark:text-white; }
+.poi-map-card > header span { @apply text-muted dark:text-brand-300; }
+.poi-legend { @apply gap-x-3.5 gap-y-1.5 bg-canvas px-4 py-2.5 text-[11px] text-muted dark:bg-dark-canvas dark:text-brand-300; }
+.poi-legend .depot i { @apply bg-violet-600; }
+.poi-legend .customer i { @apply bg-blue-600; }
+.poi-legend .fuel i { @apply bg-amber-500; }
+.poi-legend .rest i { @apply bg-emerald-500; }
+.poi-legend .exclusion i { @apply bg-red-600; }
+.poi-legend .unsafe i { @apply bg-orange-500; }
+.poi-legend .custom i { @apply bg-slate-500; }
 .poi-map-card { @apply flex h-[580px] flex-col; }
 .poi-map-card .poi-map { @apply min-h-0 flex-1; height:auto; }
 .poi-list { @apply h-[580px] content-start; grid-auto-rows: max-content; }
@@ -31,3 +43,34 @@
 .poi-expanded header button img { @apply size-4; }
 @media(max-width:900px){.poi-controls{ @apply flex-wrap; }.poi-search{ @apply w-full; }}
 @media(max-width:700px){.poi-heading{ @apply items-start; }.poi-heading,.poi-expanded footer{ @apply flex-wrap; }.poi-map-card{ @apply h-[430px]; }.poi-list{ @apply h-auto max-h-none; }}
+.poi-tab-icon { @apply size-3 shrink-0; }
+.poi-icon { @apply size-3.5 shrink-0; }
+.poi-expanded header .poi-icon { @apply size-4; }
+.poi-type-svg { @apply size-[18px]; }
+/* Type badge colours mirror the main-branch POI_TYPE_CONFIG (color/bg/border). */
+.type-badge[data-type='depot'] { @apply border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-400/30 dark:bg-violet-500/10 dark:text-violet-300; }
+.type-badge[data-type='customer'] { @apply border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-300; }
+.type-badge[data-type='fuel'] { @apply border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-300; }
+.type-badge[data-type='rest'] { @apply border-green-200 bg-green-50 text-green-700 dark:border-green-400/30 dark:bg-green-500/10 dark:text-green-300; }
+.type-badge[data-type='exclusion'] { @apply border-red-200 bg-red-50 text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300; }
+.type-badge[data-type='unsafe'] { @apply border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-400/30 dark:bg-orange-500/10 dark:text-orange-300; }
+.type-badge[data-type='competitor'] { @apply border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-300; }
+.type-badge[data-type='route'] { @apply border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-400/30 dark:bg-teal-500/10 dark:text-teal-300; }
+.type-badge[data-type='custom'] { @apply border-gray-200 bg-gray-100 text-gray-700 dark:border-gray-400/30 dark:bg-gray-500/15 dark:text-gray-300; }
+.expand-icon .poi-icon { @apply size-5; }
+.poi-type-icon[data-type='depot'] { @apply bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300; }
+.poi-type-icon[data-type='customer'] { @apply bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300; }
+.poi-type-icon[data-type='fuel'] { @apply bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300; }
+.poi-type-icon[data-type='rest'] { @apply bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300; }
+.poi-type-icon[data-type='exclusion'] { @apply bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300; }
+.poi-type-icon[data-type='unsafe'] { @apply bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300; }
+.poi-type-icon[data-type='competitor'] { @apply bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300; }
+.poi-type-icon[data-type='route'] { @apply bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300; }
+.poi-type-icon[data-type='custom'] { @apply bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-300; }
+/* Chips follow the main-branch layout: neutral inactive, solid brand active. */
+.poi-tabs button { @apply inline-flex items-center gap-1.5 text-xs font-medium; }
+.poi-tabs button[data-type] { @apply text-muted dark:text-brand-300; }
+.poi-tabs button[data-type] b { @apply text-muted/70 dark:text-brand-300/70; }
+.poi-tabs button[data-type].active { @apply border-brand-600 bg-brand-600 font-semibold text-white dark:bg-brand-600 dark:text-white; }
+.poi-tabs button[data-type].active b { @apply text-white/90; }
+.poi-tabs button[data-type].active:hover { @apply border-brand-600; }

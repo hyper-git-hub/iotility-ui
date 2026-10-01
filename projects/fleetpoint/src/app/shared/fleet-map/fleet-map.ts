@@ -663,24 +663,74 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const bounds = new LngLatBounds();
     for (const vehicle of vehicles) bounds.extend([vehicle.lng, vehicle.lat]);
     this.map.stop();
+    // Already separated: the members no longer sit within a cluster radius, so
+    // the group has fully split and the click must not zoom any further —
+    // easing past them would leave the viewport empty. Only re-centre.
+    if (this.membersSeparated(vehicles)) {
+      this.map.easeTo({ center, duration: 450 });
+      return;
+    }
     // Cap how far one click may travel. A tight group fits at a very high zoom,
     // so honouring the fit exactly (or the old +8 jump) rockets the camera past
     // the members and leaves the viewport empty. Members sit at the group
     // centre, so a bounded step keeps them framed.
     const ceiling = Math.min(this.map.getMaxZoom(), this.map.getZoom() + 4);
     if (bounds.getWest() === bounds.getEast() && bounds.getSouth() === bounds.getNorth()) {
+      // Coincident members can never separate, so step once and stop rather than
+      // grinding to the max zoom on repeated clicks.
       this.map.easeTo({ center, zoom: ceiling, duration: 450 });
       this.recomputeClusters();
       return;
     }
-    // Two zoom levels quadruple the on-screen separation, which clears the
-    // 68px exit radius and actually splits the group; union-find can otherwise
-    // chain markers into a wide box that still clusters at the fit zoom.
+    // Zoom exactly as far as needed to clear the 68px exit radius, never past it,
+    // so the members end up centred and separate instead of rocketing past them.
+    const separateZoom = this.zoomToSeparate(vehicles);
+    const target = Math.min(ceiling, Math.max(separateZoom, this.map.getZoom() + 1));
+    if (target <= this.map.getZoom() + 0.01) {
+      this.map.easeTo({ center, duration: 450 });
+      return;
+    }
     const camera = this.map.cameraForBounds(bounds, {
       padding: overlaySafePadding(96),
     });
-    const zoom = Math.min(ceiling, Math.max(camera?.zoom ?? 0, this.map.getZoom() + 2));
+    const zoom = Math.min(target, Math.max(camera?.zoom ?? 0, this.map.getZoom() + 1));
     this.map.easeTo({ center: camera?.center ?? center, zoom, duration: 450 });
+  }
+
+  /**
+   * Minimum on-screen distance, in pixels, between any two members at the
+   * current zoom. Clustering joins markers that are closer together than
+   * `CLUSTER_EXIT_PIXEL_RADIUS`, so this is the value that decides whether a
+   * group has actually split yet.
+   */
+  private minMemberSeparation(vehicles: TrackedVehicle[]): number {
+    if (!this.map || vehicles.length < 2) return Infinity;
+    const points = vehicles.map((vehicle) => this.map!.project([vehicle.lng, vehicle.lat]));
+    let min = Infinity;
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        const dx = points[i].x - points[j].x;
+        const dy = points[i].y - points[j].y;
+        min = Math.min(min, Math.hypot(dx, dy));
+      }
+    }
+    return min;
+  }
+
+  /** Zoom level at which the members clear the cluster exit radius. */
+  private zoomToSeparate(vehicles: TrackedVehicle[]): number {
+    const separation = this.minMemberSeparation(vehicles);
+    if (!Number.isFinite(separation) || separation <= 0) return this.map?.getZoom() ?? 0;
+    const scale = FleetMap.CLUSTER_EXIT_PIXEL_RADIUS / separation;
+    return this.map!.getZoom() + Math.log2(scale);
+  }
+
+  /**
+   * True once the group has actually split — every member is farther apart than
+   * the cluster exit radius — so the click must stop zooming and only re-centre.
+   */
+  private membersSeparated(vehicles: TrackedVehicle[]): boolean {
+    return this.minMemberSeparation(vehicles) >= FleetMap.CLUSTER_EXIT_PIXEL_RADIUS;
   }
 
   private brandColor(): string {
