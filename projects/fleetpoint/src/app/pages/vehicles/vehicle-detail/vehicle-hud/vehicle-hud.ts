@@ -12,8 +12,10 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import maplibregl from 'maplibre-gl';
-import { createIotMap, timezoneCenter } from '../../../../shared/maps/maplibre';
+import maplibregl, { GeoJSONSource } from 'maplibre-gl';
+import {
+  LatLng, LayerWithoutSource, createIotMap, lineFeature, timezoneCenter, upsertGeoJson,
+} from '../../../../shared/maps/maplibre';
 import { SmoothTrack, TrackPoint, metresBetween } from '../../../../shared/maps/smooth-track';
 import { Skeleton } from '@iotility/shared-ui';
 import { environment } from '../../../../../environments/environment';
@@ -127,6 +129,29 @@ const BEARING_EASE = 0.2;
 /* Minimum ground distance (metres) between two fixes before the travel bearing
    is trusted — below this it is GPS jitter, not real movement. */
 const MOVE_BEARING_MIN_M = 4;
+
+/* ── Live trail ──────────────────────────────────────────────
+   Grows behind the marker from where it stood when live packets started, so
+   the band shows the road driven since the page opened. Points are committed
+   every TRAIL_SPACING_M of glide (the glide follows the OSRM road, so the
+   trail does too) plus a moving head that sits exactly under the marker. */
+const TRAIL_SOURCE = 'hud-live-trail';
+const TRAIL_SPACING_M = 4;
+const TRAIL_MAX_POINTS = 5_000;
+const TRAIL_LAYERS: LayerWithoutSource[] = [
+  {
+    id: 'hud-live-trail-casing',
+    type: 'line',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#8b5cf6', 'line-width': 10, 'line-opacity': 0.18 },
+  },
+  {
+    id: 'hud-live-trail-core',
+    type: 'line',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#8b5cf6', 'line-width': 4, 'line-opacity': 0.95 },
+  },
+];
 
 /* ── Speed-adaptive zoom ─────────────────────────────────────
    Zoom per speed (km/h → zoom), interpolated linearly between stops. */
@@ -326,6 +351,10 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   private readonly track = new SmoothTrack(this.zone, {
     move: (pos, heading) => this.moveMarker(pos, heading),
   });
+  /* Live trail: committed points plus the head under the marker; empty until
+     the first live packet (the REST snapshot alone never starts it). */
+  private trail: LatLng[] = [];
+  private trailHead?: LatLng;
 
   protected readonly ticks = TICKS;
   protected readonly minorTicks = MINOR_TICKS;
@@ -435,6 +464,40 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     if (this.hudZoom !== this.zoomTarget) this.zoomRaf = requestAnimationFrame(this.easeZoom);
   };
 
+  /* Per-frame from the tracker: commit a point every TRAIL_SPACING_M and keep
+     the head under the marker so the line ends exactly at the arrow. */
+  private extendTrail(pos: TrackPoint): void {
+    if (!this.trail.length) return;
+    const [lat, lng] = this.trail[this.trail.length - 1];
+    if (metresBetween({ lat, lng }, pos) >= TRAIL_SPACING_M) {
+      this.trail.push([pos.lat, pos.lng]);
+      if (this.trail.length > TRAIL_MAX_POINTS) this.trail.shift();
+      this.trailHead = undefined;
+    } else {
+      this.trailHead = [pos.lat, pos.lng];
+    }
+    this.paintTrail();
+  }
+
+  /* Cheap per-frame update: setData on the existing source. The source and
+     layers are (re)created only when missing — first paint, or after a style
+     reload (theme switch) drops them. */
+  private paintTrail(): void {
+    const map = this.map;
+    if (!map?.isStyleLoaded()) return;
+    const points = this.trailHead ? [...this.trail, this.trailHead] : this.trail;
+    const data = lineFeature(points.length > 1 ? points : []);
+    const source = map.getSource(TRAIL_SOURCE) as GeoJSONSource | undefined;
+    if (source && TRAIL_LAYERS.every((layer) => map.getLayer(layer.id))) source.setData(data);
+    else upsertGeoJson(map, TRAIL_SOURCE, data, TRAIL_LAYERS);
+  }
+
+  private resetTrail(): void {
+    this.trail = [];
+    this.trailHead = undefined;
+    this.paintTrail();
+  }
+
   private recenterCamera(): void {
     const pos = this.marker?.getLngLat();
     if (pos) this.syncCamera(pos.lat, pos.lng);
@@ -473,6 +536,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
         this.marker = undefined;
         this.roadBearing = null;
         this.prevFix = undefined;
+        this.resetTrail();
         this.syncCamera(HUD_FALLBACK.lat, HUD_FALLBACK.lng);
         return;
       }
@@ -516,6 +580,8 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     /* Off-center framing needs the pixel offset, which is applied via
        syncCamera once the container has a real width. */
     this.syncCamera(anchor.lat, anchor.lng);
+    /* A style (re)load drops custom layers; redraw the trail onto it. */
+    this.map.on('style.load', () => this.paintTrail());
     /* Anything that arrived before the map existed (or while it was being
        created) is applied here, so the marker is always in sync with the
        latest live record. */
@@ -584,6 +650,13 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
      pace, and turn the arrow toward the new heading. */
   private glideMarkerTo(coords: TrackPoint): void {
     if (!this.map || !this.marker) return;
+    // The first live packet starts the trail where the marker stands now.
+    if (!this.trail.length) {
+      const start = this.marker.getLngLat();
+      this.trail = [[start.lat, start.lng]];
+      this.trailHead = undefined;
+      this.paintTrail();
+    }
     this.syncMarkerLive();
     const target = this.computeTargetBearing(coords);
     if (target !== null) this.targetBearing = target;
@@ -599,6 +672,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     if (!this.map || !this.marker) return;
     this.marker.setLngLat([pos.lng, pos.lat]);
     this.syncCamera(pos.lat, pos.lng);
+    this.extendTrail(pos);
     if (heading === null) return;
     this.targetBearing = heading;
     this.turnArrow();
