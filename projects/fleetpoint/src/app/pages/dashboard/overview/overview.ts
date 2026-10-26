@@ -1,9 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { DestroyRef } from '@angular/core';
 import { Skeleton } from '@iotility/shared-ui';
-import { finalize, interval } from 'rxjs';
+import { finalize } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCardTone } from '../../../shared/stat-card/stat-card';
 import {
@@ -173,18 +171,14 @@ export class Overview implements OnInit {
     },
     ...this.fleetStatusItems(),
   ]);
-  private readonly destroyRef = inject(DestroyRef);
-
   constructor(
     private readonly api: FleetDashboardApiService,
     private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
+    // One load per visit; graphs are not polled.
     this.loadDashboard();
-    interval(30_000)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.loadGraphs(false));
   }
 
   protected loadDashboard(): void {

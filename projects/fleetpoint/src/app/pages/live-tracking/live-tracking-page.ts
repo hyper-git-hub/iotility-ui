@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Dropdown, DropdownOption, Skeleton, StatusBadge } from '@iotility/shared-ui';
-import { EMPTY, Subscription, catchError, finalize, interval, switchMap, timer } from 'rxjs';
+import { EMPTY, Subscription, catchError, filter, finalize, interval, switchMap, timer } from 'rxjs';
 import {
   FleetMap,
   MapZoneOverlay,
@@ -341,10 +341,16 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       });
   }
 
+  /* REST fallback only: while the fleet stream is connected it is the live
+     source and the vehicle list is not re-fetched. Polls only while the stream
+     is down (e.g. the gateway rejects this origin) or SignalR is in use. */
   private startVehiclePolling(): void {
     this.subscription.add(
       timer(30_000, 30_000)
-        .pipe(switchMap(() => this.api.getVehicles().pipe(catchError(() => EMPTY))))
+        .pipe(
+          filter(() => !(environment.sseTelemetryEnabled && this.telemetryStream.connected())),
+          switchMap(() => this.api.getVehicles().pipe(catchError(() => EMPTY))),
+        )
         .subscribe((response) => this.updateVehicleSnapshot(response.data?.data ?? [])),
     );
   }

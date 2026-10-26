@@ -428,6 +428,10 @@ export class VehicleDetail implements OnInit, OnDestroy {
     this.load();
     this.pollTimer = setInterval(() => {
       if (this.pollRefreshing || this.loading()) return;
+      // A connected stream is the live source: no polling, even while a parked
+      // vehicle sends nothing. Poll only while the stream is down (e.g. the
+      // gateway rejects this origin) or SignalR is in use.
+      if (environment.sseTelemetryEnabled && this.telemetryStream.connected()) return;
       if (Date.now() - this.lastRealtimeAt < VehicleDetail.REALTIME_STALE_MS) return;
       this.lastRealtimeAt = Date.now();
       this.refreshTelemetry();

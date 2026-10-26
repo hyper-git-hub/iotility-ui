@@ -1,6 +1,4 @@
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
 import { secureStorage } from '@iotility/shared-ui';
 import { LiveTrackingApiService } from './live-tracking-api.service';
 
@@ -13,14 +11,12 @@ export class FleetStatusService {
   readonly totalCount = signal(0);
   readonly hasOnlineVehicles = signal(false);
 
-  private readonly destroyRef = inject(DestroyRef);
   private readonly api = inject(LiveTrackingApiService);
 
   constructor() {
+    // One load; no polling. The live tracking page keeps the counts current
+    // from the fleet stream through update().
     this.refresh();
-    interval(30_000)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.refresh());
   }
 
   update(total: number, online: number): void {

@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, signal } from '@angular/core';
 import { secureStorage } from '@iotility/shared-ui';
 import { Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -16,6 +16,11 @@ import { VehicleRealtimeUpdate } from './vehicle-realtime.service';
 export class VehicleTelemetryStreamService {
   private readonly updatesSubject = new Subject<VehicleRealtimeUpdate>();
   readonly updates$ = this.updatesSubject.asObservable();
+  /**
+   * True while a stream response is open. Pages fall back to REST polling only
+   * while this is false (e.g. the gateway rejects the origin via CORS).
+   */
+  readonly connected = signal(false);
 
   private controller?: AbortController;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
@@ -43,6 +48,7 @@ export class VehicleTelemetryStreamService {
   disconnect(): Promise<void> {
     ++this.generation;
     this.streamPath = '';
+    this.connected.set(false);
     this.stopCurrent();
     return Promise.resolve();
   }
@@ -72,12 +78,14 @@ export class VehicleTelemetryStreamService {
       });
       if (!response.ok || !response.body) throw new Error(`Telemetry stream HTTP ${response.status}`);
       this.retryMs = 1_000;
+      this.connected.set(true);
       await this.read(response.body.getReader(), generation);
     } catch (error) {
       if (!controller.signal.aborted && generation === this.generation) {
         console.error('[telemetry] stream error', error);
       }
     } finally {
+      if (generation === this.generation) this.connected.set(false);
       if (this.controller === controller) this.controller = undefined;
       if (!controller.signal.aborted && generation === this.generation) this.scheduleReconnect(generation);
     }

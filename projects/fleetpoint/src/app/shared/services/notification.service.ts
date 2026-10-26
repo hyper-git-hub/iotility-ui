@@ -1,9 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { initializeApp, getApps } from 'firebase/app';
 import { getDatabase, onValue, ref } from 'firebase/database';
-import { interval } from 'rxjs';
 import { secureStorage } from '@iotility/shared-ui';
 import { environment } from '../../../environments/environment';
 
@@ -43,8 +41,9 @@ export class NotificationService {
   readonly error = signal(false);
 
   constructor() {
+    // One load for the history; new alerts then arrive over Firebase, so there
+    // is no polling. Opening the panel reloads (and marks viewed) as before.
     this.load();
-    interval(30_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.load());
     this.listenForFirebaseUpdates();
     this.destroyRef.onDestroy(() => this.firebaseUnsubscribe?.());
   }
@@ -86,7 +85,7 @@ export class NotificationService {
    * Realtime alerts (as hypernym-fms-fe): the backend writes the latest alert
    * to `Notification/<user guid>` in the Realtime Database. Every write after
    * the initial value is a new alert, shown in the badge and list at once with
-   * no API call; the 30s poll reconciles the list with the server.
+   * no API call; opening the panel reconciles the list with the server.
    */
   private listenForFirebaseUpdates(): void {
     const guid = this.userGuid();
