@@ -54,7 +54,8 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          this.map!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 700 });
+          // Fires seconds later — the component may already be destroyed.
+          this.map?.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 700 });
         },
         () => {},
         { enableHighAccuracy: true, timeout: 8000 },
@@ -183,5 +184,6 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     this.map?.remove();
+    this.map = undefined;
   }
 }

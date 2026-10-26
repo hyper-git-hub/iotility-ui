@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+  ChangeDetectionStrategy,
   Component,
   HostListener,
   OnDestroy,
@@ -30,6 +31,8 @@ import {
   VehicleRealtimeService,
   VehicleRealtimeUpdate,
 } from '../../shared/services/vehicle-realtime.service';
+import { VehicleTelemetryStreamService } from '../../shared/services/vehicle-telemetry-stream.service';
+import { environment } from '../../../environments/environment';
 import { VehicleDetailApiService } from '../../shared/services/vehicle-detail-api.service';
 import { AllocationForm } from '../drivers/allocation-form/allocation-form';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
@@ -75,6 +78,7 @@ interface TrackingDriver {
   ],
   templateUrl: './live-tracking-page.html',
   styleUrl: './live-tracking-page.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LiveTrackingPage implements OnInit, OnDestroy {
   private readonly vehiclesLoading = signal(true);
@@ -222,6 +226,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       ? `${base} · ${count} ${count === 1 ? 'vehicle' : 'vehicles'}`
       : base;
   });
+  private static readonly LIVE_FRESH_MS = 60_000;
   private readonly subscription = new Subscription();
   private readonly apiSnapshots = new Map<number, LiveVehicle>();
   private readonly realtimeVehicles = new Set<number>();
@@ -233,6 +238,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     private readonly api: LiveTrackingApiService,
     private readonly fleetApi: FleetInventoryApiService,
     private readonly realtime: VehicleRealtimeService,
+    private readonly telemetryStream: VehicleTelemetryStreamService,
     private readonly vehicleDetailApi: VehicleDetailApiService,
     private readonly router: Router,
     private readonly feedback: FeedbackDialogBridgeService,
@@ -262,11 +268,18 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.loadVehicles();
     this.loadFleets();
     this.subscription.add(
-      this.realtime.updates$.subscribe((update) => this.applyRealtimeUpdate(update)),
+      this.liveSource.updates$.subscribe((update) => this.applyRealtimeUpdate(update)),
     );
     this.subscription.add(interval(1_000).subscribe(() => this.now.set(Date.now())));
-    void this.realtime.connect();
+    // No device id: the whole fleet over one connection (SSE fleet stream, or
+    // the SignalR firehose when the flag is off); packets are matched per vehicle.
+    void this.liveSource.connect();
     this.startVehiclePolling();
+  }
+
+  /** SSE (hn-iot-realtime-stream) when the flag is on, else SignalR. */
+  private get liveSource(): VehicleRealtimeService | VehicleTelemetryStreamService {
+    return environment.sseTelemetryEnabled ? this.telemetryStream : this.realtime;
   }
 
   private loadFleets(): void {
@@ -343,10 +356,11 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       const snapshot = this.toTrackedVehicle(record);
       this.apiSnapshots.set(record.id, snapshot);
       const current = currentVehicles.get(record.id);
-      return current &&
-        this.liveTrackingEnabled() &&
-        record.id === selectedId &&
-        this.realtimeVehicles.has(record.id)
+      const tracked = this.liveTrackingEnabled() && record.id === selectedId;
+      // The fleet stream moves every vehicle, so a fresh live fix outranks the
+      // poll's REST position, which would otherwise drag the marker backwards.
+      const freshLive = Date.now() - (current?.lastSignalAt ?? 0) < LiveTrackingPage.LIVE_FRESH_MS;
+      return current && this.realtimeVehicles.has(record.id) && (tracked || freshLive)
         ? {
             ...snapshot,
             lat: current.lat,
@@ -357,6 +371,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
             battery: current.battery,
             seatBelt: current.seatBelt,
             lastSignalAt: current.lastSignalAt,
+            fixTime: current.fixTime,
             updated: current.updated,
           }
         : snapshot;
@@ -557,7 +572,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   }
 
   private toTrackedVehicle(vehicle: RealtimeVehicleRecord): LiveVehicle {
-    const speed = this.numberValue(vehicle.speed);
+    const speed = Math.max(0, this.numberValue(vehicle.speed));
     const online = Boolean(vehicle.online_status);
     return {
       numericId: vehicle.id,
@@ -650,7 +665,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
         )
           return vehicle;
         matched = true;
-        const speed = this.numberValue(update.speed ?? update.spd ?? vehicle.speed);
+        // Some devices report a negative speed when they have no GPS speed fix.
+        const speed = Math.max(0, this.numberValue(update.speed ?? update.spd ?? vehicle.speed));
         const lat = this.numberValue(update.latitude ?? update.lat, vehicle.lat);
         const lng = this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng);
         const ignition = this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition);
@@ -662,6 +678,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
           status: speed > 8 ? 'Moving' : 'Idling',
           ignition,
           updated: this.updateTime(update.updated_time ?? update.t),
+          fixTime: this.epoch(update.t),
           lastSignalAt: Date.now(),
         };
         this.realtimeVehicles.add(vehicle.numericId);
@@ -746,9 +763,15 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   }
 
+  private epoch(value: string | number | undefined): number | undefined {
+    if (!value) return undefined;
+    const ms = typeof value === 'number' ? (value > 1e12 ? value : value * 1000) : Date.parse(value);
+    return Number.isFinite(ms) ? ms : undefined;
+  }
+
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
-    void this.realtime.disconnect();
+    void this.liveSource.disconnect();
     clearTimeout(this.fullscreenTrackingTimeout);
   }
 }

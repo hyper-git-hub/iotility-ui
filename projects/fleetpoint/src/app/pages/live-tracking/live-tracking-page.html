@@ -175,6 +175,7 @@
       [class.map-loaded]="mapLoaded()"
       [class.details-panel-open]="!isFullscreen() && selectedVehicle() !== null"
       [vehicles]="mapVehicles()"
+      [smoothTracking]="true"
       [fitKey]="mapFilterKey()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
       [isFullscreen]="isFullscreen()"

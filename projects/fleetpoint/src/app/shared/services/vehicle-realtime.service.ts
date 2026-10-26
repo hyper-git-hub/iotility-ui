@@ -27,6 +27,7 @@ export interface VehicleRealtimeUpdate {
   longitude?: string | number;
   spd?: string | number;
   speed?: string | number;
+  brng?: string | number;
   ign?: string | number | boolean;
   ignition_status?: string | number | boolean;
   sbStatus?: string | number;
@@ -45,6 +46,8 @@ export class VehicleRealtimeService {
   private connection?: HubConnection;
   private connectionKey = '';
   private connecting?: Promise<void>;
+  private connectingKey = '';
+  private connectionGeneration = 0;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -57,29 +60,49 @@ export class VehicleRealtimeService {
     ) {
       return this.connecting ?? Promise.resolve();
     }
-    if (this.connecting && this.connectionKey === key) return this.connecting;
+    if (this.connecting && this.connectingKey === key) return this.connecting;
 
-    this.connecting = this.start(key).finally(() => {
-      this.connecting = undefined;
-    });
+    const generation = ++this.connectionGeneration;
+    this.connectingKey = key;
+    this.connecting = this.start(key, generation)
+      .catch(() => {
+        // The REST vehicle snapshot remains usable when negotiation or the hub is unavailable.
+      })
+      .finally(() => {
+        if (generation === this.connectionGeneration) {
+          this.connecting = undefined;
+          this.connectingKey = '';
+        }
+      });
     return this.connecting;
   }
 
   async disconnect(): Promise<void> {
+    ++this.connectionGeneration;
     const connection = this.connection;
     this.connection = undefined;
     this.connectionKey = '';
+    this.connectingKey = '';
     if (connection && connection.state !== HubConnectionState.Disconnected) {
       await connection.stop();
     }
   }
 
-  private async start(key: string): Promise<void> {
-    await this.disconnect();
+  private async start(key: string, generation: number): Promise<void> {
+    const previous = this.connection;
+    this.connection = undefined;
+    this.connectionKey = '';
+    if (previous && previous.state !== HubConnectionState.Disconnected) await previous.stop();
+    if (generation !== this.connectionGeneration) return;
+
     const suffix = key ? `/${encodeURIComponent(key)}` : '';
     const details = await firstValueFrom(
       this.http.get<SignalRConnectionDetails>(`${environment.signalRUrl}/api/SignalR${suffix}`),
     );
+    if (generation !== this.connectionGeneration) return;
+    if (!details?.url || !details?.accessToken) {
+      throw new Error('Invalid SignalR negotiation response.');
+    }
     const connection = new HubConnectionBuilder()
       .withUrl(details.url, { accessTokenFactory: () => details.accessToken })
       .withAutomaticReconnect([0, 2_000, 5_000, 10_000, 30_000])
@@ -95,7 +118,16 @@ export class VehicleRealtimeService {
 
     this.connection = connection;
     this.connectionKey = key;
-    await connection.start();
+    try {
+      await connection.start();
+      if (generation !== this.connectionGeneration) await connection.stop();
+    } catch (error) {
+      if (this.connection === connection) {
+        this.connection = undefined;
+        this.connectionKey = '';
+      }
+      throw error;
+    }
   }
 
   private normalize(payload: unknown): VehicleRealtimeUpdate | null {

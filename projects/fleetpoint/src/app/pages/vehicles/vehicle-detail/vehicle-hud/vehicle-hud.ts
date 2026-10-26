@@ -3,15 +3,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  NgZone,
   OnDestroy,
   computed,
   effect,
+  inject,
   input,
   signal,
   viewChild,
 } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { createIotMap, timezoneCenter } from '../../../../shared/maps/maplibre';
+import { SmoothTrack, TrackPoint, metresBetween } from '../../../../shared/maps/smooth-track';
 import { Skeleton } from '@iotility/shared-ui';
 import { environment } from '../../../../../environments/environment';
 import { VehicleDetailRecord, VehicleMetric } from '../../../../shared/services/vehicle-detail-api.service';
@@ -112,7 +115,120 @@ const HUD_MARKER_X = 0.32;
 const HUD_FALLBACK = { lat: timezoneCenter()[0], lng: timezoneCenter()[1] } as const;
 /* Slight visual correction so the arrow reads more upward while preserving
    the live road/GPS bearing as its source of truth. */
-const ARROW_BEARING_OFFSET = -10;
+const ARROW_BEARING_OFFSET = 0;
+
+/* ── Smooth live marker ───────────────────────────────────────
+   Each fix is handed to SmoothTrack (shared/maps/smooth-track.ts), which drives
+   the marker along the road at the vehicle's real pace, so it never teleports
+   between packets; the arrow eases toward the heading of the road it drives. */
+/* Per-frame share of the remaining rotation the arrow turns through (~0.3s to
+   settle at 60fps). */
+const BEARING_EASE = 0.2;
+/* Minimum ground distance (metres) between two fixes before the travel bearing
+   is trusted — below this it is GPS jitter, not real movement. */
+const MOVE_BEARING_MIN_M = 4;
+
+/* ── Speed-adaptive zoom ─────────────────────────────────────
+   Zoom per speed (km/h → zoom), interpolated linearly between stops. */
+const ZOOM_BY_SPEED: Array<[number, number]> = [
+  [0, 16],
+  [30, 15.5],
+  [60, 15],
+  [90, 14.5],
+  [120, 14],
+  [150, 13.5],
+];
+/* Weight of each new packet in the smoothed speed that drives the zoom. */
+const ZOOM_SPEED_SMOOTHING = 0.35;
+/* Ignore target changes smaller than this, so cruising doesn't breathe. */
+const ZOOM_HYSTERESIS = 0.25;
+/* Fastest the camera zooms, in zoom levels per second. */
+const ZOOM_RATE_PER_S = 0.6;
+
+function zoomForSpeed(kmh: number): number {
+  const [first] = ZOOM_BY_SPEED;
+  if (kmh <= first[0]) return first[1];
+  for (let i = 1; i < ZOOM_BY_SPEED.length; i++) {
+    const [s1, z1] = ZOOM_BY_SPEED[i];
+    if (kmh <= s1) {
+      const [s0, z0] = ZOOM_BY_SPEED[i - 1];
+      return z0 + ((kmh - s0) / (s1 - s0)) * (z1 - z0);
+    }
+  }
+  return ZOOM_BY_SPEED[ZOOM_BY_SPEED.length - 1][1];
+}
+
+/* ── Speed trend ──────────────────────────────────────────── */
+const TREND_WINDOW_MS = 15 * 60_000;
+const TREND_MIN_SPAN_MS = 60_000;
+const TREND_TICK_MS = 100;
+
+function trendY(speed: number): number {
+  return 46 - (Math.min(MAX_SPEED, Math.max(0, speed)) / MAX_SPEED) * 42;
+}
+
+/* Monotone cubic (Fritsch–Carlson) through the points: a smooth curve that
+   never overshoots between samples, so it can't dip below 0 km/h or bulge
+   above a real peak the way a plain spline would. */
+function smoothTrendPath(points: Array<{ x: number; y: number }>): string {
+  if (!points.length) return '';
+  const fmt = (value: number) => value.toFixed(1);
+  if (points.length === 1) return `M${fmt(points[0].x)} ${fmt(points[0].y)}`;
+  const n = points.length;
+  const dx: number[] = [];
+  const slope: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx.push(Math.max(1e-6, points[i + 1].x - points[i].x));
+    slope.push((points[i + 1].y - points[i].y) / dx[i]);
+  }
+  const tangent = points.map((_, i) => {
+    if (i === 0) return slope[0];
+    if (i === n - 1) return slope[n - 2];
+    return slope[i - 1] * slope[i] <= 0 ? 0 : (slope[i - 1] + slope[i]) / 2;
+  });
+  for (let i = 0; i < n - 1; i++) {
+    if (slope[i] === 0) {
+      tangent[i] = 0;
+      tangent[i + 1] = 0;
+      continue;
+    }
+    const a = tangent[i] / slope[i];
+    const b = tangent[i + 1] / slope[i];
+    const h = a * a + b * b;
+    if (h > 9) {
+      const tau = 3 / Math.sqrt(h);
+      tangent[i] = tau * a * slope[i];
+      tangent[i + 1] = tau * b * slope[i];
+    }
+  }
+  let path = `M${fmt(points[0].x)} ${fmt(points[0].y)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const step = dx[i] / 3;
+    path += ` C${fmt(p0.x + step)} ${fmt(p0.y + tangent[i] * step)} ${fmt(p1.x - step)} ${fmt(p1.y - tangent[i + 1] * step)} ${fmt(p1.x)} ${fmt(p1.y)}`;
+  }
+  return path;
+}
+
+function normalizeDegrees(value: number): number {
+  return ((value % 360) + 360) % 360;
+}
+
+/* Signed shortest turn (−180, 180] from one heading to another, so the arrow
+   rotates the short way round instead of unwinding through 360°. */
+function shortestAngle(from: number, to: number): number {
+  return ((to - from + 540) % 360) - 180;
+}
+
+/* Compass bearing of travel from one fix to the next. */
+function travelBearing(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  return normalizeDegrees(bearingBetween({ lat: a.lat, lon: a.lng }, { lat: b.lat, lon: b.lng }));
+}
+
+function prefersReducedMotion(): boolean {
+  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
 
 /* Bearing of the road segment nearest to the vehicle (OSM), so the marker can
    sit exactly along the street instead of a noisy GPS heading. */
@@ -194,10 +310,22 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   ] as const;
 
   private readonly mapHost = viewChild.required<ElementRef<HTMLDivElement>>('mapHost');
+  private readonly zone = inject(NgZone);
   private map?: maplibregl.Map;
   private marker?: maplibregl.Marker;
   private roadBearing: number | null = null;
   private bearingToken = 0;
+
+  /* Live-marker glide + heading smoothing. The tracker plays each fix along
+     the road, and `displayedBearing` turns toward `targetBearing`, so neither
+     the dot nor the arrow jumps between packets. */
+  private prevFix?: TrackPoint;
+  private displayedBearing = 0;
+  private targetBearing = 0;
+  private moveRaf = 0;
+  private readonly track = new SmoothTrack(this.zone, {
+    move: (pos, heading) => this.moveMarker(pos, heading),
+  });
 
   protected readonly ticks = TICKS;
   protected readonly minorTicks = MINOR_TICKS;
@@ -216,33 +344,39 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   });
 
   private readonly speedSamples = signal<Array<{ time: number; speed: number }>>([]);
-  protected readonly speedTrendPath = computed(() => {
+  /* Clock for the trend's sliding window, ticked off-zone (see startTrendClock)
+     so the line scrolls continuously instead of re-stretching per sample. */
+  private readonly trendNow = signal(Date.now());
+  private trendTimer?: ReturnType<typeof setInterval>;
+  /* Trend points in viewBox space: a sliding window ending now (at least a
+     minute, at most the 15 min of history kept), with a live tip that rides
+     the animated needle so the end of the line glides with the speedometer. */
+  private readonly trendPoints = computed(() => {
     const samples = this.speedSamples();
-    if (!samples.length) return '';
-    const points = samples.length === 1 ? [samples[0], { ...samples[0], time: Date.now() }] : samples;
-    const start = points[0].time;
-    const range = Math.max(1, points[points.length - 1].time - start);
-    return points
-      .map((sample, index) => {
-        const x = points.length === 2 && samples.length === 1 ? index * 320 : ((sample.time - start) / range) * 320;
-        const y = 46 - (Math.min(MAX_SPEED, sample.speed) / MAX_SPEED) * 42;
-        return `${index ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
-      })
-      .join(' ');
+    if (!samples.length) return [];
+    const now = this.trendNow();
+    const span = Math.min(TREND_WINDOW_MS, Math.max(TREND_MIN_SPAN_MS, now - samples[0].time));
+    const start = now - span;
+    const toPoint = (time: number, speed: number) => ({
+      x: ((time - start) / span) * 320,
+      y: trendY(speed),
+    });
+    return [
+      ...samples.filter((sample) => sample.time < now).map((sample) => toPoint(sample.time, sample.speed)),
+      toPoint(now, this.displayedSpeed()),
+    ];
   });
+  protected readonly speedTrendPath = computed(() => smoothTrendPath(this.trendPoints()));
   protected readonly speedTrendArea = computed(() => {
+    const points = this.trendPoints();
     const path = this.speedTrendPath();
-    return path ? `${path} L320 50 L0 50 Z` : '';
+    return path ? `${path} L320 50 L${points[0].x.toFixed(1)} 50 Z` : '';
   });
   protected readonly trendPeak = computed(() =>
     Math.max(0, ...this.speedSamples().map((sample) => sample.speed)),
   );
   protected readonly hasSpeedTrend = computed(() => this.speedSamples().length > 0);
-  protected readonly trendEndY = computed(() => {
-    const samples = this.speedSamples();
-    const speed = samples[samples.length - 1]?.speed ?? 0;
-    return 46 - (Math.min(MAX_SPEED, speed) / MAX_SPEED) * 42;
-  });
+  protected readonly trendEndY = computed(() => trendY(this.displayedSpeed()));
   protected readonly trendLimitY = computed(() => {
     const limit = this.speedLimit();
     return limit === null ? null : 46 - (Math.min(MAX_SPEED, limit) / MAX_SPEED) * 42;
@@ -254,7 +388,57 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     this.vehicle()?.updated_time;
     this.recordSpeedSample(speed);
     this.animateSpeedTo(speed);
+    this.updateZoomTarget(speed);
   });
+
+  /* ── Speed-adaptive zoom ──
+     Like Google Maps navigation: street level while crawling, pulling back to
+     show more road ahead as speed rises. `hudZoom` eases toward `zoomTarget`
+     on its own rAF; the glide's per-frame syncCamera reads it as it goes. */
+  private hudZoom = HUD_ZOOM;
+  private zoomTarget = HUD_ZOOM;
+  private smoothedSpeed: number | null = null;
+  private zoomRaf = 0;
+  private zoomLastFrame = 0;
+
+  private updateZoomTarget(speed: number): void {
+    // Smoothed so a single noisy packet can't pump the camera in and out.
+    this.smoothedSpeed = this.smoothedSpeed === null
+      ? speed
+      : this.smoothedSpeed + (speed - this.smoothedSpeed) * ZOOM_SPEED_SMOOTHING;
+    const target = zoomForSpeed(this.smoothedSpeed);
+    if (Math.abs(target - this.zoomTarget) < ZOOM_HYSTERESIS) return;
+    this.zoomTarget = target;
+    if (prefersReducedMotion()) {
+      this.hudZoom = target;
+      this.recenterCamera();
+      return;
+    }
+    if (this.zoomRaf) return;
+    this.zoomLastFrame = performance.now();
+    this.zone.runOutsideAngular(() => {
+      this.zoomRaf = requestAnimationFrame(this.easeZoom);
+    });
+  }
+
+  /* Ease-out toward the target, capped at ZOOM_RATE_PER_S so a big speed
+     change still reads as a gentle pull-back rather than a jump. */
+  private readonly easeZoom = (): void => {
+    this.zoomRaf = 0;
+    const now = performance.now();
+    const seconds = Math.min(0.1, Math.max(0, now - this.zoomLastFrame) / 1000);
+    this.zoomLastFrame = now;
+    const delta = this.zoomTarget - this.hudZoom;
+    const step = Math.min(ZOOM_RATE_PER_S * seconds, Math.abs(delta) * Math.min(1, 3 * seconds));
+    this.hudZoom = Math.abs(delta) < 0.005 ? this.zoomTarget : this.hudZoom + Math.sign(delta) * step;
+    this.recenterCamera();
+    if (this.hudZoom !== this.zoomTarget) this.zoomRaf = requestAnimationFrame(this.easeZoom);
+  };
+
+  private recenterCamera(): void {
+    const pos = this.marker?.getLngLat();
+    if (pos) this.syncCamera(pos.lat, pos.lng);
+  }
 
   /* ── Smoothed speed ──
      Real vehicles sweep: the needle eases through intermediate values instead
@@ -269,6 +453,14 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   private speedAnimDur = 0;
 
   constructor() {
+    /* The trend window slides with the clock. Ticking outside Angular is
+       enough: the signal marks this OnPush view dirty on its own (same as the
+       speedometer sweep), without a global change-detection pass per tick. */
+    this.zone.runOutsideAngular(() => {
+      this.trendTimer = setInterval(() => {
+        if (this.speedSamples().length) this.trendNow.set(Date.now());
+      }, TREND_TICK_MS);
+    });
     /* Keep the marker and camera locked to the live coordinates. The camera
        offset keeps the pin near the left border of the band, clear of the
        speedometer. The marker only exists once real coordinates are available. */
@@ -276,18 +468,17 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
       const coords = this.coords();
       if (!this.map) return;
       if (!coords) {
+        this.stopMarkerGlide();
         this.marker?.remove();
         this.marker = undefined;
         this.roadBearing = null;
+        this.prevFix = undefined;
         this.syncCamera(HUD_FALLBACK.lat, HUD_FALLBACK.lng);
         return;
       }
-      if (!this.marker) this.marker = this.buildMarker(coords);
-      this.marker.setLngLat([coords.lng, coords.lat]);
-      this.syncMarkerLive();
-      this.applyMarkerRotation();
-      this.syncCamera(coords.lat, coords.lng);
-      void this.loadRoadBearing(coords);
+      // First fix drops the marker in place; every later fix glides to it.
+      if (!this.marker) this.placeMarkerNow(coords);
+      else this.glideMarkerTo(coords);
     });
   }
 
@@ -306,7 +497,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     const rightPadding = Math.max(0, width * (1 - 2 * HUD_MARKER_X));
     map.jumpTo({
       center: [lng, lat],
-      zoom: HUD_ZOOM,
+      zoom: this.hudZoom,
       pitch: HUD_PITCH,
       bearing: HUD_BEARING,
       padding: { right: rightPadding },
@@ -328,13 +519,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     /* Anything that arrived before the map existed (or while it was being
        created) is applied here, so the marker is always in sync with the
        latest live record. */
-    if (coords) {
-      if (!this.marker) this.marker = this.buildMarker(coords);
-      this.marker.setLngLat([coords.lng, coords.lat]);
-      this.syncMarkerLive();
-      this.applyMarkerRotation();
-      void this.loadRoadBearing(coords);
-    }
+    if (coords) this.placeMarkerNow(coords);
   }
 
   /* Blink the marker only while the vehicle reports online — toggles the
@@ -344,52 +529,146 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     if (!element) return;
     element.classList.toggle('hud-live', this.online());
     const status = this.vehicle()?.online_status;
+    // Darker green than the status chip so the arrow holds contrast on parks.
     const color = status === true
-      ? '#22c55e'
+      ? '#16a34a'
       : status === false
         ? '#9ca3af'
         : '#525DF7';
     element.style.setProperty('--hud-nav-marker-color', color);
   }
 
-  /* The nav-arrow marker from the SVG map, verbatim: a blurred #525DF7 glow
-     layer (feGaussianBlur 4.39, same as the reference filter) under the sharp
-     arrow, anchored center on the vehicle's exact coordinates. */
+  /* Navigation marker: a symmetric chevron pointing north (so the bearing
+     rotation needs no art offset), outlined in white with a drop shadow over a
+     soft status-tinted halo — legible on any tile colour without a hard ring.
+     Anchored center on the vehicle's exact coordinates. */
   private buildMarker(coords: { lat: number; lng: number }): maplibregl.Marker {
     const element = document.createElement('div');
     element.className = 'hud-nav-marker';
     /* MapLibre generates this DOM imperatively, so it never carries the
        component's _ngcontent attribute — size it with inline styles and SVG
        width/height attributes (component CSS cannot reach it). */
-    element.style.cssText = 'width:44px;height:45px;';
-    const path = 'M11.3988 55.3672L67.1755 11.5117C67.7052 11.0953 68.4908 11.4315 68.5808 12.1131L77.4407 79.2672C77.5625 80.1903 76.3815 80.6323 75.8604 79.8586L55.5756 49.7388C55.3789 49.4467 55.0326 49.297 54.6932 49.3575L12.1063 56.9413C11.2107 57.1008 10.6841 55.9292 11.3988 55.3672Z';
+    element.style.cssText = 'width:48px;height:48px;';
     element.innerHTML =
-      `<div class="hud-nav-marker-pulse"></div><svg width="44" height="45" viewBox="0 0 89 92" style="display:block;overflow:visible" aria-hidden="true">
-        <defs>
-          <filter id="hudNavGlowFilter" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-            <feGaussianBlur stdDeviation="4.39"></feGaussianBlur>
-          </filter>
-        </defs>
-        <path d="${path}" fill="currentColor" filter="url(#hudNavGlowFilter)"></path>
-        <path d="${path}" fill="currentColor"></path>
+      `<div class="hud-nav-marker-pulse"></div><div class="hud-nav-marker-halo"></div><svg width="48" height="48" viewBox="0 0 48 48" style="display:block;overflow:visible" aria-hidden="true">
+        <path d="M24 6 L38 40 L24 31.5 L10 40 Z" fill="currentColor" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" paint-order="stroke"></path>
       </svg>`;
     return new maplibregl.Marker({ element, anchor: 'center', rotationAlignment: 'map' })
       .setLngLat([coords.lng, coords.lat])
       .addTo(this.map!);
   }
 
-  /* Rotate the arrow to lie flat along the street: prefer the OSM road bearing
-     nearest the vehicle (exact road alignment); fall back to the vehicle's GPS
-     heading while the road bearing loads, then to 0. */
-  private applyMarkerRotation(): void {
-    if (!this.marker) return;
-    const heading = Number(this.vehicle()?.['heading']);
-    const fallback = Number.isFinite(heading) ? heading : 0;
-    const bearing = this.roadBearing ?? fallback;
-    this.marker.setRotation((bearing + ARROW_BEARING_OFFSET + 360) % 360);
+  private isMoving(): boolean {
+    return (Number(this.vehicle()?.speed) || 0) > 2;
   }
 
-  private loadRoadBearing(coords: { lat: number; lng: number }): void {
+  /* First fix (or after the signal was lost): there is nothing to glide from,
+     so drop the marker straight onto the coordinates and face it immediately. */
+  private placeMarkerNow(coords: TrackPoint): void {
+    if (!this.map) return;
+    this.stopMarkerGlide();
+    if (!this.marker) this.marker = this.buildMarker(coords);
+    this.marker.setLngLat([coords.lng, coords.lat]);
+    this.syncMarkerLive();
+    this.syncCamera(coords.lat, coords.lng);
+    this.displayedBearing = this.initialBearing();
+    this.targetBearing = this.displayedBearing;
+    this.applyRotation();
+    this.prevFix = coords;
+    this.track.seed(coords);
+    this.maybeLoadRoadBearing(coords);
+  }
+
+  /* Every later fix: hand it to the smooth tracker, which drives the marker
+     (and the camera that follows it) along the road at the vehicle's real
+     pace, and turn the arrow toward the new heading. */
+  private glideMarkerTo(coords: TrackPoint): void {
+    if (!this.map || !this.marker) return;
+    this.syncMarkerLive();
+    const target = this.computeTargetBearing(coords);
+    if (target !== null) this.targetBearing = target;
+    this.maybeLoadRoadBearing(coords);
+    this.prevFix = coords;
+    this.track.push({ ...coords, t: Number(this.vehicle()?.['fix_time']), speedKmh: this.speed() });
+    this.turnArrow();
+  }
+
+  /* Per-frame position from the tracker (outside Angular). While it drives a
+     road edge, the arrow faces along that edge rather than the raw packet. */
+  private moveMarker(pos: TrackPoint, heading: number | null): void {
+    if (!this.map || !this.marker) return;
+    this.marker.setLngLat([pos.lng, pos.lat]);
+    this.syncCamera(pos.lat, pos.lng);
+    if (heading === null) return;
+    this.targetBearing = heading;
+    this.turnArrow();
+  }
+
+  /* Which way the arrow should point for this fix:
+     1. the packet's own bearing (brng / course / heading / …) while moving,
+     2. else the bearing of travel between the last fix and this one (formula),
+     3. else the nearest-road bearing once it loads (stationary only),
+     4. else keep the current heading (returns null — don't spin in place). */
+  private computeTargetBearing(next: { lat: number; lng: number }): number | null {
+    const packet = Number(this.vehicle()?.['heading']);
+    if (this.isMoving() && Number.isFinite(packet)) return normalizeDegrees(packet);
+    const prev = this.prevFix;
+    if (prev && metresBetween(prev, next) >= MOVE_BEARING_MIN_M) return travelBearing(prev, next);
+    if (this.roadBearing !== null) return normalizeDegrees(this.roadBearing);
+    return null;
+  }
+
+  /* Starting orientation when the marker first appears: the packet heading if
+     the feed carries one, otherwise the nearest-road bearing, otherwise north. */
+  private initialBearing(): number {
+    const packet = Number(this.vehicle()?.['heading']);
+    if (Number.isFinite(packet)) return normalizeDegrees(packet);
+    if (this.roadBearing !== null) return normalizeDegrees(this.roadBearing);
+    return 0;
+  }
+
+  private applyRotation(): void {
+    this.marker?.setRotation(normalizeDegrees(this.displayedBearing + ARROW_BEARING_OFFSET));
+  }
+  /* Ease the arrow toward `targetBearing` on its own rAF, outside Angular so
+     the rotation never triggers change detection. */
+  private readonly easeBearing = (): void => {
+    this.moveRaf = 0;
+    const delta = shortestAngle(this.displayedBearing, this.targetBearing);
+    if (Math.abs(delta) > 0.4) {
+      this.displayedBearing = normalizeDegrees(this.displayedBearing + delta * BEARING_EASE);
+      this.applyRotation();
+      this.moveRaf = requestAnimationFrame(this.easeBearing);
+    } else if (delta !== 0) {
+      this.displayedBearing = this.targetBearing;
+      this.applyRotation();
+    }
+  };
+
+  private turnArrow(): void {
+    if (prefersReducedMotion()) {
+      this.displayedBearing = this.targetBearing;
+      this.applyRotation();
+      return;
+    }
+    if (this.moveRaf) return;
+    this.zone.runOutsideAngular(() => {
+      this.moveRaf = requestAnimationFrame(this.easeBearing);
+    });
+  }
+
+  private stopMarkerGlide(): void {
+    if (this.moveRaf) cancelAnimationFrame(this.moveRaf);
+    this.moveRaf = 0;
+    this.track.destroy();
+  }
+
+
+  /* Only reach out to Overpass when neither the packet nor the travel vector can
+     supply a heading — i.e. the vehicle is standing still. A moving vehicle is
+     steered by its own bearing, so the network call (and its lag) is skipped. */
+  private maybeLoadRoadBearing(coords: { lat: number; lng: number }): void {
+    if (this.isMoving()) return;
     const key = coords.lat.toFixed(5) + ',' + coords.lng.toFixed(5);
     let request = bearingCache.get(key);
     if (!request) {
@@ -402,14 +681,20 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
       (result) => {
         if (token !== this.bearingToken || result.bearing === null) return;
         this.roadBearing = result.bearing;
-        this.applyMarkerRotation();
+        // Still parked and nothing better has arrived — turn to face the road.
+        if (this.isMoving()) return;
+        this.targetBearing = normalizeDegrees(result.bearing);
+        this.turnArrow();
       },
-      () => { /* keep GPS heading fallback */ },
+      () => { /* keep the current heading */ },
     );
   }
 
   ngOnDestroy(): void {
+    clearInterval(this.trendTimer);
     cancelAnimationFrame(this.speedRaf);
+    cancelAnimationFrame(this.zoomRaf);
+    this.stopMarkerGlide();
     this.marker = undefined;
     this.map?.remove();
     this.map = undefined;
@@ -439,14 +724,23 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     this.speedAnimTo = target;
     this.speedAnimStart = performance.now();
     this.speedAnimDur = Math.min(1600, Math.max(400, Math.abs(target - from) * 14));
-    this.speedRaf = requestAnimationFrame(this.stepSpeed);
+    // The sweep drives `displayedSpeed` (a signal), which marks this OnPush view
+    // dirty on its own — so run the frame loop outside Angular to avoid a global
+    // change-detection pass per frame (same pattern as the marker glide).
+    this.zone.runOutsideAngular(() => {
+      this.speedRaf = requestAnimationFrame(this.stepSpeed);
+    });
   }
 
-  private readonly stepSpeed = (now: number): void => {
-    const progress = Math.min(1, (now - this.speedAnimStart) / this.speedAnimDur);
+  private readonly stepSpeed = (): void => {
+    // Use performance.now(), not the rAF timestamp: a frame timestamp can
+    // predate speedAnimStart, and a negative progress makes the cubic ease
+    // explode (the needle read 743 km/h, or dipped below zero).
+    const elapsed = performance.now() - this.speedAnimStart;
+    const progress = Math.min(1, Math.max(0, elapsed / this.speedAnimDur));
     const eased = 1 - Math.pow(1 - progress, 3);
     const value = this.speedAnimFrom + (this.speedAnimTo - this.speedAnimFrom) * eased;
-    this.displayedSpeed.set(progress < 1 ? value : this.speedAnimTo);
+    this.displayedSpeed.set(Math.min(MAX_SPEED, Math.max(0, progress < 1 ? value : this.speedAnimTo)));
     if (progress < 1) this.speedRaf = requestAnimationFrame(this.stepSpeed);
   };
 

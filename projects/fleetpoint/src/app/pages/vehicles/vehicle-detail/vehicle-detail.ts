@@ -1,22 +1,23 @@
-import { Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DateTimePicker, Skeleton, StatusBadge } from '@iotility/shared-ui';
 import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
 import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../../../shared/services/vehicle-detail-api.service';
 import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/services/vehicle-realtime.service';
+import { VehicleTelemetryStreamService } from '../../../shared/services/vehicle-telemetry-stream.service';
+import { environment } from '../../../../environments/environment';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { VehicleForm, VehicleFormValue } from '../vehicle-form/vehicle-form';
 import { VehicleHud } from './vehicle-hud/vehicle-hud';
 import { VehicleInventoryRecord } from '../../../shared/services/vehicle-inventory-api.service';
 import { FleetMap, TrackedVehicle } from '../../../shared/fleet-map/fleet-map';
 import { TripPosition, TripReplayEvent, TripReplayMap } from '../../../shared/trip-replay-map/trip-replay-map';
-import { environment } from '../../../../environments/environment';
 
 interface DetailItem { label: string; value: string; }
 interface SummaryCard { label: string; value: string; suffix: string; tone: 'brand' | 'info' | 'success' | 'warning' | 'danger'; icon: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [DateTimePicker, DecimalPipe, FleetMap, Skeleton, StatusBadge, TripReplayMap, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css' })
+@Component({ selector: 'app-vehicle-detail', imports: [DateTimePicker, DecimalPipe, FleetMap, Skeleton, StatusBadge, TripReplayMap, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css', changeDetection: ChangeDetectionStrategy.OnPush })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
@@ -395,6 +396,7 @@ export class VehicleDetail implements OnInit, OnDestroy {
     private readonly api: VehicleDetailApiService,
     private readonly router: Router,
     private readonly realtime: VehicleRealtimeService,
+    private readonly telemetryStream: VehicleTelemetryStreamService,
     private readonly feedback: FeedbackDialogBridgeService,
     private readonly zone: NgZone,
   ) {
@@ -414,8 +416,9 @@ export class VehicleDetail implements OnInit, OnDestroy {
     });
   }
   ngOnInit(): void {
+    const liveSource = environment.sseTelemetryEnabled ? this.telemetryStream : this.realtime;
     this.subscription.add(
-      this.realtime.updates$.subscribe((update) =>
+      liveSource.updates$.subscribe((update) =>
         this.zone.run(() => {
           this.lastRealtimeAt = Date.now();
           this.applyRealtimeUpdate(update);
@@ -462,7 +465,9 @@ export class VehicleDetail implements OnInit, OnDestroy {
       next: (result) => {
         const vehicle = result.vehicle.data?.data?.[0];
         if (!vehicle) { this.showLoadError('Vehicle details were not found.'); return; }
-        this.record.set(vehicle); this.metrics.set(result.metrics.data ?? []); this.violations.set(result.violations?.data ?? null); this.maintenance.set(result.maintenance?.data ?? null); this.lastJob.set(result.lastJob?.data ?? null); void this.realtime.connect(vehicle.device_id);
+        this.record.set(vehicle); this.metrics.set(result.metrics.data ?? []); this.violations.set(result.violations?.data ?? null); this.maintenance.set(result.maintenance?.data ?? null); this.lastJob.set(result.lastJob?.data ?? null);
+        const liveSource = environment.sseTelemetryEnabled ? this.telemetryStream : this.realtime;
+        void liveSource.connect(vehicle.device_id);
       },
       error: (response) => this.showLoadError(response.error?.message || 'Vehicle details could not be loaded.'),
     });
@@ -845,7 +850,8 @@ export class VehicleDetail implements OnInit, OnDestroy {
 
   private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {
     const vehicle = this.record();
-    if (!vehicle || (update.rtp !== undefined && Number(update.rtp) !== 1)) return;
+    // Hypernym's vehicle detail stream only consumes real-time position packets.
+    if (!vehicle || Number(update.rtp) !== 1) return;
     const packetId = String(update.device_id ?? update.id ?? '');
     const matches = packetId === String(vehicle.device_id ?? '')
       || packetId === String(vehicle.id)
@@ -854,23 +860,27 @@ export class VehicleDetail implements OnInit, OnDestroy {
 
     const latitude = this.realtimeNumber(update.lat ?? update.latitude, vehicle.latitude);
     const longitude = this.realtimeNumber(update.lon ?? update.lng ?? update.longitude, vehicle.longitude);
-    const speed = this.realtimeNumber(update.spd ?? update.speed, vehicle.speed ?? 0);
+    // Some devices report a negative speed when they have no GPS speed fix.
+    const speed = Math.max(0, this.realtimeNumber(update.spd ?? update.speed, vehicle.speed ?? 0));
     const ignition = update.ignition_status ?? update.ign;
     const timestamp = this.realtimeTime(update.t ?? update.updated_time);
     const seatBelt = update.sbStatus === undefined
       ? vehicle['seat_belt']
       : Number(update.sbStatus) === 0;
-    const rawHeading = update['course'] ?? update['heading'] ?? update['cog'] ?? update['dir'];
+    const rawHeading = update.brng ?? update['course'] ?? update['heading'] ?? update['cog'] ?? update['dir'];
+    const heading = this.realtimeHeading(rawHeading, vehicle['heading']);
 
     this.record.set({
       ...vehicle,
       latitude,
       longitude,
       speed,
-      heading: rawHeading === undefined ? vehicle['heading'] : Number(rawHeading),
+      heading,
       ignition_status: ignition === undefined ? vehicle.ignition_status : this.flag(ignition),
       online_status: true,
       updated_time: timestamp,
+      // Device clock (ms) of this fix, so the HUD paces its glide by real drive time.
+      fix_time: this.realtimeEpoch(update.t),
       location: update.location ?? vehicle.location,
       last_volume: update.vol ?? vehicle.last_volume,
       seat_belt: seatBelt,
@@ -884,12 +894,24 @@ export class VehicleDetail implements OnInit, OnDestroy {
     return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
   }
 
+  private realtimeHeading(value: unknown, fallback: unknown): unknown {
+    if (value === null || value === undefined || value === '') return fallback;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? ((parsed % 360) + 360) % 360 : fallback;
+  }
+
   private realtimeTime(value: string | number | undefined): string {
     if (!value) return new Date().toLocaleString();
     const date = typeof value === 'number'
       ? new Date(value > 1e12 ? value : value * 1000)
       : new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  }
+
+  private realtimeEpoch(value: string | number | undefined): number | undefined {
+    if (!value) return undefined;
+    const ms = typeof value === 'number' ? (value > 1e12 ? value : value * 1000) : Date.parse(value);
+    return Number.isFinite(ms) ? ms : undefined;
   }
 
   private showLoadError(message: string): void {
@@ -982,6 +1004,7 @@ export class VehicleDetail implements OnInit, OnDestroy {
     if (this.pollTimer) clearInterval(this.pollTimer);
     this.clearPlaybackFrame();
     this.subscription.unsubscribe();
-    void this.realtime.disconnect();
+    const liveSource = environment.sseTelemetryEnabled ? this.telemetryStream : this.realtime;
+    void liveSource.disconnect();
   }
 }

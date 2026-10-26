@@ -218,6 +218,23 @@ export function fitLatLngs(
   map.fitBounds(bounds, { padding: overlaySafePadding(padding), maxZoom, duration: 700 });
 }
 
+/**
+ * Escapes a value for interpolation into popup / marker HTML strings. Backend
+ * fields (driver, model, location, reverse-geocoded place, …) flow through
+ * `setHTML` / `innerHTML` below, so markup inside the data must be neutralised
+ * or it executes as HTML. Covers both text and double-quoted attribute
+ * contexts; ordinary values (no `& < > " '`) are returned unchanged, so the
+ * rendered output is identical for all legitimate data.
+ */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function markerElement(html: string, className = 'iotility-map-marker'): HTMLElement {
   const element = document.createElement('div');
   element.className = className;

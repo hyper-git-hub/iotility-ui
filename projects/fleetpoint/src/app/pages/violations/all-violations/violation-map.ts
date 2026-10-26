@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
-import { createIotMap, fitLatLngs, markerElement, popupHtml, timezoneCenter } from '../../../shared/maps/maplibre';
+import { createIotMap, escapeHtml, fitLatLngs, markerElement, popupHtml, timezoneCenter } from '../../../shared/maps/maplibre';
 import { MapControls } from '../../../shared/map-overlays/map-controls';
 import { ViolationDisplay } from '../all-violations/all-violations';
 
@@ -189,14 +189,14 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
       ? `<span class="vio-popup-row"><span class="vio-popup-icon vio-popup-icon--speed">⚡</span><span class="vio-popup-text"><strong>${record.speedKph} km/h</strong> <small>(limit: ${record.thresholdKph} km/h)</small></span></span>`
       : '';
     const fineLine = record.fine > 0
-      ? `<span class="vio-popup-row"><span class="vio-popup-icon vio-popup-icon--fine">🔥</span><span class="vio-popup-text vio-popup-text--fine">Fine: ${record.fineDisplay || '£' + record.fine}</span></span>`
+      ? `<span class="vio-popup-row"><span class="vio-popup-icon vio-popup-icon--fine">🔥</span><span class="vio-popup-text vio-popup-text--fine">Fine: ${escapeHtml(record.fineDisplay || '£' + record.fine)}</span></span>`
       : '';
     return `
       <div class="vio-popup">
-        <strong class="vio-popup-title">${record.type}</strong>
-        <span class="vio-popup-row"><span class="vio-popup-icon">🚗</span><span class="vio-popup-text">${record.vehicle} · ${record.driver}</span></span>
-        <span class="vio-popup-row"><span class="vio-popup-icon">🕐</span><span class="vio-popup-text">${record.timestamp}</span></span>
-        <span class="vio-popup-row"><span class="vio-popup-icon">📍</span><span class="vio-popup-text vio-popup-text--location">${record.location}</span></span>
+        <strong class="vio-popup-title">${escapeHtml(record.type)}</strong>
+        <span class="vio-popup-row"><span class="vio-popup-icon">🚗</span><span class="vio-popup-text">${escapeHtml(record.vehicle)} · ${escapeHtml(record.driver)}</span></span>
+        <span class="vio-popup-row"><span class="vio-popup-icon">🕐</span><span class="vio-popup-text">${escapeHtml(record.timestamp)}</span></span>
+        <span class="vio-popup-row"><span class="vio-popup-icon">📍</span><span class="vio-popup-text vio-popup-text--location">${escapeHtml(record.location)}</span></span>
         ${speedLine}
         ${fineLine}
       </div>

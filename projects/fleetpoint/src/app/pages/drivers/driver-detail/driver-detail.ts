@@ -317,7 +317,11 @@ export class DriverDetail implements OnInit {
     return local.toISOString().slice(0, 16);
   }
   private apiDate(value: string): string {
-    return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
+    const date = new Date(value);
+    // A malformed value used to throw RangeError and crash the load path; valid
+    // dates are formatted exactly as before, invalid ones pass through untouched.
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toISOString().slice(0, 19).replace('T', ' ');
   }
   private requestOrNull<T>(request: Observable<T>, fallback: string): Observable<T | null> {
     return request.pipe(

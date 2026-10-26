@@ -59,14 +59,28 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
   border-radius: 9999px;
   background: color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 40%, transparent);
   box-shadow: 0 0 18px color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 50%, transparent);
   opacity: 0;
   transform: scale(0.35);
+  pointer-events: none;
+}
+/* Soft status-tinted halo under the chevron: separates the marker from the
+   tiles without boxing it in a hard ring. */
+:host ::ng-deep .hud-nav-marker .hud-nav-marker-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 30%, transparent);
   pointer-events: none;
 }
 :host ::ng-deep .hud-nav-marker.hud-live .hud-nav-marker-pulse { animation: hud-marker-pulse 1.6s ease-out infinite; }
@@ -75,15 +89,16 @@
   70% { opacity: 0; transform: scale(1.7); }
   100% { opacity: 0; transform: scale(1.7); }
 }
-/* MapLibre marker: the SVG-map nav arrow with its in-SVG glow filter, matching
-   the reference marker exactly. */
+/* MapLibre marker: white-outlined chevron with a tight shadow so it lifts off
+   both light and dark tiles. */
 :host ::ng-deep .hud-nav-marker svg {
   @apply block overflow-visible;
-  width: 44px;
-  height: 45px;
+  position: relative;
+  width: 48px;
+  height: 48px;
   color: var(--hud-nav-marker-color, #525df7);
   fill: currentColor;
-  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.45));
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.25));
 }
 /* Dark scrim + progressive blur over the map band — clear on the far left,
    ramping in from ~35% so the entire speedometer side is darker AND blurrier.

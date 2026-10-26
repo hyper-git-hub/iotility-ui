@@ -1,14 +1,16 @@
 import {
-  AfterViewInit, Component, ElementRef, OnDestroy, effect, inject, input, output, signal, untracked,
-  viewChild,
+  AfterViewInit, Component, ElementRef, NgZone, OnDestroy, effect, inject, input, output, signal,
+  untracked, viewChild,
 } from '@angular/core';
 import maplibregl, { LngLatBounds, Map as MapLibreMap } from 'maplibre-gl';
 import {
-  LatLng, LayerWithoutSource, circlePolygon, createIotMap, fitLatLngs, lineFeature, markerElement,
-  overlaySafePadding, polygonFeature, popupHtml, removeGeoJson, timezoneCountryCenter, upsertGeoJson,
+  LatLng, LayerWithoutSource, circlePolygon, createIotMap, escapeHtml, fitLatLngs, lineFeature,
+  markerElement, overlaySafePadding, polygonFeature, popupHtml, removeGeoJson, timezoneCountryCenter,
+  upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
 import { FullscreenUiService } from '../services/fullscreen-ui.service';
+import { SmoothTrack, TrackPoint } from '../maps/smooth-track';
 import { environment } from '../../../environments/environment';
 
 /** Road-snapped trail: a soft casing under a crisp core line. */
@@ -52,6 +54,8 @@ export interface TrackedVehicle {
   live?: boolean;
   /** Marker shape; defaults to the circular `chip`. */
   variant?: VehicleMarkerVariant;
+  /** Device clock (ms) of the latest fix; paces `smoothTracking` playback. */
+  fixTime?: number;
 }
 export interface MapZoneOverlay {
   id: string;
@@ -103,6 +107,13 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly liveTrail = input<LatLng[]>([]);
   readonly trailColor = input('');
   /**
+   * Glide markers between fixes instead of jumping (shared/maps/smooth-track).
+   * Only vehicles drawn as their own marker, in view and zoomed in to
+   * ROUTE_MIN_ZOOM, follow the road — OSRM per packet for a whole fleet would
+   * be hundreds of calls — the rest move in straight lines.
+   */
+  readonly smoothTracking = input(false);
+  /**
    * Optional popup body builder. The default card is vehicle-shaped (thumbnail,
    * driver, speed/fuel), so a page with a different record shape — POIs, for
    * instance — supplies its own markup here and keeps the same themed popup
@@ -115,6 +126,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly fullscreenUi = inject(FullscreenUiService);
+  private readonly zone = inject(NgZone);
   private map?: MapLibreMap;
   private readonly markers = new Map<string, maplibregl.Marker>();
   private readonly markerVehicles = new Map<string, TrackedVehicle>();
@@ -129,6 +141,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private readonly clusterBadgeDivs = new Map<string, HTMLElement>();
   private clusteredPairs = new Set<string>();
   private clusterMoveBound = false;
+  private zoneClickBound = false;
   private clusterSyncFrame?: number;
   private readonly onClusterMove = () => this.queueClusterRerender();
   private initialFitPending = true;
@@ -142,6 +155,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private followSuspended = false;
   private resizeObserver?: ResizeObserver;
   private readyFallback?: ReturnType<typeof setTimeout>;
+  // Smooth tracking: one tracker per vehicle, the last fix fed to it (renders
+  // repeat for every vehicle on any update), and the follow-pan throttle.
+  private readonly trackers = new Map<string, SmoothTrack>();
+  private readonly trackedFixKeys = new Map<string, string>();
+  private lastFollowPanAt = 0;
+  private readonly onRoutingMove = () => this.updateRouting();
+  private static readonly ROUTE_MIN_ZOOM = 14;
+  private static readonly ROUTE_MAX_VEHICLES = 20;
   private readyEmitted = false;
 
   constructor() {
@@ -187,7 +208,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const selected = untracked(() => this.vehicles()).find(({ id }) => id === selectedId);
       this.map.easeTo({
         ...(selected ? { center: [selected.lng, selected.lat] as [number, number] } : {}),
-        padding,
+        // Same inset as the follow camera, so both agree on where the marker sits.
+        padding: selected ? this.followPadding() : { top: 0, bottom: 0, left: 0, right: padding },
         duration: 400,
         easing: (t) => 1 - Math.pow(1 - t, 3),
       });
@@ -214,6 +236,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         return;
       }
       if (!selectedId || this.followSuspended || !vehicle) return;
+      // Smooth markers trail the newest fix by about one packet; the tracker's
+      // move hook follows the drawn marker instead (see followMarker).
+      if (this.smoothTracking()) return;
       this.focusVehicle(vehicle);
     });
     effect(() => {
@@ -348,6 +373,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.markers.delete(id);
       this.markerVehicles.delete(id);
       this.markerPopupContent.delete(id);
+      this.trackers.get(id)?.destroy();
+      this.trackers.delete(id);
+      this.trackedFixKeys.delete(id);
     });
 
     for (const vehicle of visibleVehicles) {
@@ -385,9 +413,13 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         this.markers.set(vehicle.id, item);
         this.markerPopupContent.set(vehicle.id, this.vehiclePopupHtml(vehicle));
       } else {
-        const position = item.getLngLat();
-        if (position.lng !== vehicle.lng || position.lat !== vehicle.lat) {
-          item.setLngLat([vehicle.lng, vehicle.lat]);
+        if (this.smoothTracking()) {
+          this.trackVehicle(vehicle, item);
+        } else {
+          const position = item.getLngLat();
+          if (position.lng !== vehicle.lng || position.lat !== vehicle.lat) {
+            item.setLngLat([vehicle.lng, vehicle.lat]);
+          }
         }
         const popupContent = this.vehiclePopupHtml(vehicle);
         if (this.markerPopupContent.get(vehicle.id) !== popupContent) {
@@ -404,6 +436,77 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const selected = vehicles.find(({ id }) => id === selectedId);
     if (selected && this.markers.has(selected.id)) this.updateMarkerSelection(selected.id);
     if (fit) this.fitVehicles(vehicles);
+    if (this.smoothTracking()) {
+      this.map.off('moveend', this.onRoutingMove);
+      this.map.on('moveend', this.onRoutingMove);
+      this.updateRouting();
+    }
+  }
+
+  /** Feed a vehicle's newest fix to its tracker, creating it on first sight. */
+  private trackVehicle(vehicle: TrackedVehicle, marker: maplibregl.Marker): void {
+    const key = `${vehicle.lat},${vehicle.lng},${vehicle.fixTime ?? ''}`;
+    if (this.trackedFixKeys.get(vehicle.id) === key) return;
+    this.trackedFixKeys.set(vehicle.id, key);
+    let track = this.trackers.get(vehicle.id);
+    if (!track) {
+      const id = vehicle.id;
+      track = new SmoothTrack(this.zone, { move: (pos) => this.placeTrackedMarker(id, pos) });
+      const start = marker.getLngLat();
+      track.seed({ lat: start.lat, lng: start.lng });
+      this.trackers.set(id, track);
+    }
+    track.push({ lat: vehicle.lat, lng: vehicle.lng, t: vehicle.fixTime ?? Number.NaN });
+  }
+
+  /** Per-frame marker update from a tracker. Runs outside Angular. */
+  private placeTrackedMarker(id: string, pos: TrackPoint): void {
+    const marker = this.markers.get(id);
+    if (!marker || !this.map) return;
+    marker.setLngLat([pos.lng, pos.lat]);
+    if (id === this.selectedVehicleId() && !this.followSuspended) this.followMarker(pos);
+  }
+
+  /**
+   * Keep the followed marker near its framing point. Panning only once it
+   * drifts (at most once a second) — re-centring every frame makes the map
+   * judder under the marker and fights the user's drag.
+   */
+  private followMarker(pos: TrackPoint): void {
+    const map = this.map!;
+    const now = performance.now();
+    if (now - this.lastFollowPanAt < 1000) return;
+    const container = map.getContainer();
+    const padding = this.followPadding();
+    const targetX = (padding.left! + container.clientWidth - padding.right!) / 2;
+    const targetY = container.clientHeight / 2;
+    const point = map.project([pos.lng, pos.lat]);
+    const driftX = Math.abs(point.x - targetX) / Math.max(1, container.clientWidth);
+    const driftY = Math.abs(point.y - targetY) / Math.max(1, container.clientHeight);
+    if (driftX < 0.2 && driftY < 0.2) return;
+    this.lastFollowPanAt = now;
+    map.easeTo({ center: [pos.lng, pos.lat], padding, duration: 800 });
+  }
+
+  /**
+   * Choose which trackers snap to roads: vehicles with their own visible
+   * marker in view at ROUTE_MIN_ZOOM or closer, the selected one first, up to
+   * ROUTE_MAX_VEHICLES. Rechecked after every render and camera move.
+   */
+  private updateRouting(): void {
+    if (!this.map) return;
+    const zoomedIn = this.map.getZoom() >= FleetMap.ROUTE_MIN_ZOOM;
+    const bounds = this.map.getBounds();
+    const selectedId = this.selectedVehicleId();
+    const ids = [...this.trackers.keys()].sort((a, b) => Number(b === selectedId) - Number(a === selectedId));
+    let budget = FleetMap.ROUTE_MAX_VEHICLES;
+    for (const id of ids) {
+      const marker = this.markers.get(id);
+      const on = zoomedIn && budget > 0 && !!marker
+        && marker.getElement().style.display !== 'none' && bounds.contains(marker.getLngLat());
+      if (on) budget--;
+      this.trackers.get(id)!.setRouting(on);
+    }
   }
 
   // Frames the given markers, reserving room for the details panel so a re-fit
@@ -449,7 +552,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         <div class="vehicle-marker vehicle-marker--arrow${selected ? ' selected' : ''}"
           style="--marker-color:${color}">
           <span class="vehicle-marker-halo"></span>
-          <img src="${image}" alt="${vehicle.id}" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'">
+          <img src="${escapeHtml(image)}" alt="${escapeHtml(vehicle.id)}" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'">
         </div>
       `);
     }
@@ -458,7 +561,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       <div class="vehicle-marker${selected ? ' selected' : ''}"
         style="width:${size}px;height:${size}px;border-color:${color};
           box-shadow:0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}">
-        <img src="${image}" alt="${vehicle.id}" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'">
+        <img src="${escapeHtml(image)}" alt="${escapeHtml(vehicle.id)}" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'">
       </div>
     `);
   }
@@ -514,23 +617,23 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     return `
       <div class="vehicle-popup">
         <div class="vp-head">
-          <img class="vp-thumb" src="${this.vehicleImageUrl(vehicle.image)}" alt="" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'" />
+          <img class="vp-thumb" src="${escapeHtml(this.vehicleImageUrl(vehicle.image))}" alt="" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'" />
           <div class="vp-title">
-            <strong>${vehicle.id}</strong>
-            <small>${vehicle.model}</small>
+            <strong>${escapeHtml(vehicle.id)}</strong>
+            <small>${escapeHtml(vehicle.model)}</small>
           </div>
         </div>
         <div class="vp-row">
           <svg class="vp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span class="vp-text">${vehicle.driver}</span>
+          <span class="vp-text">${escapeHtml(vehicle.driver)}</span>
         </div>
         <div class="vp-row">
           <svg class="vp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span class="vp-text"><span class="vp-status" style="color:${statusColor}">${vehicle.status}</span> ${speed}${fuel}</span>
+          <span class="vp-text"><span class="vp-status" style="color:${statusColor}">${escapeHtml(vehicle.status)}</span> ${speed}${fuel}</span>
         </div>
         <div class="vp-row">
           <svg class="vp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <span class="vp-text vp-location">${vehicle.location}</span>
+          <span class="vp-text vp-location">${escapeHtml(vehicle.location)}</span>
         </div>
         <div class="vp-foot">${footerText}</div>
       </div>`;
@@ -577,9 +680,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     // once more when the gesture settles so markers/badges swap instantly
     // without churn or overlap.
     if (this.clusterSyncFrame !== undefined) return;
-    this.clusterSyncFrame = requestAnimationFrame(() => {
-      this.clusterSyncFrame = undefined;
-      this.recomputeClusters();
+    // Clustering only mutates marker DOM imperatively (no signals/bindings), so
+    // run the per-frame work outside Angular to avoid a change-detection pass on
+    // every map move/zoom frame.
+    this.zone.runOutsideAngular(() => {
+      this.clusterSyncFrame = requestAnimationFrame(() => {
+        this.clusterSyncFrame = undefined;
+        this.recomputeClusters();
+      });
     });
   }
 
@@ -873,6 +981,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private trailRaw: LatLng[] = [];
   private trailToken = 0;
   private trailFrame?: number;
+  /** Snapped geometry per from→to hop, so an identical segment is never fetched
+      twice (a fast feed repeats hops); failures aren't cached so they retry. */
+  private readonly snapCache = new Map<string, Promise<LatLng[]>>();
 
   private renderLiveTrail(raw: LatLng[]): void {
     if (!this.map?.isStyleLoaded()) return;
@@ -896,8 +1007,22 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     });
   }
 
-  /** OSRM driving route between two fixes, falling back to the straight line. */
-  private async snapToRoad(from: LatLng, to: LatLng): Promise<LatLng[]> {
+  /** OSRM driving route between two fixes, falling back to the straight line.
+      Identical hops are served from an in-memory cache; a straight-line fallback
+      (OSRM unreachable) is evicted so the next encounter retries the network. */
+  private snapToRoad(from: LatLng, to: LatLng): Promise<LatLng[]> {
+    const key = `${from[0].toFixed(6)},${from[1].toFixed(6)};${to[0].toFixed(6)},${to[1].toFixed(6)}`;
+    const cached = this.snapCache.get(key);
+    if (cached) return cached;
+    const request = this.requestSnapToRoad(from, to);
+    this.snapCache.set(key, request);
+    void request.then((points) => {
+      if (points.length < 3) this.snapCache.delete(key);
+    });
+    return request;
+  }
+
+  private async requestSnapToRoad(from: LatLng, to: LatLng): Promise<LatLng[]> {
     const fallback: LatLng[] = [from, to];
     const coordinates = `${from[1]},${from[0]};${to[1]},${to[0]}`;
     for (const baseUrl of [environment.osrmBaseUrl, environment.osrmFallbackUrl]) {
@@ -945,7 +1070,11 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.trailPending = [];
       this.paintTrail();
     };
-    this.trailFrame = requestAnimationFrame(step);
+    // Trail growth only repaints a GeoJSON source — keep the ~60fps loop off the
+    // Angular zone so each frame doesn't trigger a change-detection pass.
+    this.zone.runOutsideAngular(() => {
+      this.trailFrame = requestAnimationFrame(step);
+    });
   }
 
   private paintTrail(pending: LatLng[] = this.trailPending): void {
@@ -1015,11 +1144,18 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
     ]);
-    for (const layer of ['zone-fill', 'zone-outline', 'zone-corridor']) {
-      this.map.on('click', layer, ({ features }) => {
-        const item = this.vehicles().find(({ id }) => id === features?.[0]?.properties?.['id']);
-        if (item) this.vehicleSelected.emit(item);
-      });
+    // Bind the per-layer click handlers once. `renderZones` runs on every
+    // `zones()` change plus `style.load`/`load`; re-binding each time stacked
+    // duplicate handlers that fired the selection several times per click.
+    // Layer-scoped handlers survive the layers being re-created by upsertGeoJson.
+    if (!this.zoneClickBound) {
+      this.zoneClickBound = true;
+      for (const layer of ['zone-fill', 'zone-outline', 'zone-corridor']) {
+        this.map.on('click', layer, ({ features }) => {
+          const item = this.vehicles().find(({ id }) => id === features?.[0]?.properties?.['id']);
+          if (item) this.vehicleSelected.emit(item);
+        });
+      }
     }
   }
 
@@ -1068,10 +1204,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private followPadding(): maplibregl.PaddingOptions {
     const width = this.map?.getContainer().clientWidth ?? 0;
     const offset = Math.min(0.98, Math.max(0.02, this.cameraOffsetX()));
-    // Left padding pushes the centre point to the right of the inset, so the
-    // marker lands at `offset * width` from the left edge.
-    const left = width * offset;
-    return { top: 0, bottom: 0, left, right: Math.max(this.panelPadding(), width - left * 2) };
+    // The camera centres on the middle of the padded inset, i.e. at
+    // (left + width - right) / 2. Aim that at `offset` of the area the details
+    // panel leaves visible, so a 0.5 offset centres the marker in the open map.
+    const target = offset * Math.max(0, width - this.panelPadding());
+    const shift = 2 * target - width;
+    return { top: 0, bottom: 0, left: Math.max(0, shift), right: Math.max(0, -shift) };
   }
 
   private statusColor(status: VehicleStatus): string {
@@ -1083,10 +1221,15 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.trackers.forEach((track) => track.destroy());
+    this.trackers.clear();
     if (this.clusterSyncFrame !== undefined) cancelAnimationFrame(this.clusterSyncFrame);
     cancelAnimationFrame(this.trailFrame as number);
     clearTimeout(this.readyFallback);
     this.resizeObserver?.disconnect();
     this.map?.remove();
+    // Null the handle so any late async callback (e.g. geolocate) no-ops on its
+    // `this.map?.` guard instead of touching a removed map.
+    this.map = undefined;
   }
 }

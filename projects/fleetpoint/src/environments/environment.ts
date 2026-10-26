@@ -14,6 +14,8 @@ export const environment = {
   nominatimBaseUrl: 'https://devgateway.hypernymbiz.com/nominatim-pakistan',
   useCaseId: 6,
   signalRUrl: 'https://func-stag-all.azurewebsites.net',
+  iotRealtimeStreamUrl: 'https://devgateway.hypernymbiz.com/iot-realtime-stream',
+  sseTelemetryEnabled: true,
   notificationsUrl: 'https://devgateway.hypernymbiz.com/fms-fleet/api/notification',
   overpassApiUrl: 'https://overpass-api.de/api/interpreter',
   firebase: {
