@@ -35,7 +35,6 @@ export class NotificationService {
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
   private firebaseUnsubscribe?: () => void;
-  private firebaseRefreshTimer?: ReturnType<typeof setTimeout>;
   private receivedInitialFirebaseValue = false;
 
   readonly notifications = signal<FleetNotification[]>([]);
@@ -47,10 +46,7 @@ export class NotificationService {
     this.load();
     interval(30_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.load());
     this.listenForFirebaseUpdates();
-    this.destroyRef.onDestroy(() => {
-      this.firebaseUnsubscribe?.();
-      clearTimeout(this.firebaseRefreshTimer);
-    });
+    this.destroyRef.onDestroy(() => this.firebaseUnsubscribe?.());
   }
 
   load(markViewed = false): void {
@@ -86,24 +82,50 @@ export class NotificationService {
     });
   }
 
+  /**
+   * Realtime alerts (as hypernym-fms-fe): the backend writes the latest alert
+   * to `Notification/<user guid>` in the Realtime Database. Every write after
+   * the initial value is a new alert, shown in the badge and list at once with
+   * no API call; the 30s poll reconciles the list with the server.
+   */
   private listenForFirebaseUpdates(): void {
     const guid = this.userGuid();
     if (!guid) return;
     try {
+      // firebase/app is bundled in this remote (see federation.config.mjs), so
+      // this registry is fleetpoint's own: initialise it here on first use.
       const app = getApps()[0] ?? initializeApp(environment.firebase);
-      this.firebaseUnsubscribe = onValue(ref(getDatabase(app), `Notification/${guid}`), () => {
-        if (this.receivedInitialFirebaseValue) {
-          // Firebase is the immediate alert channel. The REST record can become
-          // available a moment later, so show the badge now and reconcile after.
-          this.unreadCount.update((count) => count + 1);
-          clearTimeout(this.firebaseRefreshTimer);
-          this.firebaseRefreshTimer = setTimeout(() => this.load(), 1200);
-        }
-        this.receivedInitialFirebaseValue = true;
-      });
-    } catch {
+      this.firebaseUnsubscribe = onValue(
+        ref(getDatabase(app), `Notification/${guid}`),
+        (snapshot) => {
+          // The first value is whatever alert was already stored, not a new one.
+          if (this.receivedInitialFirebaseValue) this.pushRealtimeAlert(snapshot.val());
+          this.receivedInitialFirebaseValue = true;
+        },
+        (error) => console.error('[notifications] realtime listener failed', error),
+      );
+    } catch (error) {
       // The REST list remains available if Firebase is blocked or unavailable.
+      console.error('[notifications] realtime listener unavailable', error);
     }
+  }
+
+  private pushRealtimeAlert(value: unknown): void {
+    this.unreadCount.update((count) => count + 1);
+    if (!value || typeof value !== 'object') return;
+    const alert = value as { title?: string; body?: string; notification_type?: number | string };
+    const now = new Date().toISOString();
+    this.notifications.update((items) => [
+      {
+        notf_title: alert.title,
+        notf_body: alert.body,
+        notf_type: alert.notification_type ?? null,
+        is_viewed: false,
+        notf_created_at: now,
+        event_generation_time: now,
+      },
+      ...items,
+    ]);
   }
 
   private userGuid(): string {

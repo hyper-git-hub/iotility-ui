@@ -36,6 +36,14 @@ export default withNativeFederation({
     '@deck.gl/layers',
     '@deck.gl/mapbox',
     '@deck.gl/mesh-layers',
+    // Firebase keeps its app/component registry inside its core chunk. Shared,
+    // `firebase/app` resolves to the host's singleton while `firebase/database`
+    // (only used here) links to this remote's core copy, so getDatabase() on
+    // the host's app throws "Service database is not available" and the
+    // realtime notification listener never attaches. Bundling both locally
+    // keeps them on one registry.
+    'firebase/app',
+    'firebase/database',
     // Add further packages you don't need at runtime
   ],
 
