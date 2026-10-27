@@ -1,3 +1,4 @@
+import { TabIndicator } from '@iotility/shared-ui';
 import { DecimalPipe } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
@@ -80,7 +81,7 @@ const MAX_PLAYBACK_GAP_MS = 5_000;
 
 @Component({
   selector: 'app-trip-replay-page',
-  imports: [DateTimePicker, DecimalPipe, ProgressBar, Skeleton, Tooltip, TripReplayMap],
+  imports: [TabIndicator, DateTimePicker, DecimalPipe, ProgressBar, Skeleton, Tooltip, TripReplayMap],
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
 })

@@ -139,6 +139,7 @@ export class DateTimePicker implements ControlValueAccessor, OnDestroy {
       panel.classList.toggle('dark', this.host.nativeElement.closest('.dark') !== null);
       document.body.appendChild(panel);
       this.positionPanel();
+      requestAnimationFrame(() => panel.classList.add('placed'));
     }, 0);
   }
 
@@ -285,6 +286,8 @@ export class DateTimePicker implements ControlValueAccessor, OnDestroy {
       this.panelLeft.set(left);
       this.panelTop.set(top);
     }
+    // After measuring: a scaled panel with a bottom origin would report a shifted rect.
+    this.panel()?.nativeElement.classList.toggle('above', top < rect.top);
   }
 
   private loadDraft(): void {

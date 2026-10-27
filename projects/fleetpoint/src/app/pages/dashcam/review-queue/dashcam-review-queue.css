@@ -15,7 +15,7 @@
 }
 .review-heading button,
 .footage-toggle {
-  @apply h-9 cursor-pointer rounded-xl border border-line bg-white px-3 text-[10px] font-semibold text-muted disabled:cursor-default disabled:opacity-50 dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300;
+  @apply h-9 cursor-pointer rounded-xl border border-line bg-white px-3 text-[10px] font-semibold text-muted disabled:cursor-not-allowed disabled:opacity-50 dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300;
 }
 .review-list {
   @apply mt-4 grid gap-4;
@@ -182,3 +182,18 @@
 :host-context(.dark) .full-footage {
   border-color: var(--color-dark-line) !important;
 }
+
+/* "Queue is clear" is a rare win: the check pops, the copy rises — after the last item has collapsed. */
+.queue-empty img { animation: queue-clear-pop 420ms var(--ease-overshoot) 260ms backwards; }
+.queue-empty h2,
+.queue-empty p { animation: queue-clear-rise 320ms var(--ease-out) backwards; }
+.queue-empty h2 { animation-delay: 340ms; }
+.queue-empty p { animation-delay: 400ms; }
+@keyframes queue-clear-pop { from { opacity: 0; scale: 0.6; } }
+@keyframes queue-clear-rise { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .queue-empty img,
+  .queue-empty h2,
+  .queue-empty p { animation-name: queue-clear-fade; }
+}
+@keyframes queue-clear-fade { from { opacity: 0; } }

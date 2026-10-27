@@ -40,6 +40,6 @@ export class FeedbackDialogService {
       this.resolveDialog = undefined;
       this.config.set(null);
       this.closing.set(false);
-    }, 220);
+    }, 180);
   }
 }

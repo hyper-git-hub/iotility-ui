@@ -18,9 +18,9 @@
     </button>
   </header>
   @if (customiseOpen()) {
-    <app-customise-modal [tab]="activeTab()" [tabLabel]="activeTabLabel()" (closed)="closeCustomise()" />
+    <app-customise-modal animate.leave="customise-leave" [tab]="activeTab()" [tabLabel]="activeTabLabel()" (closed)="closeCustomise()" />
   }
-  <nav class="dashboard-tabs smooth-reveal dashboard-reveal-tabs" aria-label="Dashboard sections">
+  <nav sharedTabIndicator class="dashboard-tabs smooth-reveal dashboard-reveal-tabs" aria-label="Dashboard sections">
     @for (tab of tabs; track tab.path) {
       @if (tab.placeholder) {
         <button type="button" [class.active]="activeTab() === tab.path" (click)="activeTab.set(tab.path)">

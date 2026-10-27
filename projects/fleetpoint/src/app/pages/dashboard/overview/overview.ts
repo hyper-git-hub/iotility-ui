@@ -1,9 +1,10 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { Skeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
-import { StatCardTone } from '../../../shared/stat-card/stat-card';
+import { StatCard, StatCardTone } from '../../../shared/stat-card/stat-card';
 import {
   DashboardCard,
   DashboardGraphData,
@@ -21,7 +22,7 @@ interface OverviewSkeleton {
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [Skeleton, DashboardGraphComponent],
+  imports: [Skeleton, DashboardGraphComponent, NgTemplateOutlet, StatCard],
   templateUrl: './overview.html',
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })
@@ -245,9 +246,17 @@ export class Overview implements OnInit {
     return 'info';
   }
 
-  protected statusPercentage(value: number): number {
-    const total: number = this.fleetStatusTotal();
-    return total > 0 ? (value / total) * 100 : 0;
+  private readonly statusCardTones: Record<string, StatCardTone> = {
+    total: 'info',
+    moving: 'success',
+    idling: 'warning',
+    stopped: 'neutral',
+    alert: 'danger',
+    offline: 'neutral',
+  };
+
+  protected statusCardTone(key: string): StatCardTone {
+    return this.statusCardTones[key] ?? 'brand';
   }
 
   protected openTodaysViolations(item: { key: string; value: number }): void {

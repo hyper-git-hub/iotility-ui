@@ -68,7 +68,7 @@
   @if (!initialLoading() && viewMode() === 'grid') {
     <section class="driver-card-grid">
       @for (driver of visibleRecords(); track driver.id) {
-        <article class="driver-card" (click)="openDriver({ id: driver.id })">
+        <article class="driver-card" role="link" tabindex="0" (click)="openDriver({ id: driver.id })" (keydown.enter)="openDriver({ id: driver.id })">
           <header>
             <span class="driver-card-avatar">{{ initials(driver) }}</span>
             <div><strong>{{ driver.name }}</strong><small>{{ driver.email || 'Professional driver' }}</small></div>

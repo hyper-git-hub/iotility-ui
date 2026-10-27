@@ -9,7 +9,7 @@
     #1e0a3c 50%,
     #4c1d95 100%
   );
-  --sidebar-motion: 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --sidebar-motion: 260ms var(--ease-out);
   contain: layout paint;
   will-change: width;
   transform: translateZ(0);
@@ -123,12 +123,14 @@ nav button {
 .fleet-sidebar.collapsed nav a {
   @apply mx-auto size-8 justify-center gap-0 px-0;
 }
-nav .active {
-  @apply bg-brand-600 text-white;
+/* The background is the sliding pill ([sharedTabIndicator] variant="pill"); the item only switches text colour. */
+nav .active,
+nav .active:hover {
+  @apply bg-transparent text-white;
 }
 .nav-icon {
   @apply size-[18px] shrink-0;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.3s var(--ease-out);
 }
 .vehicle-nav-icon {
   @apply size-5;
@@ -234,7 +236,7 @@ nav em {
 }
 .footer-return-icon {
   @apply text-base leading-none;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.3s var(--ease-out);
 }
 .footer-return-label {
   @apply min-w-0 truncate;

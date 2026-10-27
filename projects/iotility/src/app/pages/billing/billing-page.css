@@ -26,4 +26,5 @@
 progress { @apply mt-2 h-1.5 w-full appearance-none overflow-hidden rounded-full bg-line dark:bg-dark-line; }
 progress::-webkit-progress-bar { @apply rounded-full bg-line dark:bg-dark-line; }
 progress::-webkit-progress-value { @apply rounded-full bg-brand-600; }
-progress::-moz-progress-bar { @apply rounded-full bg-brand-600; }
+progress::-moz-progress-bar { @apply rounded-full bg-brand-600; }.billing-grid { @apply grid gap-4 lg:grid-cols-2; }
+.hint { @apply mt-1 text-xs text-muted dark:text-brand-300; }

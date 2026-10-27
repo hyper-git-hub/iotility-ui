@@ -36,10 +36,6 @@
 .management-tabs button.active {
   @apply text-brand-600;
 }
-.management-tabs button.active::after {
-  content: '';
-  @apply absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600;
-}
 .page-error {
   @apply rounded-xl border border-danger/20 bg-danger/5 p-3 text-xs text-danger;
 }

@@ -45,3 +45,7 @@
 .auth-tagline h1 { @apply text-3xl font-bold leading-snug; }
 .auth-tagline p { @apply mt-2 text-sm text-brand-300; }
 .auth-content-panel { @apply flex min-w-0 flex-1 flex-col items-stretch justify-center px-5 py-10 sm:px-8; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-glow::before { animation: none; }
+}

@@ -4,7 +4,7 @@
 }
 .events-workspace {
   @apply flex min-w-0 items-start gap-0;
-  transition: gap 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: gap 280ms var(--ease-out);
 }
 .events-workspace.details-open {
   @apply gap-4;
@@ -34,16 +34,16 @@
   width: 0;
   visibility: hidden;
   transition:
-    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 280ms var(--ease-out),
     opacity 180ms ease,
-    visibility 0s linear 420ms;
+    visibility 0s linear 280ms;
 }
 .details-open .event-details {
   width: 22rem;
   visibility: visible;
   @apply opacity-100;
   transition:
-    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 280ms var(--ease-out),
     opacity 180ms ease 100ms,
     visibility 0s;
 }
@@ -179,5 +179,12 @@
   .event-details > .detail-body,
   .event-details > footer {
     width: 100%;
+  }
+}
+
+/* Push-drawer: reduced motion snaps open/closed (visibility still flips). */
+@media (prefers-reduced-motion: reduce) {
+  .events-workspace, .event-details {
+    transition: none !important;
   }
 }

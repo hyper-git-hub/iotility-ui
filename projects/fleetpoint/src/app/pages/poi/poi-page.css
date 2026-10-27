@@ -125,3 +125,5 @@
 .poi-tabs button[data-type].active { @apply border-brand-600 bg-brand-600 font-semibold text-white dark:bg-brand-600 dark:text-white; }
 .poi-tabs button[data-type].active b { @apply text-white/90; }
 .poi-tabs button[data-type].active:hover { @apply border-brand-600; }
+.poi-card { box-shadow: var(--shadow-card); }
+.poi-card:not(.expanded):hover { box-shadow: var(--shadow-card-hover); }

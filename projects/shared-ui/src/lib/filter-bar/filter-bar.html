@@ -60,6 +60,7 @@
               type="button"
               [attr.aria-label]="dropdown.ariaLabel || dropdown.id"
               [disabled]="!!dropdown.disabled || !!dropdown.loading"
+              [attr.aria-busy]="dropdown.loading ? true : null"
             >
               @if (dropdown.loading) {
                 <ui-skeleton [width]="dropdown.skeletonWidth || '6rem'" height="0.75rem" radius="0.3rem" />

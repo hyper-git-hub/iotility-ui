@@ -2,6 +2,7 @@ import { Component, computed, signal } from '@angular/core';
 import {
   DataTable,
   DataTableCellTemplate,
+  SpotlightBorder,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
@@ -25,7 +26,7 @@ const FLEETPOINT_USE_CASE = { usecase: 'Fleetpoint', usecaseIcon: 'assets/fleetp
 
 @Component({
   selector: 'app-home-dashboard',
-  imports: [DataTable, DataTableCellTemplate],
+  imports: [DataTable, DataTableCellTemplate, SpotlightBorder],
   templateUrl: './home-dashboard.html',
   styleUrl: './home-dashboard.css',
 })

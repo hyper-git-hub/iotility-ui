@@ -21,6 +21,6 @@
 .toggle-row span { @apply flex flex-col gap-1; }
 .toggle-row small { @apply text-xs font-normal text-muted dark:text-brand-300; }
 .toggle { @apply h-6 w-11 cursor-pointer rounded-full bg-line p-1 outline-none transition hover:bg-brand-200 focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:bg-dark-line dark:hover:bg-brand-600/40; }
-.toggle::after { @apply block size-4 rounded-full bg-white shadow transition content-['']; }
+.toggle::after { @apply block size-4 rounded-full bg-white shadow content-['']; transition: translate 260ms var(--ease-overshoot); }
 .toggle.on { @apply bg-brand-600 hover:bg-brand-600 dark:hover:bg-brand-600; }
 .toggle.on::after { @apply translate-x-5; }

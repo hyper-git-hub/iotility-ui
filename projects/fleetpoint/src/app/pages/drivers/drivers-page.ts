@@ -1,11 +1,11 @@
+import { TabIndicator } from '@iotility/shared-ui';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { StatCardSkeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { DriverApiService, DriverRecord } from '../../shared/services/driver-api.service';
 
-@Component({ selector: 'app-drivers-page', imports: [RouterLink, RouterLinkActive, RouterOutlet, StatCard, StatCardSkeleton], templateUrl: './drivers-page.html', styleUrl: './drivers-page.css' })
+@Component({ selector: 'app-drivers-page', imports: [TabIndicator, RouterLink, RouterLinkActive, RouterOutlet, StatCard], templateUrl: './drivers-page.html', styleUrl: './drivers-page.css' })
 export class DriversPage implements OnInit {
   protected readonly loadingStats = signal(true);
   protected readonly totalDrivers = signal(0);

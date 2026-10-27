@@ -1,3 +1,4 @@
+import { lingerWhileClosing } from '@iotility/shared-ui';
 import { Component,computed,signal } from '@angular/core';
 import { FleetMap,MapZoneOverlay,TrackedVehicle,VehicleStatus } from '../../../shared/fleet-map/fleet-map';
 import { GEOZONES,GeozoneRecord,GeozoneType,ZONE_TYPE_LABELS } from '../geozones.data';
@@ -15,6 +16,7 @@ export class ZoneMap{
   ];
   protected readonly filtered=computed(()=>{const q=this.search().toLowerCase();return GEOZONES.filter(z=>(this.type()==='all'||z.type===this.type())&&(!q||`${z.name} ${z.description}`.toLowerCase().includes(q)));});
   protected readonly selectedZone=computed(()=>GEOZONES.find(zone=>zone.id===this.selected())??null);
+  protected readonly shownZone=lingerWhileClosing(this.selectedZone);
   protected readonly mappedZones=computed(()=>this.filtered().filter(zone=>zone.type!=='corridor'));
   protected readonly markers=computed<TrackedVehicle[]>(()=>this.mappedZones().map(z=>({id:z.id,model:z.name,driver:this.label(z.type),status:this.status(z),speed:z.speed??0,fuel:0,location:z.description,updated:`${z.inside} inside`,lat:z.lat,lng:z.lng})));
   protected readonly overlays=computed<MapZoneOverlay[]>(()=>this.mappedZones().map(zone=>{

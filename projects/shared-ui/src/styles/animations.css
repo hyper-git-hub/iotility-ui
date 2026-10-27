@@ -1,7 +1,8 @@
+/* Page-section entrance. Kept short: these pages are visited all day and also get the route crossfade. */
 @keyframes smooth-reveal {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -9,11 +10,16 @@
   }
 }
 .smooth-reveal {
-  animation: smooth-reveal 1.15s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: smooth-reveal 360ms var(--ease-out) backwards;
   animation-delay: var(--reveal-delay, 0ms);
 }
 @media (prefers-reduced-motion: reduce) {
   .smooth-reveal {
+    animation: none;
+  }
+  /* Tailwind's infinite pulses/pings are decorative; stop them for reduced motion. */
+  .animate-pulse,
+  .animate-ping {
     animation: none;
   }
 }

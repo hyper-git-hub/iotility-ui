@@ -1,24 +1,39 @@
 <article
   class="stat-card"
-  [class.animated-border]="animatedBorder()"
+  sharedSpotlightBorder
   [class.compact]="compact()"
-  [class.iconless]="!showIcon()"
   [attr.data-tone]="tone()"
-  [style.--stat-card-accent]="accent() || null"
+  [style.--card-tone]="accent() || null"
 >
-  @if (showIcon()) {
-    <span class="stat-card-icon"><ng-content select="[stat-card-icon]" /></span>
-  }
-  @if (loading()) {
-    <ui-skeleton
-      class="stat-card-value-skeleton"
-      variant="text"
-      [width]="compact() ? '2.5rem' : '3.5rem'"
-      height="1.5rem"
-      radius="0.3rem"
-    />
-  } @else {
-    <strong>{{ value() }}</strong>
-  }
-  <span>{{ label() }}</span>
+  <header>
+    <span class="stat-card-label">{{ label() }}</span>
+    @if (showIcon()) {
+      <i class="stat-card-icon">
+        @if (icon()) {
+          <img [src]="icon()" alt="" aria-hidden="true" />
+        } @else {
+          <ng-content select="[stat-card-icon]" />
+        }
+      </i>
+    }
+  </header>
+  <div class="stat-card-body">
+    @if (loading()) {
+      <ui-skeleton
+        class="stat-card-value-skeleton"
+        variant="text"
+        [width]="skeletonWidth() || (compact() ? '2.5rem' : '3.5rem')"
+        [height]="compact() ? '1rem' : '1.25rem'"
+        radius="0.3rem"
+      />
+    } @else {
+      <!-- Keyed on the value: each new number is a fresh element, so @starting-style plays a pop-in. -->
+      @for (current of [value()]; track current) {
+        <strong class="stat-card-value">{{ current }}</strong>
+      }
+    }
+    @if (suffix()) {
+      <small>{{ suffix() }}</small>
+    }
+  </div>
 </article>

@@ -27,7 +27,7 @@
   padding: 1.25rem;
   background: color-mix(in srgb, var(--feedback-backdrop) 72%, transparent);
   backdrop-filter: blur(5px);
-  animation: feedback-backdrop-in 180ms ease-out both;
+  transition: opacity var(--duration-modal) var(--ease-out);
 }
 .dialog-panel {
   width: 100%;
@@ -37,11 +37,14 @@
   border-radius: 1rem;
   background: var(--feedback-surface);
   color: var(--feedback-text);
-  box-shadow: 0 24px 70px rgb(0 0 0 / 45%);
-  animation: feedback-pop-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: var(--shadow-modal);
+  transition:
+    opacity var(--duration-modal) var(--ease-out),
+    transform var(--duration-modal) var(--ease-out);
 }
-.dialog-backdrop.dialog-closing { animation: feedback-backdrop-out 220ms ease-in both; pointer-events: none; }
-.dialog-backdrop.dialog-closing .dialog-panel { animation: feedback-pop-out 220ms cubic-bezier(0.55, 0, 1, 0.45) both; }
+/* Exit snaps faster than entry; keep 180ms in sync with feedback-dialog.service.ts. */
+.dialog-backdrop.dialog-closing { opacity: 0; transition-duration: 180ms; pointer-events: none; }
+.dialog-backdrop.dialog-closing .dialog-panel { opacity: 0; transform: scale(0.97); transition-duration: 180ms; }
 .dialog-icon {
   display: grid;
   width: 3rem;
@@ -93,7 +96,11 @@
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: 150ms ease;
+  transition:
+    border-color var(--duration-hover) ease,
+    color var(--duration-hover) ease,
+    filter var(--duration-hover) ease,
+    scale var(--duration-press) var(--ease-out);
 }
 .dialog-button-secondary {
   border: 1px solid var(--feedback-line);
@@ -117,17 +124,16 @@
   outline-offset: 2px;
 }
 
-@keyframes feedback-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes feedback-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes feedback-pop-in {
-  from { opacity: 0; transform: scale(0.78) translateY(18px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-@keyframes feedback-pop-out {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.82) translateY(14px); }
+/* Transitions, not keyframes: closing mid-open retargets instead of restarting. */
+@starting-style {
+  .dialog-backdrop { opacity: 0; }
+  .dialog-panel { opacity: 0; transform: translateY(8px) scale(0.95); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dialog-backdrop,.dialog-panel,.dialog-backdrop.dialog-closing,.dialog-backdrop.dialog-closing .dialog-panel { animation: none; }
+  .dialog-panel,
+  .dialog-backdrop.dialog-closing .dialog-panel { transform: none; }
+  @starting-style {
+    .dialog-panel { transform: none; }
+  }
 }

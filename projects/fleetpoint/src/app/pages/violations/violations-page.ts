@@ -1,3 +1,4 @@
+import { TabIndicator } from '@iotility/shared-ui';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Skeleton } from '@iotility/shared-ui';
@@ -7,7 +8,7 @@ import { ViolationsApiService } from '../../shared/services/violations-api.servi
 
 @Component({
   selector: 'app-violations-page',
-  imports: [ManualViolationForm, RouterLink, RouterLinkActive, RouterOutlet, Skeleton, StatCard],
+  imports: [TabIndicator, ManualViolationForm, RouterLink, RouterLinkActive, RouterOutlet, Skeleton, StatCard],
   templateUrl: './violations-page.html',
   styleUrl: './violations-page.css',
 })

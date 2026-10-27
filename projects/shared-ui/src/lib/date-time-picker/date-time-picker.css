@@ -65,9 +65,22 @@
   background: #fff;
   padding: 0;
   color: var(--color-ink);
-  box-shadow: 0 25px 50px -12px rgb(24 21 31 / 0.28);
+  box-shadow: var(--shadow-popover);
   outline: none;
-  animation: picker-enter 160ms ease-out;
+  /* Hidden until moved to <body> and positioned; then .placed transitions it in from the trigger. */
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: top left;
+  transition:
+    opacity var(--duration-popover) var(--ease-out),
+    transform var(--duration-popover) var(--ease-out);
+}
+.picker-panel.above {
+  transform-origin: bottom left;
+}
+.picker-panel.placed {
+  opacity: 1;
+  transform: none;
 }
 .calendar-header {
   display: flex;
@@ -462,18 +475,17 @@ footer button {
 .picker-panel.dark .meridiem-control button {
   color: var(--color-brand-300);
 }
-@keyframes picker-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.98);
-  }
-  to {
-    opacity: 1;
+@media (prefers-reduced-motion: reduce) {
+  .picker-panel {
     transform: none;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .picker-panel {
-    animation: none;
+/* Year overlay fades over the grid instead of teleporting. */
+.year-picker {
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+@starting-style {
+  .year-picker {
+    opacity: 0;
   }
 }

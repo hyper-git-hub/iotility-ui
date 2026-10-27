@@ -1,3 +1,5 @@
+import { lingerWhileClosing } from '@iotility/shared-ui';
+import { TabIndicator } from '@iotility/shared-ui';
 import { Component, computed, effect, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -23,6 +25,7 @@ import { UploadDocumentForm, UploadDocumentValue } from './upload-document-form/
 @Component({
   selector: 'app-documents-page',
   imports: [
+    TabIndicator,
     DataTable,
     DataTableCellTemplate,
     DateTimePicker,
@@ -45,6 +48,8 @@ export class DocumentsPage {
   protected readonly status = signal<'all' | DocumentStatus>('all');
   protected readonly search = signal('');
   protected readonly selected = signal<FleetDocument | null>(null);
+  /** Drawer content stays rendered while the drawer animates shut. */
+  protected readonly shownDocument = lingerWhileClosing(this.selected);
   protected readonly uploadOpen = signal(false);
   protected readonly submitted = signal(false);
   protected readonly selectedFile = signal('');

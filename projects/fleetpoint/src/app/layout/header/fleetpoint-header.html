@@ -32,7 +32,7 @@
         <kbd>Ctrl K</kbd>
       </div>
       @if (searchVisible()) {
-        <section id="fleetpoint-search-results" class="search-results" [class.closing]="!searchOpen()" aria-label="Search results">
+        <section id="fleetpoint-search-results" class="search-results" [class.closing]="!searchOpen()" [class.instant]="searchInstant()" aria-label="Search results">
           <header><span>{{ searchQuery() ? 'Pages and tools' : 'Recent and suggested' }}</span></header>
           @for (result of searchResults(); track result.id; let index = $index) {
             <button type="button" [class.active]="activeResult() === index" (mouseenter)="activeResult.set(index)" (click)="selectDestination(result)">
@@ -56,7 +56,7 @@
       }
     </button>
     @if (notificationsOpen()) {
-      <section class="notification-panel" aria-label="Notifications">
+      <section class="notification-panel" animate.leave="notification-leave" aria-label="Notifications">
         <header>
           <div><strong>Notifications</strong><small>Fleet alerts and activity</small></div>
           <button type="button" aria-label="Refresh notifications" (click)="refreshNotifications($event)">&#8635;</button>

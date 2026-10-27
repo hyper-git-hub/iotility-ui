@@ -60,7 +60,7 @@
     </div>
   </section>
 
-  <nav class="category-tabs" aria-label="Document categories">
+  <nav sharedTabIndicator class="category-tabs" aria-label="Document categories">
     <a routerLink="all" routerLinkActive="active"
       >All Documents <span>{{ counts().total }}</span></a
     >
@@ -137,8 +137,8 @@
         >
       </shared-data-table>
     </div>
-    <aside class="document-details">
-      @if (selected(); as item) {
+    <aside class="document-details" [attr.aria-hidden]="!selected()" [inert]="!selected()">
+      @if (shownDocument(); as item) {
         <div class="detail-inner">
           <header>
             <h2>Document Details</h2>

@@ -10,7 +10,7 @@
     <p>Streamline and automate your operations with IoTility.</p>
   </header>
 
-  <form (ngSubmit)="login()" [formGroup]="form" class="login-card">
+  <form (ngSubmit)="login()" [formGroup]="form" class="login-card" [class.is-shaking]="shaking()" (animationend)="shaking.set(false)">
     <shared-smooth-height>
       <div>
     <h3>Login to your account</h3>
@@ -39,9 +39,9 @@
         (click)="togglePasswordVisibility()"
       >
         @if (showPassword()) {
-          <span class="color-icon size-4" style="--icon: url('/assets/icons/eye.svg')" aria-hidden="true"></span>
+          <span class="color-icon icon-swap size-4" style="--icon: url('/assets/icons/eye.svg')" aria-hidden="true"></span>
         } @else {
-          <span class="color-icon size-4" style="--icon: url('/assets/icons/eye-off.svg')" aria-hidden="true"></span>
+          <span class="color-icon icon-swap size-4" style="--icon: url('/assets/icons/eye-off.svg')" aria-hidden="true"></span>
         }
       </button>
     </div>

@@ -9,12 +9,8 @@
 .monitoring-step > header h3 { @apply text-base font-bold text-ink dark:text-white; }
 .details-step > header p,
 .monitoring-step > header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
-.purchase-field,.violations { @apply border-0 p-0; }
-.purchase-field legend,.violations legend { @apply mb-2 text-xs font-medium text-ink dark:text-brand-300; }
-.purchase-field > div { @apply grid grid-cols-2 overflow-hidden rounded-xl border border-line dark:border-dark-line; }
-.purchase-field label { @apply cursor-pointer px-4 py-2.5 text-center text-xs font-semibold text-muted dark:text-brand-300; }
-.purchase-field label.selected { @apply bg-brand-600 text-white; }
-.purchase-field input { @apply sr-only; }
+.violations { @apply border-0 p-0; }
+.violations legend { @apply mb-2 text-xs font-medium text-ink dark:text-brand-300; }
 .violations { @apply grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3; }
 .violations legend { @apply col-span-full; }
 .violations label { @apply relative flex min-h-24 cursor-pointer items-center justify-center gap-3 overflow-hidden rounded-2xl border border-line bg-canvas px-4 py-4 text-muted transition hover:border-brand-400 dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300; }
@@ -36,16 +32,13 @@
 .device-fields { @apply grid gap-4 md:grid-cols-2; }
 .documents-heading { @apply mb-4 mt-7; }.documents-heading h3,.driver-step h3 { @apply text-base font-bold text-ink dark:text-white; }.documents-heading p,.driver-step header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
 .document-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5; }
-.document-card { @apply flex min-h-32 min-w-0 max-w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-line bg-canvas p-3 text-center text-xs text-ink dark:border-dark-line dark:bg-dark-canvas dark:text-white; }
-.document-card strong { @apply block w-full min-w-0 truncate; }
-.document-card input { @apply sr-only; }.add-document { @apply cursor-pointer hover:border-brand-500; }.add-document > span { @apply grid size-10 place-items-center rounded-full bg-white text-xl dark:bg-dark-surface; }.file-icon { @apply grid size-11 place-items-center rounded-lg bg-danger/10 text-[10px] font-bold text-danger; }
 .driver-step > header { @apply mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center; }
 .driver-search { @apply flex h-10 w-full items-center gap-2 rounded-xl border border-line px-3 sm:w-64 dark:border-dark-line; }.driver-search svg { @apply size-4 text-muted; fill:none;stroke:currentColor;stroke-width:1.8; }.driver-search input { @apply min-w-0 flex-1 bg-transparent text-xs text-ink outline-none dark:text-white; }
 .driver-grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-3; }
-.driver-card { @apply grid cursor-pointer grid-cols-[auto_1fr] items-center gap-x-3 rounded-2xl border border-line bg-white p-3 text-left transition hover:border-brand-400 dark:border-dark-line dark:bg-dark-canvas; }.driver-card.selected { @apply border-brand-600 ring-2 ring-brand-500/15; }.driver-avatar { @apply row-span-2 grid size-11 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700; }.driver-card strong { @apply block text-xs text-ink dark:text-white; }.driver-card small { @apply mt-1 block text-[10px] text-muted; }.driver-card em { @apply col-span-2 mt-3 rounded-lg border border-line py-1.5 text-center text-[10px] not-italic text-muted dark:border-dark-line; }.driver-card.selected em { @apply border-brand-600 bg-brand-600 text-white; }
 .vehicle-form-actions { @apply ml-auto flex w-full gap-2; }
 .vehicle-form-actions button { @apply flex-1; }
-.step-enter { animation: step-enter 260ms ease-out both; } @keyframes step-enter { from { opacity:0;transform:translateX(10px); } to { opacity:1;transform:none; } }
+.step-enter { animation: step-enter 240ms var(--ease-out) both; } @keyframes step-enter { from { opacity:0;transform:translateX(8px); } to { opacity:1;transform:none; } }
+@media (prefers-reduced-motion: reduce) { .step-enter { animation-name: step-fade; } } @keyframes step-fade { from { opacity:0; } }
 .vehicle-picture { @apply flex items-center justify-between gap-5 rounded-2xl border border-dashed border-line bg-canvas p-4 dark:border-dark-line dark:bg-dark-canvas; }
 .vehicle-picture > div > span { @apply text-xs font-semibold text-ink dark:text-white; }
 .vehicle-picture p { @apply mb-3 mt-1 text-[10px] text-muted dark:text-brand-300; }

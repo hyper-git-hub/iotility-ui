@@ -1,3 +1,5 @@
+import { TabIndicator } from '@iotility/shared-ui';
+import { StatCard } from '../../../shared/stat-card/stat-card';
 import { ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -17,7 +19,7 @@ import { TripPosition, TripReplayEvent, TripReplayMap } from '../../../shared/tr
 interface DetailItem { label: string; value: string; }
 interface SummaryCard { label: string; value: string; suffix: string; tone: 'brand' | 'info' | 'success' | 'warning' | 'danger'; icon: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [DateTimePicker, DecimalPipe, FleetMap, Skeleton, StatusBadge, TripReplayMap, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css', changeDetection: ChangeDetectionStrategy.OnPush })
+@Component({ selector: 'app-vehicle-detail', imports: [TabIndicator, DateTimePicker, DecimalPipe, FleetMap, Skeleton, StatCard, StatusBadge, TripReplayMap, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css', changeDetection: ChangeDetectionStrategy.OnPush })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);

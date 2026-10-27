@@ -170,7 +170,7 @@
 }
 .tracking-map-error {
   @apply absolute left-1/2 top-1/2 z-[650] m-0 w-[min(22rem,calc(100%_-_2rem))] -translate-x-1/2 -translate-y-1/2 bg-white/95 shadow-xl backdrop-blur dark:bg-dark-surface/95;
-  transition: left 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: left 260ms var(--ease-out);
 }
 .tracking-map-error strong {
   @apply text-sm;
@@ -199,7 +199,7 @@
 }
 .map-area app-fleet-map {
   opacity: 0;
-  transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 300ms var(--ease-out);
 }
 .map-area app-fleet-map.map-loaded {
   opacity: 1;
@@ -209,7 +209,7 @@
 }
 .fullscreen-tracking-notice {
   @apply absolute z-[500] top-4 left-4 right-4 mx-auto flex w-fit max-w-[calc(100%-2rem)] items-center justify-center gap-3 rounded-xl border border-success/25 bg-white/95 px-3 py-2.5 shadow-xl backdrop-blur dark:bg-dark-surface/95;
-  animation: tracking-notice-in 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: tracking-notice-in 300ms var(--ease-out);
 }
 @keyframes tracking-notice-in {
   from {
@@ -269,7 +269,7 @@
 }
 .map-legend {
   @apply absolute z-[500] bottom-4 left-1/2 -translate-x-1/2;
-  transition: left 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: left 260ms var(--ease-out);
 }
 @media (min-width: 901px) {
   .map-area.details-panel-open .map-legend,
@@ -277,7 +277,7 @@
     left: calc(50% - 10rem);
   }
   .map-area app-fleet-map ::ng-deep .maplibregl-ctrl-bottom-right {
-    transition: right 400ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: right 260ms var(--ease-out);
   }
   .map-area app-fleet-map.details-panel-open ::ng-deep .maplibregl-ctrl-bottom-right {
     right: 20rem;
@@ -290,34 +290,30 @@
   display: none;
 }
 .details-panel {
-  @apply absolute bottom-0 right-0 top-0 z-[600] w-80 overflow-x-hidden overflow-y-auto border-l border-line bg-white shadow-xl dark:border-dark-line dark:bg-dark-surface;
-  animation: details-panel-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: width, transform, opacity;
+  @apply absolute bottom-0 right-0 top-0 z-[600] w-80 overflow-x-hidden overflow-y-auto border-l border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  box-shadow: var(--shadow-popover);
+  animation: details-panel-in 260ms var(--ease-out) both;
 }
 .details-panel.details-panel-leave {
-  animation: details-panel-out 300ms cubic-bezier(0.4, 0, 1, 1) both;
+  animation: details-panel-out 180ms var(--ease-out) both;
   pointer-events: none;
 }
 @keyframes details-panel-in {
   from {
-    width: 0;
     opacity: 0;
     transform: translateX(2rem);
   }
   to {
-    width: 20rem;
     opacity: 1;
     transform: translateX(0);
   }
 }
 @keyframes details-panel-out {
   from {
-    width: 20rem;
     opacity: 1;
     transform: translateX(0);
   }
   to {
-    width: 0;
     opacity: 0;
     transform: translateX(2rem);
   }
@@ -464,10 +460,10 @@
   }
   .details-panel {
     @apply absolute bottom-0 right-0 top-0 z-[600] w-72 shadow-2xl;
-    animation-name: details-panel-overlay-in;
+    animation: details-panel-overlay-in 300ms var(--ease-drawer) both;
   }
   .details-panel.details-panel-leave {
-    animation: details-panel-overlay-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
+    animation: details-panel-overlay-out 200ms var(--ease-out) both;
   }
   @keyframes details-panel-overlay-in {
     from {
@@ -496,7 +492,8 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .details-panel {
+  .details-panel,
+  .details-panel.details-panel-leave {
     animation: none;
   }
 }

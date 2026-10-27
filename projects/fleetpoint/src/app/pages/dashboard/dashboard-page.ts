@@ -1,3 +1,4 @@
+import { TabIndicator } from '@iotility/shared-ui';
 import { Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -9,7 +10,7 @@ import { CustomiseModal } from './customise-modal/customise-modal';
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, CustomiseModal],
+  imports: [TabIndicator, RouterLink, RouterLinkActive, RouterOutlet, CustomiseModal],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-shell.css',
 })

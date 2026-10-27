@@ -16,12 +16,8 @@
   </header>
 
   <div class="fleet-kpis" [attr.aria-busy]="initialLoading()">
-    @if (initialLoading()) {
-      @for (_ of kpiSkeletons; track $index) {
-        <ui-stat-card-skeleton />
-      }
-    } @else {
-    <app-stat-card label="Total Fleets" [value]="total()" tone="brand"
+    <!-- Real cards from the start: label and icon stay put, only the value shimmers until it pops in. -->
+    <app-stat-card label="Total Fleets" [value]="total()" tone="brand" [loading]="initialLoading()"
       ><span
         stat-card-icon
         class="color-icon size-[18px]"
@@ -29,7 +25,7 @@
         aria-hidden="true"
       ></span
     ></app-stat-card>
-    <app-stat-card label="Total Vehicles" [value]="totalVehicles()" tone="info"
+    <app-stat-card label="Total Vehicles" [value]="totalVehicles()" tone="info" [loading]="initialLoading()"
       ><span
         stat-card-icon
         class="color-icon size-[18px]"
@@ -37,7 +33,7 @@
         aria-hidden="true"
       ></span
     ></app-stat-card>
-    <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="success"
+    <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="success" [loading]="initialLoading()"
       ><span
         stat-card-icon
         class="color-icon size-[18px]"
@@ -45,7 +41,7 @@
         aria-hidden="true"
       ></span
     ></app-stat-card>
-    <app-stat-card label="Active Alerts" [value]="totalAlerts()" tone="danger"
+    <app-stat-card label="Active Alerts" [value]="totalAlerts()" tone="danger" [loading]="initialLoading()"
       ><span
         stat-card-icon
         class="color-icon size-[18px]"
@@ -53,7 +49,6 @@
         aria-hidden="true"
       ></span
     ></app-stat-card>
-    }
   </div>
 
   @if (error() && !initialLoading()) {

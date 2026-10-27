@@ -20,27 +20,27 @@ export const routes: Routes = [
   },
 
   {
-    path: 'home',
-    title: 'Home | IoTility',
-    canMatch: [authGuard],
-    loadComponent: () => import('./layout/host-layout').then((module) => module.HostLayout),
-    children: [
-      {
-        path: '',
-        canMatch: [returningUser],
-        loadComponent: () => import('./pages/home/home-dashboard/home-dashboard').then((module) => module.HomeDashboardPage),
-      },
-      {
-        path: '',
-        loadComponent: () => import('./pages/home/home-page').then((module) => module.HomePage),
-      },
-    ],
-  },
-  {
     path: '',
     canMatch: [authGuard],
     loadComponent: () => import('./layout/host-layout').then((module) => module.HostLayout),
+    // One layout instance for every host page, so the sidebar stays mounted (and its active pill can slide)
+    // when moving between Home and the other sections.
     children: [
+      {
+        path: 'home',
+        title: 'Home | IoTility',
+        children: [
+          {
+            path: '',
+            canMatch: [returningUser],
+            loadComponent: () => import('./pages/home/home-dashboard/home-dashboard').then((module) => module.HomeDashboardPage),
+          },
+          {
+            path: '',
+            loadComponent: () => import('./pages/home/home-page').then((module) => module.HomePage),
+          },
+        ],
+      },
       {
         path: 'users',
         title: 'Users | IoTility',

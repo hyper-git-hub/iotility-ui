@@ -14,10 +14,12 @@
 .search-panel > span { @apply rounded-md border border-line bg-canvas px-1.5 py-0.5 text-[10px] text-muted dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300; }
 .help-grid { @apply grid gap-4 lg:grid-cols-3; }
 .panel { @apply rounded-xl border border-line bg-white p-5 text-ink dark:border-dark-line dark:bg-dark-surface dark:text-white; }
-.help-card { @apply transition hover:-translate-y-0.5 hover:border-brand-400 dark:hover:border-brand-500; }
+.help-card { @apply transition-colors hover:border-brand-400 dark:hover:border-brand-500; }
 .help-icon { @apply grid size-10 place-items-center rounded-xl bg-brand-50 text-lg text-brand-600 dark:bg-brand-600/15 dark:text-brand-300; }
 .help-card h2 { @apply mt-5 text-sm font-medium; }
 .help-card p { @apply mt-2 text-xs leading-5 text-muted dark:text-brand-300; }
-.help-card a { @apply mt-5 inline-flex cursor-pointer gap-2 text-xs font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200; }
+.help-card .help-link { @apply mt-5 inline-flex cursor-pointer gap-2 border-0 bg-transparent p-0 text-xs font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200; }
+.help-link span { transition: translate 200ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .help-link:hover span { translate: 3px 0; } }
 .contact-card { @apply flex items-center justify-between gap-4; }
 .contact-card p { @apply mt-2 text-xs text-muted dark:text-brand-300; }

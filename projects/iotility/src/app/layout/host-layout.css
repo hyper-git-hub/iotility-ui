@@ -13,12 +13,33 @@
 }
 @media (max-width: 767px) {
   .sidebar-region {
-    @apply fixed inset-y-0 left-0 z-[1800] -translate-x-full transition-transform duration-200;
+    @apply fixed inset-y-0 left-0 z-[1800] -translate-x-full;
+    transition: translate 300ms var(--ease-drawer);
   }
   .sidebar-region.open {
     @apply translate-x-0;
   }
   .mobile-sidebar-backdrop {
     @apply fixed inset-0 z-[1700] block border-0 bg-dark-canvas/60 backdrop-blur-sm;
+    transition: opacity 300ms var(--ease-drawer);
+  }
+}
+@starting-style {
+  .mobile-sidebar-backdrop {
+    opacity: 0;
+  }
+}
+.mobile-sidebar-backdrop.backdrop-leave {
+  animation: backdrop-leave 200ms var(--ease-out) both;
+  pointer-events: none;
+}
+@keyframes backdrop-leave {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-region {
+    transition: none;
   }
 }

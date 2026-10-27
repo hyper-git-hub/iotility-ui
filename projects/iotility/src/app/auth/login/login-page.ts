@@ -19,6 +19,8 @@ export class LoginPage {
   protected readonly submitting = signal(false);
   protected readonly error = signal('');
   protected readonly showPassword = signal(false);
+  /** Replays the invalid-field shake; cleared on animationend. */
+  protected readonly shaking = signal(false);
   protected readonly form;
 
   constructor(
@@ -42,7 +44,13 @@ export class LoginPage {
 
   protected login(): void {
     this.form.markAllAsTouched();
-    if (this.form.invalid || this.submitting()) return;
+    if (this.form.invalid) {
+      // Remove then re-add on the next frame so a second bad submit replays the shake.
+      this.shaking.set(false);
+      requestAnimationFrame(() => this.shaking.set(true));
+      return;
+    }
+    if (this.submitting()) return;
 
     const { email, password, remember } = this.form.getRawValue();
     this.submitting.set(true);

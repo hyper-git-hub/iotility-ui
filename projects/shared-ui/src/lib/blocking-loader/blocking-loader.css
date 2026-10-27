@@ -14,3 +14,9 @@
 .loader-panel.compact .loader-mark { @apply m-0 w-20; }
 .loader-panel strong { @apply block text-base font-semibold text-white; }
 .loader-panel p { @apply text-xs leading-5 text-white/70; }
+
+/* Fades in and out instead of hard-cutting the whole screen. */
+.loader-backdrop { transition: opacity var(--duration-modal) var(--ease-out); }
+@starting-style { .loader-backdrop { opacity: 0; } }
+.loader-backdrop.loader-leave { animation: loader-leave 200ms var(--ease-out) both; pointer-events: none; }
+@keyframes loader-leave { to { opacity: 0; } }

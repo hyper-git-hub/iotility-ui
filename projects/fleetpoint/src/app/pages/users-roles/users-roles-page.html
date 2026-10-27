@@ -27,7 +27,7 @@
     </div>
   </header>
 
-  <nav class="management-tabs" aria-label="User and role management">
+  <nav sharedTabIndicator class="management-tabs" aria-label="User and role management">
     <button type="button" [class.active]="activeTab() === 'users'" (click)="selectTab('users')">
       Users
     </button>

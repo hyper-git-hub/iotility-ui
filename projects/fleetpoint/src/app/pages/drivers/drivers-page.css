@@ -153,10 +153,6 @@
 .driver-tabs a.active {
   @apply text-brand-600;
 }
-.driver-tabs a.active::after {
-  content: '';
-  @apply absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600;
-}
 .driver-tab-content {
   @apply grid min-w-0 gap-5;
 }
@@ -180,7 +176,10 @@
 .driver-grid-icon { @apply grid size-4 grid-cols-2 gap-0.5; }
 .driver-grid-icon i { @apply rounded-[2px] bg-current; }
 .driver-card-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3; }
-.driver-card { @apply cursor-pointer rounded-2xl border border-line bg-white p-4 transition hover:border-brand-500/50 hover:shadow-md dark:border-dark-line dark:bg-dark-surface; }
+.driver-card { @apply cursor-pointer rounded-2xl border border-line bg-white p-4 hover:border-brand-500/50 dark:border-dark-line dark:bg-dark-surface; box-shadow: var(--shadow-card); transition: border-color 200ms ease, box-shadow 200ms ease, scale var(--duration-press) var(--ease-out); }
+.driver-card:hover { box-shadow: var(--shadow-card-hover); }
+.driver-card:active { scale: 0.985; }
+.driver-card:focus-visible { @apply outline-2 outline-offset-2 outline-brand-500; }
 .driver-card > header { @apply mb-4 flex items-start gap-3; }
 .driver-card-avatar { @apply grid size-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-info text-xs font-bold text-white; }
 .driver-card header > div { @apply grid min-w-0 flex-1; }

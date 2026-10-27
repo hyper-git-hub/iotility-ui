@@ -28,8 +28,11 @@
   transform: translateY(-50%) rotate(180deg);
 }
 .dropdown-panel {
-  @apply absolute right-0 top-[calc(100%+0.65rem)] z-[900] w-60 overflow-hidden rounded-xl border border-line bg-white p-2 shadow-xl dark:border-dark-line dark:bg-dark-surface;
-  animation: dropdown-enter 160ms ease-out;
+  @apply absolute right-0 top-[calc(100%+0.65rem)] z-[900] w-60 overflow-hidden rounded-xl border border-line bg-white p-2 dark:border-dark-line dark:bg-dark-surface;
+  box-shadow: var(--shadow-popover);
+  /* Open state: clip sits outside the box so the drop shadow is never cut. The morph (dropdown.ts)
+     animates from the trigger's own shape to this. */
+  clip-path: inset(-16px -16px -40px -16px round 12px);
 }
 .dropdown-panel.left {
   @apply left-0 right-auto;
@@ -50,7 +53,7 @@
   @apply flex max-h-60 flex-col gap-1 overflow-auto;
 }
 .dropdown-option {
-  @apply flex w-full cursor-pointer items-center gap-3 rounded-lg border-0 bg-transparent px-3 py-2.5 text-left text-ink hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-white dark:hover:bg-dark-canvas;
+  @apply flex w-full cursor-pointer items-center gap-3 rounded-lg border-0 bg-transparent px-3 py-2.5 text-left text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:text-white;
 }
 .dropdown-option.selected {
   @apply bg-brand-50 font-semibold text-brand-700 hover:bg-brand-100 dark:bg-brand-600/15 dark:text-brand-300 dark:hover:bg-brand-600/25;
@@ -107,13 +110,68 @@
 .empty {
   @apply p-6 text-center text-xs text-muted;
 }
-@keyframes dropdown-enter {
-  from {
+
+/* Panel content arrives once the morph is under way; options cascade 18ms apart (capped at 8 rows).
+   Decorative only: rows are clickable the whole time. */
+.dropdown-search {
+  transition: opacity 160ms var(--ease-out) 60ms;
+}
+.dropdown-options > .dropdown-option {
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 260ms var(--ease-spring);
+  transition-delay: calc(min(var(--i, 0), 8) * 18ms + 60ms);
+}
+@starting-style {
+  .dropdown-search {
+    opacity: 0;
+  }
+  .dropdown-options > .dropdown-option {
     opacity: 0;
     transform: translateY(-4px);
   }
-  to {
-    opacity: 1;
+}
+
+/* Sliding hover highlight: one pill glides between options instead of each row lighting up. */
+.dropdown-options {
+  position: relative;
+}
+.option-highlight {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: 0.5rem;
+  background: var(--color-brand-50);
+  opacity: 0;
+  pointer-events: none;
+}
+.option-highlight.ready {
+  transition:
+    transform 240ms var(--ease-spring),
+    height 240ms var(--ease-spring),
+    opacity 150ms ease;
+}
+:host-context(.dark) .option-highlight {
+  background: var(--color-dark-canvas);
+}
+.dropdown-options > .dropdown-option {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-options > .dropdown-option {
     transform: none;
+    transition-delay: 0ms;
+  }
+  @starting-style {
+    .dropdown-options > .dropdown-option {
+      transform: none;
+    }
+  }
+  .option-highlight.ready {
+    transition: opacity 150ms ease;
   }
 }

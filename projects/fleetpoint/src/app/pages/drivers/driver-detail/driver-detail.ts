@@ -7,11 +7,13 @@ import {
   Dropdown,
   DropdownOption,
   Skeleton,
+  StatCardSkeleton,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, Observable, of } from 'rxjs';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
+import { StatCard } from '../../../shared/stat-card/stat-card';
 import { DriverRecord } from '../../../shared/services/driver-api.service';
 import { DashboardCard } from '../../../shared/services/fleet-dashboard-api.service';
 import {
@@ -32,6 +34,8 @@ import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-d
     Dropdown,
     ProgressBar,
     Skeleton,
+    StatCardSkeleton,
+    StatCard,
   ],
   templateUrl: './driver-detail.html',
   styleUrl: './driver-detail.css',

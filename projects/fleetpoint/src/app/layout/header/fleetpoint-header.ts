@@ -26,6 +26,8 @@ export class FleetpointHeader {
   readonly menuToggle = output<void>();
   protected readonly searchOpen = signal(false);
   protected readonly searchVisible = signal(false);
+  /** Keyboard-driven open/close (Ctrl+K, Enter, Esc) skips the animation; it's used too often to wait on. */
+  protected readonly searchInstant = signal(false);
   protected readonly searchQuery = signal('');
   protected readonly activeResult = signal(0);
   protected readonly notificationsOpen = signal(false);
@@ -142,14 +144,17 @@ export class FleetpointHeader {
       .map((result) => result.item);
   });
 
-  protected openSearch(): void {
+  protected openSearch(viaKeyboard = false): void {
     if (this.searchCloseTimer) window.clearTimeout(this.searchCloseTimer);
+    // The input's (focus) re-calls this after Ctrl+K; keep the keyboard flag for that open.
+    if (!this.searchOpen()) this.searchInstant.set(viaKeyboard);
     this.searchVisible.set(true);
     this.searchOpen.set(true);
     this.activeResult.set(0);
   }
 
-  protected closeSearch(): void {
+  protected closeSearch(viaKeyboard = false): void {
+    this.searchInstant.set(viaKeyboard);
     this.searchOpen.set(false);
     if (this.searchCloseTimer) window.clearTimeout(this.searchCloseTimer);
     this.searchCloseTimer = window.setTimeout(() => {
@@ -157,7 +162,7 @@ export class FleetpointHeader {
       this.searchQuery.set('');
       this.activeResult.set(0);
       this.searchCloseTimer = undefined;
-    }, 150);
+    }, viaKeyboard ? 0 : 150);
   }
 
   protected updateSearch(value: string): void {
@@ -175,17 +180,17 @@ export class FleetpointHeader {
       this.activeResult.update((index) => results.length ? (index - 1 + results.length) % results.length : 0);
     } else if (event.key === 'Enter' && results[this.activeResult()]) {
       event.preventDefault();
-      this.selectDestination(results[this.activeResult()]);
+      this.selectDestination(results[this.activeResult()], true);
     } else if (event.key === 'Escape') {
-      this.closeSearch();
+      this.closeSearch(true);
     }
   }
 
-  protected selectDestination(destination: SearchDestination): void {
+  protected selectDestination(destination: SearchDestination, viaKeyboard = false): void {
     const recent = [destination.id, ...this.recentIds().filter((id) => id !== destination.id)].slice(0, 5);
     this.recentIds.set(recent);
     try { localStorage.setItem('fleetpoint:search-recents', JSON.stringify(recent)); } catch { /* ignore */ }
-    this.closeSearch();
+    this.closeSearch(viaKeyboard);
     const prefix = this.router.url.startsWith('/fleetpoint') ? '/fleetpoint' : '';
     void this.router.navigateByUrl(`${prefix}${destination.route}`);
   }
@@ -194,7 +199,7 @@ export class FleetpointHeader {
   protected globalShortcut(event: KeyboardEvent): void {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
-      this.openSearch();
+      this.openSearch(true);
       window.setTimeout(() => document.querySelector<HTMLInputElement>('.global-search-input')?.focus());
     }
   }

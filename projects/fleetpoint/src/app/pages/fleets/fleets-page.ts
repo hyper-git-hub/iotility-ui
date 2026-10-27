@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Dropdown, DropdownOption, Skeleton, StatCardSkeleton } from '@iotility/shared-ui';
+import { Dropdown, DropdownOption, Skeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { ProgressBar } from '../../shared/progress-bar/progress-bar';
 import {
@@ -30,7 +30,7 @@ interface FleetSummary {
 
 @Component({
   selector: 'app-fleets-page',
-  imports: [Dropdown, FleetForm, ProgressBar, Skeleton, StatCard, StatCardSkeleton],
+  imports: [Dropdown, FleetForm, ProgressBar, Skeleton, StatCard],
   templateUrl: './fleets-page.html',
   styleUrl: './fleets-page.css',
 })
@@ -60,7 +60,6 @@ export class FleetsPage implements OnInit, OnDestroy {
   protected readonly refreshing = computed(() => this.loading() && this.hasLoaded());
   protected readonly error = signal('');
   protected readonly fleetSkeletons = Array.from({ length: 2 });
-  protected readonly kpiSkeletons = Array.from({ length: 4 });
   protected readonly formOpen = signal(false);
   protected readonly fleets = signal<FleetSummary[]>([]);
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);

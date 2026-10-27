@@ -55,6 +55,6 @@ export class SmoothHeight implements AfterViewInit, OnDestroy {
     const value = parseFloat(
       getComputedStyle(this.element.nativeElement).getPropertyValue('--smooth-height-duration'),
     );
-    return Number.isFinite(value) ? value : 420;
+    return Number.isFinite(value) ? value : 260;
   }
 }

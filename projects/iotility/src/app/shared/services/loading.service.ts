@@ -40,9 +40,12 @@ export class LoadingService {
     localStorage.setItem('firstLoginCompleted', 'true');
     this.config.set(config);
     this.isVisible.set(true);
-    this.navigationTimer = setTimeout(() => {
-      void this.router.navigateByUrl(url).finally(() => this.reset());
-    }, duration);
+    // Load the destination behind the loader instead of after it: the wait is
+    // max(duration, navigation) rather than duration + navigation.
+    const minimumShown = new Promise<void>((resolve) => {
+      this.navigationTimer = setTimeout(resolve, duration);
+    });
+    void Promise.allSettled([this.router.navigateByUrl(url), minimumShown]).then(() => this.reset());
   }
 
   private reset(): void {

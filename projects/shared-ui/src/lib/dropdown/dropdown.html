@@ -11,6 +11,8 @@
   </div>
   @if (isOpen()) {
     <section
+      (animate.enter)="morphIn($event)"
+      (animate.leave)="morphOut($event)"
       class="dropdown-panel"
       [class.left]="align() === 'left'"
       [class.match-trigger]="matchTriggerWidth()"
@@ -27,11 +29,14 @@
             (click)="$event.stopPropagation()"
         /></label>
       }
-      <div class="dropdown-options">
+      <div class="dropdown-options" (pointerover)="highlight($event)" (pointerleave)="clearHighlight($event)">
+        <span class="option-highlight" aria-hidden="true"></span>
         @for (option of filteredOptions(); track option.id) {
           <button
             type="button"
             class="dropdown-option"
+            data-no-press
+            [style.--i]="$index"
             [class.danger]="option.icon === 'logout' || option.icon === 'delete'"
             [class.selected]="(mode() === 'single' || mode() === 'multi') && isSelected(option.id)"
             [disabled]="option.disabled"

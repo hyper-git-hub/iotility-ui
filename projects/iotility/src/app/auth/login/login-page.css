@@ -13,7 +13,7 @@
 .form-label { @apply mb-1 block text-sm font-medium text-ink dark:text-white; }
 .form-label span { @apply text-danger; }
 .password-label { @apply mt-4; }
-.form-control { @apply flex items-center rounded-lg border border-line bg-white px-3 py-2.5 transition focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 dark:border-dark-line dark:bg-dark-canvas; }
+.form-control { @apply flex h-10.5 items-center rounded-lg border border-line bg-white px-3 transition focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 dark:border-dark-line dark:bg-dark-canvas; }
 .form-control input { @apply min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted/60 dark:text-white; }
 :host-context(.dark) .form-control input,
 :host-context(.dark) .form-control input:focus {
@@ -52,3 +52,31 @@
 .login-error { @apply mb-4 rounded-lg bg-danger/10 px-3 py-2 text-center text-sm text-danger; }
 .submit-button { @apply flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60; }
 .submit-button img { @apply size-5; }
+
+/* Invalid submit: the offending fields turn red and give a short shake (decaying 8px → 6px). */
+.form-control:has(input.ng-invalid.ng-touched) { @apply border-danger/60; }
+.is-shaking .form-control:has(input.ng-invalid.ng-touched) {
+  animation: field-shake 400ms var(--ease-out);
+}
+@keyframes field-shake {
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+/* Show/hide password: the new icon blurs and scales into the slot. */
+.icon-swap {
+  transition:
+    opacity 200ms ease,
+    scale 200ms var(--ease-out),
+    filter 200ms ease;
+}
+@starting-style {
+  .icon-swap { opacity: 0; scale: 0.6; filter: blur(2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-shaking .form-control:has(input.ng-invalid.ng-touched) { animation: none; }
+  .icon-swap { transition-property: opacity; }
+}

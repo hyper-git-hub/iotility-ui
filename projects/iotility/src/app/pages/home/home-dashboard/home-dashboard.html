@@ -4,7 +4,7 @@
 
     <div class="addon-grid">
       @for (addon of addons; track addon.id) {
-        <article class="addon-card">
+        <article class="addon-card" sharedSpotlightBorder>
           <div class="addon-copy">
             <h2>{{ addon.name }}</h2>
             <p>{{ addon.tagline }}</p>

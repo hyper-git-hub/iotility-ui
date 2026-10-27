@@ -2,7 +2,7 @@
 
 .graph-skeleton {
   @apply flex h-[23.75rem] min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
+  box-shadow: var(--shadow-card);
 }
 
 .graph-skeleton-header {
@@ -69,7 +69,7 @@
     rgb(255 255 255 / 0.18) 56%,
     transparent 80%
   );
-  animation: dashboard-chart-shimmer 1.85s ease-in-out infinite;
+  animation: dashboard-chart-shimmer 1.65s ease-in-out infinite;
 }
 
 :host-context(.dark) .graph-skeleton-line::after {
@@ -81,29 +81,24 @@
     transparent 80%
   );
 }
-.line-y-axis { @apply flex flex-col justify-between pb-5 pr-2 pt-1; }
-.line-y-axis span { @apply h-1.5 w-full rounded-full bg-slate-200/70 dark:bg-slate-700/50; }
-.line-plot { @apply relative min-w-0 border-b border-l border-line/80 dark:border-dark-line; }
-.line-grid { @apply absolute inset-0 flex flex-col justify-evenly; }
-.line-grid i { @apply block w-full border-t border-dashed border-slate-200/80 dark:border-slate-700/60; }
+/* Line-chart skeleton: same tones as ui-skeleton so every loading card reads as one family. */
+.line-y-axis { @apply flex flex-col items-end justify-between pb-5 pr-2.5 pt-0.5; }
+.line-y-axis span { @apply block h-1.5 rounded-full bg-slate-200/80 dark:bg-slate-700/55; }
+.line-plot { @apply relative min-w-0 border-b border-slate-200/80 dark:border-slate-700/55; }
+.line-grid { @apply absolute inset-0 flex flex-col justify-between; }
+.line-grid i { @apply block w-full border-t border-slate-100 dark:border-slate-800/70; }
 .graph-skeleton-line svg { @apply absolute inset-0 size-full overflow-visible; }
-.line-stroke { fill: none; stroke-width: 3; stroke-linecap: round; }
-.line-fill { opacity: 0.08; }
-.line-point { stroke: white; stroke-width: 2; }
-.line-stroke-one { stroke: theme(colors.slate.300); }
-.line-fill-one { fill: theme(colors.slate.300); }
-.line-point-one { fill: theme(colors.slate.300); }
-.line-stroke-two { stroke: theme(colors.slate.200); }
-.line-fill-two { fill: theme(colors.slate.200); }
-.line-point-two { fill: theme(colors.slate.200); }
-:host-context(.dark) .line-stroke-one { stroke: theme(colors.slate.600); }
-:host-context(.dark) .line-fill-one { fill: theme(colors.slate.600); }
-:host-context(.dark) .line-point-one { fill: theme(colors.slate.600); stroke: theme(colors.slate.900); }
-:host-context(.dark) .line-stroke-two { stroke: theme(colors.slate.700); }
-:host-context(.dark) .line-fill-two { fill: theme(colors.slate.700); }
-:host-context(.dark) .line-point-two { fill: theme(colors.slate.700); stroke: theme(colors.slate.900); }
+.line-stroke { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.line-stroke-primary { stroke: theme(colors.slate.200); }
+.line-stroke-secondary { stroke: theme(colors.slate.200); stroke-dasharray: 4 5; opacity: 0.8; }
+.line-area-top { stop-color: theme(colors.slate.200); stop-opacity: 0.6; }
+.line-area-bottom { stop-color: theme(colors.slate.200); stop-opacity: 0; }
+:host-context(.dark) .line-stroke-primary,
+:host-context(.dark) .line-stroke-secondary { stroke: theme(colors.slate.700); }
+:host-context(.dark) .line-area-top { stop-color: theme(colors.slate.700); stop-opacity: 0.45; }
+:host-context(.dark) .line-area-bottom { stop-color: theme(colors.slate.700); }
 .line-x-axis { @apply absolute inset-x-0 -bottom-5 flex justify-between; }
-.line-x-axis span { @apply h-1.5 w-5 rounded-full bg-slate-200/70 dark:bg-slate-700/50; }
+.line-x-axis span { @apply h-1.5 w-6 rounded-full bg-slate-200/80 dark:bg-slate-700/55; }
 
 .graph-skeleton-plot::after {
   content: '';
@@ -119,7 +114,7 @@
     rgb(255 255 255 / 0.18) 56%,
     transparent 80%
   );
-  animation: dashboard-chart-shimmer 1.85s ease-in-out infinite;
+  animation: dashboard-chart-shimmer 1.65s ease-in-out infinite;
 }
 
 :host-context(.dark) .graph-skeleton-plot::after {
@@ -182,4 +177,15 @@
   }
   .graph-skeleton-plot::after,
   .graph-skeleton-line::after { animation: none; }
+}
+
+/* Skeleton → chart: real cards fade in where the placeholders were instead of hard-cutting. */
+.analytics-grid app-dashboard-graph {
+  animation: graph-card-in 260ms var(--ease-out) backwards;
+}
+.analytics-grid app-dashboard-graph:nth-child(2) { animation-delay: 40ms; }
+.analytics-grid app-dashboard-graph:nth-child(3) { animation-delay: 80ms; }
+.analytics-grid app-dashboard-graph:nth-child(n + 4) { animation-delay: 120ms; }
+@keyframes graph-card-in {
+  from { opacity: 0; filter: blur(2px); }
 }

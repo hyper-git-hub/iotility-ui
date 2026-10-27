@@ -33,7 +33,7 @@
   @apply -mb-px flex cursor-pointer items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent bg-transparent px-4 py-2.5 text-xs text-muted transition hover:text-brand-600 dark:text-brand-300;
 }
 .dashboard-tabs .active {
-  @apply border-brand-600 text-brand-600 dark:text-brand-400;
+  @apply text-brand-600 dark:text-brand-400;
 }
 .dashboard-coming-soon {
   @apply grid min-h-80 place-content-center justify-items-center gap-1 rounded-2xl border border-dashed border-line bg-white p-12 text-center dark:border-dark-line dark:bg-dark-surface;

@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { TabIndicator } from '@iotility/shared-ui';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
 import { LoadingService } from '../../shared/services/loading.service';
 import { FLEETPOINT_APP, RecentApp, RecentAppsService } from '../../shared/services/recent-apps.service';
@@ -14,7 +15,7 @@ interface UseCaseModule {
 
 @Component({
   selector: 'app-sidebar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, TabIndicator],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css',
 })

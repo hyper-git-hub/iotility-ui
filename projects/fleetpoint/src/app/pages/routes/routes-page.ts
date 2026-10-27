@@ -1,9 +1,10 @@
+import { TabIndicator } from '@iotility/shared-ui';
 import { Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { ROUTES, RUNS } from './routes.data';
 import { RouteForm, RouteFormValue } from './route-form/route-form';
-@Component({selector:'app-routes-page',imports:[RouterLink,RouterLinkActive,RouterOutlet,StatCard,RouteForm],templateUrl:'./routes-page.html',styleUrl:'./routes-page.css'})
+@Component({selector:'app-routes-page',imports:[TabIndicator, RouterLink,RouterLinkActive,RouterOutlet,StatCard,RouteForm],templateUrl:'./routes-page.html',styleUrl:'./routes-page.css'})
 export class RoutesPage {
   protected readonly routeFormOpen=signal(false);
   protected readonly total=ROUTES.length;

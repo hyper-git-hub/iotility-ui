@@ -1,4 +1,17 @@
 @if (fleetStatusVisible()) {
+<!-- One icon set for the status cards, shared by the loading and loaded states. -->
+<ng-template #statusIcon let-key>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    @switch (key) {
+      @case ('total') { <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><path d="M9 17h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/> }
+      @case ('moving') { <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35a1 1 0 0 0-.78-.38H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/> }
+      @case ('idling') { <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/> }
+      @case ('stopped') { <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m22 4-10 10.01-3-3"/> }
+      @case ('alert') { <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/> }
+      @case ('offline') { <path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/> }
+    }
+  </svg>
+</ng-template>
 <section class="fleet-status-card" aria-label="Live fleet status" [attr.aria-busy]="graphsLoading()">
   @if (graphsLoading()) {
     <div class="fleet-status-skeleton" aria-hidden="true">
@@ -7,12 +20,10 @@
       </header>
       <ui-skeleton width="100%" height="0.5rem" radius="9999px" />
       <div class="fleet-status-skeleton-grid">
-        @for (_ of [1, 2, 3, 4, 5, 6]; track $index) {
-          <article>
-            <ui-skeleton variant="circle" width="1.25rem" height="1.25rem" />
-            <ui-skeleton variant="text" width="2.25rem" height="1.125rem" radius="0.3rem" />
-            <ui-skeleton variant="text" width="3.5rem" height="0.625rem" radius="0.25rem" />
-          </article>
+        @for (item of fleetStatusTiles(); track item.key) {
+          <app-stat-card [label]="item.label" value="" [tone]="statusCardTone(item.key)" [loading]="true">
+            <ng-container ngProjectAs="[stat-card-icon]" [ngTemplateOutlet]="statusIcon" [ngTemplateOutletContext]="{ $implicit: item.key }" />
+          </app-stat-card>
         }
       </div>
     </div>
@@ -22,32 +33,25 @@
   </header>
   <div class="fleet-status-bar" role="img" [attr.aria-label]="fleetStatusTotal() + ' vehicles by live status'">
     @for (item of fleetStatusItems(); track item.key) {
-      <span [class]="'status-segment ' + item.tone" [style.width.%]="statusPercentage(item.value)"></span>
+      @if (item.value > 0) {
+        <span [class]="'status-segment ' + item.tone" [style.flex-grow]="item.value"></span>
+      }
     }
   </div>
   <div class="fleet-status-grid">
     @for (item of fleetStatusTiles(); track item.key) {
-      <article
-        [class]="'fleet-status-item ' + item.tone"
+      <app-stat-card
+        [label]="item.label"
+        [value]="item.value"
+        [tone]="statusCardTone(item.key)"
         [class.clickable]="item.key === 'alert' && item.value > 0"
         [attr.role]="item.key === 'alert' && item.value > 0 ? 'link' : null"
         [attr.tabindex]="item.key === 'alert' && item.value > 0 ? 0 : null"
         (click)="openTodaysViolations(item)"
         (keydown.enter)="openTodaysViolations(item)"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          @switch (item.key) {
-            @case ('total') { <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><path d="M9 17h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/> }
-            @case ('moving') { <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35a1 1 0 0 0-.78-.38H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/> }
-            @case ('idling') { <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/> }
-            @case ('stopped') { <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m22 4-10 10.01-3-3"/> }
-            @case ('alert') { <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/> }
-            @case ('offline') { <path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/> }
-          }
-        </svg>
-        <strong>{{ item.value }}</strong>
-        <span>{{ item.label }}</span>
-      </article>
+        <ng-container ngProjectAs="[stat-card-icon]" [ngTemplateOutlet]="statusIcon" [ngTemplateOutletContext]="{ $implicit: item.key }" />
+      </app-stat-card>
     }
   </div>
   }
@@ -122,24 +126,26 @@
             @case ('line') {
               <div class="graph-skeleton-line">
                 <div class="line-y-axis" aria-hidden="true">
-                  @for (_ of [1, 2, 3, 4, 5]; track $index) { <span></span> }
+                  @for (w of [70, 100, 85, 60]; track $index) { <span [style.width.%]="w"></span> }
                 </div>
                 <div class="line-plot" aria-hidden="true">
                   <div class="line-grid">
                     @for (_ of [1, 2, 3, 4]; track $index) { <i></i> }
                   </div>
-                  <svg viewBox="0 0 500 190" preserveAspectRatio="none">
-                    <path class="line-fill line-fill-one" d="M0 72 C55 48 105 92 165 68 S270 38 330 80 S425 112 500 58 L500 190 L0 190 Z" />
-                    <path class="line-stroke line-stroke-one" d="M0 72 C55 48 105 92 165 68 S270 38 330 80 S425 112 500 58" />
-                    <path class="line-fill line-fill-two" d="M0 132 C65 111 108 145 172 120 S280 101 340 140 S430 151 500 124 L500 190 L0 190 Z" />
-                    <path class="line-stroke line-stroke-two" d="M0 132 C65 111 108 145 172 120 S280 101 340 140 S430 151 500 124" />
-                    @for (x of [0, 83, 166, 250, 333, 416, 500]; track x) {
-                      <circle class="line-point line-point-one" [attr.cx]="x" [attr.cy]="x === 0 ? 72 : x === 83 ? 70 : x === 166 ? 68 : x === 250 ? 50 : x === 333 ? 82 : x === 416 ? 94 : 58" r="3" />
-                      <circle class="line-point line-point-two" [attr.cx]="x" [attr.cy]="x === 0 ? 132 : x === 83 ? 130 : x === 166 ? 120 : x === 250 ? 116 : x === 333 ? 138 : x === 416 ? 143 : 124" r="3" />
-                    }
+                  <!-- A calm placeholder shape, not fake data: no points, strokes stay 2px at any size. -->
+                  <svg viewBox="0 0 500 200" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="graph-skeleton-area" x1="0" y1="0" x2="0" y2="1">
+                        <stop class="line-area-top" offset="0%" />
+                        <stop class="line-area-bottom" offset="100%" />
+                      </linearGradient>
+                    </defs>
+                    <path class="line-area" d="M0 118 C60 104 110 80 170 86 S280 118 340 98 S440 56 500 62 L500 200 L0 200 Z" fill="url(#graph-skeleton-area)" />
+                    <path class="line-stroke line-stroke-secondary" vector-effect="non-scaling-stroke" d="M0 156 C70 150 120 134 180 138 S290 156 350 144 S450 120 500 124" />
+                    <path class="line-stroke line-stroke-primary" vector-effect="non-scaling-stroke" d="M0 118 C60 104 110 80 170 86 S280 118 340 98 S440 56 500 62" />
                   </svg>
                   <div class="line-x-axis">
-                    @for (_ of [1, 2, 3, 4, 5, 6, 7]; track $index) { <span></span> }
+                    @for (_ of [1, 2, 3, 4, 5, 6]; track $index) { <span></span> }
                   </div>
                 </div>
               </div>

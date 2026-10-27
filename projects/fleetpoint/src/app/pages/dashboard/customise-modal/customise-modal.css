@@ -2,10 +2,15 @@
 
 .customise-overlay {
   @apply fixed inset-0 z-50 grid place-items-center bg-ink/50 p-4 backdrop-blur-sm;
+  transition: opacity var(--duration-modal) var(--ease-out);
 }
 
 .customise-panel {
-  @apply flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl border border-line bg-white shadow-2xl dark:border-dark-line dark:bg-dark-surface;
+  @apply flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  box-shadow: var(--shadow-modal);
+  transition:
+    opacity var(--duration-modal) var(--ease-out),
+    transform var(--duration-modal) var(--ease-out);
 }
 
 .customise-header {
@@ -91,4 +96,12 @@
 
 .customise-save {
   @apply cursor-pointer rounded-full bg-brand-600 px-4 py-2 text-[11px] font-semibold text-white transition hover:bg-brand-700;
+}
+
+@starting-style {
+  .customise-overlay { opacity: 0; }
+  .customise-panel { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customise-panel { transition-property: opacity; }
 }

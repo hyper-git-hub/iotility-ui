@@ -1,96 +1,143 @@
 @reference "../../../styles.css";
 
-:host { @apply block; }
+:host { @apply block min-w-0; }
 
+/* FleetPoint metric card — the vehicle-detail summary card, shared everywhere. */
 .stat-card {
-  --stat-card-accent: var(--color-brand-500);
-  --stat-card-border: var(--stat-card-accent);
-  @apply relative isolate flex min-h-32 flex-col overflow-hidden rounded-2xl border border-line/60 bg-white/70 p-4 backdrop-blur-xl dark:border-dark-line/40 dark:bg-dark-surface/60;
+  --card-tone: var(--color-brand-500);
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 96px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px;
+  position: relative;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 180ms ease;
 }
+.stat-card.compact {
+  min-height: 88px;
+  padding: 13px;
+}
+:host-context(.dark) .stat-card {
+  border-color: var(--color-dark-line);
+  background: var(--color-dark-surface);
+}
+
+/* Border glow comes from [sharedSpotlightBorder] (shared-ui), coloured by this card's tone. */
+.stat-card {
+  --spotlight-color: var(--card-tone);
+}
+@media (hover: hover) and (pointer: fine) {
+  .stat-card:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+.stat-card[data-tone='info'] { --card-tone: var(--color-info); }
+.stat-card[data-tone='success'] { --card-tone: var(--color-success); }
+.stat-card[data-tone='warning'] { --card-tone: var(--color-warning); }
+.stat-card[data-tone='danger'] { --card-tone: var(--color-danger); }
+.stat-card[data-tone='priority'] { --card-tone: #f97316; }
+.stat-card[data-tone='neutral'] { --card-tone: #64748b; }
+
+.stat-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+}
+.stat-card-label {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+:host-context(.dark) .stat-card-label { color: var(--color-brand-300); }
+
 .stat-card-icon {
-  @apply mb-3 grid size-9 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-600/15 dark:text-brand-300;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: var(--card-tone);
+  background: color-mix(in srgb, var(--card-tone) 12%, transparent);
 }
+.stat-card:not(.compact) .stat-card-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+.stat-card-icon img { width: 14px; height: 14px; }
+.stat-card:not(.compact) .stat-card-icon img { width: 16px; height: 16px; }
 .stat-card-icon ::ng-deep svg {
-  @apply size-[18px];
+  width: 14px;
+  height: 14px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 1.8;
+  stroke-width: 1.9;
 }
-.stat-card strong {
-  @apply text-2xl text-ink dark:text-white;
+.stat-card:not(.compact) .stat-card-icon ::ng-deep svg { width: 16px; height: 16px; }
+
+.stat-card-body {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  margin-top: 10px;
 }
-.stat-card-value-skeleton {
-  @apply mt-0.5;
+.stat-card-value {
+  overflow: hidden;
+  color: var(--color-ink);
+  font-size: 20px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.stat-card > span:last-child {
-  @apply mt-0.5 text-xs text-muted dark:text-brand-300;
+.stat-card.compact .stat-card-value { font-size: 16px; }
+:host-context(.dark) .stat-card-value { color: #fff; }
+.stat-card[data-tone='danger'] .stat-card-value { color: var(--color-danger); }
+.stat-card[data-tone='success'] .stat-card-value { color: var(--color-success); }
+.stat-card small {
+  color: var(--color-muted);
+  font-size: 10px;
+  white-space: nowrap;
 }
-.stat-card.compact { @apply min-h-24 p-3; }
-.stat-card.compact.iconless { @apply min-h-20 justify-center; }
-.stat-card.compact .stat-card-icon { @apply mb-2 size-8; }
-.stat-card[data-tone='info'] { --stat-card-accent: var(--color-info); }
-.stat-card[data-tone='success'] { --stat-card-accent: var(--color-success); }
-.stat-card[data-tone='warning'] { --stat-card-accent: var(--color-warning); }
-.stat-card[data-tone='danger'] { --stat-card-accent: var(--color-danger); }
-.stat-card[data-tone='priority'] { --stat-card-accent: #f97316; }
-.stat-card[data-tone='info'] .stat-card-icon { @apply bg-info/10 text-info; }
-.stat-card[data-tone='success'] .stat-card-icon { @apply bg-success/10 text-success; }
-.stat-card[data-tone='warning'] .stat-card-icon { @apply bg-warning/10 text-warning; }
-.stat-card[data-tone='danger'] .stat-card-icon { @apply bg-danger/10 text-danger; }
-.stat-card[data-tone='priority'] .stat-card-icon {
-  color: #ea580c;
-  background: color-mix(in srgb, #f97316 12%, transparent);
+:host-context(.dark) .stat-card small { color: var(--color-brand-300); }
+
+/* Number pop-in: skeleton → value and every live update blur-rise into place. */
+.stat-card-value {
+  transition:
+    opacity 260ms var(--ease-out),
+    transform 260ms var(--ease-out),
+    filter 260ms var(--ease-out);
 }
-.stat-card.animated-border {
-  border: 0;
-  background: linear-gradient(
-    color-mix(in srgb, var(--stat-card-accent) 13%, white),
-    color-mix(in srgb, var(--stat-card-accent) 13%, white)
-  );
-  box-shadow:
-    0 0 4px color-mix(in srgb, var(--stat-card-accent) 18%, transparent),
-    0 0 12px color-mix(in srgb, var(--stat-card-accent) 12%, transparent);
-}
-:host-context(.dark) .stat-card.animated-border {
-  background: linear-gradient(
-    color-mix(in srgb, var(--stat-card-accent) 12%, var(--color-dark-surface)),
-    color-mix(in srgb, var(--stat-card-accent) 12%, var(--color-dark-surface))
-  );
-}
-.stat-card.animated-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: conic-gradient(
-    from var(--stat-card-border-angle),
-    var(--stat-card-accent) 0%,
-    color-mix(in srgb, var(--stat-card-accent) 55%, transparent) 20%,
-    color-mix(in srgb, var(--stat-card-accent) 25%, transparent) 50%,
-    color-mix(in srgb, var(--stat-card-accent) 55%, transparent) 80%,
-    var(--stat-card-accent) 100%
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  animation: stat-card-border-rotate 8s linear infinite;
-  pointer-events: none;
-}
-@property --stat-card-border-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-@keyframes stat-card-border-rotate {
-  from { --stat-card-border-angle: 0deg; }
-  to { --stat-card-border-angle: 360deg; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .stat-card.animated-border::before {
-    animation: none;
+@starting-style {
+  .stat-card-value {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(2px);
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .stat-card-value { transition-property: opacity; }
+}
+
+/* Projected mask icons (.color-icon) get the same chip-relative size as SVGs/images. */
+.stat-card-icon ::ng-deep .color-icon { width: 14px; height: 14px; }
+.stat-card:not(.compact) .stat-card-icon ::ng-deep .color-icon { width: 16px; height: 16px; }

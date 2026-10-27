@@ -15,7 +15,7 @@
 <ui-blocking-loader [visible]="authLogout.loggingOut()" label="Signing you out" message="Securely closing your IoTility session..." />
 
 @if (loading.isVisible()) {
-  <div class="fixed inset-0 z-[3000]">
+  <div class="app-loading-overlay fixed inset-0 z-[3000]" animate.leave="app-loading-leave">
     <app-loading
       [label]="loading.config().label"
       [title]="loading.config().title"

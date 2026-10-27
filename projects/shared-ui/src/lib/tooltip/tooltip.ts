@@ -30,8 +30,8 @@ const TOOLTIP_STYLES = `
     box-shadow:
       0 2px 4px rgba(0, 0, 0, 0.06),
       0 8px 24px rgba(0, 0, 0, 0.12);
-    animation: shared-tooltip-in 0.16s ease-out;
-    will-change: transform;
+    transform-origin: bottom center;
+    animation: shared-tooltip-in var(--duration-tooltip, 125ms) var(--ease-out, ease-out);
     pointer-events: none;
     box-sizing: border-box;
   }
@@ -62,15 +62,25 @@ const TOOLTIP_STYLES = `
     border-style: solid;
     border-width: 1px;
   }
+  /* Scale out of the edge that faces the trigger. */
+  .shared-tooltip[data-side='bottom'] { transform-origin: top center; }
+  .shared-tooltip[data-side='left'] { transform-origin: center right; }
+  .shared-tooltip[data-side='right'] { transform-origin: center left; }
+  /* Neighbours of a tooltip that was just open appear instantly. */
+  .shared-tooltip.shared-tooltip-instant { animation: none; }
   @keyframes shared-tooltip-in {
     from {
       opacity: 0;
-      transform: translateY(2px) scale(0.96);
+      transform: scale(0.97);
     }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
+  }
+  @keyframes shared-tooltip-fade {
+    from {
+      opacity: 0;
     }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shared-tooltip:not(.shared-tooltip-instant) { animation-name: shared-tooltip-fade; }
   }
   :where(.dark) .shared-tooltip {
     background-color: rgba(30, 34, 48, 0.92);
@@ -82,6 +92,24 @@ const TOOLTIP_STYLES = `
 `;
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
+
+/** Once a tooltip has been seen, neighbouring ones skip both the delay and the animation. */
+const WARM_WINDOW_MS = 400;
+let visibleTooltips = 0;
+let lastTooltipHiddenAt = 0;
+const tooltipIsWarm = () =>
+  visibleTooltips > 0 || Date.now() - lastTooltipHiddenAt < WARM_WINDOW_MS;
+
+function markTooltipShown(el: HTMLElement, side: TooltipPosition): void {
+  el.dataset['side'] = side;
+  if (tooltipIsWarm()) el.classList.add('shared-tooltip-instant');
+  visibleTooltips++;
+}
+
+function markTooltipHidden(): void {
+  visibleTooltips = Math.max(0, visibleTooltips - 1);
+  lastTooltipHiddenAt = Date.now();
+}
 
 export function attachTooltip(
   host: HTMLElement,
@@ -180,6 +208,7 @@ export function attachTooltip(
     if (!text || tooltipEl) return;
     ensureStylesInjected();
     createTooltip();
+    markTooltipShown(tooltipEl!, position);
     positionTooltip();
   };
 
@@ -187,6 +216,7 @@ export function attachTooltip(
     if (!tooltipEl) return;
     tooltipEl.remove();
     tooltipEl = null;
+    markTooltipHidden();
   };
 
   const scheduleShow = () => {
@@ -198,7 +228,7 @@ export function attachTooltip(
       showTimeout = setTimeout(() => {
         show();
         showTimeout = null;
-      }, showDelay);
+      }, tooltipIsWarm() ? 0 : showDelay);
     }
   };
 
@@ -293,7 +323,7 @@ export class Tooltip implements OnDestroy {
       this.showTimeout = setTimeout(() => {
         this.show();
         this.showTimeout = null;
-      }, this.showDelay);
+      }, tooltipIsWarm() ? 0 : this.showDelay);
     }
   }
 
@@ -314,6 +344,7 @@ export class Tooltip implements OnDestroy {
     if (!this.tooltip() || this.tooltipEl) return;
     this.ensureStylesInjected();
     this.createTooltip();
+    markTooltipShown(this.tooltipEl!, this.position());
     this.positionTooltip();
   }
 
@@ -411,6 +442,7 @@ private positionTooltip(): void {
     if (this.tooltipEl) {
       this.renderer.removeChild(this.document.body, this.tooltipEl);
       this.tooltipEl = null;
+      markTooltipHidden();
     }
   }
 

@@ -1,3 +1,4 @@
+import { lingerWhileClosing } from '@iotility/shared-ui';
 import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
@@ -47,6 +48,8 @@ export class JobsPage {
   private readonly appliedJobTypeFilter = signal('all');
   private readonly appliedDriverFilter = signal('all');
   protected readonly selectedJob = signal<JobRecord | null>(null);
+  /** Drawer content stays rendered while the drawer animates shut. */
+  protected readonly shownJob = lingerWhileClosing(this.selectedJob);
   protected readonly activeView = signal<'list' | 'dispatch'>('list');
   protected readonly jobFormOpen = signal(false);
   protected readonly offset = signal(0);

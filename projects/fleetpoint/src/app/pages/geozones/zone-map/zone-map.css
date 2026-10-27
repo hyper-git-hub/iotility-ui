@@ -139,9 +139,10 @@
   width: 0;
   visibility: hidden;
   transition:
-    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 280ms var(--ease-out),
+    margin 280ms var(--ease-out),
     opacity 180ms ease,
-    visibility 0s linear 420ms;
+    visibility 0s linear 280ms;
 }
 
 .details-open .zone-details {
@@ -149,7 +150,8 @@
   width: 16rem;
   visibility: visible;
   transition:
-    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 280ms var(--ease-out),
+    margin 280ms var(--ease-out),
     opacity 180ms ease 100ms,
     visibility 0s;
 }
@@ -351,11 +353,21 @@
 
   .zone-details {
     @apply max-h-0;
+    transition:
+      max-height 280ms var(--ease-out),
+      margin 280ms var(--ease-out),
+      opacity 180ms ease,
+      visibility 0s linear 280ms;
     visibility: hidden;
   }
 
   .details-open .zone-details {
     @apply mt-4 max-h-[42rem];
+    transition:
+      max-height 280ms var(--ease-out),
+      margin 280ms var(--ease-out),
+      opacity 180ms ease 100ms,
+      visibility 0s;
     visibility: visible;
   }
 
@@ -369,5 +381,12 @@
 @media (max-width: 600px) {
   .draw-note {
     @apply hidden;
+  }
+}
+
+/* Push-drawer: reduced motion snaps open/closed (visibility still flips). */
+@media (prefers-reduced-motion: reduce) {
+  .zone-map-workspace, .zone-details {
+    transition: none !important;
   }
 }

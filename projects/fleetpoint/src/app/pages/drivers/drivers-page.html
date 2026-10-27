@@ -6,24 +6,21 @@
     </div>
   </header>
   <section class="driver-stats">
-    @if (loadingStats()) {
-      @for (_ of [1, 2, 3, 4]; track $index) { <ui-stat-card-skeleton /> }
-    } @else {
-      <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="brand">
-        <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/sidebar-icons/drivers.svg')" aria-hidden="true"></span>
-      </app-stat-card>
-      <app-stat-card label="On Shift" [value]="onShift()" tone="success">
-        <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/icons/check-circle-success.svg')" aria-hidden="true"></span>
-      </app-stat-card>
-      <app-stat-card label="Unallocated" [value]="unallocated()" tone="warning">
-        <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/icons/user-x.svg')" aria-hidden="true"></span>
-      </app-stat-card>
-      <app-stat-card label="Violations Today" [value]="violationsToday()" tone="danger">
-        <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/sidebar-icons/violations.svg')" aria-hidden="true"></span>
-      </app-stat-card>
-    }
+    <!-- Real cards from the start: label and icon stay put, only the value shimmers until it pops in. -->
+    <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="brand" [loading]="loadingStats()">
+      <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/sidebar-icons/drivers.svg')" aria-hidden="true"></span>
+    </app-stat-card>
+    <app-stat-card label="On Shift" [value]="onShift()" tone="success" [loading]="loadingStats()">
+      <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/icons/check-circle-success.svg')" aria-hidden="true"></span>
+    </app-stat-card>
+    <app-stat-card label="Unallocated" [value]="unallocated()" tone="warning" [loading]="loadingStats()">
+      <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/icons/user-x.svg')" aria-hidden="true"></span>
+    </app-stat-card>
+    <app-stat-card label="Violations Today" [value]="violationsToday()" tone="danger" [loading]="loadingStats()">
+      <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/sidebar-icons/violations.svg')" aria-hidden="true"></span>
+    </app-stat-card>
   </section>
-  <nav class="driver-tabs" aria-label="Driver management sections">
+  <nav sharedTabIndicator class="driver-tabs" aria-label="Driver management sections">
     <a routerLink="./" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
       >Drivers</a
     >

@@ -12,8 +12,8 @@
   <div class="work-orders-list">
     <shared-data-table class="work-orders-table" title="Work Orders" [subtitle]="'Showing '+filtered().length+' of '+total+' work orders · Click a row to view details'" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showExport]="false" [showSearch]="false" [showPrimaryAction]="false" [minTableWidth]="selectedOrder()?1180:1380"  [rowsClickable]="true" [selectedRowId]="selectedOrder()?.id??null"  (rowSelected)="selectOrder($event)"/>
   </div>
-  <aside class="work-order-details" [attr.aria-hidden]="!selectedOrder()">
-    @if(selectedOrder();as order){
+  <aside class="work-order-details" [attr.aria-hidden]="!selectedOrder()" [inert]="!selectedOrder()">
+    @if(shownOrder();as order){
       <header><h2>{{order.id}}</h2><button type="button" aria-label="Close work order details" (click)="closeDetails()">×</button></header>
       <div class="details-scroll">
         <section class="workflow"><h3>Workflow</h3><div class="workflow-track">@for(step of [1,2,3,4,5,6,7,8];track step){<i [class.complete]="step<=workflowStep(order)"></i>}</div><strong>{{order.status}}</strong></section>

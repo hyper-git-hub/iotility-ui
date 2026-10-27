@@ -4,8 +4,8 @@
    structural @if inside the component. Override the custom properties on :host
    to retune the motion per usage. */
 :host {
-  --smooth-height-duration: 420ms;
-  --smooth-height-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --smooth-height-duration: 260ms;
+  --smooth-height-easing: var(--ease-out);
   display: block;
   min-width: 0;
 }

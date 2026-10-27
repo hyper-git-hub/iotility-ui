@@ -67,8 +67,8 @@
     />
     </div>
 
-    <aside class="job-details" [attr.aria-hidden]="!selectedJob()">
-      @if (selectedJob(); as job) {
+    <aside class="job-details" [attr.aria-hidden]="!selectedJob()" [inert]="!selectedJob()">
+      @if (shownJob(); as job) {
         <header><h2>Job Details</h2><button type="button" aria-label="Close job details" (click)="closeJobDetails()">×</button></header>
         <div class="job-details-content">
           <section class="job-summary">
@@ -121,8 +121,8 @@
       </div>
       <footer>💡 Click any job block to see details · Click an empty slot to create a job</footer>
     </section>
-    <aside class="job-details" [attr.aria-hidden]="!selectedJob()">
-      @if (selectedJob(); as job) {
+    <aside class="job-details" [attr.aria-hidden]="!selectedJob()" [inert]="!selectedJob()">
+      @if (shownJob(); as job) {
         <header><h2>Job Details</h2><button type="button" aria-label="Close job details" (click)="closeJobDetails()">×</button></header>
         <div class="job-details-content">
           <section class="job-summary"><h3>{{ job.name }}</h3><div><span class="status" [class]="'status status-' + job.status.toLowerCase().replaceAll(' ', '-')">{{ job.status }}</span><span class="priority" [class.high]="job.priority === 'High'">{{ job.priority }} priority</span></div></section>

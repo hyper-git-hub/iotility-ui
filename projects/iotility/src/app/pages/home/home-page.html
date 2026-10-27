@@ -15,7 +15,7 @@
           </p>
         </div>
         <button type="button" (click)="browseAll()"
-          class="text-sm font-medium text-brand-600 hover:text-brand-700">
+          class="text-sm font-medium text-brand-600 transition-colors hover:text-brand-700">
           Browse all
         </button>
       </div>
@@ -23,7 +23,8 @@
       <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
         @for (module of modules; track module.id) {
         <article
-          class="group relative flex min-h-[160px] flex-col justify-between rounded-lg border border-line bg-white p-4 transition-all hover:shadow-md dark:border-dark-line dark:bg-dark-canvas/40 dark:hover:border-brand-500/40 dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.5),0_0_24px_rgba(168,85,247,0.1)]">
+          sharedSpotlightBorder
+          class="module-card group relative flex min-h-[160px] flex-col justify-between rounded-lg border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-canvas/40">
 
           <!-- TOP SECTION: Title and Rating on the same line -->
           <div class="relative z-10">
@@ -70,7 +71,7 @@
             <!-- We use drop-shadow to create the 'smooth' glow around the SVG shape -->
             <div class="relative -mr-2 -mb-4">
               <img [src]="module.icon" [alt]="module.name"
-                class="size-18 object-contain transition-transform duration-300" style="
+                class="module-card-icon size-18 object-contain" style="
           filter: drop-shadow(0 10px 15px rgba(0,0,0,0.08)) drop-shadow(0 4px 6px rgba(0,0,0,0.05));
           image-rendering: -webkit-optimize-contrast;
           shape-rendering: geometricPrecision;
@@ -80,7 +81,7 @@
           </div>
         </article>
         }
-        <div (click)="browseAll()"
+        <div (click)="browseAll()" role="button" tabindex="0" (keydown.enter)="browseAll()" (keydown.space)="$event.preventDefault(); browseAll()"
           class="flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-line p-4 transition-colors hover:bg-canvas/60 dark:border-dark-line dark:hover:bg-dark-canvas/60">
           <span class="flex items-center gap-2 text-sm font-bold text-muted dark:text-brand-300">
             Browse All

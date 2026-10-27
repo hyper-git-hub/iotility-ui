@@ -50,9 +50,110 @@
   --color-dialog-light-line: #e7e2ed;
   --color-dialog-light-muted: #716b7d;
   --color-dialog-on-accent: #fff;
+
+  /* Motion: strong curves replace Tailwind's weak defaults (also powers ease-out / ease-in-out utilities). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --duration-press: 160ms;
+  --duration-hover: 150ms;
+  --duration-tooltip: 125ms;
+  --duration-popover: 200ms;
+  --duration-modal: 250ms;
+  /* Small physical overshoot for toggles/checks only (transitions.dev ease-bounce). */
+  --ease-overshoot: cubic-bezier(0.34, 1.36, 0.64, 1);
+  /* Real spring (bounce 0.15) as CSS linear(): 90% there by ~130ms, settles at 333ms. For popovers that should feel physical. */
+  --ease-spring: linear(0, 0.027, 0.095, 0.186, 0.286, 0.388, 0.486, 0.577, 0.657, 0.727, 0.787, 0.837, 0.877, 0.91, 0.936, 0.957, 0.972, 0.984, 0.992, 0.998, 1.002, 1.004, 1.006, 1.006, 1.006, 1.006, 1.006, 1.005, 1.004, 1.004, 1.003, 1.003, 1);
+  --duration-spring: 333ms;
+
+  /* Elevation: layered, ink-tinted shadows. Use via box-shadow: var(--shadow-*). */
+  --shadow-card: 0 1px 2px rgb(30 27 75 / 0.04), 0 1px 3px rgb(30 27 75 / 0.05);
+  --shadow-card-hover: 0 1px 2px rgb(30 27 75 / 0.04), 0 4px 8px -2px rgb(30 27 75 / 0.06),
+    0 12px 24px -8px rgb(30 27 75 / 0.12);
+  --shadow-popover: 0 2px 4px -1px rgb(30 27 75 / 0.05), 0 8px 16px -4px rgb(30 27 75 / 0.08),
+    0 20px 40px -12px rgb(30 27 75 / 0.16);
+  --shadow-modal: 0 8px 16px -8px rgb(30 27 75 / 0.12), 0 32px 64px -16px rgb(30 27 75 / 0.3);
+}
+
+.dark {
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-card-hover: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 28px -8px rgb(0 0 0 / 0.55),
+    0 0 0 1px rgb(168 85 247 / 0.08);
+  --shadow-popover: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 16px -4px rgb(0 0 0 / 0.45),
+    0 24px 48px -12px rgb(0 0 0 / 0.6);
+  --shadow-modal: 0 0 0 1px rgb(255 255 255 / 0.05), 0 32px 80px -16px rgb(0 0 0 / 0.75);
+}
+
+@layer base {
+  /* One consistent, visible keyboard focus ring for every control (components may override). */
+  :where(a[href], button, [role='button'], [role='tab'], [role='switch'], [role='link'], summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  /* Numbers that line up in columns or update live shouldn't jitter. */
+  :where(td, th, time, output) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Pointer affordance for everything interactive that isn't a plain <button>. Zero specificity so components can override. */
+  :where(
+      a[href],
+      [role='button'],
+      [role='tab'],
+      [role='menuitem'],
+      [role='menuitemradio'],
+      [role='menuitemcheckbox'],
+      [role='option'],
+      [role='switch'],
+      [role='checkbox'],
+      [role='radio'],
+      summary,
+      label[for],
+      select,
+      input[type='checkbox'],
+      input[type='radio'],
+      input[type='range'],
+      input[type='color'],
+      input[type='file']
+    ):not(:disabled, [aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  :where(input, select, textarea, [role='button'], [role='option'], [role='tab']):is(
+      :disabled,
+      [aria-disabled='true']
+    ) {
+    cursor: not-allowed;
+  }
+
+  /* Press feedback. The standalone `scale` property composes with any transform a component already uses. */
+  :where(button, [role='button']):not(:disabled, [aria-disabled='true'], [data-no-press], .has-tab-indicator *) {
+    transition-property: scale;
+    transition-duration: var(--duration-press);
+    transition-timing-function: var(--ease-out);
+  }
+
+  :where(button, [role='button']):not(:disabled, [aria-disabled='true'], [data-no-press], .has-tab-indicator *):active {
+    scale: 0.97;
+  }
+}
+
+/* Route changes: the incoming page (the element Angular inserts after <router-outlet>) fades in.
+   Opacity only and no snapshots, so maps, overlays and sliding indicators are never covered or ghosted. */
+router-outlet + * {
+  animation: route-page-in 160ms var(--ease-out) backwards;
+}
+@keyframes route-page-in {
+  from {
+    opacity: 0;
+  }
+}
 
 html.theme-transition *,
 html.theme-transition *::before,
@@ -130,5 +231,121 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .live-dot {
     animation: none;
+  }
+}
+/* Sliding tab underline ([sharedTabIndicator]). A 1px-wide bar positioned and sized purely with transform. */
+.has-tab-indicator {
+  position: relative;
+}
+.shared-tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--tab-indicator-color, var(--color-brand-600));
+  transform-origin: left center;
+  pointer-events: none;
+  opacity: 0;
+}
+.shared-tab-indicator.ready {
+  transition:
+    transform 250ms var(--ease-out),
+    opacity var(--duration-hover) ease;
+}
+.dark .shared-tab-indicator {
+  background: var(--tab-indicator-color, var(--color-brand-400));
+}
+.has-tab-indicator:not(.tab-indicator-pill-host) > :is(a, button) {
+  transition:
+    color var(--duration-hover) ease,
+    scale var(--duration-press) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .has-tab-indicator:not(.tab-indicator-pill-host) > :is(a, button):not(.active):hover {
+    color: var(--color-ink);
+  }
+  .dark .has-tab-indicator:not(.tab-indicator-pill-host) > :is(a, button):not(.active):hover {
+    color: #fff;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shared-tab-indicator.ready {
+    transition: opacity var(--duration-hover) ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ease-overshoot: var(--ease-out);
+    --ease-spring: var(--ease-out);
+  }
+}
+
+/* Pill variant: a filled background that glides behind the active nav item (sidebars). */
+:where(.tab-indicator-pill-host) :where(a, button) {
+  position: relative;
+  z-index: 1;
+}
+.shared-tab-indicator.pill {
+  top: 0;
+  bottom: auto;
+  z-index: 0;
+  border-radius: var(--tab-pill-radius, 0.5rem);
+  background: var(--tab-pill-bg, var(--color-brand-600));
+  box-shadow: var(--tab-pill-shadow, 0 4px 12px -4px rgb(124 58 237 / 0.55));
+  transform-origin: 0 0;
+}
+.shared-tab-indicator.pill.ready {
+  transition:
+    transform 300ms var(--ease-out),
+    width 300ms var(--ease-out),
+    height 300ms var(--ease-out),
+    opacity var(--duration-hover) ease;
+}
+.dark .shared-tab-indicator.pill {
+  background: var(--tab-pill-bg, var(--color-brand-600));
+}
+@media (prefers-reduced-motion: reduce) {
+  .shared-tab-indicator.pill.ready {
+    transition: opacity var(--duration-hover) ease;
+  }
+}
+
+/* Cursor-tracked border glow ([sharedSpotlightBorder]): a gradient centred on the pointer
+   (--spotlight-x/y, set by the directive), masked to the 1px border ring, so the edge nearest the
+   cursor lights up. Colour: --spotlight-color. */
+.has-spotlight {
+  position: relative;
+}
+.has-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(
+    140px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    var(--spotlight-color, var(--color-brand-500)),
+    color-mix(in srgb, var(--spotlight-color, var(--color-brand-500)) 35%, transparent) 45%,
+    transparent 75%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .has-spotlight:hover::before {
+    opacity: 1;
   }
 }

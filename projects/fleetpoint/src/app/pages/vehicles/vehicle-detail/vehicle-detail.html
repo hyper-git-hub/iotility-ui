@@ -6,15 +6,12 @@
     </header>
     <section class="metric-grid" aria-label="Vehicle summary loading" aria-busy="true">
       @for (card of skeletonSummaryCards; track card.label) {
-        <article class="summary-card" [attr.data-tone]="card.tone" aria-hidden="true">
-          <header><span>{{ card.label }}</span><i><img [src]="card.icon" alt="" /></i></header>
-          <div><ui-skeleton [width]="card.valueWidth" height="1rem" />@if (card.suffix) { <small>{{ card.suffix }}</small> }</div>
-        </article>
+        <app-stat-card aria-hidden="true" [compact]="true" [label]="card.label" value="" [tone]="card.tone" [icon]="card.icon" [suffix]="card.suffix" [loading]="true" [skeletonWidth]="card.valueWidth" />
       }
     </section>
     <app-vehicle-hud [vehicle]="record()" [metrics]="metrics()" [lastJob]="lastJob()" [routes]="record()?.['attached_routes_list']" [loading]="true" />
     <section class="vehicle-workspace" id="vehicle-overview" aria-busy="true">
-      <nav class="detail-tabs" aria-label="Vehicle detail sections">
+      <nav sharedTabIndicator [tabIndicatorInset]="10" class="detail-tabs" aria-label="Vehicle detail sections">
         @for (tab of [0, 1, 2, 3, 4, 5, 6, 7]; track tab) {
           <span class="tab-skeleton"><ui-skeleton width="16px" height="16px" radius="4px" /><ui-skeleton [width]="tab % 2 ? '5.5rem' : '7rem'" height="0.625rem" />@if (tab === 3) { <em><ui-skeleton width="1.75rem" height="0.5rem" radius="999px" /></em> }</span>
         }
@@ -43,16 +40,13 @@
     <!-- Cards fade-in animation disabled: <section class="metric-grid smooth-reveal reveal-metrics" aria-label="Vehicle summary"> -->
     <section class="metric-grid" aria-label="Vehicle summary">
       @for (card of summaryCards(); track card.label) {
-        <article class="summary-card" [attr.data-tone]="card.tone">
-          <header><span>{{ card.label }}</span><i><img [src]="card.icon" alt="" aria-hidden="true" /></i></header>
-          <div><strong>{{ card.value }}</strong>@if (card.suffix) { <small>{{ card.suffix }}</small> }</div>
-        </article>
+        <app-stat-card [compact]="true" [label]="card.label" [value]="card.value" [tone]="card.tone" [icon]="card.icon" [suffix]="card.suffix" />
       }
     </section>
     <app-vehicle-hud [vehicle]="record()" [metrics]="metrics()" [lastJob]="lastJob()" [routes]="record()?.['attached_routes_list']" [loading]="loading()" />
     <!-- Fade-in animation disabled: <section class="vehicle-workspace smooth-reveal" id="vehicle-overview"> -->
     <section class="vehicle-workspace" id="vehicle-overview">
-      <nav class="detail-tabs" aria-label="Vehicle detail sections">
+      <nav sharedTabIndicator [tabIndicatorInset]="10" class="detail-tabs" aria-label="Vehicle detail sections">
         <button type="button" [class.active]="activeTab() === 'overview'" (click)="openTab('overview')"><img src="assets/fleetpoint/icons/info-brand.svg" alt="" aria-hidden="true" />Overview</button>
         <button type="button" [class.active]="activeTab() === 'lastjob'" (click)="openTab('lastjob')"><img src="assets/fleetpoint/icons/clipboard-job.svg" alt="" aria-hidden="true" />Last Job</button>
         <button type="button" [class.active]="activeTab() === 'trips'" (click)="openTab('trips')"><img src="assets/fleetpoint/icons/trip-replay.svg" alt="" aria-hidden="true" />Trips &amp; replay</button>

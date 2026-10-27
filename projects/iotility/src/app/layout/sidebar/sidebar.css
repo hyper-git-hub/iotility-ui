@@ -25,23 +25,28 @@
 }
 
 .sidebar-nav-active {
-  @apply bg-brand-600 text-white hover:bg-brand-600;
+  /* Background comes from the sliding pill ([sharedTabIndicator] variant="pill"). */
+  @apply bg-transparent text-white hover:bg-transparent;
 }
 
-/* Use Cases window anchored next to the Use Cases button */
+/* Use Cases window anchored next to the Use Cases button.
+   Grows out of the button (origin left) and stays interruptible: transitions, with visibility delayed until the exit finishes. */
 .use-cases-backdrop {
   @apply fixed inset-0 z-[1499];
   visibility: hidden;
-  transition: visibility 0s linear 700ms;
+  transition: visibility 0s linear 150ms;
 }
 .use-cases-window {
-  @apply absolute left-[calc(100%+28px)] top-0 z-[1500] w-fit overflow-hidden rounded-2xl border border-line bg-white shadow-2xl dark:border-dark-line dark:bg-dark-surface;
+  @apply absolute left-[calc(100%+28px)] top-0 z-[1500] w-fit overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  box-shadow: var(--shadow-popover);
   visibility: hidden;
-  opacity: 1;
-  transform: translateX(calc(-100% - 28px));
+  opacity: 0;
+  transform: translateX(-8px) scale(0.96);
+  transform-origin: left top;
   transition:
-    transform 700ms linear,
-    visibility 0s linear 700ms;
+    opacity 150ms var(--ease-out),
+    transform 150ms var(--ease-out),
+    visibility 0s linear 150ms;
 }
 .use-cases-backdrop.use-open {
   visibility: visible;
@@ -50,10 +55,16 @@
 .use-cases-window.use-open {
   visibility: visible;
   opacity: 1;
-  transform: translateX(0);
+  transform: none;
   transition:
-    transform 700ms linear,
+    opacity var(--duration-popover) var(--ease-out),
+    transform var(--duration-popover) var(--ease-out),
     visibility 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .use-cases-window {
+    transform: none;
+  }
 }
 .use-cases-logos {
   display: grid;
@@ -73,26 +84,28 @@
   border: none;
   border-radius: 12px;
   background: transparent;
-  box-shadow: none;
   outline: none;
-  transition: box-shadow 150ms ease;
-}
-.use-case-logo:hover,
-.use-case-logo:focus,
-.use-case-logo:focus-visible,
-.use-case-logo:active {
-  border: none;
-  outline: none;
-  box-shadow: none;
-}
-.use-case-logo:hover {
-  filter: brightness(1.1);
+  transition:
+    background-color var(--duration-hover) ease,
+    scale var(--duration-press) var(--ease-out);
 }
 .use-case-logo img {
   @apply size-14 object-contain;
+  transition: transform 200ms var(--ease-out);
 }
 .use-case-logo span {
   @apply text-[11px] font-semibold text-ink dark:text-white;
+}
+@media (hover: hover) and (pointer: fine) {
+  .use-case-logo:hover {
+    @apply bg-brand-50 dark:bg-brand-600/10;
+  }
+  .use-case-logo:hover img {
+    transform: translateY(-2px);
+  }
+}
+.use-case-logo:focus-visible {
+  @apply outline-2 outline-offset-2 outline-brand-500;
 }
 
 .app-close-button {
@@ -109,14 +122,30 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 150ms ease;
+  scale: 0.9;
+  transition:
+    opacity var(--duration-hover) ease,
+    scale var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) ease;
 }
 
 .app-close-button:hover {
   background: var(--color-brand-700);
 }
-.relative:hover > .app-close-button {
+/* Revealed on hover, on keyboard focus, and always on touch (no hover to reveal it). */
+.relative:hover > .app-close-button,
+.relative:focus-within > .app-close-button {
   opacity: 1;
+  scale: 1;
+}
+.app-close-button:active {
+  scale: 0.9;
+}
+@media (hover: none) {
+  .app-close-button {
+    opacity: 1;
+    scale: 1;
+  }
 }
 
 .app-close-button img {
@@ -132,13 +161,27 @@
   flex-shrink: 0;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.12);
-  --3x2: 0px;
-  --3y2: 4px;
-  --3b2: 8px;
-  --3x: 0px;
-  --3y: 8px;
-  --3b: 16px;
   box-shadow:
-    var(--3x2) var(--3y2) var(--3b2) 0px rgba(0, 0, 0, 0.12),
-    var(--3x) var(--3y) var(--3b) 0px rgba(0, 0, 0, 0.1);
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 4px 8px rgb(0 0 0 / 0.12),
+    0 8px 16px rgb(0 0 0 / 0.1);
+  transition:
+    background-color var(--duration-hover) ease,
+    box-shadow var(--duration-hover) ease,
+    scale var(--duration-press) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .fleetpoint-button:hover {
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      0 6px 12px rgb(0 0 0 / 0.16),
+      0 12px 24px rgb(76 29 149 / 0.35);
+  }
+}
+.fleetpoint-button:focus-visible {
+  @apply outline-2 outline-offset-2 outline-brand-300;
+}
+.use-case-logo:active {
+  scale: 0.97;
 }

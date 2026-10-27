@@ -1,3 +1,4 @@
+import { lingerWhileClosing } from '@iotility/shared-ui';
 import { Component, computed, signal } from '@angular/core';
 import { DataTable, DropdownOption, FilterBar, FilterChangeEvent, FilterDropdown, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { MaintenanceWorkOrder, STATUS_OPTIONS, WORK_ORDERS } from '../maintenance.data';
@@ -6,6 +7,7 @@ import { MaintenanceWorkOrder, STATUS_OPTIONS, WORK_ORDERS } from '../maintenanc
 export class MaintenanceWorkOrders {
   protected readonly total=WORK_ORDERS.length;
   protected readonly selectedOrder=signal<MaintenanceWorkOrder|null>(null);
+  protected readonly shownOrder=lingerWhileClosing(this.selectedOrder);
   protected readonly search=signal('');protected readonly status=signal('all');protected readonly priority=signal('all');protected readonly type=signal('all');protected readonly statusOptions:DropdownOption[]=STATUS_OPTIONS.map((option,index)=>index?option:{...option,label:'All Status'});
   protected readonly priorityOptions:DropdownOption[]=[{id:'all',label:'All Priority'},...['Critical','High','Normal','Low'].map(label=>({id:label,label}))];
   protected readonly typeOptions:DropdownOption[]=[{id:'all',label:'All types'},...['Scheduled','Corrective','Predictive','Driver Reported'].map(label=>({id:label,label}))];

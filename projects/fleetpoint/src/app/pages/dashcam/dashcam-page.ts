@@ -1,3 +1,4 @@
+import { TabIndicator } from '@iotility/shared-ui';
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { StatCard } from '../../shared/stat-card/stat-card';
@@ -5,7 +6,7 @@ import { DASHCAM_EVENTS } from './dashcam.data';
 
 @Component({
   selector: 'app-dashcam-page',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, StatCard],
+  imports: [TabIndicator, RouterLink, RouterLinkActive, RouterOutlet, StatCard],
   templateUrl: './dashcam-page.html',
   styleUrl: './dashcam-page.css',
 })

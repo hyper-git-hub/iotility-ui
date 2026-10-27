@@ -72,7 +72,7 @@
   @apply overflow-hidden;
 }
 .table-height.ready {
-  transition: height 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: height 240ms var(--ease-out);
 }
 table {
   @apply w-full min-w-[760px] border-collapse text-left;
@@ -115,11 +115,11 @@ tbody tr:hover {
 }
 .expanded-row-content {
   @apply overflow-hidden;
-  animation: expanded-row-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: expanded-row-enter 220ms var(--ease-out);
 }
 .table-bottom-panel {
   @apply border-t border-line dark:border-dark-line;
-  animation: expanded-row-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: expanded-row-enter 220ms var(--ease-out);
 }
 @keyframes expanded-row-enter {
   from {
@@ -412,4 +412,42 @@ strong {
   .toolbar label {
     @apply w-auto flex-1;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-height.ready {
+    transition: none;
+  }
+  .expanded-row-content,
+  .table-bottom-panel {
+    animation-name: expanded-row-fade;
+  }
+}
+@keyframes expanded-row-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Hover feedback for toolbar / header / row-action buttons that had none. Tailwind `transition` keeps the press scale animated. */
+.header-action,
+.toolbar button,
+.actions button {
+  @apply transition;
+}
+.header-action:hover {
+  @apply text-brand-700 dark:text-brand-300;
+}
+.toolbar button:not(.primary):not(:disabled):hover {
+  @apply border-brand-300 text-ink dark:border-brand-500 dark:text-white;
+}
+.toolbar .primary:not(:disabled):hover {
+  @apply bg-ink/90 dark:bg-brand-500;
+  box-shadow: var(--shadow-card-hover);
+}
+.actions button:not(:first-child):not(:disabled):hover {
+  @apply border-brand-300 text-brand-600 dark:border-brand-500 dark:text-brand-200;
+}
+.actions button:first-child:not(:disabled):hover {
+  @apply bg-brand-700;
 }

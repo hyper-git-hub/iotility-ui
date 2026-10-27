@@ -7,7 +7,7 @@
     <app-stat-card label="Vehicles Inside" [value]="inside" tone="info" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M3 16V9h12v7M15 11h3l3 3v2M3 16h2M9 16h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></app-stat-card>
     <app-stat-card label="Total Violations" [value]="violations" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg></app-stat-card>
   </section>
-  <nav class="geo-tabs"><a routerLink="map" routerLinkActive="active">Zone Map</a><a routerLink="list" routerLinkActive="active">Zone List</a><a routerLink="analytics" routerLinkActive="active">Analytics</a></nav>
+  <nav sharedTabIndicator class="geo-tabs"><a routerLink="map" routerLinkActive="active">Zone Map</a><a routerLink="list" routerLinkActive="active">Zone List</a><a routerLink="analytics" routerLinkActive="active">Analytics</a></nav>
   <router-outlet/>
   @if(formOpen()){
     <app-geozone-form [open]="true" (cancelled)="closeForm()" (created)="createZone($event)"/>

@@ -13,4 +13,18 @@
 .profile-copy { @apply hidden text-right sm:block; }
 .profile-copy strong { @apply block text-sm leading-4 font-semibold text-ink dark:text-white; }
 .profile-copy small { @apply block text-[0.65rem] leading-3 text-muted dark:text-brand-300; }
-.profile-avatar { @apply relative grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white; }
+.profile-avatar { @apply relative grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white; }.theme {
+  transition:
+    border-color var(--duration-hover) ease,
+    color var(--duration-hover) ease,
+    background-color var(--duration-hover) ease,
+    scale var(--duration-press) var(--ease-out);
+}
+.theme:hover { @apply border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-500 dark:bg-brand-600/15 dark:text-brand-200; }
+.profile-avatar {
+  transition: box-shadow var(--duration-hover) ease;
+}
+.profile-button:hover .profile-avatar,
+.profile-button:focus-visible .profile-avatar {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 22%, transparent);
+}

@@ -13,7 +13,7 @@
   @apply inline-flex items-center gap-1 text-xs text-muted transition hover:text-brand-600 dark:text-brand-300;
 }
 .browse-button img, .browse-button .color-icon {
-  @apply size-3.5 transition-transform duration-300;
+  @apply size-3.5 transition-transform duration-200;
 }
 .new-role-button {
   @apply rounded-lg bg-ink px-3 py-2 text-xs font-medium text-white transition hover:bg-brand-700 dark:bg-brand-600;

@@ -10,7 +10,7 @@
 
 <section class="review-list">
   @for (event of queue(); track event.id) {
-    <article class="review-item" [class.critical]="event.severity === 'Critical'">
+    <article class="review-item" [class.critical]="event.severity === 'Critical'" (animate.leave)="collapseResolved($event)">
       <div class="preview-pair">
         <app-dashcam-video-tile [src]="footage(event, 'Front')" label="Front" [compact]="true" />
         <app-dashcam-video-tile [src]="footage(event, 'Cabin')" label="Cabin" [compact]="true" />

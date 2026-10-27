@@ -1,3 +1,4 @@
+import { lingerWhileClosing } from '@iotility/shared-ui';
 import { Component, computed, signal } from '@angular/core';
 import {
   DataTable,
@@ -38,6 +39,8 @@ export class DashcamEvents {
   protected readonly severity = signal<'all' | DashcamSeverity>('all');
   protected readonly review = signal<'all' | DashcamReview>('all');
   protected readonly selected = signal<DashcamEvent | null>(null);
+  /** Drawer content stays rendered while the drawer animates shut. */
+  protected readonly shownEvent = lingerWhileClosing(this.selected);
   protected readonly columns: TableColumn[] = [
     { key: 'eventType', label: 'Event', type: 'user', secondaryKey: 'id' },
     { key: 'driver', label: 'Driver' },

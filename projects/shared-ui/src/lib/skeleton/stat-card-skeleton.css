@@ -1,23 +1,37 @@
 @reference "../../styles/theme.css";
 @reference "tailwindcss";
 
-:host { @apply block; }
+:host { @apply block min-w-0; }
 
 .stat-card-skeleton {
-  @apply flex min-h-32 flex-col rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface;
-}
-.stat-card-skeleton-icon {
-  @apply mb-3 size-9;
-}
-.stat-card-skeleton-value {
-  @apply mt-auto;
-}
-.stat-card-skeleton-label {
-  @apply mt-1.5;
+  display: flex;
+  height: 100%;
+  min-height: 96px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
 }
 .stat-card-skeleton.compact {
-  @apply min-h-24 p-3;
+  min-height: 88px;
+  padding: 13px;
 }
-.stat-card-skeleton.compact .stat-card-skeleton-icon {
-  @apply mb-2 size-8;
+:host-context(.dark) .stat-card-skeleton {
+  border-color: var(--color-dark-line);
+  background: var(--color-dark-surface);
+}
+.stat-card-skeleton header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+}
+.stat-card-skeleton-label {
+  margin-top: 2px;
+}
+.stat-card-skeleton-value {
+  margin-top: 10px;
 }

@@ -1,3 +1,4 @@
+import { TabIndicator } from '@iotility/shared-ui';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -33,6 +34,7 @@ interface FeatureOption {
 @Component({
   selector: 'app-users-roles-page',
   imports: [
+    TabIndicator,
     BlockingLoader,
     DataTable,
     DataTableSkeleton,

@@ -252,3 +252,22 @@ img.input-icon {
     transition: none;
   }
 }
+
+/* Disabled affordances the base rules above miss (declared later / not :disabled-aware). */
+.input-check input:disabled,
+.input-element[type='range']:disabled,
+:host.is-disabled .file-button,
+:host.is-disabled .file-drop,
+:host.is-disabled .file-drop input {
+  @apply cursor-not-allowed;
+}
+.input-check input:not(:disabled):active {
+  scale: 0.95;
+}
+/* Checking pops the mark in with a small overshoot (unchecking stays instant). */
+.input-check input:checked {
+  animation: check-pop 220ms var(--ease-overshoot);
+}
+@keyframes check-pop {
+  from { scale: 0.8; }
+}

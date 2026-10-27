@@ -15,3 +15,6 @@ export * from './lib/tooltip/tooltip';
 export * from './lib/logo/logo';
 export * from './lib/user-menu/user-menu';
 export * from './lib/secure-storage/secure-storage';
+export * from './lib/tab-indicator/tab-indicator';
+export * from './lib/motion/linger';
+export * from './lib/spotlight-border/spotlight-border';

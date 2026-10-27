@@ -10,7 +10,10 @@ export function withFleetChartDefaults<TType extends ChartType>(
   return {
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 1200, easing: 'easeOutQuart' },
+    // Data people read shouldn't make them wait: a short draw-in, none for reduced motion.
+    animation: globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      ? false
+      : { duration: 500, easing: 'easeOutQuart' },
     ...resolvedOptions,
     plugins: {
       ...resolvedOptions.plugins,
