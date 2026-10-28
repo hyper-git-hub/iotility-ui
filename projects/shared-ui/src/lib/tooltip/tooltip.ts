@@ -1,264 +1,271 @@
-import { DOCUMENT } from '@angular/common';
-import {
-  Directive,
-  ElementRef,
-  HostListener,
-  Renderer2,
-  inject,
-  input,
-  OnDestroy,
-} from '@angular/core';
+import { Directive, ElementRef, OnDestroy, effect, inject, input } from '@angular/core';
+
+export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
 
 const TOOLTIP_STYLES_ID = 'shared-tooltip-styles';
 
+/*
+ * Solid, high-contrast chip (dark ink in light mode, raised surface in dark mode) with a
+ * matching arrow. It slides a few pixels out of the trigger while fading in, and leaves
+ * faster than it arrives.
+ */
 const TOOLTIP_STYLES = `
   .shared-tooltip {
+    --tooltip-bg: #16181f;
+    --tooltip-fg: #f6f7fb;
+    --tooltip-ring: rgba(255, 255, 255, 0.06);
     position: fixed;
+    top: 0;
+    left: 0;
     z-index: 2147483000;
-    max-width: 260px;
-    padding: 2px 14px;
-    font-size: 13px;
-    line-height: 1.5;
+    max-width: 240px;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 12px;
     font-weight: 500;
-    letter-spacing: 0.01em;
-    border-radius: 8px;
+    line-height: 1.35;
+    letter-spacing: 0.005em;
     text-align: center;
-    background-color: rgba(255, 255, 255, 0.95);
-    -webkit-backdrop-filter: blur(8px) saturate(1.2);
-    backdrop-filter: blur(8px) saturate(1.2);
-    color: var(--color-ink, #1f2430);
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    color: var(--tooltip-fg);
+    background: var(--tooltip-bg);
     box-shadow:
-      0 2px 4px rgba(0, 0, 0, 0.06),
-      0 8px 24px rgba(0, 0, 0, 0.12);
-    transform-origin: bottom center;
-    animation: shared-tooltip-in var(--duration-tooltip, 125ms) var(--ease-out, ease-out);
+      inset 0 0 0 1px var(--tooltip-ring),
+      0 1px 2px rgba(15, 17, 25, 0.18),
+      0 8px 20px -6px rgba(15, 17, 25, 0.35);
     pointer-events: none;
+    user-select: none;
     box-sizing: border-box;
-  }
-  .shared-tooltip::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, #a678ff, #8347f5, #7133dc);
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
+    will-change: transform, opacity;
+    animation: shared-tooltip-in 150ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) both;
   }
   .shared-tooltip-arrow {
     position: absolute;
     width: 10px;
-    height: 10px;
-    background-color: inherit;
-    transform: rotate(45deg);
-    border-color: transparent;
-    border-style: solid;
-    border-width: 1px;
+    height: 5px;
+    background: var(--tooltip-bg);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
   }
-  /* Scale out of the edge that faces the trigger. */
-  .shared-tooltip[data-side='bottom'] { transform-origin: top center; }
-  .shared-tooltip[data-side='left'] { transform-origin: center right; }
-  .shared-tooltip[data-side='right'] { transform-origin: center left; }
-  /* Neighbours of a tooltip that was just open appear instantly. */
+  .shared-tooltip[data-side='top'] { --tx: 0px; --ty: 4px; transform-origin: var(--arrow-x, 50%) 100%; }
+  .shared-tooltip[data-side='bottom'] { --tx: 0px; --ty: -4px; transform-origin: var(--arrow-x, 50%) 0; }
+  .shared-tooltip[data-side='left'] { --tx: 4px; --ty: 0px; transform-origin: 100% var(--arrow-y, 50%); }
+  .shared-tooltip[data-side='right'] { --tx: -4px; --ty: 0px; transform-origin: 0 var(--arrow-y, 50%); }
+  .shared-tooltip[data-side='top'] .shared-tooltip-arrow { top: 100%; left: var(--arrow-x); margin-left: -5px; }
+  .shared-tooltip[data-side='bottom'] .shared-tooltip-arrow { bottom: 100%; left: var(--arrow-x); margin-left: -5px; transform: rotate(180deg); }
+  .shared-tooltip[data-side='left'] .shared-tooltip-arrow { left: calc(100% - 2.5px); top: var(--arrow-y); margin-top: -2.5px; transform: rotate(-90deg); }
+  .shared-tooltip[data-side='right'] .shared-tooltip-arrow { right: calc(100% - 2.5px); top: var(--arrow-y); margin-top: -2.5px; transform: rotate(90deg); }
+  /* Moving between neighbouring triggers swaps tooltips instantly instead of re-animating. */
   .shared-tooltip.shared-tooltip-instant { animation: none; }
+  .shared-tooltip.shared-tooltip-leaving {
+    animation: shared-tooltip-out 100ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
   @keyframes shared-tooltip-in {
-    from {
-      opacity: 0;
-      transform: scale(0.97);
-    }
+    from { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.96); }
   }
-  @keyframes shared-tooltip-fade {
-    from {
-      opacity: 0;
-    }
+  @keyframes shared-tooltip-out {
+    to { opacity: 0; transform: translate(calc(var(--tx) / 2), calc(var(--ty) / 2)) scale(0.98); }
   }
+  @keyframes shared-tooltip-fade-in { from { opacity: 0; } }
+  @keyframes shared-tooltip-fade-out { to { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) {
-    .shared-tooltip:not(.shared-tooltip-instant) { animation-name: shared-tooltip-fade; }
+    .shared-tooltip:not(.shared-tooltip-instant) { animation-name: shared-tooltip-fade-in; }
+    .shared-tooltip.shared-tooltip-leaving { animation-name: shared-tooltip-fade-out; }
   }
   :where(.dark) .shared-tooltip {
-    background-color: rgba(30, 34, 48, 0.92);
-    color: #f5f6fa;
+    --tooltip-bg: #2a2d3a;
+    --tooltip-fg: #f4f5f9;
+    --tooltip-ring: rgba(255, 255, 255, 0.09);
     box-shadow:
-      0 2px 4px rgba(0, 0, 0, 0.3),
-      0 8px 24px rgba(0, 0, 0, 0.45);
+      inset 0 0 0 1px var(--tooltip-ring),
+      0 1px 2px rgba(0, 0, 0, 0.35),
+      0 10px 24px -6px rgba(0, 0, 0, 0.6);
   }
 `;
 
-export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
+const SHOW_DELAY_MS = 250;
+/** After a tooltip closes, neighbours within this window open instantly, without animation. */
+const WARM_WINDOW_MS = 300;
+const GAP = 8;
+const VIEWPORT_MARGIN = 6;
+const ARROW_INSET = 10;
+const OPPOSITE: Record<TooltipPosition, TooltipPosition> = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
 
-/** Once a tooltip has been seen, neighbouring ones skip both the delay and the animation. */
-const WARM_WINDOW_MS = 400;
 let visibleTooltips = 0;
 let lastTooltipHiddenAt = 0;
-const tooltipIsWarm = () =>
-  visibleTooltips > 0 || Date.now() - lastTooltipHiddenAt < WARM_WINDOW_MS;
+let nextTooltipId = 0;
+const tooltipIsWarm = () => visibleTooltips > 0 || Date.now() - lastTooltipHiddenAt < WARM_WINDOW_MS;
 
-function markTooltipShown(el: HTMLElement, side: TooltipPosition): void {
-  el.dataset['side'] = side;
-  if (tooltipIsWarm()) el.classList.add('shared-tooltip-instant');
-  visibleTooltips++;
+function ensureStyles(document: Document): void {
+  if (!document.head || document.getElementById(TOOLTIP_STYLES_ID)) return;
+  const style = document.createElement('style');
+  style.id = TOOLTIP_STYLES_ID;
+  style.textContent = TOOLTIP_STYLES;
+  document.head.appendChild(style);
 }
 
-function markTooltipHidden(): void {
-  visibleTooltips = Math.max(0, visibleTooltips - 1);
-  lastTooltipHiddenAt = Date.now();
-}
+/** Shared behaviour for the [tooltip] directive and attachTooltip(). */
+class TooltipController {
+  private readonly document: Document;
+  private readonly id = `shared-tooltip-${++nextTooltipId}`;
+  private tooltipEl: HTMLElement | null = null;
+  private showTimer: ReturnType<typeof setTimeout> | null = null;
+  private text = '';
+  private side: TooltipPosition = 'top';
+  private disabled = false;
 
-export function attachTooltip(
-  host: HTMLElement,
-  text: string,
-  position: TooltipPosition = 'top',
-): () => void {
-  const document = host.ownerDocument;
-  let tooltipEl: HTMLElement | null = null;
-  let showTimeout: ReturnType<typeof window.setTimeout> | null = null;
-  let hideTimeout: ReturnType<typeof window.setTimeout> | null = null;
-  const showDelay = 200;
-  const hideDelay = 100;
-  const offset = 8;
+  constructor(private readonly host: HTMLElement) {
+    this.document = host.ownerDocument;
+    host.addEventListener('pointerenter', this.onPointerEnter);
+    host.addEventListener('pointerleave', this.onLeave);
+    host.addEventListener('focusin', this.onFocusIn);
+    host.addEventListener('focusout', this.onLeave);
+    host.addEventListener('pointerdown', this.onLeave);
+  }
 
-  const ensureStylesInjected = () => {
-    const head = document.head;
-    if (!head) return;
-    if (head.querySelector(`#${TOOLTIP_STYLES_ID}`)) return;
-    const styleEl = document.createElement('style');
-    styleEl.id = TOOLTIP_STYLES_ID;
-    styleEl.textContent = TOOLTIP_STYLES;
-    head.appendChild(styleEl);
+  update(text: string, side: TooltipPosition, disabled: boolean): void {
+    this.text = text ?? '';
+    this.side = side ?? 'top';
+    this.disabled = disabled;
+    if (!this.tooltipEl) return;
+    if (this.disabled || !this.text) {
+      this.hide();
+      return;
+    }
+    this.tooltipEl.querySelector('.shared-tooltip-content')!.textContent = this.text;
+    this.position();
+  }
+
+  destroy(): void {
+    this.host.removeEventListener('pointerenter', this.onPointerEnter);
+    this.host.removeEventListener('pointerleave', this.onLeave);
+    this.host.removeEventListener('focusin', this.onFocusIn);
+    this.host.removeEventListener('focusout', this.onLeave);
+    this.host.removeEventListener('pointerdown', this.onLeave);
+    this.hide(true);
+  }
+
+  // Touch has no hover: a tap would leave the tooltip stuck open.
+  private readonly onPointerEnter = (event: PointerEvent) => {
+    if (event.pointerType !== 'touch') this.scheduleShow();
   };
 
-  const createTooltip = () => {
-    const tooltip = document.createElement('div');
+  // Keyboard focus only; a mouse click focusing the button shouldn't pop a tooltip.
+  private readonly onFocusIn = () => {
+    if (this.host.matches(':focus-visible') || this.host.querySelector(':focus-visible')) this.scheduleShow();
+  };
+
+  private readonly onLeave = () => this.hide();
+
+  private readonly onKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') this.hide();
+  };
+
+  // The tooltip is fixed-positioned, so it would drift away from its trigger on scroll.
+  private readonly onViewportChange = () => this.hide(true);
+
+  private scheduleShow(): void {
+    if (this.disabled || !this.text || this.tooltipEl || this.showTimer !== null) return;
+    this.showTimer = setTimeout(() => {
+      this.showTimer = null;
+      this.show();
+    }, tooltipIsWarm() ? 0 : SHOW_DELAY_MS);
+  }
+
+  private show(): void {
+    if (this.disabled || !this.text || this.tooltipEl || !this.host.isConnected) return;
+    ensureStyles(this.document);
+    const tooltip = this.document.createElement('div');
     tooltip.className = 'shared-tooltip';
-    const content = document.createElement('span');
+    tooltip.id = this.id;
+    tooltip.setAttribute('role', 'tooltip');
+    if (tooltipIsWarm()) tooltip.classList.add('shared-tooltip-instant');
+    const content = this.document.createElement('span');
     content.className = 'shared-tooltip-content';
-    content.textContent = text;
-    tooltip.appendChild(content);
-    const arrow = document.createElement('div');
+    content.textContent = this.text;
+    const arrow = this.document.createElement('span');
     arrow.className = 'shared-tooltip-arrow';
-    tooltip.appendChild(arrow);
-    document.body.appendChild(tooltip);
-    tooltipEl = tooltip;
-  };
+    tooltip.append(content, arrow);
+    this.document.body.appendChild(tooltip);
+    this.tooltipEl = tooltip;
+    visibleTooltips++;
+    this.position();
 
-  const positionTooltip = () => {
-    if (!tooltipEl) return;
-    const hostRect = host.getBoundingClientRect();
-    const tooltipRect = tooltipEl.getBoundingClientRect();
-    const arrow = tooltipEl.querySelector('.shared-tooltip-arrow') as HTMLElement;
-    let top = 0;
-    let left = 0;
-    switch (position) {
-      case 'bottom':
-        top = hostRect.bottom + offset;
-        left = hostRect.left + (hostRect.width - tooltipRect.width) / 2;
-        if (arrow) {
-          arrow.style.top = '-5px';
-          arrow.style.left = `${hostRect.left + hostRect.width / 2 - left - 5}px`;
-          arrow.style.borderTopColor = '#a678ff';
-          arrow.style.borderLeftColor = '#7133dc';
-        }
-        break;
-      case 'left':
-        top = hostRect.top + (hostRect.height - tooltipRect.height) / 2;
-        left = hostRect.left - tooltipRect.width - offset;
-        if (arrow) {
-          arrow.style.top = `${hostRect.top + hostRect.height / 2 - top - 5}px`;
-          arrow.style.right = '-5px';
-          arrow.style.borderTopColor = '#a678ff';
-          arrow.style.borderRightColor = '#7133dc';
-        }
-        break;
-      case 'right':
-        top = hostRect.top + (hostRect.height - tooltipRect.height) / 2;
-        left = hostRect.right + offset;
-        if (arrow) {
-          arrow.style.top = `${hostRect.top + hostRect.height / 2 - top - 5}px`;
-          arrow.style.left = '-5px';
-          arrow.style.borderBottomColor = '#a678ff';
-          arrow.style.borderLeftColor = '#7133dc';
-        }
-        break;
-      case 'top':
-      default:
-        top = hostRect.top - tooltipRect.height - offset;
-        left = hostRect.left + (hostRect.width - tooltipRect.width) / 2;
-        if (arrow) {
-          arrow.style.bottom = '-5px';
-          arrow.style.left = `${hostRect.left + hostRect.width / 2 - left - 5}px`;
-          arrow.style.borderBottomColor = '#a678ff';
-          arrow.style.borderRightColor = '#7133dc';
-        }
-        break;
+    const describedBy = this.host.getAttribute('aria-describedby');
+    this.host.setAttribute('aria-describedby', describedBy ? `${describedBy} ${this.id}` : this.id);
+    this.document.addEventListener('keydown', this.onKeydown);
+    this.document.defaultView?.addEventListener('scroll', this.onViewportChange, { capture: true, passive: true });
+    this.document.defaultView?.addEventListener('resize', this.onViewportChange);
+  }
+
+  /** Picks the preferred side, flips when it doesn't fit, clamps to the viewport and keeps the arrow on the trigger. */
+  private position(): void {
+    const tooltip = this.tooltipEl;
+    if (!tooltip) return;
+    const view = this.document.defaultView!;
+    const host = this.host.getBoundingClientRect();
+    const { width, height } = tooltip.getBoundingClientRect();
+    const room: Record<TooltipPosition, number> = {
+      top: host.top,
+      bottom: view.innerHeight - host.bottom,
+      left: host.left,
+      right: view.innerWidth - host.right,
+    };
+    const needed = (side: TooltipPosition) => (side === 'top' || side === 'bottom' ? height : width) + GAP + VIEWPORT_MARGIN;
+    let side = this.side;
+    if (room[side] < needed(side) && room[OPPOSITE[side]] > room[side]) side = OPPOSITE[side];
+
+    const vertical = side === 'top' || side === 'bottom';
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
+    const left = vertical
+      ? clamp(host.left + host.width / 2 - width / 2, VIEWPORT_MARGIN, view.innerWidth - width - VIEWPORT_MARGIN)
+      : side === 'left' ? host.left - width - GAP : host.right + GAP;
+    const top = vertical
+      ? side === 'top' ? host.top - height - GAP : host.bottom + GAP
+      : clamp(host.top + host.height / 2 - height / 2, VIEWPORT_MARGIN, view.innerHeight - height - VIEWPORT_MARGIN);
+
+    tooltip.dataset['side'] = side;
+    tooltip.style.left = `${Math.round(left)}px`;
+    tooltip.style.top = `${Math.round(top)}px`;
+    if (vertical) tooltip.style.setProperty('--arrow-x', `${clamp(host.left + host.width / 2 - left, ARROW_INSET, width - ARROW_INSET)}px`);
+    else tooltip.style.setProperty('--arrow-y', `${clamp(host.top + host.height / 2 - top, ARROW_INSET, height - ARROW_INSET)}px`);
+  }
+
+  private hide(immediate = false): void {
+    if (this.showTimer !== null) {
+      clearTimeout(this.showTimer);
+      this.showTimer = null;
     }
-    left = Math.max(4, Math.min(left, window.innerWidth - tooltipRect.width - 4));
-    top = Math.max(4, Math.min(top, window.innerHeight - tooltipRect.height - 4));
-    tooltipEl.style.top = `${top}px`;
-    tooltipEl.style.left = `${left}px`;
-  };
+    const tooltip = this.tooltipEl;
+    if (!tooltip) return;
+    this.tooltipEl = null;
+    visibleTooltips = Math.max(0, visibleTooltips - 1);
+    lastTooltipHiddenAt = Date.now();
 
-  const show = () => {
-    if (!text || tooltipEl) return;
-    ensureStylesInjected();
-    createTooltip();
-    markTooltipShown(tooltipEl!, position);
-    positionTooltip();
-  };
+    const describedBy = (this.host.getAttribute('aria-describedby') ?? '').split(' ').filter((id) => id && id !== this.id).join(' ');
+    if (describedBy) this.host.setAttribute('aria-describedby', describedBy);
+    else this.host.removeAttribute('aria-describedby');
+    this.document.removeEventListener('keydown', this.onKeydown);
+    this.document.defaultView?.removeEventListener('scroll', this.onViewportChange, { capture: true });
+    this.document.defaultView?.removeEventListener('resize', this.onViewportChange);
 
-  const hide = () => {
-    if (!tooltipEl) return;
-    tooltipEl.remove();
-    tooltipEl = null;
-    markTooltipHidden();
-  };
-
-  const scheduleShow = () => {
-    if (hideTimeout !== null) {
-      clearTimeout(hideTimeout);
-      hideTimeout = null;
+    if (immediate) {
+      tooltip.remove();
+      return;
     }
-    if (showTimeout === null) {
-      showTimeout = setTimeout(() => {
-        show();
-        showTimeout = null;
-      }, tooltipIsWarm() ? 0 : showDelay);
-    }
-  };
+    tooltip.classList.remove('shared-tooltip-instant');
+    tooltip.classList.add('shared-tooltip-leaving');
+    tooltip.addEventListener('animationend', () => tooltip.remove(), { once: true });
+    setTimeout(() => tooltip.remove(), 160);
+  }
+}
 
-  const scheduleHide = () => {
-    if (showTimeout !== null) {
-      clearTimeout(showTimeout);
-      showTimeout = null;
-    }
-    if (hideTimeout === null) {
-      hideTimeout = setTimeout(() => {
-        hide();
-        hideTimeout = null;
-      }, hideDelay);
-    }
-  };
-
-  host.addEventListener('mouseenter', scheduleShow);
-  host.addEventListener('mouseleave', scheduleHide);
-  host.addEventListener('focus', scheduleShow);
-  host.addEventListener('blur', scheduleHide);
-
-  return () => {
-    host.removeEventListener('mouseenter', scheduleShow);
-    host.removeEventListener('mouseleave', scheduleHide);
-    host.removeEventListener('focus', scheduleShow);
-    host.removeEventListener('blur', scheduleHide);
-    if (showTimeout !== null) clearTimeout(showTimeout);
-    if (hideTimeout !== null) clearTimeout(hideTimeout);
-    hide();
-  };
+/** Imperative tooltip for elements created outside Angular templates (e.g. map controls). Returns a cleanup function. */
+export function attachTooltip(host: HTMLElement, text: string, position: TooltipPosition = 'top'): () => void {
+  const controller = new TooltipController(host);
+  controller.update(text, position, false);
+  return () => controller.destroy();
 }
 
 @Directive({
@@ -266,189 +273,17 @@ export function attachTooltip(
   standalone: true,
 })
 export class Tooltip implements OnDestroy {
-  // readonly tooltip = input<string>('');
-  // readonly position = input<TooltipPosition>('top');
   readonly tooltip = input<string>('');
-  readonly position = input<'top' | 'bottom' | 'left' | 'right'>('top');
+  readonly position = input<TooltipPosition>('top');
   readonly disabled = input(false);
 
-  private readonly el = inject(ElementRef<HTMLElement>);
-  private readonly renderer = inject(Renderer2);
-  private readonly document = inject(DOCUMENT);
+  private readonly controller = new TooltipController(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
 
-  private tooltipEl: HTMLElement | null = null;
-  private showTimeout: ReturnType<typeof window.setTimeout> | null = null;
-  private hideTimeout: ReturnType<typeof window.setTimeout> | null = null;
-  private readonly showDelay = 200;
-  private readonly hideDelay = 100;
-  private readonly offset = 8;
-
-  private ensureStylesInjected(): void {
-    const head = this.document.head;
-    if (!head) return;
-    if (head.querySelector(`#${TOOLTIP_STYLES_ID}`)) return;
-    const styleEl = this.renderer.createElement('style');
-    styleEl.id = TOOLTIP_STYLES_ID;
-    styleEl.textContent = TOOLTIP_STYLES;
-    this.renderer.appendChild(head, styleEl);
-  }
-
-  @HostListener('mouseenter')
-  protected onMouseEnter(): void {
-    this.scheduleShow();
-  }
-
-  @HostListener('mouseleave')
-  protected onMouseLeave(): void {
-    this.scheduleHide();
-  }
-
-  @HostListener('focus')
-  protected onFocus(): void {
-    this.scheduleShow();
-  }
-
-  @HostListener('blur')
-  protected onBlur(): void {
-    this.scheduleHide();
-  }
-
-  private scheduleShow(): void {
-    if (this.disabled() || !this.tooltip()) return;
-    if (this.hideTimeout !== null) {
-      clearTimeout(this.hideTimeout);
-      this.hideTimeout = null;
-    }
-    if (this.showTimeout === null) {
-      this.showTimeout = setTimeout(() => {
-        this.show();
-        this.showTimeout = null;
-      }, tooltipIsWarm() ? 0 : this.showDelay);
-    }
-  }
-
-  private scheduleHide(): void {
-    if (this.showTimeout !== null) {
-      clearTimeout(this.showTimeout);
-      this.showTimeout = null;
-    }
-    if (this.hideTimeout === null) {
-      this.hideTimeout = setTimeout(() => {
-        this.hide();
-        this.hideTimeout = null;
-      }, this.hideDelay);
-    }
-  }
-
-  private show(): void {
-    if (!this.tooltip() || this.tooltipEl) return;
-    this.ensureStylesInjected();
-    this.createTooltip();
-    markTooltipShown(this.tooltipEl!, this.position());
-    this.positionTooltip();
-  }
-
-  private hide(): void {
-    if (!this.tooltipEl) return;
-    this.removeTooltip();
-  }
-
-  private createTooltip(): void {
-    const tooltip = this.renderer.createElement('div');
-    this.renderer.addClass(tooltip, 'shared-tooltip');
-
-    const content = this.renderer.createElement('span');
-    this.renderer.addClass(content, 'shared-tooltip-content');
-    this.renderer.appendChild(content, this.renderer.createText(this.tooltip()));
-    this.renderer.appendChild(tooltip, content);
-
-    const arrow = this.renderer.createElement('div');
-    this.renderer.addClass(arrow, 'shared-tooltip-arrow');
-    this.renderer.appendChild(tooltip, arrow);
-
-    this.renderer.appendChild(this.document.body, tooltip);
-    this.tooltipEl = tooltip;
-  }
-
-private positionTooltip(): void {
-    if (!this.tooltipEl) return;
-
-    const hostRect = this.el.nativeElement.getBoundingClientRect();
-    const tooltipRect = this.tooltipEl.getBoundingClientRect();
-    const pos = this.position();
-    const arrow = this.tooltipEl.querySelector('.shared-tooltip-arrow') as HTMLElement;
-
-    let top = 0;
-    let left = 0;
-
-    switch (pos) {
-      case 'bottom':
-        top = hostRect.bottom + this.offset;
-        left = hostRect.left + (hostRect.width - tooltipRect.width) / 2;
-        if (arrow) {
-          arrow.style.top = '-5px';
-          arrow.style.left = `${hostRect.left + hostRect.width / 2 - left - 5}px`;
-          arrow.style.borderTopColor = '#a678ff';
-          arrow.style.borderLeftColor = '#7133dc';
-        }
-        break;
-      case 'left':
-        top = hostRect.top + (hostRect.height - tooltipRect.height) / 2;
-        left = hostRect.left - tooltipRect.width - this.offset;
-        if (arrow) {
-          arrow.style.top = `${hostRect.top + hostRect.height / 2 - top - 5}px`;
-          arrow.style.right = '-5px';
-          arrow.style.borderTopColor = '#a678ff';
-          arrow.style.borderRightColor = '#7133dc';
-        }
-        break;
-      case 'right':
-        top = hostRect.top + (hostRect.height - tooltipRect.height) / 2;
-        left = hostRect.right + this.offset;
-        if (arrow) {
-          arrow.style.top = `${hostRect.top + hostRect.height / 2 - top - 5}px`;
-          arrow.style.left = '-5px';
-          arrow.style.borderBottomColor = '#a678ff';
-          arrow.style.borderLeftColor = '#7133dc';
-        }
-        break;
-      case 'top':
-      default:
-        top = hostRect.top - tooltipRect.height - this.offset;
-        left = hostRect.left + (hostRect.width - tooltipRect.width) / 2;
-        if (arrow) {
-          arrow.style.bottom = '-5px';
-          arrow.style.left = `${hostRect.left + hostRect.width / 2 - left - 5}px`;
-          arrow.style.borderBottomColor = '#a678ff';
-          arrow.style.borderRightColor = '#7133dc';
-        }
-        break;
-    }
-
-    left = Math.max(
-      4,
-      Math.min(left, window.innerWidth - tooltipRect.width - 4),
-    );
-    top = Math.max(
-      4,
-      Math.min(top, window.innerHeight - tooltipRect.height - 4),
-    );
-
-    this.renderer.setStyle(this.tooltipEl, 'top', `${top}px`);
-    this.renderer.setStyle(this.tooltipEl, 'left', `${left}px`);
-  }
-
-  private removeTooltip(): void {
-    if (this.tooltipEl) {
-      this.renderer.removeChild(this.document.body, this.tooltipEl);
-      this.tooltipEl = null;
-      markTooltipHidden();
-    }
+  constructor() {
+    effect(() => this.controller.update(this.tooltip(), this.position(), this.disabled()));
   }
 
   ngOnDestroy(): void {
-    if (this.showTimeout !== null) clearTimeout(this.showTimeout);
-    if (this.hideTimeout !== null) clearTimeout(this.hideTimeout);
-    this.removeTooltip();
+    this.controller.destroy();
   }
 }

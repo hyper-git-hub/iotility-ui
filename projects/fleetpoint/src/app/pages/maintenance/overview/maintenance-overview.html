@@ -1,16 +1,16 @@
 <section class="overview-grid">
   <article class="health-panel">
     <header><h2>Fleet Health Scores</h2><span><img src="assets/fleetpoint/icons/ai-chip.svg" alt="" aria-hidden="true" />Calculated by ML microservice</span></header>
-    <div class="health-grid">
-      @for(item of health;track item.vehicle){<section class="health-card" [class]="tone(item.score)">
-        <div class="health-title"><i class="score-ring" [style.--score]="item.score"></i><div><strong>{{item.vehicle}}</strong><span>{{item.score}}/100 — {{item.condition}}</span></div></div>
-        <div class="component-list">@for(component of components(item);track component.label){<div><label>{{component.label}}</label><i><b [style.width.%]="component.value"></b></i><span>{{component.value}}</span></div>}</div>
-        @if(item.faults.length){<div class="faults">@for(fault of item.faults;track fault){<code>{{fault}}</code>}</div>}
-      </section>}
-    </div>
+    <p class="empty">Vehicle health scores aren't available from the maintenance service yet.</p>
   </article>
   <div class="overview-lower">
-    <article class="list-panel"><header><h2>Active Work Orders</h2><a routerLink="../work-orders">View all</a></header><div class="rows">@for(order of orders;track order.vehicle){<div class="order-row"><i class="tool-icon"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" /></i><span><strong>{{order.vehicle}} — {{order.service}}</strong><small>{{order.workshop}}</small></span><em [class]="order.status.toLowerCase().replaceAll(' ','-')">{{order.status}}</em></div>}</div></article>
-    <article class="list-panel"><header><h2 class="ai-title"><img src="assets/fleetpoint/icons/ai-chip.svg" alt="" aria-hidden="true" />Top AI Predictions</h2><a routerLink="../predictions">View all</a></header><div class="rows">@for(prediction of predictions;track prediction.vehicle){<div class="prediction-row"><span><strong>{{prediction.vehicle}} <em [class]="prediction.urgency.toLowerCase()">{{prediction.urgency}}</em></strong><small>{{prediction.component}} — {{prediction.remaining}} · {{prediction.confidence}} confidence</small></span>@if(prediction.raised){<b>WO Raised ✓</b>}@else{<button type="button">Raise WO</button>}</div>}</div></article>
+    <article class="list-panel"><header><h2>Active Work Orders</h2><a routerLink="../work-orders">View all</a></header><div class="rows">
+      @for(order of orders();track order.id){<div class="order-row"><i class="tool-icon"><img src="assets/fleetpoint/icons/wrench.svg" alt="" aria-hidden="true" /></i><span><strong>{{order.vehicle}} — {{order.service}}</strong><small>{{order.workshop}}</small></span><em [class]="statusClass(order.status)">{{order.status}}</em></div>}
+      @empty{@if(loading()){@for(_ of [1,2,3];track $index){<div class="order-row" aria-hidden="true"><ui-skeleton width="2rem" height="2rem" radius="0.5rem"/><span><ui-skeleton width="60%" height="0.7rem" radius="0.25rem"/><ui-skeleton class="mt-1.5 block" width="35%" height="0.6rem" radius="0.25rem"/></span><ui-skeleton width="4rem" height="1.25rem" radius="9999px"/></div>}}@else{<p class="empty">No active work orders.</p>}}
+    </div></article>
+    <article class="list-panel"><header><h2 class="ai-title"><img src="assets/fleetpoint/icons/ai-chip.svg" alt="" aria-hidden="true" />Predicted Maintenance</h2><a routerLink="../predictions">View all</a></header><div class="rows">
+      @for(month of months();track month.month){<div class="prediction-row"><span><strong>{{month.month}}</strong><small>{{month.predicted}} predicted · {{month.previous}} previous</small></span></div>}
+      @empty{@if(loading()){@for(_ of [1,2,3];track $index){<div class="prediction-row" aria-hidden="true"><span class="w-full"><ui-skeleton width="4rem" height="0.7rem" radius="0.25rem"/><ui-skeleton class="mt-1.5 block" width="45%" height="0.6rem" radius="0.25rem"/></span></div>}}@else{<p class="empty">No predicted maintenance yet.</p>}}
+    </div></article>
   </div>
 </section>

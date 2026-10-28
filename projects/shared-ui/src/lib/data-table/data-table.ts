@@ -175,6 +175,9 @@ export class DataTable implements AfterViewInit, OnDestroy {
     if (/^\d+\s+available$/.test(value)) return 'status-available';
     return `status-${value.replaceAll(' ', '-')}`;
   }
+  protected actionLabel(action: TableAction): string {
+    return action.charAt(0).toUpperCase() + action.slice(1);
+  }
   protected priorityClass(v: unknown): string {
     return `priority-${String(v).toLowerCase().replaceAll(' ', '-')}`;
   }

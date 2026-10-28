@@ -4,24 +4,25 @@
   searchAriaLabel="Search work orders"
   [search]="search()"
   [dropdowns]="filterDropdowns()"
-  (searchChange)="search.set($event)"
+  (searchChange)="setSearch($event)"
   (filterChange)="selectFilter($event)"
   (cleared)="clearFilters()"
 />
 <section class="work-orders-workspace" [class.details-open]="selectedOrder()">
   <div class="work-orders-list">
-    <shared-data-table class="work-orders-table" title="Work Orders" [subtitle]="'Showing '+filtered().length+' of '+total+' work orders · Click a row to view details'" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showExport]="false" [showSearch]="false" [showPrimaryAction]="false" [minTableWidth]="selectedOrder()?1180:1380"  [rowsClickable]="true" [selectedRowId]="selectedOrder()?.id??null"  (rowSelected)="selectOrder($event)"/>
+    @if(!loaded()){<ui-data-table-skeleton title="Work Orders" [columns]="columns.length" [columnLabels]="columnLabels" [rows]="6" [showToolbar]="false" [minTableWidth]="1380"/>}@else{
+    <shared-data-table class="work-orders-table" title="Work Orders" [subtitle]="subtitle()" [columns]="columns" [rows]="rows()" [actions]="actions" [clientSideSearch]="false" [showExport]="false" [showSearch]="false" [showPrimaryAction]="false" [minTableWidth]="shownOrder()?1180:1380" [rowsClickable]="true" [selectedRowId]="selectedOrder()?workOrderId(selectedOrder()!):null" [pagination]="pagination()" (pageChange)="changePage($event)" (rowSelected)="selectOrder($event)" (rowAction)="rowAction($event)"/>}
   </div>
-  <aside class="work-order-details" [attr.aria-hidden]="!selectedOrder()" [inert]="!selectedOrder()">
+  <aside class="work-order-details" [style.--drawer-height.px]="drawerHeight()" [attr.aria-hidden]="!selectedOrder()" [inert]="!selectedOrder()">
     @if(shownOrder();as order){
-      <header><h2>{{order.id}}</h2><button type="button" aria-label="Close work order details" (click)="closeDetails()">×</button></header>
+      <header><h2>{{workOrderId(order)}}</h2><button type="button" aria-label="Close work order details" (click)="closeDetails()">×</button></header>
       <div class="details-scroll">
-        <section class="workflow"><h3>Workflow</h3><div class="workflow-track">@for(step of [1,2,3,4,5,6,7,8];track step){<i [class.complete]="step<=workflowStep(order)"></i>}</div><strong>{{order.status}}</strong></section>
-        <dl class="facts"><div><dt>Vehicle</dt><dd>{{order.vehicle}} — Volvo FH</dd></div><div><dt>Service</dt><dd>{{order.service}}</dd></div><div><dt>Type</dt><dd>{{order.type}}</dd></div><div><dt>Priority</dt><dd>{{order.priority}}</dd></div><div><dt>Workshop</dt><dd>{{order.workshop}}</dd></div><div><dt>Driver</dt><dd>{{driver(order)}}</dd></div><div><dt>Est. Cost</dt><dd>{{order.cost}}</dd></div><div><dt>Actual Cost</dt><dd>{{actualCost(order)}}</dd></div><div><dt>Mileage</dt><dd>{{mileage(order)}}</dd></div><div><dt>Due</dt><dd>{{order.target}}</dd></div><div><dt>Raised by</dt><dd>System (Auto)</dd></div></dl>
-        <section class="description"><h3>Description</h3><p>Vehicle reported a service fault. Full inspection and corrective maintenance are required.</p></section>
-        <section class="diagnosis"><h3>Diagnosis</h3><p>GPS tracker firmware corrupted. Engine mounts worn. Front brake pads require replacement.</p></section>
-        <section class="parts"><h3>Parts Required</h3>@for(part of parts;track part.name){<div><span><strong>{{part.name}}</strong><small>Qty: {{part.quantity}}</small></span><b>{{part.cost}}</b></div>}<footer><strong>Parts Total</strong><b>£645</b></footer></section>
-        <section class="timeline"><h3>Timeline</h3>@for(item of timeline;track item.status){<div><i></i><span><strong>{{item.status}} <time>{{item.time}}</time></strong><p>{{item.detail}}</p><small>by {{item.by}}</small></span></div>}</section>
+        <section class="workflow"><h3>Workflow</h3><div class="workflow-track">@for(step of workflowSteps;track step){<i [class.complete]="step<=workflowStep(order)" [class.rejected]="statusLabel(order)==='Rejected'&&step===workflowStep(order)"></i>}</div><strong>{{order.maintenance_status_name??statusLabel(order)}}</strong></section>
+        <dl class="facts"><div><dt>Vehicle</dt><dd>{{vehicle(order)}}</dd></div><div><dt>Title</dt><dd>{{text(order.name)}}</dd></div><div><dt>Service</dt><dd>{{serviceName(order)}}</dd></div><div><dt>Priority</dt><dd>{{notAvailable}}</dd></div><div><dt>Workshop</dt><dd>{{text(order.workshop_name)}}</dd></div><div><dt>Admin Approval</dt><dd>{{approval(order)}}</dd></div><div><dt>Driver</dt><dd>{{text(order.driver_name)}}</dd></div><div><dt>Est. Cost</dt><dd>{{cost(order.estimated_cost)}}</dd></div><div><dt>Actual Cost</dt><dd>{{cost(order.actual_cost)}}</dd></div><div><dt>Next Service</dt><dd>{{displayDate(order.next_maintenance_date)}}</dd></div><div><dt>Started</dt><dd>{{displayDate(order.maintenance_start_date)}}</dd></div><div><dt>Ended</dt><dd>{{displayDate(order.maintenance_end_date)}}</dd></div><div><dt>Raised</dt><dd>{{displayDate(order.created_at)}}</dd></div></dl>
+        <section class="description"><h3>Description</h3><p>{{text(order.description)}}</p></section>
+        <section class="parts"><h3>Parts Required</h3><p class="empty">No parts recorded for this work order.</p></section>
+        @if(order.invoice_pdf){<a class="invoice" [href]="order.invoice_pdf" target="_blank" rel="noopener">View invoice (PDF)</a>}
+        <section class="timeline"><h3>Timeline</h3>@for(item of timeline(order);track item.status){<div><i></i><span><strong>{{item.status}} <time>{{item.time}}</time></strong><p>{{item.detail}}</p></span></div>}@empty{<p class="empty">{{notAvailable}}</p>}</section>
       </div>
     }
   </aside>

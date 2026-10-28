@@ -1,18 +1,48 @@
-import { Component, signal } from '@angular/core';
-import { WorkshopForm, WorkshopFormValue } from '../workshop-form/workshop-form';
+import { Skeleton } from '@iotility/shared-ui';
+import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
+import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { MaintenanceApiService, WorkshopOwner, WorkshopRecord } from '../../../shared/services/maintenance-api.service';
+import { NOT_AVAILABLE, displayDate, text } from '../maintenance.data';
+import { WorkshopForm } from '../workshop-form/workshop-form';
 
-interface WorkshopCard { name:string;city:string;type:'Internal'|'Vendor';used:number;capacity:number;address:string;phone:string;specialisations:string[]; }
+interface WorkshopCard { id:number;name:string;location:string;owner:string;phone:string;email:string;added:string; }
 
-@Component({selector:'app-maintenance-workshops',imports:[WorkshopForm],templateUrl:'./maintenance-workshops.html',styleUrl:'./maintenance-workshops.css'})
+@Component({selector:'app-maintenance-workshops',imports:[Skeleton,WorkshopForm],templateUrl:'./maintenance-workshops.html',styleUrl:'./maintenance-workshops.css'})
 export class MaintenanceWorkshops {
+  private readonly api=inject(MaintenanceApiService);
+  private readonly feedback=inject(FeedbackDialogBridgeService);
+  private readonly destroyRef=inject(DestroyRef);
+  protected readonly notAvailable=NOT_AVAILABLE;
   protected readonly formOpen=signal(false);
-  protected readonly workshops:WorkshopCard[]=[
-    {name:'Stratford Internal Workshop',city:'London',type:'Internal',used:3,capacity:6,address:'Stratford Logistics Park, London E15 2NW',phone:'+44 20 7946 0100',specialisations:['HGV Service','Tyres','Brake Systems','Electrical']},
-    {name:'Volvo Truck Centre — Dartford',city:'Kent',type:'Vendor',used:7,capacity:12,address:'Volvo Truck Centre, Thames Road, Dartford DA1 5NL',phone:'+44 1322 287000',specialisations:['Volvo FH','Volvo FM','Warranty Work','Engine Diagnostics']},
-    {name:'DAF Trucks Manchester',city:'Manchester',type:'Vendor',used:4,capacity:8,address:'DAF Trucks, Trafford Park, Manchester M17 1EH',phone:'+44 161 872 3000',specialisations:['DAF XF','DAF CF','Transmission','Tachograph']},
-    {name:'Mercedes-Benz Vans Birmingham',city:'Birmingham',type:'Vendor',used:5,capacity:10,address:'Mercedes-Benz Vans, Aston, Birmingham B6 7SY',phone:'+44 121 523 4000',specialisations:['Sprinter','Vito','Transit Van','Electric Vans']},
-  ];
-  protected readonly internalCount=this.workshops.filter(item=>item.type==='Internal').length;
-  protected percentage(item:WorkshopCard):number{return Math.round(item.used/item.capacity*100);}
-  protected create(_:WorkshopFormValue):void{this.formOpen.set(false);}
+  protected readonly loading=signal(true);
+  private readonly records=signal<WorkshopRecord[]>([]);
+  private readonly owners=signal<WorkshopOwner[]>([]);
+  /** The list returns the owner's first name only, so contact details come from the owner lookup. */
+  protected readonly workshops=computed<WorkshopCard[]>(()=>this.records().map(item=>{
+    const owner=this.owners().find(candidate=>candidate.guid===item.workshop_owner||candidate.first_name===item.workshop_owner);
+    return {id:item.id,name:text(item.workshop_name),location:text(item.location),owner:owner?[owner.first_name,owner.last_name].filter(Boolean).join(' '):text(item.workshop_owner),phone:text(owner?.phone),email:text(owner?.email),added:displayDate(item.created_at)};
+  }));
+
+  constructor(){effect(()=>{this.api.version();untracked(()=>this.load());});}
+
+  protected created():void{this.formOpen.set(false);this.api.changed();}
+
+  protected async remove(item:WorkshopCard):Promise<void>{
+    const confirmed=await this.feedback.open({type:'warning',title:'Delete workshop?',message:`${item.name} will be permanently deleted.`,confirmText:'Delete',cancelText:'Cancel',showCancel:true});
+    if(!confirmed)return;
+    this.api.deleteWorkshop(item.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next:response=>response.status===1002?void this.feedback.open({type:'error',title:'Unable to delete',message:response.message||'The workshop could not be deleted.',showCancel:false}):this.api.changed(),
+      error:()=>void this.feedback.open({type:'error',title:'Unable to delete',message:'The workshop could not be deleted. Please try again.',showCancel:false}),
+    });
+  }
+
+  private load():void{
+    this.loading.set(true);
+    forkJoin({workshops:this.api.workshops(),owners:this.api.workshopOwners()}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next:({workshops,owners})=>{this.records.set(workshops.data?.data??[]);this.owners.set(owners);this.loading.set(false);},
+      error:()=>{this.records.set([]);this.loading.set(false);},
+    });
+  }
 }

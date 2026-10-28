@@ -142,6 +142,7 @@ strong {
 .status-upcoming,
 .status-completed,
 .status-accepted,
+.status-approved,
 .status-available,
 .status-confirmed,
 .status-reviewed,
@@ -153,6 +154,7 @@ strong {
 .status-alert,
 .status-overdue,
 .status-failed,
+.status-rejected,
 .status-full,
 .status-disputed,
 .status-violation,
@@ -440,9 +442,9 @@ strong {
   @apply bg-ink/90 dark:bg-brand-500;
   box-shadow: var(--shadow-card-hover);
 }
-.actions button:not(:first-child):not(:disabled):hover {
+.actions:not(.icon-actions) button:not(:first-child):not(:disabled):hover {
   @apply border-brand-300 text-brand-600 dark:border-brand-500 dark:text-brand-200;
 }
-.actions button:first-child:not(:disabled):hover {
+.actions:not(.icon-actions) button:first-child:not(:disabled):hover {
   @apply bg-brand-700;
 }

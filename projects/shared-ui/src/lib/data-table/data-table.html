@@ -167,8 +167,8 @@
                         <button
                           [class.delete-action]="action === 'delete'"
                           [class.dispatch-action]="action === 'dispatch'"
-                          [attr.aria-label]="action"
-                          [tooltip]="action"
+                          [attr.aria-label]="actionLabel(action)"
+                          [tooltip]="actionLabel(action)"
                           (click)="$event.stopPropagation(); rowAction.emit({ action, row: r })"
                         >
                           @if (action === 'dispatch') {

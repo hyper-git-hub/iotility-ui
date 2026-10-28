@@ -1,7 +1,7 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { FleetDashboardApiService } from './fleet-dashboard-api.service';
 import { ViolationsApiService, ViolationFilters, violationDateRange } from './violations-api.service';
-import { WORK_ORDERS } from '../../pages/maintenance/maintenance.data';
+import { MaintenanceApiService } from './maintenance-api.service';
 import { DASHCAM_EVENTS } from '../../pages/dashcam/dashcam.data';
 import { jobsData } from '../../pages/jobs/jobs.data';
 
@@ -9,6 +9,7 @@ import { jobsData } from '../../pages/jobs/jobs.data';
 export class SidebarBadgeService {
   private readonly dashboardApi = inject(FleetDashboardApiService);
   private readonly violationsApi = inject(ViolationsApiService);
+  private readonly maintenanceApi = inject(MaintenanceApiService);
 
   readonly jobsCount = signal<number>(0);
   readonly maintenanceCount = signal<number>(0);
@@ -19,6 +20,22 @@ export class SidebarBadgeService {
 
   constructor() {
     this.loadCounts();
+    // Reloads after work orders are raised or deleted on the Maintenance page.
+    effect(() => {
+      this.maintenanceApi.version();
+      untracked(() => this.loadMaintenanceCount());
+    });
+  }
+
+  /** Active work orders, from the same analytics cards as the Maintenance header. */
+  private loadMaintenanceCount(): void {
+    this.maintenanceApi.summary().subscribe({
+      next: ({ active }) => {
+        this.maintenanceCount.set(active);
+        this.badgeCounts.update((prev) => ({ ...prev, maintenance: active }));
+      },
+      error: () => undefined,
+    });
   }
 
   private loadCounts(): void {
@@ -27,12 +44,6 @@ export class SidebarBadgeService {
       (job) => job.status === 'Pending' || job.status === 'In Progress' || job.status === 'Assigned',
     ).length;
     this.jobsCount.set(pendingJobs);
-
-    // Maintenance: count active (non-completed, non-cancelled) work orders
-    const activeWorkOrders = WORK_ORDERS.filter(
-      (order) => order.status !== 'Completed' && order.status !== 'Cancelled',
-    ).length;
-    this.maintenanceCount.set(activeWorkOrders);
 
     // Count today's violations using the same local-day range as the All Violations page.
     const { start_datetime, end_datetime } = violationDateRange('today');
