@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
-import { Skeleton } from '@iotility/shared-ui';
+import { ChartSkeleton, Skeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCard, StatCardTone } from '../../../shared/stat-card/stat-card';
@@ -22,7 +22,7 @@ interface OverviewSkeleton {
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [Skeleton, DashboardGraphComponent, NgTemplateOutlet, StatCard],
+  imports: [ChartSkeleton, Skeleton, DashboardGraphComponent, NgTemplateOutlet, StatCard],
   templateUrl: './overview.html',
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })

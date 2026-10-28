@@ -1,36 +1,24 @@
 <section class="analytics-top">
-  <article class="category-card">
-    <h2>Events by Category</h2>
-    <app-fleet-doughnut-chart
-      title=""
-      [height]="190"
-      [data]="categoryData"
-      [options]="categoryOptions"
-    />
-    <div class="category-legend">
-      @for (item of categories; track item.id) {
-        <p>
-          <i [style.background]="item.color"></i><span>{{ item.label }}</span
-          ><strong>{{ item.value }}</strong>
-        </p>
-      }
+  <ui-chart-card title="Events by Category" [height]="360">
+    <div class="category-body">
+      <ui-donut-chart class="category-donut" [slices]="slices" [legend]="false" centerLabel="Events" />
+      <div class="category-legend">
+        @for (item of categories; track item.id) {
+          <p>
+            <i [style.background]="item.color"></i><span>{{ item.label }}</span
+            ><strong>{{ item.value }}</strong>
+          </p>
+        }
+      </div>
     </div>
-  </article>
-  <app-fleet-bar-chart
-    title="Events by Driver"
-    [height]="360"
-    [data]="driverData"
-    [options]="driverOptions"
-  />
+  </ui-chart-card>
+  <ui-chart-card title="Events by Driver" [height]="360">
+    <ui-bar-chart [categories]="drivers" [series]="driverSeries" />
+  </ui-chart-card>
 </section>
-<section class="trend-card">
-  <app-fleet-line-chart
-    title="Event Trend — Last 7 Days"
-    [height]="310"
-    [data]="trendData"
-    [options]="trendOptions"
-  />
-</section>
+<ui-chart-card class="trend-card" title="Event Trend — Last 7 Days" [height]="310">
+  <ui-line-chart [categories]="days" [series]="trendSeries" [showPoints]="true" />
+</ui-chart-card>
 <aside class="ai-note">
   <img src="assets/fleetpoint/icons/robot.svg" alt="" aria-hidden="true" />
   <div>

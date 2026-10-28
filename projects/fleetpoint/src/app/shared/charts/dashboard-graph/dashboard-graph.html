@@ -91,39 +91,36 @@
       </div>
     }
   </article>
-} @else if (hasChartData() && isDoughnut()) {
-  <app-fleet-doughnut-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="doughnutData()" [options]="doughnutOptions()"  [filterOptions]="filterOptions()" [filterAriaLabel]="filterAriaLabel()"
-  [selectedFilterId]="selectedFilterId()"
-  (filterSelected)="onFilterSelected($event)"/>
-} @else if (hasChartData() && isLine()) {
-  <app-fleet-line-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="lineData()" [options]="lineOptions"  [filterOptions]="filterOptions()" [filterAriaLabel]="filterAriaLabel()"
-  [selectedFilterId]="selectedFilterId()"
-  (filterSelected)="onFilterSelected($event)"/>
-} @else if (hasChartData()) {
-  <app-fleet-bar-chart [title]="graphTitle()" subtitle="Live dashboard analytics" [statusLegend]="isFleetUtilisation()" [legendItems]="legendItems()" [height]="380" [data]="barData()" [options]="barOptions()"  [filterOptions]="filterOptions()" [filterAriaLabel]="filterAriaLabel()"
-  [selectedFilterId]="selectedFilterId()"
-  (filterSelected)="onFilterSelected($event)"/>
 } @else {
-  <article class="graph-card">
-    <header>
-      <div><h2>{{ graphTitle() }}</h2><p>Live dashboard analytics</p></div>
-      @if (filterOptions().length) {
-        <app-graph-filter
+  <ui-chart-card
+    [title]="graphTitle()"
+    subtitle="Live dashboard analytics"
+    [legend]="headerLegend()"
+    [height]="380"
+    [empty]="!hasChartData()"
+    [emptyMessage]="emptyMessage()"
+  >
+    @if (filterOptions().length) {
+      <app-graph-filter
+        chart-actions
         [options]="filterOptions()"
         [ariaLabel]="filterAriaLabel()"
         [selectedId]="selectedFilterId()"
         (selected)="onFilterSelected($event)"
-        />
-      }
-    </header>
-    <div class="empty">
-      <span class="empty-icon" aria-hidden="true">
-        <svg viewBox="0 0 48 48">
-          <rect x="6" y="7" width="36" height="30" rx="6" />
-          <path d="M13 30v-6M20 30V18M27 30v-9M34 30V14" />
-        </svg>
-      </span>
-      <p>{{ emptyMessage() }}</p>
-    </div>
-  </article>
+      />
+    }
+    @if (isDoughnut()) {
+      <ui-donut-chart [slices]="slices()" [pie]="isPie()" [legend]="chartLegend()" />
+    } @else if (isLine()) {
+      <ui-line-chart [categories]="lineModel().categories" [series]="lineModel().series" [legend]="chartLegend()" />
+    } @else {
+      <ui-bar-chart
+        [categories]="barModel().categories"
+        [series]="barModel().series"
+        [horizontal]="horizontal()"
+        [stacked]="stacked()"
+        [legend]="chartLegend()"
+      />
+    }
+  </ui-chart-card>
 }

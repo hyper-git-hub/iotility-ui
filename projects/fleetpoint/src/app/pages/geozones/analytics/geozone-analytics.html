@@ -1,6 +1,6 @@
 <section class="analytics-grid">
-  <app-fleet-bar-chart title="Visits Today — by Zone" subtitle="Daily zone traffic" [height]="320" [data]="visits" [options]="options"/>
-  <app-fleet-bar-chart title="Violations — by Zone" subtitle="Triggered geozone events" [height]="320" [data]="violations" [options]="options"/>
+  <ui-chart-card title="Visits Today — by Zone" subtitle="Daily zone traffic" [height]="320"><ui-bar-chart [categories]="zones" [series]="visits" [horizontal]="true" [legend]="false"/></ui-chart-card>
+  <ui-chart-card title="Violations — by Zone" subtitle="Triggered geozone events" [height]="320"><ui-bar-chart [categories]="zones" [series]="violations" [horizontal]="true" [legend]="false"/></ui-chart-card>
 </section>
 
 <shared-data-table

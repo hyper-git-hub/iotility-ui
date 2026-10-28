@@ -1,9 +1,6 @@
 <section class="prediction-page">
   <header class="ai-banner"><img src="assets/fleetpoint/icons/ai-chip-brand.svg" alt="" aria-hidden="true" /><span><strong>AI-Powered Predictive Maintenance</strong><small>Monthly predicted maintenance compared with previous maintenance, from the predictive-maintenance service. Per-vehicle predictions (component, confidence, failure date) aren't provided by the API yet.</small></span></header>
-  <article class="trend-card">
-    <header><h2>Predicted vs Previous</h2>@if(loading()){<ui-skeleton width="10rem" height="0.65rem" radius="0.25rem"/>}@else{<div class="legend"><span class="predicted">Predicted · {{totals().predicted}}</span><span class="previous">Previous · {{totals().previous}}</span></div>}</header>
-    @for(month of months();track month.month){
-      <div class="trend-row"><span>{{month.month}}</span><div class="bars"><i class="predicted" [style.width.%]="width(month.predicted)"></i><i class="previous" [style.width.%]="width(month.previous)"></i></div><b>{{month.predicted}} / {{month.previous}}</b></div>
-    }@empty{@if(loading()){@for(width of ['70%','45%','85%','30%','60%'];track $index){<div class="trend-row" aria-hidden="true"><ui-skeleton width="3rem" height="0.65rem" radius="0.25rem"/><div class="bars"><ui-skeleton [width]="width" height="0.375rem" radius="9999px"/><ui-skeleton width="40%" height="0.375rem" radius="9999px"/></div><ui-skeleton class="ml-auto" width="2.25rem" height="0.65rem" radius="0.25rem"/></div>}}@else{<p class="empty">No predicted maintenance yet.</p>}}
-  </article>
+  <ui-chart-card title="Predicted vs Previous" [subtitle]="loading() ? '' : totals().predicted + ' predicted · ' + totals().previous + ' previous'" [legend]="legend()" [height]="360" [loading]="loading()" skeleton="bar" [empty]="!months().length" emptyMessage="No predicted maintenance yet.">
+    <ui-bar-chart [categories]="categories()" [series]="series()" [legend]="false" />
+  </ui-chart-card>
 </section>

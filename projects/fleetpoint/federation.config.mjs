@@ -32,6 +32,13 @@ export default withNativeFederation({
     'rxjs/testing',
     'rxjs/webSocket',
     'maplibre-gl',
+    // Charts are bundled with the remote and lazy-loaded on first render, like maplibre.
+    'echarts',
+    'echarts/core',
+    'echarts/charts',
+    'echarts/components',
+    'echarts/renderers',
+    'zrender',
     '@deck.gl/core',
     '@deck.gl/layers',
     '@deck.gl/mapbox',

@@ -1,12 +1,17 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { ChartData, ChartOptions } from 'chart.js';
+import {
+  BarChart,
+  ChartCard,
+  ChartLegendItem,
+  ChartSeries,
+  ChartSlice,
+  ChartTheme,
+  DonutChart,
+  DropdownOption,
+  LineChart,
+} from '@iotility/shared-ui';
 import { DashboardGraph, GraphSeries, FleetDashboardApiService } from '../../services/fleet-dashboard-api.service';
-import { FleetBarChart } from '../bar-chart/bar-chart';
-import { getFleetChartColors } from '../chart-colors';
 import { GraphFilter } from '../graph-filter/graph-filter';
-import { FleetDoughnutChart } from '../doughnut-chart/doughnut-chart';
-import { FleetLineChart } from '../line-chart/line-chart';
-import { DropdownOption } from '@iotility/shared-ui';
 
 /** One option in a graph's filter dropdown; `id` is sent as `filter_by`. */
 export interface DashboardGraphFilter {
@@ -62,9 +67,14 @@ export const DASHBOARD_GRAPH_FILTERS: Record<string, DashboardGraphFilter> = {
   },
 };
 
+interface AxisChartModel {
+  categories: string[];
+  series: ChartSeries[];
+}
+
 @Component({
   selector: 'app-dashboard-graph',
-  imports: [FleetBarChart, FleetDoughnutChart, FleetLineChart, GraphFilter],
+  imports: [BarChart, ChartCard, DonutChart, GraphFilter, LineChart],
   templateUrl: './dashboard-graph.html',
   styleUrl: './dashboard-graph.css',
 })
@@ -72,11 +82,9 @@ export class DashboardGraphComponent {
   readonly graph = input.required<DashboardGraph>();
   /** Where the chart legend renders: top-right of the graph card or the classic bottom. */
   readonly legendPosition = input<'top' | 'bottom'>('bottom');
-  private readonly colors = getFleetChartColors();
-  /** One distinct color per series so multi-fleet charts (e.g. Driver Violations) stay readable. */
-  private readonly palette = this.colors.series;
 
   private readonly api = inject(FleetDashboardApiService);
+  private readonly theme = inject(ChartTheme);
 
   /** Per-graph filter choice, so switching dashboard tabs keeps it. */
   private readonly selections = signal<Record<string, string>>({});
@@ -84,7 +92,6 @@ export class DashboardGraphComponent {
   protected readonly graphFilter = computed(() => DASHBOARD_GRAPH_FILTERS[this.graph().code] ?? null);
   protected readonly filterOptions = computed<DropdownOption[]>(() => this.graphFilter()?.options ?? []);
   protected readonly selectedFilterId = computed(() => this.selections()[this.graph().code] ?? '');
-  
   protected readonly filterAriaLabel = computed(() => this.graphFilter()?.ariaLabel ?? 'Filter');
 
   protected onFilterSelected(option: DropdownOption): void {
@@ -124,6 +131,10 @@ export class DashboardGraphComponent {
     return ['JSJ', 'MS'].includes(graph.code);
   }
 
+  protected isPie(): boolean {
+    return this.graph().chart_type === 'piechart';
+  }
+
   protected actionItems() {
     const data = this.graph().data;
     if (!Array.isArray(data)) return [];
@@ -149,8 +160,7 @@ export class DashboardGraphComponent {
     return this.graph().code === 'JJ' ? 'Jobs by Location' : this.graph().name;
   }
 
-  /* Fleet Utilisation (FUT) carries the Good/OK/Low status legend instead of
-     the single-dataset chart legend at the bottom. */
+  /* Fleet Utilisation (FUT) carries the Good/OK/Low status legend instead of a series legend. */
   protected isFleetUtilisation(): boolean {
     const graph = this.graph();
     return graph.code === 'FUT' || graph.name.trim().toLowerCase() === 'fleet utilisation';
@@ -170,249 +180,121 @@ export class DashboardGraphComponent {
     );
   }
 
-  protected readonly barData = computed<ChartData<'bar', number[], string>>(() => {
+  protected readonly horizontal = computed(() => {
+    const graph = this.graph();
+    return ['DSS', 'JSS'].includes(graph.code) ||
+      graph.chart_type === 'horizontal_stackbar_chart' || graph.chart_type === 'horizontal_bar_chart';
+  });
+
+  protected readonly stacked = computed(() => {
+    const graph = this.graph();
+    return ['DSS', 'JSS'].includes(graph.code) ||
+      graph.chart_type === 'horizontal_stackbar_chart' || graph.chart_type === 'stackbar_chart';
+  });
+
+  /** In-chart legend only when the card header isn't showing one. */
+  protected readonly chartLegend = computed(() => this.legendPosition() !== 'top' && !this.isFleetUtilisation());
+
+  protected readonly barModel = computed<AxisChartModel>(() => {
     const data = this.graph().data;
-    if (!data) return { labels: [], datasets: [] };
+    if (!data) return { categories: [], series: [] };
     if (Array.isArray(data)) {
       const values = data.map((row) => this.rowValue(row));
       return {
-        labels: data.map((row) => this.rowLabel(row)),
-        datasets: [{
-          label: this.graph().name,
-          data: values,
-          backgroundColor: this.barColors(values),
-          borderRadius: 5,
-        }],
+        categories: data.map((row) => this.rowLabel(row)),
+        series: [{ name: this.graph().name, data: values, colors: this.levelColors(values) }],
       };
     }
     /* Named series win over plain values: multi-series payloads (e.g. one series per
-       fleet in Driver Violations) must render as separate datasets, otherwise the
-       chart collapses to a single dataset labelled with the graph name. */
+       fleet in Driver Violations) must render as separate series, otherwise the
+       chart collapses to a single series labelled with the graph name. */
     const series = this.chartSeries(data.series);
+    const categories = data.categories ?? [];
     if (series.length) {
-      if (series.length === (data.categories?.length ?? 0) && series.every((item) => item.data.length === 1)) {
+      // One single-value series per category: one bar per category, each in its own colour.
+      if (series.length === categories.length && series.every((item) => item.data.length === 1)) {
         return {
-          labels: data.categories ?? [],
-          datasets: series.map((item, seriesIndex) => ({
-            label: this.readableLabel(item.name),
-            data: (data.categories ?? []).map((_, categoryIndex) =>
-              categoryIndex === seriesIndex ? item.data[0] ?? 0 : 0,
-            ),
-            backgroundColor: this.palette[seriesIndex % this.palette.length],
-            borderRadius: 5,
-          })),
+          categories,
+          series: [{
+            name: this.graph().name,
+            data: series.map((item) => item.data[0] ?? 0),
+            colors: series.map((_, index) => this.theme.seriesColor(index)),
+          }],
         };
       }
       return {
-        labels: data.categories ?? [],
-        datasets: series.map((item, index) => ({
-          label: this.readableLabel(item.name),
-          data: item.data,
-          backgroundColor: this.palette[index % this.palette.length],
-          borderRadius: 5,
-        })),
+        categories,
+        series: series.map((item) => ({ name: this.readableLabel(item.name), data: item.data })),
       };
     }
     if (data.values) {
       const values = data.values.map((value) => this.numericValue(value));
-      return {
-        labels: data.categories ?? [],
-        datasets: [{
-          label: this.graph().name,
-          data: values,
-          backgroundColor: this.barColors(values),
-          borderRadius: 5,
-        }],
-      };
+      return { categories, series: [{ name: this.graph().name, data: values, colors: this.levelColors(values) }] };
     }
-    return { labels: data.categories ?? [], datasets: [] };
-    });
+    return { categories, series: [] };
+  });
 
-
-  protected readonly lineData = computed<ChartData<'line', number[], string>>(() => {
+  protected readonly lineModel = computed<AxisChartModel>(() => {
     const data = this.graph().data;
-    if (!data || Array.isArray(data)) return { labels: [], datasets: [] };
+    if (!data || Array.isArray(data)) return { categories: [], series: [] };
     return {
-      labels: data.categories ?? [],
-      datasets: this.chartSeries(data.series).map((series, index) => ({
-        label: this.readableLabel(series.name),
-        data: series.data,
-        borderColor: this.palette[index % this.palette.length],
-        backgroundColor: `color-mix(in srgb, ${this.palette[index % this.palette.length]} 14%, transparent)`,
-        fill: true,
-        tension: 0.35,
-        pointBackgroundColor: this.palette[index % this.palette.length],
-        pointBorderColor: this.palette[index % this.palette.length],
-        pointBorderWidth: 1,
-        pointRadius: 3,
-      })),
+      categories: data.categories ?? [],
+      series: this.chartSeries(data.series).map((series) => ({ name: this.readableLabel(series.name), data: series.data })),
     };
-    });
+  });
 
-
-  protected readonly doughnutData = computed<ChartData<'doughnut', number[], string>>(() => {
+  protected readonly slices = computed<ChartSlice[]>(() => {
     const graph = this.graph();
-    if (!graph.data) return { labels: [], datasets: [] };
+    if (!graph.data) return [];
+    const zip = (labels: string[], values: number[]) => labels.map((label, index) => ({ label, value: values[index] ?? 0 }));
     if (Array.isArray(graph.data)) {
-      return {
-        labels: graph.data.map((row) => this.rowLabel(row)),
-        datasets: [{ data: graph.data.map((row) => this.rowValue(row)), backgroundColor: this.palette, borderWidth: 0 }],
-      };
+      return graph.data.map((row) => ({ label: this.rowLabel(row), value: this.rowValue(row) }));
     }
+    const categories = graph.data.categories ?? [];
     if (graph.data.values) {
-      return {
-        labels: graph.data.categories ?? [],
-        datasets: [{ data: graph.data.values.map((value) => this.numericValue(value)), backgroundColor: this.palette, borderWidth: 0 }],
-      };
+      return zip(categories, graph.data.values.map((value) => this.numericValue(value)));
     }
     if (this.numericSeries(graph.data.series).length) {
-      return {
-        labels: graph.data.categories ?? [],
-        datasets: [{ data: this.numericSeries(graph.data.series), backgroundColor: this.palette, borderWidth: 0 }],
-      };
-    }
-    if (graph.code === 'DTS') {
-      const categories = graph.data.categories ?? [];
-      const series = this.namedSeries(graph.data.series);
-      return {
-        labels: categories,
-        datasets: [{
-          data: categories.map((_, categoryIndex) =>
-            series.reduce((total, item) => total + (item.data[categoryIndex] ?? 0), 0),
-          ),
-          backgroundColor: this.palette,
-          borderWidth: 0,
-        }],
-      };
+      return zip(categories, this.numericSeries(graph.data.series));
     }
     const series = this.namedSeries(graph.data.series);
-    return {
-      labels: series.map((item) => this.readableLabel(item.name)),
-      datasets: [{
-        data: series.map((item) => item.data.reduce((total, value) => total + value, 0)),
-        backgroundColor: this.palette,
-        borderWidth: 0,
-      }],
-    };
-    });
-
-
-  protected barOptions(): ChartOptions<'bar'> {
-    const graph = this.graph();
-    const chartType = graph.chart_type;
-    const horizontal = ['DSS', 'JSS'].includes(graph.code) ||
-      chartType === 'horizontal_stackbar_chart' || chartType === 'horizontal_bar_chart';
-    const stacked = ['DSS', 'JSS'].includes(graph.code) ||
-      chartType === 'horizontal_stackbar_chart' || chartType === 'stackbar_chart';
-    return {
-      indexAxis: horizontal ? 'y' : 'x',
-      // On a horizontal chart the index must be resolved on the category (y)
-      // axis. Without `axis: 'y'` Chart.js resolves it on the value (x) axis
-      // and returns whichever row's segment is nearest the cursor's x
-      // position, so hovering one driver can show another driver's data.
-      interaction: horizontal
-        ? { mode: 'nearest', axis: 'y', intersect: true }
-        : { mode: 'index', intersect: false },
-      plugins: { legend: this.legendOptions() },
-      scales: {
-        x: {
-          stacked,
-          grid: { display: false },
-          ticks: horizontal ? {} : {
-            autoSkip: false,
-            minRotation: 0,
-            maxRotation: 0,
-            callback: (_value, index) => this.wrapAxisLabel(this.barData().labels?.[index]),
-          },
-        },
-        y: { stacked, beginAtZero: true },
-      },
-    };
-  }
-
-  protected get lineOptions(): ChartOptions<'line'> {
-    return {
-      interaction: { mode: 'index', intersect: false },
-      plugins: { legend: this.legendOptions() },
-      scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
-    };
-  }
-
-  protected doughnutOptions(): ChartOptions<'doughnut'> {
-    return {
-      cutout: this.graph().chart_type === 'piechart' ? '0%' : '60%',
-      plugins: { legend: this.legendOptions() },
-    };
-  }
-
-  private legendOptions() {
-    const position = this.legendPosition();
-    return {
-      position,
-      align: position === 'top' ? ('end' as const) : undefined,
-      // Top legends are rendered in the card header instead of the canvas.
-      display: !this.isFleetUtilisation() && position !== 'top',
-    };
-  }
-
-  /** Header (top-right) legend items derived from the chart data/colors. */
-  protected legendItems(): { label: string; color: string }[] {
-    if (this.legendPosition() !== 'top' || this.isFleetUtilisation() || !this.hasChartData()) {
-      return [];
+    if (graph.code === 'DTS') {
+      return zip(
+        categories,
+        categories.map((_, categoryIndex) => series.reduce((total, item) => total + (item.data[categoryIndex] ?? 0), 0)),
+      );
     }
+    return series.map((item) => ({
+      label: this.readableLabel(item.name),
+      value: item.data.reduce((total, value) => total + value, 0),
+    }));
+  });
+
+  /** Header (top-right) legend: Good/OK/Low for Fleet Utilisation, otherwise the chart's own colours. */
+  protected readonly headerLegend = computed<ChartLegendItem[]>(() => {
+    const palette = this.theme.palette();
+    if (this.isFleetUtilisation()) {
+      return [
+        { label: 'Good', color: palette.success },
+        { label: 'OK', color: palette.warning },
+        { label: 'Low', color: palette.danger },
+      ];
+    }
+    if (this.legendPosition() !== 'top' || !this.hasChartData()) return [];
     if (this.isDoughnut()) {
-      const data = this.doughnutData();
-      const colors = (data.datasets[0]?.backgroundColor as string[] | undefined) ?? [];
-      return (data.labels ?? []).map((label, index) => ({
-        label: String(label),
-        color: colors[index] ?? this.palette[0],
-      }));
+      return this.slices().map((slice, index) => ({ label: slice.label, color: this.theme.seriesColor(index, slice.color) }));
     }
-    const datasets = this.isLine() ? this.lineData().datasets : this.barData().datasets;
-    return datasets
-      .map((dataset) => ({
-        label: String(dataset.label ?? ''),
-        color: this.datasetColor(dataset),
-      }))
-      .filter((item) => item.label.length > 0);
-  }
-
-  private datasetColor(dataset: { backgroundColor?: unknown; borderColor?: unknown }): string {
-    const opaque = (color: unknown): color is string =>
-      typeof color === 'string' &&
-      color.length > 0 &&
-      !color.includes('color-mix') &&
-      !color.includes('transparent') &&
-      !/^rgba\([^)]*,\s*0?\.\d/.test(color);
-    const background = Array.isArray(dataset.backgroundColor)
-      ? dataset.backgroundColor[0]
-      : dataset.backgroundColor;
-    // Line datasets carry a translucent fill color, so prefer the stroke color.
-    if (opaque(dataset.borderColor)) return dataset.borderColor;
-    if (opaque(background)) return background;
-    return this.palette[0];
-  }
+    const model = this.isLine() ? this.lineModel() : this.barModel();
+    // A single coloured-per-bar series is described by its axis, not a legend.
+    if (model.series.length === 1 && model.series[0].colors) return [];
+    return model.series.map((series, index) => ({ label: series.name, color: this.theme.seriesColor(index, series.color) }));
+  });
 
   private readableLabel(value: string): string {
     return value
       .replaceAll('_', ' ')
       .replace(/\b\w/g, (letter) => letter.toUpperCase())
       .replace(' Probability Count', '');
-  }
-
-  private wrapAxisLabel(label: unknown, maxLength = 16): string | string[] {
-    if (typeof label !== 'string' || label.length <= maxLength) return String(label ?? '');
-
-    const lines: string[] = [];
-    for (const word of label.split(/\s+/)) {
-      const currentLine = lines.at(-1);
-      if (!currentLine || `${currentLine} ${word}`.length > maxLength) {
-        lines.push(word);
-      } else {
-        lines[lines.length - 1] = `${currentLine} ${word}`;
-      }
-    }
-    return lines;
   }
 
   private namedSeries(series: GraphSeries[] | number[] | undefined): GraphSeries[] {
@@ -450,15 +332,16 @@ export class DashboardGraphComponent {
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
-  private barColors(values: number[]): string[] {
+  /** Good / OK / Low colours relative to the best value (≥80% / ≥60% / below). */
+  private levelColors(values: number[]): string[] {
+    const palette = this.theme.palette();
     const maximum = Math.max(...values.filter((value) => Number.isFinite(value)), 0);
-    if (maximum <= 0) return values.map(() => this.colors.danger);
-
+    if (maximum <= 0) return values.map(() => palette.danger);
     return values.map((value) => {
       const ratio = value / maximum;
-      if (ratio >= 0.8) return this.colors.success;
-      if (ratio >= 0.6) return this.colors.warning;
-      return this.colors.danger;
+      if (ratio >= 0.8) return palette.success;
+      if (ratio >= 0.6) return palette.warning;
+      return palette.danger;
     });
   }
 }

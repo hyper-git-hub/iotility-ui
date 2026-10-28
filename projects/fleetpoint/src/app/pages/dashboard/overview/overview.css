@@ -5,187 +5,97 @@
   box-shadow: var(--shadow-card);
 }
 
-.graph-skeleton-header {
+.graph-skeleton-header{
   @apply mb-5;
 }
 
-.graph-skeleton-actions-header {
+.graph-skeleton-actions-header{
   @apply flex items-center justify-between;
 }
 
-.graph-skeleton-driver-header {
+.graph-skeleton-driver-header{
   @apply flex items-center gap-2;
 }
 
 .graph-skeleton-actions-header ui-skeleton + ui-skeleton,
-.graph-skeleton-driver-header ui-skeleton + ui-skeleton {
+.graph-skeleton-driver-header ui-skeleton + ui-skeleton{
   @apply mt-0;
 }
 
-.graph-skeleton-header ui-skeleton + ui-skeleton {
+.graph-skeleton-header ui-skeleton + ui-skeleton{
   @apply mt-2;
 }
 
-.graph-skeleton-list {
+.graph-skeleton-list{
   @apply grid flex-1 content-start gap-3;
 }
 
-.graph-skeleton-list > div {
+.graph-skeleton-list > div{
   @apply grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-xl bg-canvas/60 p-2 dark:bg-dark-canvas/50;
 }
 
-.graph-skeleton-list span {
+.graph-skeleton-list span{
   @apply grid gap-1.5;
 }
 
-.graph-skeleton-profile {
+.graph-skeleton-profile{
   @apply flex flex-1 flex-col items-center gap-3 pt-2;
 }
 
-.graph-skeleton-profile > ui-skeleton:nth-of-type(4) {
+.graph-skeleton-profile > ui-skeleton:nth-of-type(4){
   @apply mt-2;
 }
 
-.graph-skeleton-profile > div {
+.graph-skeleton-profile > div{
   @apply mt-3 grid w-full grid-cols-3 gap-2;
 }
 
-.graph-skeleton-plot {
-  @apply relative flex flex-1 items-end gap-5 overflow-hidden border-b border-l border-line/70 px-4 pb-0 pt-5 dark:border-dark-line;
-}
-
-.graph-skeleton-line {
-  @apply relative grid flex-1 grid-cols-[1.5rem_minmax(0,1fr)] overflow-hidden pb-5 pr-1;
-}
-
-.graph-skeleton-line::after {
-  content: '';
-  @apply pointer-events-none absolute inset-0;
-  transform: translateX(-115%);
-  background: linear-gradient(
-    100deg,
-    transparent 22%,
-    rgb(255 255 255 / 0.52) 47%,
-    rgb(255 255 255 / 0.18) 56%,
-    transparent 80%
-  );
-  animation: dashboard-chart-shimmer 1.65s ease-in-out infinite;
-}
-
-:host-context(.dark) .graph-skeleton-line::after {
-  background: linear-gradient(
-    100deg,
-    transparent 22%,
-    rgb(255 255 255 / 0.07) 47%,
-    rgb(255 255 255 / 0.025) 56%,
-    transparent 80%
-  );
-}
-/* Line-chart skeleton: same tones as ui-skeleton so every loading card reads as one family. */
-.line-y-axis { @apply flex flex-col items-end justify-between pb-5 pr-2.5 pt-0.5; }
-.line-y-axis span { @apply block h-1.5 rounded-full bg-slate-200/80 dark:bg-slate-700/55; }
-.line-plot { @apply relative min-w-0 border-b border-slate-200/80 dark:border-slate-700/55; }
-.line-grid { @apply absolute inset-0 flex flex-col justify-between; }
-.line-grid i { @apply block w-full border-t border-slate-100 dark:border-slate-800/70; }
-.graph-skeleton-line svg { @apply absolute inset-0 size-full overflow-visible; }
-.line-stroke { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.line-stroke-primary { stroke: theme(colors.slate.200); }
-.line-stroke-secondary { stroke: theme(colors.slate.200); stroke-dasharray: 4 5; opacity: 0.8; }
-.line-area-top { stop-color: theme(colors.slate.200); stop-opacity: 0.6; }
-.line-area-bottom { stop-color: theme(colors.slate.200); stop-opacity: 0; }
-:host-context(.dark) .line-stroke-primary,
-:host-context(.dark) .line-stroke-secondary { stroke: theme(colors.slate.700); }
-:host-context(.dark) .line-area-top { stop-color: theme(colors.slate.700); stop-opacity: 0.45; }
-:host-context(.dark) .line-area-bottom { stop-color: theme(colors.slate.700); }
-.line-x-axis { @apply absolute inset-x-0 -bottom-5 flex justify-between; }
-.line-x-axis span { @apply h-1.5 w-6 rounded-full bg-slate-200/80 dark:bg-slate-700/55; }
-
-.graph-skeleton-plot::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  transform: translateX(-115%);
-  background: linear-gradient(
-    100deg,
-    transparent 22%,
-    rgb(255 255 255 / 0.52) 47%,
-    rgb(255 255 255 / 0.18) 56%,
-    transparent 80%
-  );
-  animation: dashboard-chart-shimmer 1.65s ease-in-out infinite;
-}
-
-:host-context(.dark) .graph-skeleton-plot::after {
-  background: linear-gradient(
-    100deg,
-    transparent 22%,
-    rgb(255 255 255 / 0.07) 47%,
-    rgb(255 255 255 / 0.025) 56%,
-    transparent 80%
-  );
-}
-
-.graph-skeleton-bar {
-  @apply flex-1 rounded-t-md bg-slate-200/60 dark:bg-slate-700/40;
-  min-width: 0.75rem;
-}
-
-.graph-skeleton-bar:nth-child(1) { height: 42%; }
-.graph-skeleton-bar:nth-child(2) { height: 68%; }
-.graph-skeleton-bar:nth-child(3) { height: 53%; }
-.graph-skeleton-bar:nth-child(4) { height: 81%; }
-.graph-skeleton-bar:nth-child(5) { height: 62%; }
-
 /* Graph legends render in the card header (top-right). */
-.graph-skeleton-legend-header {
+.graph-skeleton-legend-header{
   @apply flex items-start justify-between gap-3;
 }
 
-.graph-skeleton-legend-header > div:first-child {
+.graph-skeleton-legend-header > div:first-child{
   @apply grid;
 }
 
-.graph-skeleton-status-legend {
+.graph-skeleton-status-legend{
   @apply flex items-center gap-3;
 }
 
-.graph-skeleton-status-legend span {
+.graph-skeleton-status-legend span{
   @apply inline-flex items-center gap-1.5;
 }
 
-.graph-skeleton-status-legend i {
+.graph-skeleton-status-legend i{
   @apply size-2 rounded-full bg-slate-200/65 dark:bg-slate-700/45;
 }
 
-.graph-skeleton-status-legend b {
+.graph-skeleton-status-legend b{
   @apply h-2 w-10 rounded bg-slate-200/65 dark:bg-slate-700/45;
 }
 
-.skeleton-report-count {
+.skeleton-report-count{
   @apply overflow-hidden rounded-full;
 }
 
-@keyframes dashboard-chart-shimmer {
-  to { transform: translateX(115%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .graph-skeleton {
+@media (prefers-reduced-motion: reduce){
+  .graph-skeleton{
     transition: none;
   }
-  .graph-skeleton-plot::after,
-  .graph-skeleton-line::after { animation: none; }
 }
 
 /* Skeleton → chart: real cards fade in where the placeholders were instead of hard-cutting. */
-.analytics-grid app-dashboard-graph {
+.analytics-grid app-dashboard-graph{
   animation: graph-card-in 260ms var(--ease-out) backwards;
 }
-.analytics-grid app-dashboard-graph:nth-child(2) { animation-delay: 40ms; }
-.analytics-grid app-dashboard-graph:nth-child(3) { animation-delay: 80ms; }
-.analytics-grid app-dashboard-graph:nth-child(n + 4) { animation-delay: 120ms; }
+.analytics-grid app-dashboard-graph:nth-child(2){ animation-delay: 40ms; }
+.analytics-grid app-dashboard-graph:nth-child(3){ animation-delay: 80ms; }
+.analytics-grid app-dashboard-graph:nth-child(n + 4){ animation-delay: 120ms; }
 @keyframes graph-card-in {
   from { opacity: 0; filter: blur(2px); }
+}
+
+.graph-skeleton-chart {
+  @apply min-h-0 flex-1;
 }

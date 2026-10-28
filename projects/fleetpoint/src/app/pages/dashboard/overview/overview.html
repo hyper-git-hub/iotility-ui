@@ -124,36 +124,10 @@
               </div>
             }
             @case ('line') {
-              <div class="graph-skeleton-line">
-                <div class="line-y-axis" aria-hidden="true">
-                  @for (w of [70, 100, 85, 60]; track $index) { <span [style.width.%]="w"></span> }
-                </div>
-                <div class="line-plot" aria-hidden="true">
-                  <div class="line-grid">
-                    @for (_ of [1, 2, 3, 4]; track $index) { <i></i> }
-                  </div>
-                  <!-- A calm placeholder shape, not fake data: no points, strokes stay 2px at any size. -->
-                  <svg viewBox="0 0 500 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="graph-skeleton-area" x1="0" y1="0" x2="0" y2="1">
-                        <stop class="line-area-top" offset="0%" />
-                        <stop class="line-area-bottom" offset="100%" />
-                      </linearGradient>
-                    </defs>
-                    <path class="line-area" d="M0 118 C60 104 110 80 170 86 S280 118 340 98 S440 56 500 62 L500 200 L0 200 Z" fill="url(#graph-skeleton-area)" />
-                    <path class="line-stroke line-stroke-secondary" vector-effect="non-scaling-stroke" d="M0 156 C70 150 120 134 180 138 S290 156 350 144 S450 120 500 124" />
-                    <path class="line-stroke line-stroke-primary" vector-effect="non-scaling-stroke" d="M0 118 C60 104 110 80 170 86 S280 118 340 98 S440 56 500 62" />
-                  </svg>
-                  <div class="line-x-axis">
-                    @for (_ of [1, 2, 3, 4, 5, 6]; track $index) { <span></span> }
-                  </div>
-                </div>
-              </div>
+              <ui-chart-skeleton class="graph-skeleton-chart" type="line" />
             }
             @default {
-              <div class="graph-skeleton-plot">
-                @for (_ of [1, 2, 3, 4, 5]; track $index) { <span class="graph-skeleton-bar"></span> }
-              </div>
+              <ui-chart-skeleton class="graph-skeleton-chart" type="bar" />
             }
           }
         </article>
