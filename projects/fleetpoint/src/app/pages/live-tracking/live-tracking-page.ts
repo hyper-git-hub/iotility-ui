@@ -52,6 +52,24 @@ interface LiveVehicle extends TrackedVehicle {
   kmPerDay: number;
 }
 
+type InventoryVehicle = NonNullable<FleetInventoryRecord['assigned_vehicles']>[number];
+
+/** Precomputed list row, so the per-second clock tick doesn't recompute display values for every row. */
+interface VehicleRow {
+  vehicle: LiveVehicle;
+  image: string;
+  details: string;
+  state: string;
+  stateClass: string;
+}
+
+/** Positions in the vehicle array per packet key, so a packet finds its vehicle without a scan. */
+interface VehicleIndex {
+  byId: Map<string, number[]>;
+  byDevice: Map<string, number[]>;
+  byRegistration: Map<string, number[]>;
+}
+
 interface TrackingDriver {
   id: string;
   name: string;
@@ -164,10 +182,23 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     );
     return drivers;
   });
+  /** Live status per vehicle id, so driver filtering is a lookup instead of a scan per driver. */
+  private readonly vehicleStatusById = computed(
+    () => new Map(this.vehicles().map((vehicle) => [vehicle.numericId, vehicle.status])),
+  );
+  /** Fleet inventory records by vehicle id and by registration (first record wins, as a scan would). */
+  private readonly inventoryIndex = computed(() => {
+    const byId = new Map<number, InventoryVehicle>();
+    const byRegistration = new Map<string, InventoryVehicle>();
+    for (const record of this.fleetRecords().flatMap((fleet) => fleet.assigned_vehicles ?? [])) {
+      if (record.id != null && !byId.has(record.id)) byId.set(record.id, record);
+      if (record.registration && !byRegistration.has(record.registration)) byRegistration.set(record.registration, record);
+    }
+    return { byId, byRegistration };
+  });
   /** Status chips filter drivers by the live status of their assigned vehicle. */
   protected driverVehicleStatus(driver: TrackingDriver): VehicleStatus {
-    return this.vehicles().find((vehicle) => vehicle.numericId === driver.vehicleId)?.status ??
-      'Offline';
+    return (driver.vehicleId !== null && this.vehicleStatusById().get(driver.vehicleId)) || 'Offline';
   }
   protected readonly filteredDrivers = computed(() => {
     const query = this.driverSearch().trim().toLowerCase();
@@ -179,22 +210,55 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
           `${driver.name} ${driver.role} ${driver.vehicle}`.toLowerCase().includes(query)),
     );
   });
+  /** Rebuilt only when the fleet selection or inventory changes, not on every realtime tick. */
+  private readonly fleetVehicleIds = computed(
+    () =>
+      new Set(
+        this.selectedFleetRecords().flatMap((fleet) =>
+          (fleet.assigned_vehicles ?? []).map((vehicle) => vehicle.id),
+        ),
+      ),
+  );
+  /** Lower-cased search text per vehicle object; a realtime update replaces the object, so entries never go stale. */
+  private readonly searchText = new WeakMap<LiveVehicle, string>();
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
-    const fleetVehicleIds = new Set(
-      this.selectedFleetRecords().flatMap((fleet) =>
-        (fleet.assigned_vehicles ?? []).map((vehicle) => vehicle.id),
-      ),
-    );
+    const allFleets = this.selectedFleet() === 'all';
+    const fleetVehicleIds = this.fleetVehicleIds();
+    const status = this.statusFilter();
     return this.vehicles().filter(
       (vehicle) =>
-        (this.selectedFleet() === 'all' || fleetVehicleIds.has(vehicle.numericId)) &&
-        (this.statusFilter() === 'All' || vehicle.status === this.statusFilter()) &&
-        (!query ||
-          `${vehicle.id} ${vehicle.model} ${vehicle.driver} ${vehicle.location}`
-            .toLowerCase()
-            .includes(query)),
+        (allFleets || fleetVehicleIds.has(vehicle.numericId)) &&
+        (status === 'All' || vehicle.status === status) &&
+        (!query || this.vehicleSearchText(vehicle).includes(query)),
     );
+  });
+  /**
+   * Display values per row, cached per vehicle object: realtime updates replace only the
+   * vehicles they touch, so untouched rows keep their model and the template only reads fields.
+   */
+  private rowCache = new WeakMap<LiveVehicle, VehicleRow>();
+  private rowCacheIndex?: object;
+  protected readonly vehicleRows = computed<VehicleRow[]>(() => {
+    const index = this.inventoryIndex();
+    if (index !== this.rowCacheIndex) {
+      this.rowCache = new WeakMap();
+      this.rowCacheIndex = index;
+    }
+    return this.filteredVehicles().map((vehicle) => {
+      let row = this.rowCache.get(vehicle);
+      if (!row) {
+        row = {
+          vehicle,
+          image: this.vehicleImage(vehicle.image),
+          details: this.vehicleDetails(vehicle),
+          state: vehicle.status === 'Moving' ? `${vehicle.speed} km/h` : vehicle.status,
+          stateClass: `state-${vehicle.status.toLowerCase()}`,
+        };
+        this.rowCache.set(vehicle, row);
+      }
+      return row;
+    });
   });
   protected readonly mapVehicles = computed(() =>
     this.filteredVehicles().filter(
@@ -211,9 +275,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly mapFilterKey = computed(
     () => `${this.selectedFleet()}|${this.statusFilter()}|${this.search().trim().toLowerCase()}`,
   );
-  protected readonly onlineVehicleCount = computed(
-    () => this.mapVehicles().filter((vehicle) => vehicle.status !== 'Offline').length,
-  );
   protected readonly badgeClock = computed(() => {
     const date = new Date(this.now());
     const pad = (value: number) => String(value).padStart(2, '0');
@@ -227,6 +288,11 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       : base;
   });
   private static readonly LIVE_FRESH_MS = 60_000;
+  /** Realtime packets are applied in batches this often (one list/map update per batch). */
+  private static readonly REALTIME_FLUSH_MS = 100;
+  private pendingUpdates: VehicleRealtimeUpdate[] = [];
+  private realtimeFlush?: ReturnType<typeof setTimeout>;
+  private vehicleLookup?: { vehicles: LiveVehicle[]; index: VehicleIndex };
   private readonly subscription = new Subscription();
   private readonly apiSnapshots = new Map<number, LiveVehicle>();
   private readonly realtimeVehicles = new Set<number>();
@@ -408,10 +474,17 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     return this.fleetOptions().find((option) => option.id === this.selectedFleet())?.label ?? 'All Fleets';
   }
   protected vehicleDetails(vehicle: LiveVehicle): string {
-    const record = this.fleetRecords()
-      .flatMap((fleet) => fleet.assigned_vehicles ?? [])
-      .find((item) => item.id === vehicle.numericId || item.registration === vehicle.id);
+    const index = this.inventoryIndex();
+    const record = index.byId.get(vehicle.numericId) ?? index.byRegistration.get(vehicle.id);
     return [record?.make, record?.model, record?.year].filter(Boolean).join(' · ') || '—';
+  }
+  private vehicleSearchText(vehicle: LiveVehicle): string {
+    let text = this.searchText.get(vehicle);
+    if (text === undefined) {
+      text = `${vehicle.id} ${vehicle.model} ${vehicle.driver} ${vehicle.location}`.toLowerCase();
+      this.searchText.set(vehicle, text);
+    }
+    return text;
   }
   protected selectDriverVehicle(driver: TrackingDriver): void {
     const vehicle = this.vehicles().find((item) => item.numericId === driver.vehicleId);
@@ -534,9 +607,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   }
   /** Driver id taken from the fleet inventory assignment for this vehicle. */
   private assignedDriverId(vehicleId: number): number | null {
-    const record = this.fleetRecords()
-      .flatMap((fleet) => fleet.assigned_vehicles ?? [])
-      .find((item) => item.id === vehicleId);
+    const record = this.inventoryIndex().byId.get(vehicleId);
     const driver = record?.associated_drivers_name?.find((item) => item.driver_id != null);
     const id = Number(driver?.driver_id);
     return Number.isFinite(id) && id > 0 ? id : null;
@@ -648,58 +719,92 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
   }
 
+  /**
+   * A fleet stream delivers hundreds of packets a second. Applying each one on arrival
+   * re-filtered the list, re-rendered the map and recounted the fleet per packet; instead
+   * packets are buffered and applied together, in arrival order, every REALTIME_FLUSH_MS.
+   */
   private applyRealtimeUpdate(update: VehicleRealtimeUpdate): void {
-    if (update.rtp !== undefined && Number(update.rtp) !== 1) return;
+    this.pendingUpdates.push(update);
+    this.realtimeFlush ??= setTimeout(() => this.flushRealtimeUpdates(), LiveTrackingPage.REALTIME_FLUSH_MS);
+  }
+
+  private flushRealtimeUpdates(): void {
+    this.realtimeFlush = undefined;
+    const updates = this.pendingUpdates;
+    this.pendingUpdates = [];
+    const vehicles = this.vehicles();
+    const index = this.vehicleIndex(vehicles);
     const activeVehicle = this.selectedVehicle();
-    const updateId = String(update.vehicle_id ?? update.id ?? '');
-    const packetDeviceId = String(update.device_id ?? update.id ?? '');
-    const registration = update.registration?.toLowerCase();
+    const trackingOnly = activeVehicle && this.liveTrackingEnabled() ? activeVehicle.numericId : null;
+    // Copied once on the first match; untouched vehicles keep their object identity, so
+    // the map and list only redo work for the vehicles that actually moved.
+    let next: LiveVehicle[] | null = null;
     let selected: LiveVehicle | undefined;
-    let matched = false;
-    this.vehicles.update((vehicles) =>
-      vehicles.map((vehicle) => {
-        if (
-          activeVehicle &&
-          this.liveTrackingEnabled() &&
-          vehicle.numericId !== activeVehicle.numericId
-        )
-          return vehicle;
-        if (
-          String(vehicle.numericId) !== updateId &&
-          (!vehicle.deviceId || vehicle.deviceId !== packetDeviceId) &&
-          vehicle.id.toLowerCase() !== registration
-        )
-          return vehicle;
-        matched = true;
-        // Some devices report a negative speed when they have no GPS speed fix.
-        const speed = Math.max(0, this.numberValue(update.speed ?? update.spd ?? vehicle.speed));
-        const lat = this.numberValue(update.latitude ?? update.lat, vehicle.lat);
-        const lng = this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng);
-        const ignition = this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition);
-        const changed: LiveVehicle = {
-          ...vehicle,
-          speed,
-          lat,
-          lng,
-          status: speed > 8 ? 'Moving' : 'Idling',
-          ignition,
-          updated: this.updateTime(update.updated_time ?? update.t),
-          fixTime: this.epoch(update.t),
-          lastSignalAt: Date.now(),
-        };
+    for (const update of updates) {
+      if (update.rtp !== undefined && Number(update.rtp) !== 1) continue;
+      for (const position of this.matchingVehicles(index, update)) {
+        const vehicle = (next ?? vehicles)[position];
+        if (trackingOnly !== null && vehicle.numericId !== trackingOnly) continue;
+        const changed = this.withPacket(vehicle, update);
+        next ??= vehicles.slice();
+        next[position] = changed;
         this.realtimeVehicles.add(vehicle.numericId);
-        if (this.selectedVehicle()?.numericId === vehicle.numericId) selected = changed;
-        return changed;
-      }),
-    );
-    if (selected) this.selectedVehicle.set(selected);
-    if (matched) {
-      const vehicles = this.vehicles();
-      this.fleetStatus.update(
-        vehicles.length,
-        vehicles.filter((vehicle) => vehicle.status !== 'Offline').length,
-      );
+        if (activeVehicle?.numericId === vehicle.numericId) selected = changed;
+      }
     }
+    if (!next) return;
+    // Same ids at the same positions, so the lookup index stays valid for the new array.
+    this.vehicleLookup = { vehicles: next, index };
+    this.vehicles.set(next);
+    if (selected) this.selectedVehicle.set(selected);
+    this.fleetStatus.update(next.length, next.filter((vehicle) => vehicle.status !== 'Offline').length);
+  }
+
+  /** Positions of the vehicles a packet belongs to: by vehicle id, device id or registration. */
+  private matchingVehicles(index: VehicleIndex, update: VehicleRealtimeUpdate): Set<number> {
+    const matches = new Set<number>();
+    const add = (positions: number[] | undefined) => positions?.forEach((position) => matches.add(position));
+    add(index.byId.get(String(update.vehicle_id ?? update.id ?? '')));
+    const deviceId = String(update.device_id ?? update.id ?? '');
+    if (deviceId) add(index.byDevice.get(deviceId));
+    const registration = update.registration?.toLowerCase();
+    if (registration !== undefined) add(index.byRegistration.get(registration));
+    return matches;
+  }
+
+  /** Id → positions index for the current vehicle array, rebuilt only when the array is replaced by a snapshot. */
+  private vehicleIndex(vehicles: LiveVehicle[]): VehicleIndex {
+    if (this.vehicleLookup?.vehicles === vehicles) return this.vehicleLookup.index;
+    const index: VehicleIndex = { byId: new Map(), byDevice: new Map(), byRegistration: new Map() };
+    const add = (map: Map<string, number[]>, key: string, position: number) => {
+      const positions = map.get(key);
+      if (positions) positions.push(position);
+      else map.set(key, [position]);
+    };
+    vehicles.forEach((vehicle, position) => {
+      add(index.byId, String(vehicle.numericId), position);
+      if (vehicle.deviceId) add(index.byDevice, vehicle.deviceId, position);
+      add(index.byRegistration, vehicle.id.toLowerCase(), position);
+    });
+    this.vehicleLookup = { vehicles, index };
+    return index;
+  }
+
+  private withPacket(vehicle: LiveVehicle, update: VehicleRealtimeUpdate): LiveVehicle {
+    // Some devices report a negative speed when they have no GPS speed fix.
+    const speed = Math.max(0, this.numberValue(update.speed ?? update.spd ?? vehicle.speed));
+    return {
+      ...vehicle,
+      speed,
+      lat: this.numberValue(update.latitude ?? update.lat, vehicle.lat),
+      lng: this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng),
+      status: speed > 8 ? 'Moving' : 'Idling',
+      ignition: this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition),
+      updated: this.updateTime(update.updated_time ?? update.t),
+      fixTime: this.epoch(update.t),
+      lastSignalAt: Date.now(),
+    };
   }
 
   private restoreApiVehicle(vehicleId: number): void {
@@ -779,5 +884,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
     void this.liveSource.disconnect();
     clearTimeout(this.fullscreenTrackingTimeout);
+    clearTimeout(this.realtimeFlush);
   }
 }

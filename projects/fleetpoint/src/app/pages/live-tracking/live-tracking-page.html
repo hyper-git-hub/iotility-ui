@@ -92,25 +92,24 @@
           </div>
         }
       } @else {
-        @for (vehicle of filteredVehicles(); track vehicle.id) {
+        @for (row of vehicleRows(); track row.vehicle.id) {
           <button
             type="button"
             class="vehicle-row"
-            [class.selected]="selectedVehicle()?.id === vehicle.id"
-            (click)="selectVehicle(vehicle)"
+            [class.selected]="selectedVehicle()?.id === row.vehicle.id"
+            (click)="selectVehicle(row.vehicle)"
           >
             <span class="vehicle-symbol" aria-hidden="true"
               ><img
-                [src]="vehicleImage(vehicle.image)"
+                [src]="row.image"
                 (error)="useDefaultVehicleImage($event)"
+                loading="lazy"
                 alt="" /></span
             ><span class="vehicle-copy"
-              ><strong>{{ vehicle.id }}</strong
-              ><small>{{ vehicleDetails(vehicle) }}</small
-              ><small>{{ vehicle.location }}</small></span
-            ><span class="vehicle-state" [class]="'state-' + vehicle.status.toLowerCase()">{{
-              vehicle.status === 'Moving' ? vehicle.speed + ' km/h' : vehicle.status
-            }}</span>
+              ><strong>{{ row.vehicle.id }}</strong
+              ><small>{{ row.details }}</small
+              ><small>{{ row.vehicle.location }}</small></span
+            ><span class="vehicle-state" [class]="row.stateClass">{{ row.state }}</span>
           </button>
         } @empty {
           <p class="empty-list">No vehicles match your search.</p>

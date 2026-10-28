@@ -147,24 +147,28 @@
   }
 }
 
+/*
+ * Vehicle cluster: a donut ring split by the members' status share (Moving / Idling / Alert /
+ * Offline, set as --cluster-ring), a floating core with the count, and a soft halo tinted by the
+ * most urgent status in the group (--cluster-status). Same family as the violations map clusters.
+ */
 :host ::ng-deep .vehicle-cluster,
 .vehicle-cluster {
+  --cluster-core: #fff;
+  --cluster-ink: var(--color-ink, #1f2430);
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   isolation: isolate;
-  border: 1px solid rgb(255 255 255 / 0.28);
   border-radius: 50%;
   box-sizing: border-box;
-  background:
-    radial-gradient(circle at 35% 24%, rgb(255 255 255 / 0.26), transparent 34%),
-    linear-gradient(145deg, color-mix(in srgb, var(--cluster-brand) 82%, #c4b5fd), var(--cluster-brand));
+  background: var(--cluster-ring, var(--cluster-status));
   box-shadow:
-    0 8px 24px rgb(9 9 15 / 0.28),
-    0 2px 6px rgb(9 9 15 / 0.22),
-    inset 0 1px 0 rgb(255 255 255 / 0.2);
-  color: #fff;
+    0 0 0 6px color-mix(in srgb, var(--cluster-status) 22%, transparent),
+    0 6px 18px rgb(15 23 42 / 0.24),
+    0 1px 3px rgb(15 23 42 / 0.2);
+  color: var(--cluster-ink);
   cursor: pointer;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   user-select: none;
@@ -175,54 +179,58 @@
     transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 180ms ease;
 }
+/* Floating core inside the ring. */
 :host ::ng-deep .vehicle-cluster::before,
 .vehicle-cluster::before {
   content: '';
   position: absolute;
-  z-index: -1;
-  inset: -3px;
-  border: 1px solid color-mix(in srgb, var(--cluster-status) 72%, transparent);
+  inset: var(--cluster-ring-width, 4.5px);
   border-radius: inherit;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--cluster-status) 20%, transparent);
+  background: var(--cluster-core);
+  box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.12);
   pointer-events: none;
 }
-:host ::ng-deep .vehicle-cluster::after,
-.vehicle-cluster::after {
-  content: '';
-  position: absolute;
-  right: 1px;
-  bottom: 1px;
-  width: 5px;
-  height: 5px;
-  border: 1.5px solid color-mix(in srgb, var(--cluster-brand) 78%, #09090f);
-  border-radius: 50%;
-  background: var(--cluster-status);
-  box-shadow: 0 0 0 1px rgb(9 9 15 / 0.18);
-  pointer-events: none;
+:host-context(.dark) ::ng-deep .vehicle-cluster,
+:host-context(.dark) .vehicle-cluster {
+  --cluster-core: var(--color-dark-surface, #16161f);
+  --cluster-ink: #fff;
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--cluster-status) 26%, transparent),
+    0 6px 18px rgb(0 0 0 / 0.45),
+    0 1px 3px rgb(0 0 0 / 0.4);
 }
 :host ::ng-deep .vehicle-cluster__count,
 .vehicle-cluster__count {
+  position: relative;
   display: block;
   font-size: var(--cluster-font-size);
-  font-weight: 650;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
   text-align: center;
-  text-shadow: 0 1px 3px rgb(9 9 15 / 0.28);
 }
 :host ::ng-deep .vehicle-cluster:hover,
 .vehicle-cluster:hover {
-  transform: translateY(-1px) scale(1.045);
+  transform: scale(1.06);
   box-shadow:
-    0 11px 28px rgb(9 9 15 / 0.34),
-    0 3px 8px rgb(9 9 15 / 0.24),
-    inset 0 1px 0 rgb(255 255 255 / 0.24);
+    0 0 0 8px color-mix(in srgb, var(--cluster-status) 28%, transparent),
+    0 10px 24px rgb(15 23 42 / 0.3),
+    0 2px 6px rgb(15 23 42 / 0.22);
 }
 :host ::ng-deep .vehicle-cluster:active,
 .vehicle-cluster:active {
   transform: scale(0.97);
   transition-duration: 80ms;
+}
+:host ::ng-deep .vehicle-cluster:focus-visible,
+.vehicle-cluster:focus-visible {
+  outline: 2px solid var(--color-brand-500, #8b5cf6);
+  outline-offset: 9px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :host ::ng-deep .vehicle-cluster,
+  .vehicle-cluster { transition: none; }
 }
 
 :host ::ng-deep .maplibregl-popup-content {

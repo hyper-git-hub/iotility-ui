@@ -494,3 +494,11 @@
     animation: none;
   }
 }
+
+/* Long fleets: rows outside the scrolled view skip layout and paint (they stay in the DOM,
+   so scrolling, selection and search behave the same). The size hint keeps the scrollbar stable. */
+.vehicle-row,
+.driver-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 4.5rem;
+}

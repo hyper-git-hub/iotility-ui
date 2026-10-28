@@ -33,6 +33,8 @@ function TRAIL_LAYERS(color: string): LayerWithoutSource[] {
 }
 
 export type VehicleStatus = 'Moving' | 'Idling' | 'Alert' | 'Offline';
+/** Ring order for cluster donuts (matches the map legend). */
+const CLUSTER_STATUSES: VehicleStatus[] = ['Moving', 'Idling', 'Alert', 'Offline'];
 /**
  * Marker shape.
  * - `chip` (default): circular status-coloured chip with the vehicle image inside.
@@ -164,6 +166,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private static readonly ROUTE_MIN_ZOOM = 14;
   private static readonly ROUTE_MAX_VEHICLES = 20;
   private readyEmitted = false;
+  private routingFrame?: number;
+  /** Theme status colours for the current render pass; cleared at the start of each pass. */
+  private statusColorCache?: Record<VehicleStatus, string>;
+  /** Selection/fullscreen/popup-builder state the markers were last rendered with. */
+  private renderedContext: string | null = null;
+  private renderedPopupTemplate: ((vehicle: TrackedVehicle) => string) | null = null;
 
   constructor() {
     effect(() => {
@@ -365,6 +373,16 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.clusteredPairs.clear();
       this.unbindClusterMove();
     }
+    // Theme colours are read once per render instead of once per marker.
+    this.statusColorCache = undefined;
+    // A vehicle object that hasn't changed needs no popup rebuild or DOM writes unless something
+    // every marker depends on (selection, fullscreen footer, theme colours, popup builder) changed too.
+    const popupTemplate = this.popupTemplate();
+    const dark = document.documentElement.classList.contains('dark');
+    const context = `${selectedId}|${this.isFullscreen()}|${dark}`;
+    const contextChanged = context !== this.renderedContext || popupTemplate !== this.renderedPopupTemplate;
+    this.renderedContext = context;
+    this.renderedPopupTemplate = popupTemplate;
     const visibleVehicles = show ? vehicles : [];
     const visibleIds = new Set(visibleVehicles.map(({ id }) => id));
     this.markers.forEach((marker, id) => {
@@ -379,8 +397,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     });
 
     for (const vehicle of visibleVehicles) {
+      const previous = this.markerVehicles.get(vehicle.id);
       this.markerVehicles.set(vehicle.id, vehicle);
       let item = this.markers.get(vehicle.id);
+      if (item && previous === vehicle && !contextChanged) continue;
       if (!item) {
         const element = this.createVehicleMarker(vehicle, selectedId);
         element.addEventListener('click', () => {
@@ -433,14 +453,23 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.bindClusterMove();
       this.queueClusterRerender();
     }
-    const selected = vehicles.find(({ id }) => id === selectedId);
-    if (selected && this.markers.has(selected.id)) this.updateMarkerSelection(selected.id);
     if (fit) this.fitVehicles(vehicles);
     if (this.smoothTracking()) {
       this.map.off('moveend', this.onRoutingMove);
       this.map.on('moveend', this.onRoutingMove);
-      this.updateRouting();
+      this.queueRouting();
     }
+  }
+
+  /** Routing is rechecked at most once per frame, however many renders land in it. */
+  private queueRouting(): void {
+    if (this.routingFrame !== undefined) return;
+    this.zone.runOutsideAngular(() => {
+      this.routingFrame = requestAnimationFrame(() => {
+        this.routingFrame = undefined;
+        this.updateRouting();
+      });
+    });
   }
 
   /** Feed a vehicle's newest fix to its tracker, creating it on first sight. */
@@ -534,6 +563,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   private updateMarkerSelection(selectedId: string | null): void {
+    this.statusColorCache = undefined;
     this.markers.forEach((item, id) => {
       const vehicle = this.markerVehicles.get(id);
       if (!vehicle) return;
@@ -709,7 +739,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       return;
     }
 
-    interface ClusterGroup { lng: number; lat: number; ids: string[]; key: string; color: string; }
+    interface ClusterGroup { lng: number; lat: number; ids: string[]; key: string; color: string; counts: Record<VehicleStatus, number>; }
     const visibleVehicles = this.vehicles()
       .filter(({ id }) => this.markers.has(id));
     const projected = visibleVehicles.map(({ lng, lat }) => this.map!.project([lng, lat]));
@@ -782,7 +812,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       const ids = members.map(({ id }) => id).sort();
       const lng = members.reduce((sum, vehicle) => sum + vehicle.lng, 0) / members.length;
       const lat = members.reduce((sum, vehicle) => sum + vehicle.lat, 0) / members.length;
-      return { lng, lat, ids, key: ids.join('|'), color: this.badgeColor(ids, statusById) };
+      return { lng, lat, ids, key: ids.join('|'), color: this.badgeColor(ids, statusById), counts: this.statusCounts(ids, statusById) };
     });
 
     // 1) Hide grouped vehicle markers and reveal ungrouped ones instantly.
@@ -808,7 +838,6 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     }
 
     // 3) Reuse existing badges (update position/count/ring) or create new ones.
-    const clusterBrand = this.brandColor();
     for (const group of groups) {
       if (group.ids.length < 2) continue;
       let marker = this.clusterBadges.get(group.key);
@@ -849,18 +878,22 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       }
       const div = this.clusterBadgeDivs.get(group.key)!;
       const count = group.ids.length;
-      const size = count >= 100 ? 44 : count >= 50 ? 41 : count >= 10 ? 38 : 34;
-      const label = count >= 100 ? '99+' : String(count);
+      // Same size steps as the violations map clusters.
+      const size = count < 25 ? 36 : count < 100 ? 44 : count < 250 ? 52 : 60;
+      const label = count < 1000 ? String(count) : `${(count / 1000).toFixed(count < 10_000 ? 1 : 0)}k`;
       const width = `${size}px`;
-      const fontSize = `${Math.round(size * 0.35)}px`;
+      const fontSize = `${Math.round(size * (label.length > 3 ? 0.27 : 0.32))}px`;
+      const ringWidth = size >= 52 ? '5.5px' : '4.5px';
+      const ring = this.clusterRing(group.counts, count);
+      const setVar = (name: string, value: string) => {
+        if (div.style.getPropertyValue(name) !== value) div.style.setProperty(name, value);
+      };
       if (div.style.width !== width) div.style.width = width;
       if (div.style.height !== width) div.style.height = width;
-      if (div.style.getPropertyValue('--cluster-font-size') !== fontSize)
-        div.style.setProperty('--cluster-font-size', fontSize);
-      if (div.style.getPropertyValue('--cluster-brand') !== clusterBrand)
-        div.style.setProperty('--cluster-brand', clusterBrand);
-      if (div.style.getPropertyValue('--cluster-status') !== group.color)
-        div.style.setProperty('--cluster-status', group.color);
+      setVar('--cluster-font-size', fontSize);
+      setVar('--cluster-ring-width', ringWidth);
+      setVar('--cluster-ring', ring);
+      setVar('--cluster-status', group.color);
       const positionKey = `${group.lng},${group.lat}`;
       if (div.dataset['position'] !== positionKey) {
         marker.setLngLat([group.lng, group.lat]);
@@ -875,12 +908,43 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       if (div.dataset['ids'] !== ids) div.dataset['ids'] = ids;
       const countLabel = div.querySelector<HTMLElement>('.vehicle-cluster__count');
       if (countLabel && countLabel.textContent !== label) countLabel.textContent = label;
-      const ariaLabel = `${count} vehicles`;
+      const breakdown = CLUSTER_STATUSES.filter((status) => group.counts[status])
+        .map((status) => `${group.counts[status]} ${status.toLowerCase()}`).join(', ');
+      const ariaLabel = `${count} vehicles: ${breakdown}`;
       if (div.getAttribute('aria-label') !== ariaLabel) div.setAttribute('aria-label', ariaLabel);
     }
   }
 
-  // Highest-severity status among the grouped vehicles → badge ring color:
+  private statusCounts(ids: string[], statusById: ReadonlyMap<string, VehicleStatus>): Record<VehicleStatus, number> {
+    const counts: Record<VehicleStatus, number> = { Moving: 0, Idling: 0, Alert: 0, Offline: 0 };
+    for (const id of ids) counts[statusById.get(id) ?? 'Offline'] += 1;
+    return counts;
+  }
+
+  /**
+   * Donut ring for a cluster: one arc per status, sized by its share of the members, clockwise
+   * from 12 o'clock with hairline gaps (painted in the core colour) between segments.
+   */
+  private clusterRing(counts: Record<VehicleStatus, number>, total: number): string {
+    const segments = CLUSTER_STATUSES.filter((status) => counts[status] > 0);
+    if (segments.length === 1) return this.statusColor(segments[0]);
+    const gap = 2.4;
+    let angle = 0;
+    const stops: string[] = [];
+    for (const status of segments) {
+      const sweep = (counts[status] / total) * 360;
+      const color = this.statusColor(status);
+      stops.push(
+        `var(--cluster-core) ${angle.toFixed(2)}deg ${(angle + gap / 2).toFixed(2)}deg`,
+        `${color} ${(angle + gap / 2).toFixed(2)}deg ${(angle + sweep - gap / 2).toFixed(2)}deg`,
+        `var(--cluster-core) ${(angle + sweep - gap / 2).toFixed(2)}deg ${(angle + sweep).toFixed(2)}deg`,
+      );
+      angle += sweep;
+    }
+    return `conic-gradient(${stops.join(', ')})`;
+  }
+
+  // Highest-severity status among the grouped vehicles → badge halo color:
   // Alert > Moving (online) > Idling > Offline.
   private badgeColor(ids: string[], statusById: ReadonlyMap<string, VehicleStatus>): string {
     const rank: Record<string, number> = { Alert: 3, Moving: 2, Idling: 1, Offline: 0 };
@@ -1212,18 +1276,26 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     return { top: 0, bottom: 0, left: Math.max(0, shift), right: Math.max(0, -shift) };
   }
 
+  /** Status colours, resolved from the theme once per render pass (see statusColorCache). */
   private statusColor(status: VehicleStatus): string {
-    const styles = getComputedStyle(document.documentElement);
-    const css = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
-    return status === 'Moving' ? css('--color-success', '#10b981')
-      : status === 'Idling' ? css('--color-warning', '#f59e0b')
-        : status === 'Alert' ? css('--color-danger', '#ef4444') : css('--color-muted', '#64748b');
+    if (!this.statusColorCache) {
+      const styles = getComputedStyle(document.documentElement);
+      const css = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+      this.statusColorCache = {
+        Moving: css('--color-success', '#10b981'),
+        Idling: css('--color-warning', '#f59e0b'),
+        Alert: css('--color-danger', '#ef4444'),
+        Offline: css('--color-muted', '#64748b'),
+      };
+    }
+    return this.statusColorCache[status] ?? this.statusColorCache.Offline;
   }
 
   ngOnDestroy(): void {
     this.trackers.forEach((track) => track.destroy());
     this.trackers.clear();
     if (this.clusterSyncFrame !== undefined) cancelAnimationFrame(this.clusterSyncFrame);
+    if (this.routingFrame !== undefined) cancelAnimationFrame(this.routingFrame);
     cancelAnimationFrame(this.trailFrame as number);
     clearTimeout(this.readyFallback);
     this.resizeObserver?.disconnect();
