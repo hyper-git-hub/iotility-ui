@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { finalize, Subscription } from 'rxjs';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
@@ -12,6 +12,7 @@ import {
   FilterChangeEvent,
   FilterDropdown,
   Skeleton,
+  Tooltip,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
@@ -45,26 +46,36 @@ const SOURCE_ICON: Record<string, string> = {
   Manual: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
 };
 
+/** Placeholder for values the violations API doesn't provide (the app-wide convention). */
+export const NOT_AVAILABLE = '—';
+
 export interface ViolationDisplay {
   id: string;
   type: string;
+  /** Alert title from the API, e.g. "Speed Violation Alert". */
+  title: string;
   category: string;
+  /** Derived from type and speed (the API has no severity). */
   severity: string;
+  /** DashCam when the event carries footage, otherwise Telematics (derived; no API field). */
   source: string;
   driver: string;
   vehicle: string;
-  fleet: string;
+  device: string;
   location: string;
+  geozone: string;
   timestamp: string;
-  speed: string;
+  /** 0 when the API sent no speed. */
   speedKph: number;
+  /** Speed limit; only set for Speed violations (the API repeats it on every type). */
   thresholdKph: number;
   speedDisplay: string;
+  /** Not in the API yet. */
   review: string;
-  fine: number;
+  /** Not in the API yet: null renders as '—'. */
+  fine: number | null;
   fineDisplay: string;
-  fineStatus: string;
-  scoreImpact: number;
+  playbackUrl: string | null;
   description: string;
   latitude: number;
   longitude: number;
@@ -100,9 +111,33 @@ const SOURCE_OPTIONS: DropdownOption[] = [
   ...['Telematics', 'DashCam', 'Manual'].map((label) => ({ id: label, label })),
 ];
 
+/** One page of the list per request. */
+const PAGE_SIZE = 25;
+/** The map loads its own, larger set in the background: batches of 250, one request at a time. */
+const MAP_BATCH_SIZE = 250;
+/** The user picks how many the map holds (remembered per browser); more fills slower, never laggier. */
+const MAP_LIMIT_OPTIONS = [2000, 5000];
+const MAP_LIMIT_STORAGE_KEY = 'fleetpoint:violation-map-limit';
+function storedMapLimit(): number {
+  try {
+    const stored = Number(localStorage.getItem(MAP_LIMIT_STORAGE_KEY));
+    return MAP_LIMIT_OPTIONS.includes(stored) ? stored : MAP_LIMIT_OPTIONS[0];
+  } catch {
+    return MAP_LIMIT_OPTIONS[0];
+  }
+}
+/** Recently visited pages are kept briefly so paging back is instant, without keeping stale data around. */
+const PAGE_CACHE_SIZE = 8;
+const PAGE_CACHE_TTL_MS = 60_000;
+interface CachedPage {
+  count: number;
+  rows: ViolationDisplay[];
+  at: number;
+}
+
 @Component({
   selector: 'app-all-violations',
-  imports: [DataTable, DataTableBottomPanel, DataTableCellTemplate, FilterBar, ProgressBar, Skeleton, ViolationMap],
+  imports: [DataTable, DataTableBottomPanel, DataTableCellTemplate, FilterBar, ProgressBar, Skeleton, Tooltip, ViolationMap],
   templateUrl: './all-violations.html',
   styleUrl: './all-violations.css',
 })
@@ -110,7 +145,8 @@ export class AllViolations implements OnInit, OnDestroy {
   protected readonly violations = signal<ViolationDisplay[]>([]);
   protected readonly totalCount = signal(0);
   protected readonly loading = signal(true);
-  protected readonly loadingMore = signal(false);
+  protected readonly page = signal(1);
+  protected readonly pageSize = PAGE_SIZE;
   protected readonly selected = signal<ViolationDisplay | null>(null);
   protected readonly search = signal('');
   protected readonly dateRange = signal<ViolationDateRange>('today');
@@ -135,32 +171,47 @@ export class AllViolations implements OnInit, OnDestroy {
     { key: 'fineDisplay', label: 'Fine' },
     { key: 'review', label: 'Status' },
   ];
-  protected readonly filtered = computed(() => {
+  /** The same filter for the list page and the map set. */
+  private readonly matchesFilters = computed(() => {
     const query = this.search().toLowerCase();
-    return this.violations().filter(
-      (item) =>
-        (this.category() === 'all' || item.category === this.category()) &&
-        (this.severity() === 'all' || item.severity === this.severity()) &&
-        (this.source() === 'all' || item.source === this.source()) &&
-        (!query ||
-          `${item.type} ${item.driver} ${item.vehicle} ${item.location}`
-            .toLowerCase()
-            .includes(query)),
-    );
+    const category = this.category();
+    const severity = this.severity();
+    const source = this.source();
+    return (item: ViolationDisplay) =>
+      (category === 'all' || item.category === category) &&
+      (severity === 'all' || item.severity === severity) &&
+      (source === 'all' || item.source === source) &&
+      (!query || `${item.type} ${item.driver} ${item.vehicle} ${item.location}`.toLowerCase().includes(query));
   });
-  protected readonly hasMore = computed(() => this.violations().length < this.totalCount());
-  protected readonly filteredTotalCount = computed(() => {
-    const filtersPending = this.search().trim() !== this.filters.search_text;
-    return this.severity() === 'all' && this.source() === 'all' && !filtersPending && !this.loading()
-      ? this.totalCount()
-      : this.filtered().length;
+  protected readonly filtered = computed(() => this.violations().filter(this.matchesFilters()));
+  /** Background-loaded violations for the map (independent of the list page). */
+  private readonly mapPoints = signal<ViolationDisplay[]>([]);
+  protected readonly mapLoading = signal(false);
+  protected readonly mapLimitOptions = MAP_LIMIT_OPTIONS;
+  protected readonly mapLimit = signal(storedMapLimit());
+  /** How many the map aims to show: everything matching, up to the chosen limit. */
+  protected readonly mapTarget = computed(() => Math.min(this.totalCount(), this.mapLimit()));
+  /** Map set + the current list page, so a selected row is always on the map. */
+  protected readonly mapViolations = computed(() => {
+    const matches = this.matchesFilters();
+    const points = this.mapPoints();
+    const ids = new Set(points.map((point) => point.id));
+    const extra = this.violations().filter((row) => !ids.has(row.id));
+    return (extra.length ? [...points, ...extra] : points).filter(matches);
   });
+  protected readonly notAvailable = NOT_AVAILABLE;
+  protected readonly paginationConfig = computed(() => ({
+    totalItems: this.totalCount(),
+    pageSize: PAGE_SIZE,
+    page: this.page(),
+    loading: this.loading(),
+  }));
   // Same objects as filtered(): no per-update copies, so the table keeps unchanged rows in place.
   protected readonly rows = computed(() => this.filtered() as unknown as TableRow[]);
 
   private readonly filters: ViolationFilters = {
     offset: 0,
-    limit: 20,
+    limit: PAGE_SIZE,
     order_by: '',
     order: '',
     search_text: '',
@@ -176,43 +227,62 @@ export class AllViolations implements OnInit, OnDestroy {
   private searchTimer?: ReturnType<typeof setTimeout>;
   private requestSequence = 0;
   private requestSubscription?: Subscription;
+  private readonly pageCache = new Map<string, CachedPage>();
+  private mapSubscription?: Subscription;
+  private mapSequence = 0;
 
   constructor(
     private readonly api: ViolationsApiService,
     private readonly sanitizer: DomSanitizer,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {
+    // Cards describe the whole filtered range. The API only returns the total for it; counting the
+    // other figures from the 25 loaded rows would contradict that total, so they show '—' until the
+    // backend provides range-wide numbers.
     effect(() => {
-      const rows = this.filtered();
       this.api.setPageSummary({
-        total: this.filteredTotalCount(),
-        critical: rows.filter((row) => row.severity === 'Critical').length,
-        pending: rows.filter((row) => row.review === 'Pending').length,
-        finesPending: rows.filter((row) => row.fineStatus === 'Pending').length,
-        totalFines: `£${rows.reduce((sum, row) => sum + row.fine, 0).toLocaleString('en-GB')}`,
-        scoreImpact: rows.reduce((sum, row) => sum + row.scoreImpact, 0),
+        total: this.totalCount(),
+        critical: NOT_AVAILABLE,
+        pending: NOT_AVAILABLE,
+        finesPending: NOT_AVAILABLE,
+        totalFines: NOT_AVAILABLE,
+        scoreImpact: NOT_AVAILABLE,
       });
     });
   }
 
   ngOnInit(): void {
-    const requested = this.route.snapshot.queryParamMap.get('range');
+    // Page and filters live in the URL, so refresh, back/forward and shared links land on the same view.
+    const params = this.route.snapshot.queryParamMap;
+    const requested = params.get('range');
     const range: ViolationDateRange =
       requested === 'week' || requested === 'month' ? requested : 'today';
-    // Vehicle deep link (e.g. "View all alerts" from live tracking): the vehicle
-    // is applied as the API search term so the list only shows its violations.
-    const vehicle = this.route.snapshot.queryParamMap.get('vehicle')?.trim() ?? '';
-    if (vehicle) {
-      this.search.set(vehicle);
-      this.filters.search_text = vehicle;
+    // Vehicle deep link (e.g. "View all alerts" from live tracking) is applied as the API search term.
+    const search = (params.get('q') ?? params.get('vehicle') ?? '').trim();
+    if (search) {
+      this.search.set(search);
+      this.filters.search_text = search;
     }
-    this.selectDateRange(range);
+    const optionIds = (options: DropdownOption[]) => options.map((option) => option.id);
+    const category = params.get('category') ?? 'all';
+    if (optionIds(CATEGORY_OPTIONS).includes(category)) {
+      this.category.set(category);
+      this.filters.violation_type = this.violationTypeFilter(category);
+    }
+    const severity = params.get('severity') ?? 'all';
+    if (optionIds(SEVERITY_OPTIONS).includes(severity)) this.severity.set(severity);
+    const source = params.get('source') ?? 'all';
+    if (optionIds(SOURCE_OPTIONS).includes(source)) this.source.set(source);
+    this.selectDateRange(range, Math.max(1, Number(params.get('page')) || 1));
   }
 
   ngOnDestroy(): void {
     clearTimeout(this.searchTimer);
     this.requestSequence++;
     this.requestSubscription?.unsubscribe();
+    this.mapSequence++;
+    this.mapSubscription?.unsubscribe();
     this.api.pageSummaryLoading.set(false);
   }
 
@@ -221,8 +291,21 @@ export class AllViolations implements OnInit, OnDestroy {
     ({ category: this.category, severity: this.severity, source: this.source })[control].set(
       event.option.id,
     );
-    if (control === 'category') this.filters.violation_type = this.violationTypeFilter(event.option.id);
-    this.reloadViolations();
+    // Only category is an API filter; severity/source narrow the loaded page, so no request needed.
+    if (control === 'category') {
+      this.filters.violation_type = this.violationTypeFilter(event.option.id);
+      this.reloadViolations();
+    } else {
+      this.selected.set(null);
+      this.syncUrl();
+    }
+  }
+
+  protected changePage(page: number): void {
+    if (page === this.page()) return;
+    this.page.set(page);
+    this.selected.set(null);
+    this.loadViolations();
   }
 
   protected selectViolation(item: ViolationDisplay): void {
@@ -247,12 +330,12 @@ export class AllViolations implements OnInit, OnDestroy {
     }, 350);
   }
 
-  protected selectDateRange(range: ViolationDateRange): void {
+  protected selectDateRange(range: ViolationDateRange, page = 1): void {
     this.dateRange.set(range);
     const { start_datetime, end_datetime } = violationDateRange(range);
     this.filters.start_datetime = start_datetime;
     this.filters.end_datetime = end_datetime;
-    this.reloadViolations();
+    this.reloadViolations(page);
   }
 
   protected clearFilters(): void {
@@ -320,10 +403,6 @@ export class AllViolations implements OnInit, OnDestroy {
     return colors[source] ?? '#6b7280';
   }
 
-  protected loadMore(): void {
-    if (!this.loadingMore() && this.hasMore()) this.loadViolations(true);
-  }
-
   protected violationIconBackground(type: string): string {
     const key = this.typeKey(type);
     if (key === 'Speed' || key === 'ForwardCollision') return '#fff1f2';
@@ -338,47 +417,132 @@ export class AllViolations implements OnInit, OnDestroy {
     return '#ea6f00';
   }
 
-  private loadViolations(append = false): void {
+  /** Loads the current page (served from the short-lived page cache when it was just visited). */
+  private loadViolations(): void {
     const requestSequence = ++this.requestSequence;
     this.requestSubscription?.unsubscribe();
-    if (append) this.loadingMore.set(true);
-    else {
-      this.loading.set(true);
-      this.loadingMore.set(false);
-      // Card values on the violations page are filter-driven, so they show
-      // skeletons until the new range/filter response lands.
-      this.api.pageSummaryLoading.set(true);
+    this.syncUrl();
+    const filters: ViolationFilters = { ...this.filters, offset: (this.page() - 1) * PAGE_SIZE, limit: PAGE_SIZE };
+    const key = JSON.stringify(filters);
+    const cached = this.pageCache.get(key);
+    if (cached && Date.now() - cached.at < PAGE_CACHE_TTL_MS) {
+      this.applyPage(cached.count, cached.rows);
+      this.loading.set(false);
+      this.api.pageSummaryLoading.set(false);
+      return;
     }
-    const filters = {
-      ...this.filters,
-      offset: append ? this.violations().length : 0,
-    };
+    this.loading.set(true);
+    // Card values are filter-driven, so they show skeletons until the response lands.
+    this.api.pageSummaryLoading.set(true);
     this.requestSubscription = this.api.getViolations(filters).pipe(
       finalize(() => {
         if (requestSequence !== this.requestSequence) return;
-        if (append) this.loadingMore.set(false);
-        else {
-          this.loading.set(false);
-          this.api.pageSummaryLoading.set(false);
-        }
+        this.loading.set(false);
+        this.api.pageSummaryLoading.set(false);
       }),
     ).subscribe({
       next: (response: { data?: { count: number; data: ApiViolation[] } }) => {
         if (requestSequence !== this.requestSequence) return;
         const data = response.data?.data ?? [];
-        this.totalCount.set(response.data?.count ?? data.length);
-        const mapped = data.map((record: ApiViolation, index: number) =>
-          this.mapRecord(record, (append ? this.violations().length : 0) + index),
+        const count = response.data?.count ?? data.length;
+        const rows = data.map((record: ApiViolation, index: number) =>
+          this.mapRecord(record, filters.offset + index),
         );
-        this.violations.update((current) => append ? [...current, ...mapped] : mapped);
+        this.pageCache.delete(key);
+        this.pageCache.set(key, { count, rows, at: Date.now() });
+        if (this.pageCache.size > PAGE_CACHE_SIZE) this.pageCache.delete(this.pageCache.keys().next().value!);
+        this.applyPage(count, rows);
       },
       error: () => undefined,
     });
   }
 
-  private reloadViolations(): void {
+  private applyPage(count: number, rows: ViolationDisplay[]): void {
+    this.totalCount.set(count);
+    this.violations.set(rows);
+    // A page beyond the end (stale link, shrunken result set) falls back to the last real page.
+    const lastPage = Math.max(1, Math.ceil(count / PAGE_SIZE));
+    if (this.page() > lastPage) {
+      this.page.set(lastPage);
+      this.loadViolations();
+    }
+  }
+
+  private reloadViolations(page = 1): void {
     this.selected.set(null);
-    this.loadViolations(false);
+    this.page.set(page);
+    this.loadViolations();
+    this.loadMapPoints();
+  }
+
+  /** User's choice of how many violations the map holds; raising it resumes, lowering it trims. */
+  protected setMapLimit(limit: number): void {
+    if (limit === this.mapLimit()) return;
+    this.mapLimit.set(limit);
+    try {
+      localStorage.setItem(MAP_LIMIT_STORAGE_KEY, String(limit));
+    } catch {
+      /* storage unavailable: the choice just won't persist */
+    }
+    const loaded = this.mapPoints().length;
+    if (loaded > limit) {
+      this.mapSequence++;
+      this.mapSubscription?.unsubscribe();
+      this.mapLoading.set(false);
+      this.mapPoints.update((points) => points.slice(0, limit));
+    } else if (!this.mapLoading() && loaded < this.mapTarget()) {
+      this.loadMapPoints(loaded);
+    }
+  }
+
+  /**
+   * Fills the map with the latest violations for the current API filters, independent of the list
+   * page: batches of MAP_BATCH_SIZE, one request at a time, appended as they land, stopping at the
+   * chosen map limit or the end of the data. A filter change (or leaving the page) cancels it.
+   * `from` > 0 continues an existing set (the limit was raised) instead of starting over.
+   */
+  private loadMapPoints(from = 0): void {
+    const sequence = ++this.mapSequence;
+    this.mapSubscription?.unsubscribe();
+    if (from === 0) this.mapPoints.set([]);
+    this.mapLoading.set(true);
+    const base: ViolationFilters = { ...this.filters, limit: MAP_BATCH_SIZE };
+    const next = (offset: number) => {
+      this.mapSubscription = this.api.getViolations({ ...base, offset }).subscribe({
+        next: (response: { data?: { count: number; data: ApiViolation[] } }) => {
+          if (sequence !== this.mapSequence) return;
+          const data = response.data?.data ?? [];
+          const total = Math.min(response.data?.count ?? 0, this.mapLimit());
+          const batch = data.map((record, index) => this.mapRecord(record, offset + index));
+          this.mapPoints.update((points) => [...points, ...batch]);
+          const loaded = offset + data.length;
+          if (data.length === MAP_BATCH_SIZE && loaded < total) next(loaded);
+          else this.mapLoading.set(false);
+        },
+        error: () => {
+          if (sequence === this.mapSequence) this.mapLoading.set(false);
+        },
+      });
+    };
+    next(from);
+  }
+
+  /** Mirrors page + filters into the URL (replaceUrl: no history entry per change). */
+  private syncUrl(): void {
+    const value = (current: string, fallback: string) => (current === fallback ? null : current);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      replaceUrl: true,
+      queryParams: {
+        range: value(this.dateRange(), 'today'),
+        q: this.filters.search_text || null,
+        vehicle: null,
+        category: value(this.category(), 'all'),
+        severity: value(this.severity(), 'all'),
+        source: value(this.source(), 'all'),
+        page: this.page() > 1 ? this.page() : null,
+      },
+    });
   }
 
   private violationTypeFilter(category: string): string {
@@ -395,37 +559,38 @@ export class AllViolations implements OnInit, OnDestroy {
     };
     const isSpeed = typeKey === 'Speed';
     const speedKph = Number(record.speed) || 0;
-    const thresholdKph = Number(record.threshold ?? record.speed_threshold) || 0;
+    // The API sends threshold on every type, but it is a speed limit: only meaningful for Speed.
+    const thresholdKph = isSpeed ? Number(record.threshold ?? record.speed_threshold) || 0 : 0;
     const isCritical = isSpeed && thresholdKph > 0 && speedKph > thresholdKph * 1.25;
     const severity = isCritical ? 'Critical' : mapping.severity;
-    const date = record.event_generation_time
-      ? this.formatDate(record.event_generation_time)
-      : '—';
-    const speed = isSpeed ? `${speedKph} / ${thresholdKph} km/h` : `${speedKph} km/h`;
     const isExceeded = thresholdKph > 0 && speedKph > thresholdKph;
-    const speedDisplay = isExceeded
-      ? `${speedKph} km/h ⚠`
-      : speed;
+    const speedDisplay = !speedKph
+      ? NOT_AVAILABLE
+      : isExceeded
+        ? `${speedKph} km/h ⚠`
+        : thresholdKph
+          ? `${speedKph} / ${thresholdKph} km/h`
+          : `${speedKph} km/h`;
     return {
       id: record.id == null ? `VIO-${String(index + 1).padStart(4, '0')}` : String(record.id),
-      type: mapping.label,
+      type: record.violation_name?.trim() || mapping.label,
+      title: record.title?.trim() || `${mapping.label} Alert`,
       category: mapping.category,
       severity,
-      source: 'Telematics',
+      source: record.playback_url ? 'DashCam' : 'Telematics',
       driver: record.driver_name || record.name || 'Unassigned',
-      vehicle: record.vehicle_name || String(record.vehicle),
-      fleet: '',
-      location: record.location || '—',
-      timestamp: date,
-      speed,
+      vehicle: record.vehicle_name || (record.vehicle != null ? String(record.vehicle) : NOT_AVAILABLE),
+      device: record.device_name || record.device_id || NOT_AVAILABLE,
+      location: record.location || NOT_AVAILABLE,
+      geozone: record.geozone_name || NOT_AVAILABLE,
+      timestamp: record.event_generation_time ? this.formatDate(record.event_generation_time) : NOT_AVAILABLE,
       speedKph,
       thresholdKph,
       speedDisplay,
-      review: 'Pending',
-      fine: 0,
-      fineDisplay: '—',
-      fineStatus: 'No Fine',
-      scoreImpact: isCritical ? -12 : severity === 'High' ? -8 : severity === 'Medium' ? -4 : -2,
+      review: NOT_AVAILABLE,
+      fine: null,
+      fineDisplay: NOT_AVAILABLE,
+      playbackUrl: record.playback_url || null,
       description: record.description || `${mapping.label} violation detected.`,
       latitude: this.coordinate(record.latitude ?? record.lat),
       longitude: this.coordinate(record.longitude ?? record.long ?? record.lng),
