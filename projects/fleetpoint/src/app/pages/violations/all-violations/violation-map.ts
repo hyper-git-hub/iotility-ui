@@ -2,18 +2,25 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
+  NgZone,
   OnDestroy,
   effect,
+  inject,
   input,
   output,
   signal,
   untracked,
   viewChild,
 } from '@angular/core';
-import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
-import { createIotMap, escapeHtml, fitLatLngs, markerElement, popupHtml, timezoneCenter } from '../../../shared/maps/maplibre';
+import maplibregl, { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+import { createIotMap, escapeHtml, fitLatLngs, popupHtml, timezoneCenter } from '../../../shared/maps/maplibre';
 import { MapControls } from '../../../shared/map-overlays/map-controls';
 import { ViolationDisplay } from '../all-violations/all-violations';
+
+const SOURCE_ID = 'violations';
+const POINT_LAYER = 'violation-points';
+const HALO_LAYER = 'violation-halo';
+const SELECTED: ExpressionSpecification = ['boolean', ['feature-state', 'selected'], false];
 
 @Component({
   selector: 'app-violation-map',
@@ -43,67 +50,63 @@ import { ViolationDisplay } from '../all-violations/all-violations';
     .overlay-controls{pointer-events:auto;position:absolute;right:1rem;top:1rem}
   `,
 })
+/**
+ * Violations are drawn as one GeoJSON source + WebGL circle layers instead of a DOM marker per
+ * violation: hundreds of points pan/zoom at full frame rate, appending a page only swaps the source
+ * data, and selection is a feature-state flip rather than a rebuild. The map runs outside Angular's
+ * zone so camera movement never triggers change detection.
+ */
 export class ViolationMap implements AfterViewInit, OnDestroy {
   readonly violations = input.required<ViolationDisplay[]>();
   readonly selectedId = input<string | null>(null);
   readonly violationSelected = output<ViolationDisplay>();
+  protected readonly isFullscreen = signal(false);
+
+  private readonly zone = inject(NgZone);
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private instance?: MapLibreMap;
-  private readonly markers = new Map<string, maplibregl.Marker>();
   private resizeObserver?: ResizeObserver;
+  private byId = new Map<string, ViolationDisplay>();
+  private highlighted: string | null = null;
+  private popup?: maplibregl.Popup;
+  private colors?: Record<string, string>;
 
   constructor() {
     effect(() => {
       const records = this.violations();
-      if (this.instance) this.render(records);
+      untracked(() => this.zone.runOutsideAngular(() => this.render(records)));
     });
     effect(() => {
       const id = this.selectedId();
-      // Update marker selection visuals
-      this.markers.forEach((marker, markerId) => {
-        const element = marker.getElement();
-        const span = element.querySelector('span');
-        if (span) {
-          const isSelected = markerId === id;
-          span.style.transform = isSelected ? 'scale(1.3)' : 'scale(1)';
-          span.style.boxShadow = isSelected
-            ? `0 0 0 3px ${this.categoryColor(this.violations().find((v) => v.id === markerId)?.category ?? '')}66, 0 2px 8px rgb(0 0 0 / 35%)`
-            : '0 2px 8px rgb(0 0 0 / 35%)';
-        }
-        // Close popup for non-selected markers
-        if (markerId !== id && marker.getPopup()?.isOpen()) marker.togglePopup();
-      });
-      // Fly to and open popup for selected violation. Only plotted records can
-      // be framed — the rest have no coordinates on the map to fly to.
-      const record = this.violations().find((item) => item.id === id);
-      if (this.instance && this.isPlottable(record)) {
-        // Selecting a row must always pull the violation closer: the previous
-        // fixed zoom 10 sat below the zoom the user had already reached, so a
-        // click from the list visibly zoomed back out.
-        this.instance.flyTo({
-          center: [Number(record.longitude), Number(record.latitude)],
-          zoom: Math.max(this.instance.getZoom(), 12),
-          duration: 700,
-        });
-        const marker = this.markers.get(record.id);
-        if (marker && !marker.getPopup()?.isOpen()) marker.togglePopup();
-      }
+      untracked(() => this.zone.runOutsideAngular(() => this.select(id)));
     });
   }
 
   ngAfterViewInit(): void {
     const element = this.mapElement().nativeElement;
-    // No device-location lookup: the viewport is driven only by the violations
-    // themselves, which render() frames with fitLatLngs below. This timezone
-    // centre is just the placeholder for the instant before that first fit
-    // (and the resting view when there are no plottable violations).
-    this.instance = createIotMap(element, timezoneCenter(), 6);
-    this.resizeObserver = new ResizeObserver(() => this.instance?.resize());
-    this.resizeObserver.observe(element);
-    this.instance.once('load', () => this.render(this.violations()));
+    this.zone.runOutsideAngular(() => {
+      // No device-location lookup: the viewport is driven by the violations themselves (render()
+      // frames them). The timezone centre is only the placeholder before that first fit.
+      const map = createIotMap(element, timezoneCenter(), 6);
+      this.instance = map;
+      this.resizeObserver = new ResizeObserver(() => map.resize());
+      this.resizeObserver.observe(element);
+      // style.load also fires after a light/dark theme switch, which replaces the style and its layers.
+      map.on('style.load', () => {
+        this.addLayers(map);
+        this.render(untracked(() => this.violations()), false);
+        this.highlighted = null;
+        this.select(untracked(() => this.selectedId()), false);
+      });
+      map.on('click', POINT_LAYER, (event) => {
+        const id = event.features?.[0]?.properties?.['id'];
+        const record = this.byId.get(String(id));
+        if (record) this.zone.run(() => this.violationSelected.emit(record));
+      });
+      map.on('mouseenter', POINT_LAYER, () => (map.getCanvas().style.cursor = 'pointer'));
+      map.on('mouseleave', POINT_LAYER, () => (map.getCanvas().style.cursor = ''));
+    });
   }
-
-  protected readonly isFullscreen = signal(false);
 
   protected zoomIn(): void {
     this.instance?.zoomIn();
@@ -135,39 +138,76 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
     requestAnimationFrame(() => requestAnimationFrame(() => this.instance?.resize()));
   }
 
-  private render(records: ViolationDisplay[]): void {
-    if (!this.instance) return;
-    this.markers.forEach((item) => item.remove());
-    this.markers.clear();
-    const validRecords = records.filter((record) => this.isPlottable(record));
-    validRecords.forEach((record) => {
-      const color = this.categoryColor(record.category);
-      const latitude = Number(record.latitude);
-      const longitude = Number(record.longitude);
-      const element = markerElement(
-        `<span style="display:block;width:14px;height:14px;border:1.5px solid white;border-radius:50%;background:${color};box-shadow:0 1px 4px rgb(0 0 0 / 30%)"></span>`,
-      );
-      element.addEventListener('click', () => this.violationSelected.emit(record));
-      const item = new maplibregl.Marker({ element })
-        .setLngLat([longitude, latitude])
-        .setPopup(popupHtml(this.violationPopupHtml(record)))
-        .addTo(this.instance!);
-      this.markers.set(record.id, item);
+  private addLayers(map: MapLibreMap): void {
+    if (map.getSource(SOURCE_ID)) return;
+    this.colors = undefined; // theme may have changed: re-read the palette
+    map.addSource(SOURCE_ID, {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+      promoteId: 'id',
     });
-    // Frame the whole set only while nothing is selected: appending the next
-    // page of the list (scroll-to-bottom) re-runs this, and re-framing every
-    // violation would drag the camera back out off the one just selected.
-    // Read untracked: re-rendering is a data concern, and tracking the
-    // selection here would rebuild every marker on each row click.
+    // Soft ring behind the selected violation.
+    map.addLayer({
+      id: HALO_LAYER,
+      type: 'circle',
+      source: SOURCE_ID,
+      paint: {
+        'circle-color': ['get', 'color'],
+        'circle-opacity': 0.28,
+        'circle-radius': ['case', SELECTED, 15, 0],
+        'circle-radius-transition': { duration: 200 },
+      },
+    });
+    map.addLayer({
+      id: POINT_LAYER,
+      type: 'circle',
+      source: SOURCE_ID,
+      paint: {
+        'circle-color': ['get', 'color'],
+        'circle-radius': ['case', SELECTED, 9, 7],
+        'circle-radius-transition': { duration: 200 },
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.5,
+      },
+    });
+  }
+
+  private render(records: ViolationDisplay[], frame = true): void {
+    const map = this.instance;
+    const source = map?.getSource<GeoJSONSource>(SOURCE_ID);
+    if (!map || !source) return;
+    const plottable = records.filter((record) => this.isPlottable(record));
+    this.byId = new Map(plottable.map((record) => [record.id, record]));
+    source.setData({
+      type: 'FeatureCollection',
+      features: plottable.map((record) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [Number(record.longitude), Number(record.latitude)] },
+        properties: { id: record.id, color: this.categoryColor(record.category) },
+      })),
+    });
+    // Frame the whole set only while nothing is selected: appending the next page of the list
+    // (scroll-to-bottom) re-runs this, and re-framing would drag the camera off the selection.
     const selection = untracked(() => this.selectedId());
-    if (validRecords.length && !validRecords.some((record) => record.id === selection))
-      fitLatLngs(
-        this.instance,
-        validRecords.map((r) => [Number(r.latitude), Number(r.longitude)]),
-        28,
-        8,
-      );
-    requestAnimationFrame(() => this.instance?.resize());
+    if (frame && plottable.length && !(selection && this.byId.has(selection)))
+      fitLatLngs(map, plottable.map((r) => [Number(r.latitude), Number(r.longitude)]), 28, 8);
+  }
+
+  /** Feature-state flip for the highlight, one shared popup, and fly to the violation. */
+  private select(id: string | null, fly = true): void {
+    const map = this.instance;
+    if (!map?.getSource(SOURCE_ID)) return;
+    if (this.highlighted) map.setFeatureState({ source: SOURCE_ID, id: this.highlighted }, { selected: false });
+    this.highlighted = null;
+    this.popup?.remove();
+    const record = id ? this.byId.get(id) : undefined;
+    if (!record) return;
+    this.highlighted = record.id;
+    map.setFeatureState({ source: SOURCE_ID, id: record.id }, { selected: true });
+    const lngLat: [number, number] = [Number(record.longitude), Number(record.latitude)];
+    this.popup = popupHtml(this.violationPopupHtml(record)).setOffset(14).setLngLat(lngLat).addTo(map);
+    // Selecting a row must always pull the violation closer, never zoom back out.
+    if (fly) map.flyTo({ center: lngLat, zoom: Math.max(map.getZoom(), 12), duration: 700 });
   }
 
   // A record is only mappable when its coordinates are real numbers within
@@ -203,21 +243,26 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
     `;
   }
 
+  /** Palette read once (getComputedStyle per point forced a style recalc for every violation). */
   private categoryColor(category: string): string {
-    const styles = getComputedStyle(document.documentElement);
-    const css = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
-    const colors: Record<string, string> = {
-      Speeding: css('--color-danger', '#ef4444'),
-      Behaviour: css('--color-warning', '#f59e0b'),
-      Safety: '#ef6c36',
-      Compliance: css('--color-brand-500', '#8b5cf6'),
-      Geozone: css('--color-info', '#3b82f6'),
-    };
-    return colors[category] ?? css('--color-muted', '#64748b');
+    if (!this.colors) {
+      const styles = getComputedStyle(document.documentElement);
+      const css = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+      this.colors = {
+        Speeding: css('--color-danger', '#ef4444'),
+        Behaviour: css('--color-warning', '#f59e0b'),
+        Safety: '#ef6c36',
+        Compliance: css('--color-brand-500', '#8b5cf6'),
+        Geozone: css('--color-info', '#3b82f6'),
+        default: css('--color-muted', '#64748b'),
+      };
+    }
+    return this.colors[category] ?? this.colors['default'];
   }
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+    this.popup?.remove();
     this.instance?.remove();
   }
 }

@@ -20,7 +20,7 @@
     }
     <label class="shared-form-field"
       ><span>Name <b>*</b></span
-      ><input class="shared-form-control" formControlName="name" placeholder="Enter name" />
+      ><input class="ui-control" formControlName="name" placeholder="Enter name" />
       @if (submitted() && form.controls.name.invalid) {
         <small class="field-error">Name is required.</small>
       }
@@ -28,7 +28,7 @@
     <label class="shared-form-field"
       ><span>Employee ID <b>*</b></span
       ><input
-        class="shared-form-control"
+        class="ui-control"
         formControlName="employee_id"
         placeholder="Enter employee ID"
       />
@@ -59,7 +59,7 @@
       ><input
         type="number"
         min="0"
-        class="shared-form-control"
+        class="ui-control"
         formControlName="salary"
         placeholder="Enter salary"
       />
@@ -109,7 +109,7 @@
     </label>
     <label class="shared-form-field"
       ><span>Contact Number <b>*</b></span
-      ><input type="tel" class="shared-form-control" formControlName="phone" />
+      ><input type="tel" class="ui-control" formControlName="phone" />
       @if (submitted() && form.controls.phone.invalid) {
         <small class="field-error">Enter a valid contact number.</small>
       }
@@ -118,7 +118,7 @@
       ><span>Email *</span
       ><input
         type="email"
-        class="shared-form-control"
+        class="ui-control"
         formControlName="email"
         placeholder="Enter email"
       />
@@ -132,7 +132,7 @@
         ><span class="password-field"
           ><input
             [type]="showPassword() ? 'text' : 'password'"
-            class="shared-form-control"
+            class="ui-control"
             formControlName="password"
             maxlength="15"
             placeholder="8–15 characters"
@@ -213,7 +213,7 @@
       <label class="shared-form-field"
         ><span>Beacon ID</span
         ><input
-          class="shared-form-control"
+          class="ui-control"
           formControlName="beacon_id"
           maxlength="300"
           placeholder="Enter beacon ID"

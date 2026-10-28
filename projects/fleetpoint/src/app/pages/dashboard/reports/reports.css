@@ -40,45 +40,15 @@
 .interval-presets button.active {
   @apply bg-brand-600 font-semibold text-white;
 }
-.interval-filter label span {
-  @apply mb-1 block text-[9px] font-medium text-muted dark:text-brand-300;
-}
-.interval-filter input,
-.interval-filter select {
-  @apply h-9 w-full rounded-lg border border-line bg-white px-2 text-[10px] outline-none transition focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
-  color-scheme: light;
-}
-.month-dropdown {
-  @apply block;
-}
-.month-dropdown [dropdown-trigger] {
-  @apply flex h-9 w-full items-center rounded-lg border border-line bg-white px-2 pr-8 text-left text-[10px] text-ink outline-none transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
-}
-:host-context(.dark) .interval-filter input {
-  color-scheme: dark;
-}
-.apply-filter {
-  @apply h-9 cursor-pointer rounded-lg bg-brand-600 text-[10px] font-semibold text-white transition hover:bg-brand-700;
-}
 .report-list {
   @apply flex min-h-0 flex-1 flex-col pt-3;
 }
 .report-list > p {
   @apply px-4 pb-2;
 }
+/* Box comes from .ui-control .ui-control-group .ui-control-sm (controls.css). */
 .report-search {
-  @apply relative mx-4 mb-3 block;
-}
-.report-search svg {
-  @apply pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-.report-search input {
-  @apply h-9 w-full rounded-lg border border-line bg-canvas pl-9 pr-3 text-[10px] text-ink outline-none transition placeholder:text-muted focus:border-brand-500 focus:bg-white dark:border-dark-line dark:bg-dark-canvas dark:text-white dark:focus:bg-dark-surface;
+  @apply mx-4 mb-3 w-auto;
 }
 .report-options {
   @apply min-h-0 flex-1 overflow-y-auto pb-3;
@@ -143,7 +113,7 @@
   @apply flex items-center gap-2;
 }
 .trip-search input {
-  @apply h-8 w-48 rounded-lg border border-line bg-white px-3 text-xs text-ink outline-none transition placeholder:text-muted focus:border-brand-500 dark:border-dark-line dark:bg-dark-surface dark:text-white;
+  @apply w-48;
 }
 .report-actions > span {
   @apply rounded-full bg-white px-3 py-1.5 text-[10px] font-semibold text-brand-700 dark:bg-dark-surface dark:text-brand-300;

@@ -30,13 +30,6 @@
 .replay-filters label span {
   @apply mb-1 block text-[9px] font-medium text-muted dark:text-brand-300;
 }
-.replay-filters input {
-  @apply h-9 w-full rounded-lg border border-line bg-white px-2 text-[10px] outline-none focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
-  color-scheme: light;
-}
-:host-context(.dark) .replay-filters input {
-  color-scheme: dark;
-}
 .replay-filters > button {
   @apply h-9 cursor-pointer rounded-lg bg-brand-600 text-[10px] font-semibold text-white hover:bg-brand-700;
 }

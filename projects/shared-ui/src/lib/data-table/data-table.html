@@ -17,7 +17,7 @@
     @if (showToolbar()) {
       <div class="toolbar">
         @if (showSearch()) {
-          <label>
+          <label class="toolbar-search ui-control ui-control-group">
             <img class="search-icon" src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true"/>
             <input type="search" [placeholder]="searchPlaceholder()" (input)="updateSearch($event)" />
           </label>
@@ -57,7 +57,6 @@
       #tableBody
       [class.fixed-height]="viewportHeight() !== null"
       [style.padding-bottom.px]="bodyBottomPadding()"
-      (scroll)="handleScroll($event)"
     >
       <table [style.min-width.px]="minTableWidth()">
         <thead>
@@ -68,7 +67,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (r of displayedRows(); track $index) {
+          @for (r of displayedRows(); track r[rowIdentityKey()] ?? $index) {
             <tr
               [class.clickable-row]="rowsClickable() || expandableRows()"
               [class.selected-row]="isSelectedRow(r) || isExpandedRow(r)"

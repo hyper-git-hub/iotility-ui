@@ -155,9 +155,8 @@ export class AllViolations implements OnInit, OnDestroy {
       ? this.totalCount()
       : this.filtered().length;
   });
-  protected readonly rows = computed<TableRow[]>(() =>
-    this.filtered().map((item) => ({ ...item })),
-  );
+  // Same objects as filtered(): no per-update copies, so the table keeps unchanged rows in place.
+  protected readonly rows = computed(() => this.filtered() as unknown as TableRow[]);
 
   private readonly filters: ViolationFilters = {
     offset: 0,
@@ -172,6 +171,8 @@ export class AllViolations implements OnInit, OnDestroy {
     time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     group: '0',
   };
+  /** Trusted icon markup, built once per key: a fresh SafeHtml each check made Angular rewrite every row's innerHTML. */
+  private readonly iconCache = new Map<string, SafeHtml>();
   private searchTimer?: ReturnType<typeof setTimeout>;
   private requestSequence = 0;
   private requestSubscription?: Subscription;
@@ -277,15 +278,16 @@ export class AllViolations implements OnInit, OnDestroy {
     return match?.[1] ?? value;
   }
 
-  protected onTableScroll(event: Event): void {
-    const element = event.currentTarget as HTMLElement;
-    if (element.scrollHeight - element.scrollTop - element.clientHeight <= 120) this.loadMore();
-  }
-
   protected violationIcon(type: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(
-      `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${VIOLATION_ICON[this.typeKey(type)] ?? VIOLATION_ICON['Default']}</svg>`,
-    );
+    const key = `type:${this.typeKey(type)}`;
+    let icon = this.iconCache.get(key);
+    if (!icon) {
+      icon = this.sanitizer.bypassSecurityTrustHtml(
+        `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${VIOLATION_ICON[this.typeKey(type)] ?? VIOLATION_ICON['Default']}</svg>`,
+      );
+      this.iconCache.set(key, icon);
+    }
+    return icon;
   }
 
   protected categoryIconColor(category: string): string {
@@ -300,7 +302,13 @@ export class AllViolations implements OnInit, OnDestroy {
   }
 
   protected sourceIcon(source: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(SOURCE_ICON[source] ?? '');
+    const key = `source:${source}`;
+    let icon = this.iconCache.get(key);
+    if (!icon) {
+      icon = this.sanitizer.bypassSecurityTrustHtml(SOURCE_ICON[source] ?? '');
+      this.iconCache.set(key, icon);
+    }
+    return icon;
   }
 
   protected sourceIconColor(source: string): string {

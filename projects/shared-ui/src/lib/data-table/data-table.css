@@ -35,17 +35,12 @@
 .toolbar {
   @apply ml-auto flex items-end justify-end gap-2;
 }
-.toolbar label {
-  @apply flex h-9 w-64 items-center gap-2 rounded-lg border border-line px-3 text-xs text-muted dark:border-dark-line;
+/* Search box comes from .ui-control .ui-control-group; buttons share the control height and radius. */
+.toolbar-search {
+  @apply w-64;
 }
-.toolbar .search-icon {
-  @apply size-4 shrink-0;
-}
-.toolbar input {
-  @apply min-w-0 flex-1 border-0 bg-transparent text-xs text-ink outline-none dark:text-white;
-}
-.toolbar button {
-  @apply inline-flex h-9 cursor-pointer items-center whitespace-nowrap rounded-lg border border-line bg-transparent px-3 text-xs font-medium text-muted dark:border-dark-line dark:text-brand-300;
+.toolbar button:not(.ui-control) {
+  @apply inline-flex h-(--control-height) cursor-pointer items-center whitespace-nowrap rounded-(--control-radius) border border-line bg-transparent px-3 text-xs font-medium text-muted dark:border-dark-line dark:text-brand-300;
 }
 .toolbar .header-filter {
   @apply block;
@@ -57,7 +52,7 @@
   @apply text-[10px] text-muted dark:text-brand-300;
 }
 .toolbar .header-filter [dropdown-trigger] {
-  @apply min-w-32 justify-between bg-white dark:bg-dark-canvas;
+  @apply min-w-32;
 }
 .toolbar .primary {
   @apply border-ink bg-ink text-white dark:border-brand-600 dark:bg-brand-600;
@@ -409,7 +404,7 @@ strong {
   .toolbar {
     @apply ml-0 w-full flex-wrap;
   }
-  .toolbar label {
+  .toolbar-search {
     @apply w-auto flex-1;
   }
 }
@@ -431,14 +426,14 @@ strong {
 
 /* Hover feedback for toolbar / header / row-action buttons that had none. Tailwind `transition` keeps the press scale animated. */
 .header-action,
-.toolbar button,
+.toolbar button:not(.ui-control),
 .actions button {
   @apply transition;
 }
 .header-action:hover {
   @apply text-brand-700 dark:text-brand-300;
 }
-.toolbar button:not(.primary):not(:disabled):hover {
+.toolbar button:not(.primary, .ui-control):not(:disabled):hover {
   @apply border-brand-300 text-ink dark:border-brand-500 dark:text-white;
 }
 .toolbar .primary:not(:disabled):hover {

@@ -9,16 +9,16 @@
 .dropdown-trigger {
   @apply contents;
 }
+/* Select-mode triggers get the generic .ui-control .ui-select look (applied in dropdown.ts); this only
+   leaves room for the chevron the component draws on the right. */
 .has-chevron .dropdown-trigger ::ng-deep [dropdown-trigger] {
-  @apply flex h-10 w-full items-center rounded-xl border border-line bg-white px-3 pr-10 text-left text-xs text-ink outline-none transition-colors hover:border-brand-300 focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/15 dark:border-dark-line dark:bg-dark-canvas dark:text-white dark:hover:border-brand-500;
+  padding-right: 2.25rem;
 }
-:host-context(.dark) .has-chevron .dropdown-trigger ::ng-deep [dropdown-trigger] {
-  background: var(--color-dark-canvas);
-  border-color: var(--color-dark-line);
-  color: white;
+.compact.has-chevron .dropdown-trigger ::ng-deep [dropdown-trigger] {
+  padding-right: 1.75rem;
 }
-:host-context(.dark) .has-chevron .dropdown-trigger ::ng-deep [dropdown-trigger]:hover {
-  border-color: var(--color-brand-500);
+.compact .dropdown-chevron {
+  @apply right-2 size-3.5;
 }
 .dropdown-chevron {
   @apply pointer-events-none absolute right-3 top-1/2 z-[1] size-4 text-muted transition-transform;

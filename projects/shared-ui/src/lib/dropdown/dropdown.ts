@@ -1,5 +1,6 @@
 import {
   AnimationCallbackEvent,
+  AfterViewInit,
   Component,
   ElementRef,
   HostListener,
@@ -25,7 +26,7 @@ const OPEN_CLIP = 'inset(-16px -16px -40px -16px round 12px)';
   templateUrl: './dropdown.html',
   styleUrl: './dropdown.css',
 })
-export class Dropdown {
+export class Dropdown implements AfterViewInit {
   readonly options = input.required<DropdownOption[]>();
   readonly mode = input<DropdownMode>('action');
   readonly searchable = input(false);
@@ -52,6 +53,13 @@ export class Dropdown {
     private readonly element: ElementRef<HTMLElement>,
     private readonly router: Router,
   ) {}
+  ngAfterViewInit(): void {
+    // Select modes use the generic field look (controls.css), so every select matches inputs everywhere.
+    if (this.mode() !== 'single' && this.mode() !== 'multi') return;
+    const trigger = this.element.nativeElement.querySelector<HTMLElement>('[dropdown-trigger]');
+    trigger?.classList.add('ui-control', 'ui-select');
+    if (this.density() === 'compact') trigger?.classList.add('ui-control-sm');
+  }
   protected toggle(): void {
     this.isOpen.update((v) => !v);
     if (this.isOpen()) this.localSelected.set([...this.selected()]);

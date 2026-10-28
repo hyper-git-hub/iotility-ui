@@ -20,7 +20,7 @@
     </p>
 
     <label class="form-label" for="email">Email Address <span>*</span></label>
-    <div class="form-control">
+    <div class="form-control ui-control ui-control-group ui-control-lg">
       <img class="form-icon" src="assets/icons/mail-muted.svg" alt="" aria-hidden="true" />
       <input id="email" formControlName="email" type="email" autocomplete="email" placeholder="Your email" />
     </div>
@@ -29,7 +29,7 @@
     }
 
     <label class="form-label password-label" for="password">Password <span>*</span></label>
-    <div class="form-control">
+    <div class="form-control ui-control ui-control-group ui-control-lg">
       <img class="form-icon" src="assets/icons/lock-muted.svg" alt="" aria-hidden="true" />
       <input id="password" formControlName="password" [type]="showPassword() ? 'text' : 'password'" autocomplete="current-password" placeholder="Password" />
       <button

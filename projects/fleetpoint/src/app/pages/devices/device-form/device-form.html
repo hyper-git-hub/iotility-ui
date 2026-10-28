@@ -4,7 +4,7 @@
     <label class="shared-form-field">
       <span>IMEI Number <b>*</b></span>
       <input
-        class="shared-form-control"
+        class="ui-control"
         formControlName="imei"
         inputmode="numeric"
         maxlength="15"
@@ -16,14 +16,14 @@
     </label>
     <label class="shared-form-field">
       <span>Serial Number <b>*</b></span>
-      <input class="shared-form-control" formControlName="serial" placeholder="Device serial" />
+      <input class="ui-control" formControlName="serial" placeholder="Device serial" />
       @if (invalid('serial')) {
         <small class="shared-form-error">Enter the serial number.</small>
       }
     </label>
     <label class="shared-form-field">
       <span>Model <b>*</b></span>
-      <input class="shared-form-control" formControlName="model" placeholder="e.g. FMC920" />
+      <input class="ui-control" formControlName="model" placeholder="e.g. FMC920" />
       @if (invalid('model')) {
         <small class="shared-form-error">Enter the device model.</small>
       }
@@ -31,7 +31,7 @@
     <label class="shared-form-field">
       <span>Manufacturer <b>*</b></span>
       <input
-        class="shared-form-control"
+        class="ui-control"
         formControlName="manufacturer"
         placeholder="e.g. Teltonika"
       />

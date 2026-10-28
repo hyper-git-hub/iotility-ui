@@ -60,13 +60,13 @@
 
 <ng-template #otpField>
   <label class="form-label" for="otp">Security code <span>*</span></label>
-  <div class="form-control"><input id="otp" [formControl]="form.controls.otp" inputmode="numeric" autocomplete="one-time-code" [maxlength]="otpLength" placeholder="Enter security code" /></div>
+  <div class="form-control ui-control ui-control-group ui-control-lg"><input id="otp" [formControl]="form.controls.otp" inputmode="numeric" autocomplete="one-time-code" [maxlength]="otpLength" placeholder="Enter security code" /></div>
   @if (form.controls.otp.touched && form.controls.otp.invalid) { <small class="field-error">Enter a valid {{ otpLength }}-digit code.</small> }
 </ng-template>
 
 <ng-template #passkeyField>
   <label class="form-label" for="passkey">Passkey <span>*</span></label>
-  <div class="form-control"><input id="passkey" [formControl]="form.controls.passkey" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Enter 4-digit passkey" /></div>
+  <div class="form-control ui-control ui-control-group ui-control-lg"><input id="passkey" [formControl]="form.controls.passkey" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Enter 4-digit passkey" /></div>
   @if (form.controls.passkey.touched && form.controls.passkey.invalid) { <small class="field-error">Passkey must contain exactly 4 digits.</small> }
 </ng-template>
 

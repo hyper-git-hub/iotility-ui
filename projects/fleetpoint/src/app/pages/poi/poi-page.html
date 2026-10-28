@@ -18,7 +18,7 @@
         </button>
       }
     </nav>
-    <label class="poi-search"><img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true"/><input type="search" placeholder="Search POI name, address, notes..." [value]="search()" (input)="updateSearch($event)"/></label>
+    <label class="poi-search ui-control ui-control-group"><img src="assets/fleetpoint/icons/search.svg" alt="" aria-hidden="true"/><input type="search" placeholder="Search POI name, address, notes..." [value]="search()" (input)="updateSearch($event)"/></label>
   </section>
   <section class="poi-workspace smooth-reveal">
     <article class="poi-map-card"><header><div class="poi-map-title"><img src="assets/fleetpoint/icons/map-pin-brand.svg" alt="" aria-hidden="true"/><strong>POI Map</strong><span>· {{ filtered().length }} shown</span></div></header><div class="poi-legend"><span class="depot"><i></i>Depot</span><span class="customer"><i></i>Customer Site</span><span class="fuel"><i></i>Fuel Station</span><span class="rest"><i></i>Rest Stop</span><span class="exclusion area"><i></i>Exclusion Zone <em>area</em></span><span class="unsafe area"><i></i>Unsafe Area <em>area</em></span><span class="custom"><i></i>Custom</span></div><div class="poi-map"><app-fleet-map [vehicles]="mapPois()" [fitKey]="mapFilterKey()" [selectedVehicleId]="expandedId()" (vehicleSelected)="selectFromMap($event)" [showOverlays]="true" [popupTemplate]="poiPopupTemplate" [zones]="mapZones()" /></div></article>

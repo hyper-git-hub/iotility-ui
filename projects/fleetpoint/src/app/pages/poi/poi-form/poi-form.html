@@ -28,9 +28,9 @@
           </div>@if (submitted() && !form.controls.type.value) { <small class="shared-form-error">Choose a POI type.</small> }</section>
         } @else if (activeStep() === 1) {
           <section class="form-step details-grid"><header class="full"><h3>POI Details &amp; Location</h3><p>Enter the POI information and map coordinates.</p></header>
-            <label class="shared-form-field full"><span>POI Name <b>*</b></span><input class="shared-form-control" formControlName="name" placeholder="e.g. Amazon BHX2 Fulfilment" [attr.aria-invalid]="invalid('name')"/>@if(invalid('name')){<small class="shared-form-error">Enter a POI name.</small>}</label>
-            <label class="shared-form-field full"><span>Address <b>*</b></span><input class="shared-form-control" formControlName="address" placeholder="Full address or postcode" [attr.aria-invalid]="invalid('address')"/>@if(invalid('address')){<small class="shared-form-error">Enter an address.</small>}</label>
-            <label class="shared-form-field"><span>Radius (meters) <b>*</b></span><input type="number" min="10" class="shared-form-control" formControlName="radius" [attr.aria-invalid]="invalid('radius')"/></label>
+            <label class="shared-form-field full"><span>POI Name <b>*</b></span><input class="ui-control" formControlName="name" placeholder="e.g. Amazon BHX2 Fulfilment" [attr.aria-invalid]="invalid('name')"/>@if(invalid('name')){<small class="shared-form-error">Enter a POI name.</small>}</label>
+            <label class="shared-form-field full"><span>Address <b>*</b></span><input class="ui-control" formControlName="address" placeholder="Full address or postcode" [attr.aria-invalid]="invalid('address')"/>@if(invalid('address')){<small class="shared-form-error">Enter an address.</small>}</label>
+            <label class="shared-form-field"><span>Radius (meters) <b>*</b></span><input type="number" min="10" class="ui-control" formControlName="radius" [attr.aria-invalid]="invalid('radius')"/></label>
             <span></span>
             <div class="location-picker full">
               <div class="location-picker-heading"><span><strong>Choose location <b>*</b></strong><small>Click anywhere on the map to place the marker. Drag it to adjust the position.</small></span>
@@ -51,9 +51,9 @@
             @if (form.controls.assignment.value !== 'all') { <label class="shared-form-field full"><span>{{ form.controls.assignment.value === 'fleet' ? 'Fleet' : 'Vehicle' }} <b>*</b></span><shared-dropdown class="poi-dropdown" [options]="assignmentTargets()" mode="single" align="left" [searchable]="true" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.assignedTarget.value]" (optionSelected)="select('assignedTarget',$event)"><button dropdown-trigger type="button">{{ optionsLabel(assignmentTargets(),form.controls.assignedTarget.value,'Select an option...') }}</button></shared-dropdown>@if(submitted() && !form.controls.assignedTarget.value){<small class="shared-form-error">Select an assignment.</small>}</label> }
             <label class="rule-toggle"><input class="fleet-checkbox" type="checkbox" formControlName="alertOnEntry"/><span><strong>Alert on entry</strong><small>Notify when a vehicle enters this POI.</small></span></label>
             <label class="rule-toggle"><input class="fleet-checkbox" type="checkbox" formControlName="alertOnExit"/><span><strong>Alert on exit</strong><small>Notify when a vehicle leaves this POI.</small></span></label>
-            <label class="shared-form-field"><span>Maximum dwell time (minutes)</span><input type="number" min="1" class="shared-form-control" formControlName="maxDwell" placeholder="No limit"/></label>
+            <label class="shared-form-field"><span>Maximum dwell time (minutes)</span><input type="number" min="1" class="ui-control" formControlName="maxDwell" placeholder="No limit"/></label>
             <label class="shared-form-field"><span>Link to Geozone (optional)</span><shared-dropdown class="poi-dropdown" [options]="geozoneOptions" mode="single" align="left" placement="top" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.geozone.value]" (optionSelected)="select('geozone',$event)"><button dropdown-trigger type="button">{{ optionsLabel(geozoneOptions,form.controls.geozone.value,'No geozone') }}</button></shared-dropdown></label>
-            <label class="shared-form-field full"><span>Notes</span><textarea class="shared-form-control" formControlName="notes" rows="3" placeholder="Operational notes or special instructions..."></textarea></label>
+            <label class="shared-form-field full"><span>Notes</span><textarea class="ui-control" formControlName="notes" rows="3" placeholder="Operational notes or special instructions..."></textarea></label>
           </section>
         } @else {
           <section class="form-step confirmation">

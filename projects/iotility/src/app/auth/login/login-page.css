@@ -13,35 +13,11 @@
 .form-label { @apply mb-1 block text-sm font-medium text-ink dark:text-white; }
 .form-label span { @apply text-danger; }
 .password-label { @apply mt-4; }
-.form-control { @apply flex h-10.5 items-center rounded-lg border border-line bg-white px-3 transition focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 dark:border-dark-line dark:bg-dark-canvas; }
-.form-control input { @apply min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted/60 dark:text-white; }
-:host-context(.dark) .form-control input,
-:host-context(.dark) .form-control input:focus {
-  color: white;
-  -webkit-text-fill-color: white;
-  caret-color: white;
-}
 :host-context(.dark) .form-control input::selection {
   color: white;
   background: color-mix(in srgb, var(--color-brand-600) 55%, transparent);
   -webkit-text-fill-color: white;
 }
-.form-control input:-webkit-autofill,
-.form-control input:-webkit-autofill:hover,
-.form-control input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--color-ink);
-  box-shadow: 0 0 0 1000px white inset;
-  caret-color: var(--color-ink);
-}
-:host-context(.dark) .form-control input:-webkit-autofill,
-:host-context(.dark) .form-control input:-webkit-autofill:hover,
-:host-context(.dark) .form-control input:-webkit-autofill:focus,
-:host-context(.dark) .form-control input:autofill {
-  -webkit-text-fill-color: white;
-  box-shadow: 0 0 0 1000px var(--color-dark-canvas) inset;
-  caret-color: white;
-}
-.form-icon { @apply mr-2 size-4 shrink-0; }
 .password-toggle { @apply grid size-7 shrink-0 cursor-pointer place-items-center rounded-md text-muted transition hover:bg-brand-50 hover:text-brand-600 dark:text-brand-300 dark:hover:bg-dark-canvas dark:hover:text-brand-300; }
 .password-toggle img { @apply size-4; }
 .field-error { @apply mt-1 block text-xs text-danger; }
@@ -54,7 +30,6 @@
 .submit-button img { @apply size-5; }
 
 /* Invalid submit: the offending fields turn red and give a short shake (decaying 8px → 6px). */
-.form-control:has(input.ng-invalid.ng-touched) { @apply border-danger/60; }
 .is-shaking .form-control:has(input.ng-invalid.ng-touched) {
   animation: field-shake 400ms var(--ease-out);
 }

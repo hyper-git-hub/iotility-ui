@@ -76,14 +76,14 @@
             <div>
               @if (editing()) {
                 <form class="edit-form" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-                  <label>First name <span>*</span><input type="text" formControlName="firstName" />@if (profileForm.controls.firstName.touched && profileForm.controls.firstName.invalid) { <small>Enter a valid first name.</small> }</label>
-                  <label>Last name <span>*</span><input type="text" formControlName="lastName" />@if (profileForm.controls.lastName.touched && profileForm.controls.lastName.invalid) { <small>Enter a valid last name.</small> }</label>
-                  <label>Phone number <span>*</span><input type="tel" formControlName="phone" placeholder="+974 0000 0000" />@if (profileForm.controls.phone.touched && profileForm.controls.phone.invalid) { <small>Phone number is required.</small> }</label>
-                  <label>Email address<input type="email" [value]="user.email || ''" readonly /></label>
-                  <label>Username<input type="text" [value]="user.username || 'Not set'" readonly /></label>
-                  <label>Department<input type="text" [value]="user.department || 'Not assigned'" readonly /></label>
-                  <label>Designation<input type="text" [value]="user.designation || role()" readonly /></label>
-                  <label>Date joined<input type="text" [value]="user.date_joined ? (user.date_joined | date: 'dd MMM yyyy') : 'Not available'" readonly /></label>
+                  <label>First name <span>*</span><input class="ui-control" type="text" formControlName="firstName" />@if (profileForm.controls.firstName.touched && profileForm.controls.firstName.invalid) { <small>Enter a valid first name.</small> }</label>
+                  <label>Last name <span>*</span><input class="ui-control" type="text" formControlName="lastName" />@if (profileForm.controls.lastName.touched && profileForm.controls.lastName.invalid) { <small>Enter a valid last name.</small> }</label>
+                  <label>Phone number <span>*</span><input class="ui-control" type="tel" formControlName="phone" placeholder="+974 0000 0000" />@if (profileForm.controls.phone.touched && profileForm.controls.phone.invalid) { <small>Phone number is required.</small> }</label>
+                  <label>Email address<input class="ui-control" type="email" [value]="user.email || ''" readonly /></label>
+                  <label>Username<input class="ui-control" type="text" [value]="user.username || 'Not set'" readonly /></label>
+                  <label>Department<input class="ui-control" type="text" [value]="user.department || 'Not assigned'" readonly /></label>
+                  <label>Designation<input class="ui-control" type="text" [value]="user.designation || role()" readonly /></label>
+                  <label>Date joined<input class="ui-control" type="text" [value]="user.date_joined ? (user.date_joined | date: 'dd MMM yyyy') : 'Not available'" readonly /></label>
                   <div class="form-actions"><button type="button" class="cancel-button" (click)="cancelEditing()">Cancel</button><button type="submit" class="save-button" [disabled]="profileForm.invalid || saving()">{{ saving() ? 'Saving...' : 'Save changes' }}</button></div>
                 </form>
               } @else {
@@ -118,9 +118,9 @@
       <article class="info-card">
         <header><span class="section-icon"><img src="assets/fleetpoint/icons/lock-brand.svg" alt="" aria-hidden="true"/></span><div><h2>Change Password</h2><p>Use 8–15 characters with uppercase, lowercase, and a number</p></div></header>
         <form class="password-form" [formGroup]="passwordForm" (ngSubmit)="savePassword()">
-          <label>Current password<div class="password-control"><input [type]="showPasswords() ? 'text' : 'password'" formControlName="currentPassword" autocomplete="current-password" /><button type="button" (click)="showPasswords.set(!showPasswords())">{{ showPasswords() ? 'Hide' : 'Show' }}</button></div>@if (passwordForm.controls.currentPassword.touched && passwordForm.controls.currentPassword.invalid) { <small>Current password is required.</small> }</label>
-          <label>New password<div class="password-control"><input [type]="showPasswords() ? 'text' : 'password'" formControlName="newPassword" autocomplete="new-password" /></div>@if (passwordForm.controls.newPassword.touched && passwordForm.controls.newPassword.invalid) { <small>Password does not meet the requirements.</small> }</label>
-          <label>Confirm password<div class="password-control"><input [type]="showPasswords() ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" /></div>@if (passwordForm.controls.confirmPassword.touched && passwordForm.controls.confirmPassword.invalid) { <small>{{ passwordForm.controls.confirmPassword.hasError('mismatch') ? 'Passwords do not match.' : 'Please confirm your password.' }}</small> }</label>
+          <label>Current password<div class="password-control"><input class="ui-control" [type]="showPasswords() ? 'text' : 'password'" formControlName="currentPassword" autocomplete="current-password" /><button type="button" (click)="showPasswords.set(!showPasswords())">{{ showPasswords() ? 'Hide' : 'Show' }}</button></div>@if (passwordForm.controls.currentPassword.touched && passwordForm.controls.currentPassword.invalid) { <small>Current password is required.</small> }</label>
+          <label>New password<div class="password-control"><input class="ui-control" [type]="showPasswords() ? 'text' : 'password'" formControlName="newPassword" autocomplete="new-password" /></div>@if (passwordForm.controls.newPassword.touched && passwordForm.controls.newPassword.invalid) { <small>Password does not meet the requirements.</small> }</label>
+          <label>Confirm password<div class="password-control"><input class="ui-control" [type]="showPasswords() ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" /></div>@if (passwordForm.controls.confirmPassword.touched && passwordForm.controls.confirmPassword.invalid) { <small>{{ passwordForm.controls.confirmPassword.hasError('mismatch') ? 'Passwords do not match.' : 'Please confirm your password.' }}</small> }</label>
           <button type="submit" class="save-button" [disabled]="loading() || !profile() || passwordForm.invalid || passwordForm.controls.newPassword.value !== passwordForm.controls.confirmPassword.value || changingPassword()">{{ changingPassword() ? 'Updating...' : 'Update password' }}</button>
         </form>
       </article>

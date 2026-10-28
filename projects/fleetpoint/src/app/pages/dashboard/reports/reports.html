@@ -36,7 +36,7 @@
       </div>
     </section>
     <div class="report-list">
-      <label class="report-search">
+      <label class="report-search ui-control ui-control-group ui-control-sm">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
           <path d="m16 16 4 4" />
@@ -80,6 +80,7 @@
         @if (selectedType() === 'trip_report') {
           <label class="trip-search"
             ><input
+              class="ui-control ui-control-sm"
               type="search"
               placeholder="Search by vehicle"
               aria-label="Search trips by vehicle"

@@ -719,23 +719,10 @@ app-vehicle-hud ::ng-deep .vehicle-hud {
     margin: 0 0 12px
 }
 
+/* Box: generic .ui-control .ui-control-sm (controls.css). */
 .field-row select {
     flex: 1;
-    min-width: 0;
-    height: 34px;
-    padding: 0 10px;
-    color: var(--color-ink);
-    border: 1px solid var(--color-line);
-    border-radius: 9px;
-    background: #fff;
-    font: inherit;
-    font-size: 11px
-}
-
-:host-context(.dark) .field-row select {
-    color: #fff;
-    border-color: var(--color-dark-line);
-    background: var(--color-dark-surface)
+    width: auto
 }
 
 @media(max-width:1500px) {

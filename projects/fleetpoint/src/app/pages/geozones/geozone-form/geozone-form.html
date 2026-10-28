@@ -23,8 +23,8 @@
           </section>
         }@else if(activeStep()===1){
           <section class="form-step details-grid"><header class="full"><h3>Zone Details &amp; Shape</h3><p>Name the zone and define its boundary type.</p></header>
-            <label class="shared-form-field full"><span>Zone Name <b>*</b></span><input class="shared-form-control" formControlName="name" placeholder="e.g. Stratford Depot Yard" [attr.aria-invalid]="invalid('name')"/>@if(invalid('name')){<small class="shared-form-error">Enter a zone name.</small>}</label>
-            <label class="shared-form-field full"><span>Description</span><textarea class="shared-form-control" formControlName="description" rows="2" placeholder="What is this zone used for?"></textarea></label>
+            <label class="shared-form-field full"><span>Zone Name <b>*</b></span><input class="ui-control" formControlName="name" placeholder="e.g. Stratford Depot Yard" [attr.aria-invalid]="invalid('name')"/>@if(invalid('name')){<small class="shared-form-error">Enter a zone name.</small>}</label>
+            <label class="shared-form-field full"><span>Description</span><textarea class="ui-control" formControlName="description" rows="2" placeholder="What is this zone used for?"></textarea></label>
             <div class="shape-field full"><span>Shape Type</span><div>
               <button type="button" [class.selected]="form.controls.shape.value==='circle'" (click)="chooseShape('circle')"><img src="assets/fleetpoint/icons/radius.svg" alt="" aria-hidden="true" />Circle</button>
               <button type="button" [class.selected]="form.controls.shape.value==='polygon'" (click)="chooseShape('polygon')"><img src="assets/fleetpoint/icons/polygon.svg" alt="" aria-hidden="true" />Polygon</button>
@@ -38,8 +38,8 @@
           <section class="form-step rules-grid"><header class="full"><h3>Zone Rules</h3><p>Configure alerts, limits and active hours.</p></header>
             <label class="rule-toggle"><input class="fleet-checkbox" type="checkbox" formControlName="alertOnEntry"/><span><strong>Alert on entry</strong><small>Notify when a vehicle enters.</small></span></label>
             <label class="rule-toggle"><input class="fleet-checkbox" type="checkbox" formControlName="alertOnExit"/><span><strong>Alert on exit</strong><small>Notify when a vehicle leaves.</small></span></label>
-            @if(form.controls.type.value==='speed'){<label class="shared-form-field full"><span>Speed Limit (km/h)</span><input type="number" min="1" class="shared-form-control" formControlName="speedLimit" placeholder="e.g. 8"/></label>}
-            <label class="shared-form-field full"><span>Maximum Dwell Time (minutes)</span><input type="number" min="1" class="shared-form-control" formControlName="maxDwell" placeholder="Leave blank for no limit"/></label>
+            @if(form.controls.type.value==='speed'){<label class="shared-form-field full"><span>Speed Limit (km/h)</span><input type="number" min="1" class="ui-control" formControlName="speedLimit" placeholder="e.g. 8"/></label>}
+            <label class="shared-form-field full"><span>Maximum Dwell Time (minutes)</span><input type="number" min="1" class="ui-control" formControlName="maxDwell" placeholder="Leave blank for no limit"/></label>
             <label class="shared-form-field"><span>Curfew Start</span><shared-date-time-picker mode="time" formControlName="curfewStart" placeholder="Select start time"/></label>
             <label class="shared-form-field"><span>Curfew End</span><shared-date-time-picker mode="time" formControlName="curfewEnd" placeholder="Select end time"/></label>
           </section>

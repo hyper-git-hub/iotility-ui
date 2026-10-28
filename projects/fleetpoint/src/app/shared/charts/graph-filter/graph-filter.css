@@ -6,8 +6,5 @@
   @apply flex shrink-0 items-center;
 }
 .graph-filter {
-  @apply block;
-}
-.graph-filter [dropdown-trigger] {
-  @apply flex h-8 w-36 cursor-pointer items-center justify-between gap-2 rounded-lg border border-line bg-white px-2.5 text-[10px] text-muted outline-none transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface dark:text-brand-300 dark:hover:text-brand-300;
+  @apply block w-36;
 }

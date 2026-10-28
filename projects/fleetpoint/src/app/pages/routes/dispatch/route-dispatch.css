@@ -5,7 +5,6 @@
 .dispatch-form-panel{@apply grid content-start gap-3;}
 .dispatch-form-panel h2,.availability-panel h2{@apply text-sm font-bold;}
 .field{@apply grid gap-1.5;}.field>span{@apply text-[10px] font-medium text-ink dark:text-white;}.field b{@apply text-danger;}
-.dropdown [dropdown-trigger]{@apply flex h-11 w-full items-center rounded-xl border border-line bg-white px-3 text-left text-xs text-ink dark:border-dark-line dark:bg-dark-canvas dark:text-white;}
 .mode-switch{@apply grid grid-cols-3 rounded-xl bg-canvas p-0.5 dark:bg-dark-canvas;}.mode-switch button{@apply h-9 rounded-lg text-[10px] font-semibold text-muted dark:text-brand-300;}.mode-switch button.active{@apply bg-brand-600 text-white;}
 .dates{@apply grid gap-3 sm:grid-cols-2;}.submit{@apply mt-1 h-11 rounded-xl bg-brand-600 text-xs font-semibold text-white;}
 .availability-panel{@apply flex min-h-0 flex-col gap-3 overflow-hidden p-0;}.availability-panel h2{@apply shrink-0;}.availability-list{@apply grid min-h-0 flex-1 content-start gap-2 overflow-y-auto pr-1;}
@@ -15,7 +14,6 @@
 .availability-row strong,.availability-row small{@apply block;}.availability-row strong{@apply text-xs;}.availability-row small{@apply text-[10px];}.availability-row>b{@apply rounded-full bg-success/10 px-2 py-1 text-[10px] text-success;}.availability-row.scheduled>b{@apply text-warning;}.availability-row.en-route>b{@apply text-danger;}
 @media(min-width:1280px){.dispatch-form-panel,.availability-panel{height:580px;}}
 :host-context(.dark) .dispatch-form-panel{background:var(--color-dark-surface);border-color:var(--color-dark-line);color:white;}:host-context(.dark) .availability-panel{color:white;}
-:host-context(.dark) .dropdown [dropdown-trigger]{background:var(--color-dark-canvas);border-color:var(--color-dark-line);color:white;}
 :host-context(.dark) .availability-row{background:color-mix(in srgb,var(--color-success) 9%,var(--color-dark-canvas));border-color:color-mix(in srgb,var(--color-success) 38%,var(--color-dark-line));}
 :host-context(.dark) .availability-row.scheduled{background:color-mix(in srgb,var(--color-warning) 9%,var(--color-dark-canvas));border-color:color-mix(in srgb,var(--color-warning) 38%,var(--color-dark-line));}
 :host-context(.dark) .availability-row.en-route{background:color-mix(in srgb,var(--color-danger) 9%,var(--color-dark-canvas));border-color:color-mix(in srgb,var(--color-danger) 38%,var(--color-dark-line));}

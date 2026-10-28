@@ -319,9 +319,6 @@ router-outlet + * {
 .shared-form-field b {
   @apply text-danger;
 }
-.shared-form-control {
-  @apply h-10 w-full rounded-xl border border-line bg-white px-3 text-xs text-ink outline-none focus:border-brand-500 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
-}
 .shared-form-error {
   @apply text-[10px] text-danger;
 }

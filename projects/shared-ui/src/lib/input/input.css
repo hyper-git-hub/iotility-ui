@@ -22,9 +22,9 @@
   @apply mt-1 block text-[10px] text-danger;
 }
 
-/* --- control box: mirrors .shared-form-control / .row-search --- */
+/* --- control box: same tokens as the generic .ui-control (controls.css) --- */
 .input-control {
-  @apply flex min-w-0 items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 transition focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/15 dark:border-dark-line dark:bg-dark-canvas;
+  @apply flex min-h-(--control-height) min-w-0 items-center gap-2 rounded-(--control-radius) border border-line bg-white px-3 py-1.5 transition focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/15 dark:border-dark-line dark:bg-dark-canvas;
 }
 .input-control.range {
   @apply p-0;

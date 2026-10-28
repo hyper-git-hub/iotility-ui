@@ -10,7 +10,7 @@
     }
     <label class="shared-form-field"
       ><span>Name <b>*</b></span
-      ><input class="shared-form-control" formControlName="name" placeholder="Enter name" />
+      ><input class="ui-control" formControlName="name" placeholder="Enter name" />
       @if (submitted() && form.controls.name.invalid) {
         <small class="field-error">Enter a valid name.</small>
       }
@@ -18,7 +18,7 @@
     <label class="shared-form-field"
       ><span>Employee ID <b>*</b></span
       ><input
-        class="shared-form-control"
+        class="ui-control"
         formControlName="employee_id"
         maxlength="18"
         placeholder="Enter employee ID"
@@ -44,7 +44,7 @@
       ><input
         type="number"
         min="0"
-        class="shared-form-control"
+        class="ui-control"
         formControlName="salary"
         placeholder="Enter salary"
     /></label>
@@ -82,7 +82,7 @@
         </button></shared-dropdown
       ></label
     ><label class="shared-form-field"
-      ><span>Contact Number <b>*</b></span><input class="shared-form-control" formControlName="phone"
+      ><span>Contact Number <b>*</b></span><input class="ui-control" formControlName="phone"
     /></label>
     @if (editing()) {
       <label class="shared-form-field"

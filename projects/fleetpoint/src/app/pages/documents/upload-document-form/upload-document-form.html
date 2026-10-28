@@ -7,8 +7,8 @@
     @if(submitted()&&!fileName()){<small class="shared-form-error full">Select a document to upload.</small>}
     <label class="shared-form-field"><span>Issue Date</span><shared-date-time-picker mode="date" formControlName="issueDate" placeholder="Select issue date" ariaLabel="Choose document issue date"/></label>
     <label class="shared-form-field"><span>Expiry Date</span><shared-date-time-picker mode="date" formControlName="expiryDate" placeholder="Select expiry date" ariaLabel="Choose document expiry date"/></label>
-    <label class="shared-form-field full"><span>Issued By</span><input class="shared-form-control" formControlName="issuedBy" placeholder="e.g. DVLA, Aviva..."/></label>
-    <label class="shared-form-field full"><span>Document Number</span><input class="shared-form-control" formControlName="documentNumber" placeholder="Licence number, policy number..."/></label>
+    <label class="shared-form-field full"><span>Issued By</span><input class="ui-control" formControlName="issuedBy" placeholder="e.g. DVLA, Aviva..."/></label>
+    <label class="shared-form-field full"><span>Document Number</span><input class="ui-control" formControlName="documentNumber" placeholder="Licence number, policy number..."/></label>
   </form>
   <div modal-footer class="upload-document-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="upload-document-form" class="shared-button-primary">Upload Document</button></div>
 </app-modal>

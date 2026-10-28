@@ -4,6 +4,7 @@ import {
   Component,
   Directive,
   ElementRef,
+  NgZone,
   OnDestroy,
   TemplateRef,
   computed,
@@ -134,6 +135,19 @@ export class DataTable implements AfterViewInit, OnDestroy {
   protected readonly bodyHeight = signal<number | null>(null);
   protected readonly heightReady = signal(false);
   private resizeObserver?: ResizeObserver;
+  private readonly zone = inject(NgZone);
+  private scrollEndAtHeight = -1;
+  private readonly onScroll = (): void => {
+    const element = this.tableBody().nativeElement;
+    const nearEnd = element.scrollHeight - element.scrollTop - element.clientHeight <= 160;
+    if (!nearEnd) {
+      this.scrollEndAtHeight = -1; // scrolled away: allow a retry (e.g. after a failed load)
+      return;
+    }
+    if (this.scrollEndAtHeight === element.scrollHeight) return;
+    this.scrollEndAtHeight = element.scrollHeight;
+    this.zone.run(() => this.scrollEnd.emit());
+  };
   protected readonly filteredRows = computed(() => {
     if (!this.clientSideSearch()) return this.rows();
     const q = this.searchTerm().trim().toLowerCase();
@@ -175,12 +189,6 @@ export class DataTable implements AfterViewInit, OnDestroy {
       : Number.parseInt(value, 10) <= 90
         ? 'mot-warning'
         : 'mot-success';
-  }
-  protected handleScroll(event: Event): void {
-    const element = event.currentTarget as HTMLElement;
-    if (element.scrollHeight - element.scrollTop - element.clientHeight <= 160) {
-      this.scrollEnd.emit();
-    }
   }
   protected scoreClass(value: unknown): string {
     const score = Number(value);
@@ -227,8 +235,12 @@ export class DataTable implements AfterViewInit, OnDestroy {
   protected bottomPanelTemplate(): TemplateRef<unknown> | null {
     return this.bottomPanel()?.template ?? null;
   }
+  /** Looked up per cell on every check, so it reads a prebuilt map instead of searching the templates. */
+  private readonly cellTemplateByKey = computed(
+    () => new Map(this.cellTemplates().map((item) => [item.key(), item.template] as const)),
+  );
   protected cellTemplate(key: string): TemplateRef<TableCellContext> | null {
-    return this.cellTemplates().find((item) => item.key() === key)?.template ?? null;
+    return this.cellTemplateByKey().get(key) ?? null;
   }
   ngAfterViewInit(): void {
     const element = this.tableBody().nativeElement;
@@ -237,9 +249,13 @@ export class DataTable implements AfterViewInit, OnDestroy {
       this.bodyHeight.set(entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height);
     });
     this.resizeObserver.observe(element);
+    // Scroll is listened to outside Angular: a template (scroll) binding ran change detection for the
+    // whole page on every scroll frame. Re-enter only when nearing the end, once per content height.
+    this.zone.runOutsideAngular(() => element.addEventListener('scroll', this.onScroll, { passive: true }));
     requestAnimationFrame(() => this.heightReady.set(true));
   }
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+    this.tableBody().nativeElement.removeEventListener('scroll', this.onScroll);
   }
 }

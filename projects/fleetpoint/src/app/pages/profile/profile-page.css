@@ -45,9 +45,7 @@
 .edit-form label,.password-form label { font-size:10px;font-weight:500;color:var(--color-muted); }
 .edit-form label>span,.edit-form label>small,.password-form label>small { color:var(--color-danger); }
 .edit-form label>small,.password-form label>small { display:block;margin-top:.25rem;font-size:9px; }
-.edit-form input,.password-form input { box-sizing:border-box;width:100%;height:2.5rem;margin-top:.375rem;border:1px solid var(--color-line);border-radius:.75rem;background:#fff;padding:0 .75rem;font-size:.75rem;color:var(--color-ink);outline:none; }
-.edit-form input:focus,.password-form input:focus { border-color:var(--color-brand-500); }
-.edit-form input[readonly] { cursor:not-allowed;background:var(--color-canvas);color:var(--color-muted);opacity:.75; }
+.edit-form input,.password-form input { margin-top:.375rem; } /* box: generic .ui-control */
 .form-actions { display:flex;justify-content:flex-end;gap:.5rem; }
 .cancel-button,.save-button { height:2.25rem;border-radius:.5rem;padding:0 1rem;font-size:10px;font-weight:600; }
 .cancel-button { border:1px solid var(--color-line);color:var(--color-muted); }
@@ -59,8 +57,6 @@
 .password-form>.save-button { margin-top:22px;white-space:nowrap; }
 :host-context(.dark) .image-button,:host-context(.dark) .edit-button,:host-context(.dark) .cancel-button { border-color:var(--color-dark-line);color:var(--color-brand-300); }
 :host-context(.dark) .image-hint,:host-context(.dark) .edit-form label,:host-context(.dark) .password-form label { color:var(--color-brand-300); }
-:host-context(.dark) .edit-form input,:host-context(.dark) .password-form input { border-color:var(--color-dark-line);background:var(--color-dark-surface);color:#fff; }
-:host-context(.dark) .edit-form input[readonly] { background:var(--color-dark-canvas);color:var(--color-brand-300); }
 @media (min-width:640px) { .edit-form { grid-template-columns:repeat(2,minmax(0,1fr)); }.form-actions { grid-column:span 2; } }
 @media (min-width:1024px) { .password-form { grid-template-columns:1fr 1fr 1fr auto;align-items:start; } }
 .info-card > footer { @apply flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center; }

@@ -30,7 +30,7 @@
             <label class="shared-form-field"
               ><span>Registration Number *</span
               ><input
-                class="shared-form-control"
+                class="ui-control"
                 formControlName="registration"
                 placeholder="e.g. LC-3029"
               />
@@ -40,21 +40,21 @@
             </label>
             <label class="shared-form-field"
               ><span>Engine Number *</span
-              ><input class="shared-form-control" formControlName="engine_number" />
+              ><input class="ui-control" formControlName="engine_number" />
               @if (submitted() && form.controls.engine_number.invalid) {
                 <small class="field-error">Engine number is required.</small>
               }
             </label>
             <label class="shared-form-field"
               ><span>Chassis Number *</span
-              ><input class="shared-form-control" formControlName="chassis_number" />
+              ><input class="ui-control" formControlName="chassis_number" />
               @if (submitted() && form.controls.chassis_number.invalid) {
                 <small class="field-error">Chassis number is required.</small>
               }
             </label>
             <label class="shared-form-field"
               ><span>Make *</span
-              ><input class="shared-form-control" formControlName="make" placeholder="e.g. Volvo" />
+              ><input class="ui-control" formControlName="make" placeholder="e.g. Volvo" />
               @if (submitted() && form.controls.make.invalid) {
                 <small class="field-error">Make is required.</small>
               }
@@ -62,7 +62,7 @@
             <label class="shared-form-field"
               ><span>Model *</span
               ><input
-                class="shared-form-control"
+                class="ui-control"
                 formControlName="model"
                 placeholder="e.g. L150H"
               />
@@ -72,34 +72,34 @@
             </label>
             <label class="shared-form-field"
               ><span>Year *</span
-              ><input type="number" class="shared-form-control" formControlName="year" />
+              ><input type="number" class="ui-control" formControlName="year" />
               @if (submitted() && form.controls.year.invalid) {
                 <small class="field-error">Enter a valid vehicle year.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Color *</span><input class="shared-form-control" formControlName="color" />
+              ><span>Color *</span><input class="ui-control" formControlName="color" />
               @if (submitted() && form.controls.color.invalid) {
                 <small class="field-error">Color is required.</small>
               }
             </label>
             <label class="shared-form-field"
               ><span>Odometer Reading *</span
-              ><input type="number" class="shared-form-control" formControlName="odo_reading" />
+              ><input type="number" class="ui-control" formControlName="odo_reading" />
               @if (submitted() && form.controls.odo_reading.invalid) {
                 <small class="field-error">Enter a valid odometer reading.</small>
               }
             </label>
             <label class="shared-form-field"
               ><span>Engine Capacity (CC) *</span
-              ><input type="number" class="shared-form-control" formControlName="engine_capacity" />
+              ><input type="number" class="ui-control" formControlName="engine_capacity" />
               @if (submitted() && form.controls.engine_capacity.invalid) {
                 <small class="field-error">Enter a valid engine capacity.</small>
               }
             </label>
             <label class="shared-form-field"
               ><span>Wheels *</span
-              ><input type="number" class="shared-form-control" formControlName="wheels" />
+              ><input type="number" class="ui-control" formControlName="wheels" />
               @if (submitted() && form.controls.wheels.invalid) {
                 <small class="field-error">Vehicle must have at least two wheels.</small>
               }
@@ -108,7 +108,7 @@
               ><span>Fuel Tank Capacity (litres) *</span
               ><input
                 type="number"
-                class="shared-form-control"
+                class="ui-control"
                 formControlName="fuel_tank_capacity"
               />
               @if (submitted() && form.controls.fuel_tank_capacity.invalid) {
@@ -395,7 +395,7 @@
                 ><span>Speed Threshold ({{ isUkCustomer ? 'mph' : 'km/h' }}) *</span
                 ><input
                   type="number"
-                  class="shared-form-control"
+                  class="ui-control"
                   formControlName="speed_threshold"
                   min="1"
               /></label>

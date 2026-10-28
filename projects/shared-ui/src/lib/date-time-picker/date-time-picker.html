@@ -1,7 +1,8 @@
 <button
   #trigger
   type="button"
-  class="picker-trigger"
+  class="picker-trigger ui-control ui-select"
+  [class.ui-control-sm]="density() === 'compact'"
   [class.has-value]="displayValue()"
   [disabled]="effectiveDisabled()"
   [attr.aria-label]="ariaLabel()"

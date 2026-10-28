@@ -157,7 +157,7 @@
         <label
           ><span>First name <b>*</b></span
           ><input
-            class="shared-form-control"
+            class="ui-control"
             formControlName="firstName"
             placeholder="Enter first name"
           />
@@ -168,7 +168,7 @@
         <label
           ><span>Last name <b>*</b></span
           ><input
-            class="shared-form-control"
+            class="ui-control"
             formControlName="lastName"
             placeholder="Enter last name"
           />
@@ -179,7 +179,7 @@
         <label
           ><span>Email <b>*</b></span
           ><input
-            class="shared-form-control"
+            class="ui-control"
             type="email"
             formControlName="email"
             [readonly]="!!selectedUser()"
@@ -192,7 +192,7 @@
         <label
           ><span>Phone <b>*</b></span
           ><input
-            class="shared-form-control"
+            class="ui-control"
             formControlName="phone"
             placeholder="+974 0000 0000"
           />
@@ -225,29 +225,29 @@
     <div class="user-extra-fields">
       <label
         ><span>Department</span
-        ><input class="shared-form-control" formControlName="department" placeholder="Department"
+        ><input class="ui-control" formControlName="department" placeholder="Department"
       /></label>
       <label
         ><span>Designation</span
-        ><input class="shared-form-control" formControlName="designation" placeholder="Designation"
+        ><input class="ui-control" formControlName="designation" placeholder="Designation"
       /></label>
       <label
         ><span>Work location</span
         ><input
-          class="shared-form-control"
+          class="ui-control"
           formControlName="workLocation"
           placeholder="Work location"
       /></label>
       <label
         ><span>Internal role</span
         ><input
-          class="shared-form-control"
+          class="ui-control"
           formControlName="internalRole"
           placeholder="Internal role"
       /></label>
       <label
         ><span>Date joined <b>*</b></span
-        ><input class="shared-form-control" type="date" formControlName="dateJoined" />
+        ><input class="ui-control" type="date" formControlName="dateJoined" />
         @if (submitted() && userForm.controls.dateJoined.invalid) {
           <small>Select the joining date.</small>
         }
@@ -317,7 +317,7 @@
       <label
         ><span>Group name <b>*</b></span
         ><input
-          class="shared-form-control"
+          class="ui-control"
           formControlName="name"
           placeholder="e.g. Fleet supervisors"
         />
@@ -327,7 +327,7 @@
       ><label
         ><span>Description <b>*</b></span
         ><textarea
-          class="shared-form-control shared-form-control--single-line"
+          class="ui-control"
           formControlName="description"
           rows="1"
           placeholder="Describe what this group can access"

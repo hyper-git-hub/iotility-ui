@@ -187,10 +187,10 @@
           <article class="workspace-group">
             <header><span class="group-icon success"><img src="assets/fleetpoint/icons/mileage.svg" alt="" /></span><h2>Mileage</h2><small>{{ mileageYear() }}{{ mileageMonth() ? ' · ' + mileageMonth() : '' }}</small></header>
             <div class="field-row">
-              <select [value]="mileageYear()" (change)="setMileageYear($event)" aria-label="Mileage year">
+              <select class="ui-control ui-control-sm" [value]="mileageYear()" (change)="setMileageYear($event)" aria-label="Mileage year">
                 @for (year of mileageYears; track year) { <option [value]="year">{{ year }}</option> }
               </select>
-              <select [value]="mileageMonth()" (change)="setMileageMonth($event)" aria-label="Mileage month">
+              <select class="ui-control ui-control-sm" [value]="mileageMonth()" (change)="setMileageMonth($event)" aria-label="Mileage month">
                 <option value="">All months</option>
                 @for (month of mileageMonths; track month) { <option [value]="month">{{ month }}</option> }
               </select>

@@ -85,7 +85,7 @@
   @apply font-semibold text-danger;
 }
 .review-main textarea {
-  @apply mt-3 w-full resize-none rounded-xl border border-line bg-canvas px-3 py-3 text-[10px] text-ink outline-none placeholder:text-muted focus:border-brand-600 dark:border-dark-line dark:bg-dark-canvas dark:text-white;
+  @apply mt-3;
 }
 .review-main > footer {
   @apply mt-3 flex items-center justify-between gap-3;
@@ -168,11 +168,6 @@
   background: var(--color-dark-canvas) !important;
   border-color: var(--color-dark-line) !important;
   color: var(--color-brand-300) !important;
-}
-:host-context(.dark) .review-main textarea {
-  background: var(--color-dark-canvas) !important;
-  border-color: var(--color-dark-line) !important;
-  color: white;
 }
 :host-context(.dark) .category {
   background: color-mix(in srgb, var(--color-brand-500) 15%, var(--color-dark-canvas));
