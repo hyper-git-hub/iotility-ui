@@ -8,12 +8,19 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
 import type { EChartsCoreOption, EChartsType } from 'echarts/core';
 
 export type ChartOption = EChartsCoreOption;
+
+/** Visible category range after the user pans a zoomable chart (indexes, inclusive). */
+export interface ChartZoomRange {
+  startValue: number;
+  endValue: number;
+}
 
 let echartsLoader: Promise<typeof import('./echarts-setup')> | null = null;
 /** ECharts is fetched once, the first time any chart renders. */
@@ -47,11 +54,18 @@ const loadEcharts = () => (echartsLoader ??= import('./echarts-setup'));
 })
 export class ChartCanvas {
   readonly option = input.required<ChartOption>();
+  /** Emits whenever the chart's data window moves (drag, wheel or dispatchZoom). */
+  readonly zoomed = output<ChartZoomRange>();
 
   protected readonly ready = signal(false);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly zone = inject(NgZone);
   private instance: EChartsType | null = null;
+
+  /** Moves a zoomable chart's data window (e.g. from a custom scrollbar). */
+  dispatchZoom(range: ChartZoomRange): void {
+    this.zone.runOutsideAngular(() => this.instance?.dispatchAction({ type: 'dataZoom', ...range }));
+  }
 
   constructor() {
     let destroyed = false;
@@ -67,6 +81,12 @@ export class ChartCanvas {
       void loadEcharts().then(({ init }) => {
         if (destroyed) return;
         this.instance = this.zone.runOutsideAngular(() => init(this.host, undefined, { renderer: 'canvas' }));
+        this.instance.on('datazoom', () => {
+          const zoom = (this.instance?.getOption() as { dataZoom?: Partial<ChartZoomRange>[] })?.dataZoom?.[0];
+          if (zoom?.startValue === undefined || zoom.endValue === undefined) return;
+          const range = { startValue: Number(zoom.startValue), endValue: Number(zoom.endValue) };
+          this.zone.run(() => this.zoomed.emit(range));
+        });
         this.ready.set(true);
       });
     };
@@ -93,7 +113,7 @@ export class ChartCanvas {
       // Series are matched by id and replaced as a set, so removed series disappear while
       // kept ones transition smoothly to their new values.
       untracked(() =>
-        this.zone.runOutsideAngular(() => this.instance?.setOption(option, { replaceMerge: ['series'] })),
+        this.zone.runOutsideAngular(() => this.instance?.setOption(option, { replaceMerge: ['series', 'dataZoom'] })),
       );
     });
 
