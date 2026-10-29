@@ -171,7 +171,9 @@ router-outlet + * {
   @apply border-danger/30 bg-danger/10 text-danger;
 }
 .detail-status[data-status='missing'],
-.document-status[data-status='missing'] {
+.document-status[data-status='missing'],
+.detail-status[data-status='unknown'],
+.document-status[data-status='unknown'] {
   @apply border-line bg-canvas text-muted;
 }
 .document-details dl {
@@ -274,63 +276,9 @@ router-outlet + * {
 .compliance .gap-clear p {
   @apply border-0 text-success;
 }
-.upload-form {
-  @apply grid grid-cols-2 gap-3;
-}
-.upload-form .full {
-  @apply col-span-2;
-}
-.upload-drop {
-  @apply relative grid cursor-pointer place-items-center rounded-xl border-2 border-dashed border-line bg-white p-5 text-center transition hover:border-brand-500 dark:border-dark-line dark:bg-dark-canvas;
-}
-.upload-drop input {
-  @apply absolute inset-0 cursor-pointer opacity-0;
-}
-.upload-drop > span {
-  @apply text-2xl text-brand-600;
-}
-.upload-drop strong {
-  @apply mt-1 text-xs text-ink dark:text-white;
-}
-.upload-drop small {
-  @apply mt-1 text-[10px] text-muted;
-}
-.upload-actions {
-  @apply grid grid-cols-2;
-}
-.upload-actions button {
-  @apply w-full;
-}
-.upload-actions .shared-button-secondary {
-  @apply bg-white dark:bg-dark-surface;
-}
-.upload-actions .shared-button-primary {
-  @apply gap-2;
-}
-.upload-actions img {
-  @apply size-4;
-}
-.shared-form-field {
-  @apply grid content-start gap-1;
-}
-.shared-form-field > span {
-  @apply text-xs font-medium;
-}
-.shared-form-field b {
-  @apply text-danger;
-}
-.shared-form-error {
-  @apply text-[10px] text-danger;
-}
 @media (max-width: 800px) {
   .page-heading {
     @apply items-start flex-col;
-  }
-  .upload-form {
-    @apply grid-cols-1;
-  }
-  .upload-form .full {
-    @apply col-span-1;
   }
   }
 @media (max-width: 1100px) {

@@ -55,6 +55,8 @@
             ><span>· {{ item.name }}</span
             ><b>({{ deadline(item) }})</b>
           </button>
+        } @empty {
+          <span>—</span>
         }
       </div>
     </div>
@@ -149,7 +151,7 @@
               <img class="file-icon" src="assets/fleetpoint/icons/document.svg" alt="" aria-hidden="true" />
               <strong>{{ item.fileName }}</strong
               ><small>{{ item.fileSize }}</small
-              ><button type="button">
+              ><button type="button" [disabled]="!item.fileUrls.length" (click)="viewFile(item)">
                 <img src="assets/fleetpoint/icons/eye.svg" alt="" aria-hidden="true" />
                 View Document
               </button>
@@ -222,8 +224,7 @@
             <img src="assets/fleetpoint/icons/truck.svg" alt="" aria-hidden="true" />
             Vehicles — MOT Required
           </h3>
-          <p><span>LP-2201</span><button type="button" (click)="openUpload()">Upload</button></p>
-          <p><span>LP-4408</span><button type="button" (click)="openUpload()">Upload</button></p>
+          <p><span>—</span></p>
         </article>
       }
       @if (category() === 'all' || category() === 'driver') {
@@ -232,15 +233,14 @@
             <img src="assets/fleetpoint/icons/user.svg" alt="" aria-hidden="true" />
             Drivers — Licence Missing
           </h3>
-          <p><span>Connor</span><button type="button" (click)="openUpload()">Upload</button></p>
-          <p><span>Oliver</span><button type="button" (click)="openUpload()">Upload</button></p>
+          <p><span>—</span></p>
         </article>
         <article>
           <h3>
             <img src="assets/fleetpoint/icons/document-check.svg" alt="" aria-hidden="true" />
             Drivers — CPC Missing
           </h3>
-          <p><span>Priya</span><button type="button" (click)="openUpload()">Upload</button></p>
+          <p><span>—</span></p>
         </article>
       }
       @if (category() === 'company') {
@@ -249,104 +249,12 @@
             <img src="assets/fleetpoint/icons/shield-check.svg" alt="" aria-hidden="true" />
             Company Documents
           </h3>
-          <p>All required company documents are up to date.</p>
+          <p>—</p>
         </article>
       }
     </div>
   </section>
 </section>
 
-<app-upload-document-form [open]="uploadOpen()" (cancelled)="closeUpload()" (created)="upload($event)"/>
+<app-upload-document-form [open]="uploadOpen()" (cancelled)="closeUpload()" (created)="upload()"/>
 
-<app-modal
-  [open]="false"
-  size="lg"
-  labelledBy="upload-document-title"
-  (closed)="closeUpload()"
->
-  <div modal-header><h2 id="upload-document-title">Upload Document</h2></div>
-  <form id="upload-document-form" class="upload-form" [formGroup]="form" (ngSubmit)="upload()">
-    <label class="shared-form-field"
-      ><span>Document Type <b>*</b></span
-      ><shared-dropdown
-        class="form-dropdown"
-        [options]="typeOptions"
-        mode="single"
-        align="left"
-        [showOptionIcons]="false"
-        [matchTriggerWidth]="true"
-        [selected]="[form.controls.type.value]"
-        (optionSelected)="choose('type', $event)"
-        ><button dropdown-trigger type="button">
-          {{ form.controls.type.value || 'Select document type...' }}
-        </button></shared-dropdown
-      >
-      @if (submitted() && form.controls.type.invalid) {
-        <small class="shared-form-error">Select a document type.</small>
-      }
-    </label>
-    <label class="shared-form-field"
-      ><span>Linked To <b>*</b></span
-      ><shared-dropdown
-        class="form-dropdown"
-        [options]="linkedOptions"
-        mode="single"
-        align="left"
-        [searchable]="true"
-        [showOptionIcons]="false"
-        [matchTriggerWidth]="true"
-        [selected]="[form.controls.linkedTo.value]"
-        (optionSelected)="choose('linkedTo', $event)"
-        ><button dropdown-trigger type="button">
-          {{ form.controls.linkedTo.value || 'Select vehicle, driver or company...' }}
-        </button></shared-dropdown
-      >
-      @if (submitted() && form.controls.linkedTo.invalid) {
-        <small class="shared-form-error">Choose a linked record.</small>
-      }
-    </label>
-    <label class="upload-drop full"
-      ><input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="pickFile($event)" /><span>↥</span
-      ><strong>{{ selectedFile() || 'Click to upload or drag and drop' }}</strong
-      ><small>PDF, JPG or PNG · maximum 10 MB</small></label
-    >
-    @if (submitted() && !selectedFile()) {
-      <small class="shared-form-error full">Select a document to upload.</small>
-    }
-    <label class="shared-form-field"
-      ><span>Issue Date</span
-      ><shared-date-time-picker
-        mode="date"
-        formControlName="issueDate"
-        placeholder="Select issue date"
-    /></label>
-    <label class="shared-form-field"
-      ><span>Expiry Date</span
-      ><shared-date-time-picker
-        mode="date"
-        formControlName="expiryDate"
-        placeholder="Select expiry date"
-    /></label>
-    <label class="shared-form-field full"
-      ><span>Issued By</span
-      ><input
-        class="ui-control"
-        formControlName="issuedBy"
-        placeholder="e.g. DVLA, Aviva..."
-    /></label>
-    <label class="shared-form-field full"
-      ><span>Document Number</span
-      ><input
-        class="ui-control"
-        formControlName="documentNumber"
-        placeholder="Licence number, policy number..."
-    /></label>
-  </form>
-  <div modal-footer class="upload-actions">
-    <button type="button" class="shared-button-secondary" (click)="closeUpload()">Cancel</button
-    ><button type="submit" form="upload-document-form" class="shared-button-primary">
-      <img src="assets/fleetpoint/icons/upload.svg" alt="" aria-hidden="true" />
-      Upload Document
-    </button>
-  </div>
-</app-modal>

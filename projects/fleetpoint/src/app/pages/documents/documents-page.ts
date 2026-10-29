@@ -1,13 +1,11 @@
 import { lingerWhileClosing } from '@iotility/shared-ui';
 import { TabIndicator } from '@iotility/shared-ui';
-import { Component, computed, effect, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   DataTable,
   DataTableCellTemplate,
-  DateTimePicker,
-  Dropdown,
   DropdownOption,
   FilterBar,
   FilterChangeEvent,
@@ -16,11 +14,13 @@ import {
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
-import { Modal } from '../../shared/modal/modal';
+import { Subscription } from 'rxjs';
+import { DocumentRecord, DocumentsApiService } from '../../shared/services/documents-api.service';
+import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 import { StatCard } from '../../shared/stat-card/stat-card';
-import { DocumentCategory, DocumentStatus, FLEET_DOCUMENTS, FleetDocument } from './documents.data';
+import { DocumentCategory, DocumentStatus, FleetDocument, NOT_AVAILABLE, toFleetDocument } from './documents.data';
 import { DocumentsCategoryStore } from './documents-category.store';
-import { UploadDocumentForm, UploadDocumentValue } from './upload-document-form/upload-document-form';
+import { UploadDocumentForm } from './upload-document-form/upload-document-form';
 
 @Component({
   selector: 'app-documents-page',
@@ -28,11 +28,7 @@ import { UploadDocumentForm, UploadDocumentValue } from './upload-document-form/
     TabIndicator,
     DataTable,
     DataTableCellTemplate,
-    DateTimePicker,
-    Dropdown,
     FilterBar,
-    Modal,
-    ReactiveFormsModule,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -43,16 +39,19 @@ import { UploadDocumentForm, UploadDocumentValue } from './upload-document-form/
   styleUrl: './documents-page.css',
 })
 export class DocumentsPage {
-  protected readonly documents = signal<FleetDocument[]>(FLEET_DOCUMENTS);
-  protected readonly category;
+  private readonly api = inject(DocumentsApiService);
+  private readonly feedback = inject(FeedbackDialogBridgeService);
+  private readonly destroyRef = inject(DestroyRef);
+  private request?: Subscription;
+  private readonly records = signal<DocumentRecord[]>([]);
+  protected readonly documents = computed(() => this.records().map(toFleetDocument));
+  protected readonly category = inject(DocumentsCategoryStore).category;
   protected readonly status = signal<'all' | DocumentStatus>('all');
   protected readonly search = signal('');
   protected readonly selected = signal<FleetDocument | null>(null);
   /** Drawer content stays rendered while the drawer animates shut. */
   protected readonly shownDocument = lingerWhileClosing(this.selected);
   protected readonly uploadOpen = signal(false);
-  protected readonly submitted = signal(false);
-  protected readonly selectedFile = signal('');
   protected readonly categoryOptions: DropdownOption[] = [
     { id: 'all', label: 'All statuses' },
     { id: 'valid', label: 'Valid' },
@@ -60,9 +59,6 @@ export class DocumentsPage {
     { id: 'expired', label: 'Expired' },
     { id: 'missing', label: 'Missing' },
   ];
-  protected readonly typeOptions:DropdownOption[]=['MOT Certificate','Vehicle Insurance','Road Tax'].map(label=>({id:label,label}));
-  protected readonly linkedOptions:DropdownOption[]=['LogisticsPro','LP-7734','LP-4821'].map(label=>({id:label,label}));
-  protected readonly form;
   protected readonly columns: TableColumn[] = [
     { key: 'document', label: 'Document' },
     { key: 'categoryLabel', label: 'Category' },
@@ -74,11 +70,12 @@ export class DocumentsPage {
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];
   protected readonly actions: TableAction[] = ['view', 'upload', 'edit', 'delete'];
+  /** The API has no expiry data, so validity counts are "—". */
   protected readonly counts = computed(() => ({
     total: this.documents().length,
-    valid: this.documents().filter((item) => item.status === 'valid').length,
-    expiring: this.documents().filter((item) => item.status === 'expiring').length,
-    expired: this.documents().filter((item) => item.status === 'expired').length,
+    valid: NOT_AVAILABLE,
+    expiring: NOT_AVAILABLE,
+    expired: NOT_AVAILABLE,
     vehicle: this.documents().filter((item) => item.category === 'vehicle').length,
     driver: this.documents().filter((item) => item.category === 'driver').length,
     company: this.documents().filter((item) => item.category === 'company').length,
@@ -94,7 +91,7 @@ export class DocumentsPage {
       (item) =>
         (this.category() === 'all' || item.category === this.category()) &&
         (this.status() === 'all' || item.status === this.status()) &&
-        (!query || `${item.name} ${item.linkedTo} ${item.issuedBy}`.toLowerCase().includes(query)),
+        (!query || `${item.name} ${item.linkedTo} ${item.fileName}`.toLowerCase().includes(query)),
     );
   });
   protected readonly rows = computed<TableRow[]>(() =>
@@ -103,7 +100,7 @@ export class DocumentsPage {
       document: item.name,
       file: item.fileName,
       size: item.fileSize,
-      category: item.category,
+      category: item.category ?? '',
       categoryLabel: this.categoryLabel(item.category),
       linkedTo: item.linkedTo,
       issuedBy: item.issuedBy,
@@ -116,9 +113,7 @@ export class DocumentsPage {
     })),
   );
 
-  constructor(private readonly categoryStore: DocumentsCategoryStore,formBuilder:FormBuilder) {
-    this.form=formBuilder.nonNullable.group({type:['',Validators.required],linkedTo:['',Validators.required],issueDate:[''],expiryDate:[''],issuedBy:[''],documentNumber:['']});
-    this.category = this.categoryStore.category;
+  constructor() {
     let previous = this.category();
     effect(() => {
       const current = this.category();
@@ -126,6 +121,10 @@ export class DocumentsPage {
         this.selected.set(null);
         previous = current;
       }
+    });
+    effect(() => {
+      this.api.version();
+      untracked(() => this.load());
     });
   }
   protected setStatus(value: 'all' | DocumentStatus): void {
@@ -153,14 +152,9 @@ export class DocumentsPage {
   protected find(row: TableRow): FleetDocument | null {
     return this.documents().find((item) => item.id === row['id']) ?? null;
   }
-  protected remove(row: TableRow): void {
-    const id = String(row['id']);
-    this.documents.update((items) => items.filter((item) => item.id !== id));
-    if (this.selected()?.id === id) this.selected.set(null);
-  }
   protected tableAction(event: { action: TableAction; row: TableRow }): void {
     if (event.action === 'delete') {
-      this.remove(event.row);
+      void this.remove(event.row);
       return;
     }
     if (event.action === 'upload') {
@@ -178,37 +172,21 @@ export class DocumentsPage {
   protected closeUpload(): void {
     this.uploadOpen.set(false);
   }
-  protected choose(control:'type'|'linkedTo',option:DropdownOption):void{this.form.controls[control].setValue(option.id);}
-  protected pickFile(event:Event):void{this.selectedFile.set((event.target as HTMLInputElement).files?.[0]?.name??'');}
-  protected upload(value?: UploadDocumentValue): void {
-    if(!value)return;
-    this.documents.update((items) => [
-      ...items,
-      {
-        id: `DOC-${String(items.length + 1).padStart(3, '0')}`,
-        name: value.type,
-        fileName: value.fileName,
-        fileSize: '—',
-        category: this.inferCategory(value.type),
-        linkedTo: value.linkedTo,
-        issuedBy: value.issuedBy || '—',
-        issueDate: value.issueDate || '—',
-        expiryDate: value.expiryDate,
-        daysUntilExpiry: null,
-        status: 'valid',
-        documentNumber: value.documentNumber,
-        uploadedBy: 'Mona Lisa',
-      },
-    ]);
+  protected upload(): void {
     this.closeUpload();
+    this.api.changed();
+  }
+  /** Opens the uploaded file in a new tab. */
+  protected viewFile(item: FleetDocument): void {
+    if (item.fileUrls[0]) window.open(item.fileUrls[0], '_blank', 'noopener');
   }
   protected statusLabel(value: DocumentStatus): string {
-    return { valid: 'Valid', expiring: 'Expiring Soon', expired: 'Expired', missing: 'Missing' }[
+    return { valid: 'Valid', expiring: 'Expiring Soon', expired: 'Expired', missing: 'Missing', unknown: NOT_AVAILABLE }[
       value
     ];
   }
-  protected categoryLabel(value: DocumentCategory): string {
-    return { vehicle: 'Vehicle', driver: 'Driver', company: 'Company' }[value];
+  protected categoryLabel(value: DocumentCategory | null): string {
+    return value ? { vehicle: 'Vehicle', driver: 'Driver', company: 'Company' }[value] : NOT_AVAILABLE;
   }
   protected deadline(item: FleetDocument): string {
     if (item.daysUntilExpiry === null) return '';
@@ -216,9 +194,50 @@ export class DocumentsPage {
       ? `${Math.abs(item.daysUntilExpiry)}d overdue`
       : `${item.daysUntilExpiry}d left`;
   }
-  private inferCategory(type: string): DocumentCategory {
-    if (/licence|cpc|medical/i.test(type)) return 'driver';
-    if (/operator|fleet|fors/i.test(type)) return 'company';
-    return 'vehicle';
+
+  private load(): void {
+    this.request?.unsubscribe();
+    this.request = this.api
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (records) => {
+          this.records.set(records);
+          // Keep the drawer on the refreshed copy, or close it if the document is gone.
+          const selected = this.selected();
+          if (selected) this.selected.set(this.documents().find((item) => item.id === selected.id) ?? null);
+        },
+        error: () => this.records.set([]),
+      });
+  }
+
+  private async remove(row: TableRow): Promise<void> {
+    const confirmed = await this.feedback.open({
+      type: 'warning',
+      title: 'Delete document?',
+      message: `${row['document']} for ${row['linkedTo']} will be permanently deleted.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      showCancel: true,
+    });
+    if (!confirmed) return;
+    const failed = (message?: string) =>
+      void this.feedback.open({
+        type: 'error',
+        title: 'Unable to delete',
+        message: message || 'The document could not be deleted. Please try again.',
+        showCancel: false,
+      });
+    this.api
+      .delete(Number(row['id']))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (response.status === 1002) return failed(response.message);
+          if (this.selected()?.id === row['id']) this.selected.set(null);
+          this.api.changed();
+        },
+        error: () => failed(),
+      });
   }
 }
