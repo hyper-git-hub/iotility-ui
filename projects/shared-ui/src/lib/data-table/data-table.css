@@ -399,6 +399,17 @@ strong {
 .empty {
   @apply text-center;
 }
+/* No rows: the empty row stretches over the whole body so the message sits in the middle of the
+   table area (when the table has a set height), and it isn't hoverable since there's nothing to open. */
+.scroll:has(.empty-row) table {
+  height: 100%;
+}
+.empty-row td {
+  @apply border-b-0 align-middle;
+}
+tbody tr.empty-row:hover {
+  @apply bg-transparent;
+}
 /* Empty result: an inbox outline draws itself in once above the message. */
 .empty-state {
   @apply inline-flex flex-col items-center gap-2 py-6 text-xs text-muted dark:text-brand-300;

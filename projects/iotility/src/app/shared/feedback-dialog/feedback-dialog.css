@@ -55,10 +55,6 @@
   font-size: 1.25rem;
   font-weight: 900;
 }
-.dialog-icon img {
-  width: 1.5rem;
-  height: 1.5rem;
-}
 .dialog-icon-success {
   background: var(--feedback-success);
 }
@@ -137,8 +133,8 @@
     .dialog-panel { transform: none; }
   }
 }
-/* Success check: drawn as a stroke (white on the success tile) so it can draw itself in. */
-.dialog-check {
+/* Dialog icons are drawn as strokes (white on the coloured tile) so they can draw themselves in. */
+.dialog-glyph {
   width: 1.5rem;
   height: 1.5rem;
   fill: none;
