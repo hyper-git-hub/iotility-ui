@@ -7,9 +7,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="assets/favicon.png" />
     <style>
+      /* Boot screen. Same design as src/app/shared/loading (app-loading); keep the two in step. */
+      @property --loader-angle {
+        syntax: '<angle>';
+        inherits: false;
+        initial-value: 0deg;
+      }
+
       .bootstrap-loading {
         position: fixed;
         inset: 0;
+        z-index: 9999;
         display: grid;
         min-height: 100vh;
         overflow: hidden;
@@ -17,188 +25,273 @@
         box-sizing: border-box;
         color: #fff;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background-color: #3b0764;
+        background:
+          radial-gradient(ellipse 70% 55% at 50% 38%, rgb(124 58 237 / 26%), transparent 70%),
+          linear-gradient(160deg, #0b0a14 0%, #120a24 55%, #1e0b3d 100%);
+        -webkit-font-smoothing: antialiased;
+        transition: opacity 320ms cubic-bezier(0.23, 1, 0.32, 1), transform 320ms cubic-bezier(0.23, 1, 0.32, 1);
       }
 
-      /* Base gradient + soft glow */
-      .bootstrap-loading::before {
-        content: '';
+      .bootstrap-loading.is-leaving {
+        opacity: 0;
+        transform: scale(1.015);
+        pointer-events: none;
+      }
+
+      /* Two slow aurora glows drifting behind everything. */
+      .bootstrap-loading__aurora {
         position: absolute;
         inset: 0;
-        background:
-          radial-gradient(circle at 50% 45%, rgb(147 51 234 / 34%) 0%, transparent 36%),
-          radial-gradient(circle at 85% 90%, rgb(57 120 212 / 18%) 0%, transparent 40%),
-          linear-gradient(145deg, #09090f, #3b0764);
-        animation: bootstrap-loading-glow 6s ease-in-out infinite alternate;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .bootstrap-loading__aurora::before,
+      .bootstrap-loading__aurora::after {
+        content: '';
+        position: absolute;
+        width: 46vmax;
+        height: 46vmax;
+        border-radius: 50%;
+        filter: blur(90px);
+        opacity: 0.38;
+        will-change: transform;
+      }
+      .bootstrap-loading__aurora::before {
+        top: -16vmax;
+        left: -10vmax;
+        background: #7c3aed;
+        animation: bootstrap-loading-drift 18s ease-in-out infinite alternate;
+      }
+      .bootstrap-loading__aurora::after {
+        right: -14vmax;
+        bottom: -20vmax;
+        background: #3978d4;
+        opacity: 0.26;
+        animation: bootstrap-loading-drift 22s ease-in-out infinite alternate-reverse;
       }
 
-      /* Faint connected-grid texture, fading toward the edges */
+      /* Faint connected-grid texture, fading toward the edges. */
       .bootstrap-loading::after {
         content: '';
         position: absolute;
         inset: 0;
         background-image:
-          linear-gradient(rgb(216 180 254 / 6%) 1px, transparent 1px),
-          linear-gradient(90deg, rgb(216 180 254 / 6%) 1px, transparent 1px);
-        background-size: 44px 44px;
-        -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 65%);
-        mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 65%);
+          linear-gradient(rgb(216 180 254 / 5%) 1px, transparent 1px),
+          linear-gradient(90deg, rgb(216 180 254 / 5%) 1px, transparent 1px);
+        background-size: 48px 48px;
+        -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 42%, #000 0%, transparent 75%);
+        mask-image: radial-gradient(ellipse 60% 55% at 50% 42%, #000 0%, transparent 75%);
+        pointer-events: none;
       }
 
       .bootstrap-loading__content {
         position: relative;
         z-index: 1;
         width: 100%;
-        max-width: 32rem;
+        max-width: 30rem;
         margin: auto;
         text-align: center;
       }
 
-      /* Hero: logos inside a glass panel */
+      /* Staggered entrance, once. */
+      .bootstrap-loading__content > * {
+        animation: bootstrap-loading-rise 560ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      }
+      .bootstrap-loading__content > :nth-child(2) { animation-delay: 70ms; }
+      .bootstrap-loading__content > :nth-child(3) { animation-delay: 120ms; }
+      .bootstrap-loading__content > :nth-child(4) { animation-delay: 170ms; }
+
       .bootstrap-loading__hero {
-        position: relative;
         display: flex;
-        align-items: center;
         justify-content: center;
-        margin: 0 auto 2.5rem;
+        margin: 0 auto 2.25rem;
       }
 
+      /* Glass card with a light that travels around its border. */
       .bootstrap-loading__logos {
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 1.5rem;
-        padding: 1.25rem 2rem;
-        border: 1px solid rgb(255 255 255 / 12%);
-        border-radius: 1.25rem;
-        background: linear-gradient(145deg, rgb(255 255 255 / 9%), rgb(255 255 255 / 3%));
+        padding: 1.375rem 2.25rem;
+        border-radius: 1.5rem;
+        background: linear-gradient(160deg, rgb(255 255 255 / 9%), rgb(255 255 255 / 3%));
         box-shadow:
-          0 20px 50px -12px rgb(9 9 15 / 65%),
-          0 0 60px -10px rgb(147 51 234 / 45%),
-          inset 0 1px 0 rgb(255 255 255 / 12%);
-        -webkit-backdrop-filter: blur(14px);
-        backdrop-filter: blur(14px);
-        animation: bootstrap-loading-float 4.5s ease-in-out infinite;
+          inset 0 0 0 1px rgb(255 255 255 / 10%),
+          inset 0 1px 0 rgb(255 255 255 / 14%),
+          0 24px 60px -18px rgb(5 3 15 / 80%),
+          0 0 80px -20px rgb(124 58 237 / 55%);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+      }
+      .bootstrap-loading__logos::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        padding: 1px;
+        border-radius: inherit;
+        background: conic-gradient(from var(--loader-angle), transparent 0deg, transparent 220deg, rgb(192 132 252 / 90%) 290deg, rgb(57 120 212 / 90%) 330deg, transparent 360deg);
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+        animation: bootstrap-loading-orbit 4.5s linear infinite;
+        pointer-events: none;
       }
 
-      .bootstrap-loading__product-logo {
+      .bootstrap-loading__logo {
         display: block;
         width: auto;
-        max-width: 15rem;
-        height: 2.5rem;
+        max-width: 16rem;
+        height: 2.75rem;
         flex-shrink: 0;
       }
-
-      .bootstrap-loading__label-logo {
-        display: block;
-        width: auto;
-        max-width: 15rem;
+      .bootstrap-loading__logos.has-pair .bootstrap-loading__logo {
+        max-width: 13rem;
         height: 2.5rem;
-        flex-shrink: 0;
+      }
+
+      .bootstrap-loading__initials {
+        display: grid;
+        place-items: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.875rem;
+        background: linear-gradient(145deg, #a855f7, #6d28d9);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 25%);
+      }
+
+      .bootstrap-loading__label {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
       }
 
       .bootstrap-loading__separator {
         width: 1px;
-        height: 2.5rem;
+        height: 2.25rem;
         flex-shrink: 0;
-        background: linear-gradient(180deg, transparent, rgb(255 255 255 / 35%), transparent);
+        background: linear-gradient(180deg, transparent, rgb(255 255 255 / 30%), transparent);
       }
 
       .bootstrap-loading__title {
         margin: 0;
-        font-size: 1.875rem;
-        font-weight: 700;
+        font-size: 1.75rem;
+        font-weight: 650;
         line-height: 2.25rem;
         letter-spacing: -0.025em;
       }
 
       .bootstrap-loading__message {
         margin: 0.5rem 0 0;
-        color: #d8b4fe;
+        color: rgb(216 180 254 / 85%);
         font-size: 0.875rem;
-        line-height: 1.25rem;
+        line-height: 1.375rem;
       }
 
       .bootstrap-loading__track {
         position: relative;
         width: 100%;
-        max-width: 16rem;
-        height: 0.25rem;
-        margin: 2rem auto 0;
+        max-width: 14rem;
+        height: 3px;
+        margin: 1.75rem auto 0;
         overflow: hidden;
         border-radius: 9999px;
-        background: rgb(255 255 255 / 10%);
+        background: rgb(255 255 255 / 9%);
       }
 
       .bootstrap-loading__bar {
-        width: 40%;
+        width: 38%;
         height: 100%;
         border-radius: 9999px;
-        background: linear-gradient(90deg, #c084fc, #a855f7, #3978d4);
-        animation: bootstrap-loading-bar 1.8s ease-in-out infinite;
+        background: linear-gradient(90deg, rgb(168 85 247 / 0%), #a855f7 45%, #60a5fa);
+        box-shadow: 0 0 12px rgb(168 85 247 / 70%);
+        animation: bootstrap-loading-bar 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+      }
+
+      .bootstrap-loading__powered {
+        position: absolute;
+        z-index: 1;
+        left: 50%;
+        bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        margin: 0;
+        transform: translateX(-50%);
+        color: rgb(255 255 255 / 45%);
+        font-size: 0.625rem;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        animation: bootstrap-loading-fade 700ms 250ms ease-out both;
+      }
+      .bootstrap-loading__powered img {
+        display: block;
+        width: auto;
+        height: 1.125rem;
       }
 
       @keyframes bootstrap-loading-bar {
         0% { transform: translateX(-100%); }
-        100% { transform: translateX(250%); }
+        100% { transform: translateX(270%); }
       }
-
-      @keyframes bootstrap-loading-float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-6px); }
+      @keyframes bootstrap-loading-orbit {
+        to { --loader-angle: 360deg; }
       }
-
-      @keyframes bootstrap-loading-glow {
-        from { opacity: 0.85; }
-        to { opacity: 1; }
+      @keyframes bootstrap-loading-drift {
+        to { transform: translate(8vmax, 6vmax) scale(1.08); }
+      }
+      @keyframes bootstrap-loading-rise {
+        from { opacity: 0; transform: translateY(10px); }
+      }
+      @keyframes bootstrap-loading-fade {
+        from { opacity: 0; }
       }
 
       @media (max-width: 480px) {
-        .bootstrap-loading__logos { gap: 1rem; padding: 1rem 1.25rem; }
-        .bootstrap-loading__product-logo,
-        .bootstrap-loading__label-logo { height: 1.75rem; max-width: 7.5rem; }
+        .bootstrap-loading__logos { gap: 1rem; padding: 1.125rem 1.5rem; }
+        .bootstrap-loading__logo,
+        .bootstrap-loading__logos.has-pair .bootstrap-loading__logo { height: 2rem; max-width: 9rem; }
         .bootstrap-loading__separator { height: 1.75rem; }
         .bootstrap-loading__title { font-size: 1.5rem; line-height: 2rem; }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .bootstrap-loading::before,
-        .bootstrap-loading__logos { animation: none; }
+        .bootstrap-loading__aurora::before,
+        .bootstrap-loading__aurora::after,
+        .bootstrap-loading__logos::before,
+        .bootstrap-loading__content > *,
+        .bootstrap-loading__powered { animation: none; }
         .bootstrap-loading__bar { animation-timing-function: linear; }
+        .bootstrap-loading { transition: opacity 200ms linear; }
+        .bootstrap-loading.is-leaving { transform: none; }
       }
     </style>
   </head>
   <body>
     <main id="bootstrap-loading" class="bootstrap-loading">
-      <section
-        class="bootstrap-loading__content"
-        aria-live="polite"
-        aria-busy="true"
-      >
+      <div class="bootstrap-loading__aurora" aria-hidden="true"></div>
+      <section class="bootstrap-loading__content" aria-live="polite" aria-busy="true">
         <div class="bootstrap-loading__hero" aria-hidden="true">
           <div class="bootstrap-loading__logos">
-            <img
-              src="assets/iotility-loader-light.svg"
-              alt="IoTility"
-              class="bootstrap-loading__product-logo"
-            />
-            <div class="bootstrap-loading__separator"></div>
-            <img
-              src="assets/hypernym-loader-full.svg"
-              alt="Hypernym"
-              class="bootstrap-loading__label-logo"
-            />
+            <img src="assets/iotility-loader-light.svg" alt="" class="bootstrap-loading__logo" />
           </div>
         </div>
         <h1 class="bootstrap-loading__title">Loading IoTility</h1>
-        <p class="bootstrap-loading__message">
-          Preparing your connected operations platform&hellip;
-        </p>
+        <p class="bootstrap-loading__message">Preparing your connected operations platform&hellip;</p>
         <div class="bootstrap-loading__track" aria-hidden="true">
           <div class="bootstrap-loading__bar"></div>
         </div>
       </section>
+      <p class="bootstrap-loading__powered">
+        Powered by <img src="assets/hypernym-loader-full.svg" alt="Hypernym" />
+      </p>
     </main>
     <app-root></app-root>
     <script>

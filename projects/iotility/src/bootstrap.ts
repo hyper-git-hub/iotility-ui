@@ -6,7 +6,14 @@ import { App } from './app/app';
 function removeBootstrapLoader(): void {
   // Wait for the activated route to be rendered before revealing the page.
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => document.getElementById('bootstrap-loading')?.remove());
+    requestAnimationFrame(() => {
+      const loader = document.getElementById('bootstrap-loading');
+      if (!loader) return;
+      // Fade the boot screen out (see .is-leaving in index.html), then drop it.
+      loader.classList.add('is-leaving');
+      loader.addEventListener('transitionend', () => loader.remove(), { once: true });
+      setTimeout(() => loader.remove(), 400);
+    });
   });
 }
 

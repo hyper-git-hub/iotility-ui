@@ -1,24 +1,26 @@
-<main class="loading-shell">
-  <section class="loading-content" aria-live="polite" aria-busy="true">
-    <div class="loading-hero" aria-hidden="true">
-      <div class="loading-logos">
+<main class="loading">
+  <div class="loading__aurora" aria-hidden="true"></div>
+  <section class="loading__content" aria-live="polite" aria-busy="true">
+    <div class="loading__hero" aria-hidden="true">
+      <div class="loading__logos has-pair">
         @if (logoSrc()) {
-          <img [src]="logoSrc()" alt="" class="loading-product-logo" />
+          <img [src]="logoSrc()" alt="" class="loading__logo" />
         } @else {
-          <div class="loading-initials">{{ initials() }}</div>
+          <span class="loading__initials">{{ initials() }}</span>
         }
-        <div class="loading-separator"></div>
+        <span class="loading__separator"></span>
         @if (labelLogoSrc()) {
-          <img [src]="labelLogoSrc()" alt="" class="loading-label-logo" />
+          <img [src]="labelLogoSrc()" alt="" class="loading__logo" />
         } @else {
-          <p class="loading-label">{{ label() }}</p>
+          <p class="loading__label">{{ label() }}</p>
         }
       </div>
     </div>
-    <h1 class="loading-title">{{ title() }}</h1>
-    <p class="loading-message">{{ message() }}</p>
-    <div class="loading-track" aria-hidden="true">
-      <div class="loading-bar"></div>
+    <h1 class="loading__title">{{ title() }}</h1>
+    <p class="loading__message">{{ message() }}</p>
+    <div class="loading__track" aria-hidden="true">
+      <div class="loading__bar"></div>
     </div>
   </section>
+  <p class="loading__powered">Powered by <img src="assets/hypernym-loader-full.svg" alt="Hypernym" /></p>
 </main>
