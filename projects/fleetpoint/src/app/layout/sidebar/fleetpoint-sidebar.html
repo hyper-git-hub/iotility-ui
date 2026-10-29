@@ -25,7 +25,9 @@
     </button>
   </div>
 
-  <nav sharedTabIndicator tabIndicatorVariant="pill" aria-label="Primary navigation">
+  <nav sharedTabIndicator tabIndicatorVariant="pill" aria-label="Primary navigation" (pointerover)="highlightNav($event)" (pointerleave)="clearNavHighlight($event)">
+    <!-- One hover pill glides between items, like the dropdown options. -->
+    <span class="nav-hover" aria-hidden="true"></span>
     @for (group of visibleMenu(); track group.title) {
       <section>
         <p>{{ group.title }}</p>

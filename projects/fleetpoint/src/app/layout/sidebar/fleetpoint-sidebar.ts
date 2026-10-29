@@ -61,6 +61,36 @@ export class FleetpointSidebar {
     return count >= 100 ? '99+' : count;
   }
 
+  /** Sliding hover highlight: one pill glides to whichever item the pointer is over. */
+  protected highlightNav(event: PointerEvent): void {
+    const nav = event.currentTarget as HTMLElement;
+    const pill = nav.querySelector<HTMLElement>('.nav-hover');
+    const item = (event.target as HTMLElement).closest<HTMLElement>('a');
+    if (!pill || !item || !nav.contains(item)) return;
+    // The active item has its own sliding pill; don't stack a second one on it.
+    if (item.classList.contains('active')) {
+      pill.style.opacity = '0';
+      return;
+    }
+    const navBox = nav.getBoundingClientRect();
+    const box = item.getBoundingClientRect();
+    const firstShow = !pill.classList.contains('ready') || pill.style.opacity !== '1';
+    if (firstShow) pill.classList.remove('ready'); // appear in place, don't slide in from the last spot
+    pill.style.transform = `translate(${box.left - navBox.left + nav.scrollLeft}px, ${box.top - navBox.top + nav.scrollTop}px)`;
+    pill.style.width = `${box.width}px`;
+    pill.style.height = `${box.height}px`;
+    if (firstShow) {
+      void pill.offsetWidth;
+      pill.classList.add('ready');
+    }
+    pill.style.opacity = '1';
+  }
+
+  protected clearNavHighlight(event: PointerEvent): void {
+    const pill = (event.currentTarget as HTMLElement).querySelector<HTMLElement>('.nav-hover');
+    if (pill) pill.style.opacity = '0';
+  }
+
   protected toggleCollapsed(): void {
     this.collapsed.update((value) => !value);
     try {

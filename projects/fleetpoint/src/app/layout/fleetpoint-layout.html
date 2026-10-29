@@ -10,11 +10,11 @@
         (click)="closeSidebar()"
       ></button>
     }
-    <div class="sidebar-region" [class.open]="sidebarOpen()" (click)="closeSidebar()">
+    <div class="sidebar-region" [class.open]="sidebarOpen()" [class.collapsed]="sidebarCollapsed()" (click)="closeSidebar()">
       <app-fleetpoint-sidebar />
     </div>
   }
-  <div class="flex min-w-0 flex-1 flex-col">
+  <div #content class="layout-content flex min-w-0 flex-1 flex-col">
     @if (!isFullscreen()) {
       <app-fleetpoint-header (menuToggle)="openSidebar()" />
     }

@@ -43,3 +43,36 @@
     transition: none;
   }
 }
+
+/*
+ * Desktop collapse/expand: the slot snaps to the final sidebar width (one reflow), the sidebar
+ * animates its own width on top of the content, and the content slides into place with a
+ * transform (see FleetpointLayout.slideContent).
+ */
+@media (min-width: 768px) {
+  .sidebar-region {
+    position: relative;
+    z-index: 30;
+    width: 14rem;
+  }
+  .sidebar-region.collapsed {
+    width: 5rem;
+  }
+}
+.layout-content {
+  position: relative;
+}
+/* Expanding narrows the content; this strip covers the gap it leaves on the right while it slides. */
+.layout-content.sliding::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: var(--slide-gap, 0);
+  background: linear-gradient(#fff 0 4rem, var(--color-canvas) 4rem);
+  pointer-events: none;
+}
+:host-context(.dark) .layout-content.sliding::after {
+  background: linear-gradient(var(--color-dark-surface) 0 4rem, var(--color-dark-canvas) 4rem);
+}

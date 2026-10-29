@@ -94,6 +94,30 @@ nav {
   @apply flex-1 overflow-y-auto px-2 py-3;
   overflow-x: hidden;
 }
+/* Sliding hover highlight (same feel as the dropdown options): one pill moves between items. */
+nav {
+  position: relative;
+}
+.nav-hover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-brand-800) 50%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.nav-hover.ready {
+  transition:
+    transform 240ms var(--ease-spring),
+    width 240ms var(--ease-spring),
+    height 240ms var(--ease-spring),
+    opacity 150ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-hover.ready { transition: opacity 150ms ease; }
+}
 nav section {
   @apply mb-4;
 }
@@ -113,7 +137,7 @@ nav section > p {
 }
 nav a,
 nav button {
-  @apply relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-brand-300 transition hover:bg-brand-800/50 hover:text-white;
+  @apply relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-brand-300 transition hover:text-white;
   transition:
     gap var(--sidebar-motion),
     padding var(--sidebar-motion),
