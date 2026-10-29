@@ -112,24 +112,11 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly trackingView = signal<'vehicles' | 'drivers'>('vehicles');
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
   protected readonly selectedVehicle = signal<LiveVehicle | null>(null);
-  protected readonly liveTrackingEnabled = signal(false);
   protected readonly allocationOpen = signal(false);
   protected readonly now = signal(Date.now());
   protected readonly vehicles = signal<LiveVehicle[]>([]);
   protected readonly zones = signal<MapZoneOverlay[]>([]);
   protected readonly isFullscreen = computed(() => this.fullscreenUi.isFullscreen());
-  protected readonly fullscreenTrackingState = signal<'idle' | 'enabling' | 'waiting' | 'active'>(
-    'idle',
-  );
-  protected readonly isFullscreenTrackingEnabling = computed(
-    () => this.fullscreenTrackingState() === 'enabling',
-  );
-  protected readonly isFullscreenTrackingWaiting = computed(
-    () => this.fullscreenTrackingState() === 'waiting',
-  );
-  protected readonly isFullscreenTrackingActive = computed(
-    () => this.fullscreenTrackingState() === 'active',
-  );
   protected readonly filters: Array<VehicleStatus | 'All'> = [
     'All',
     'Moving',
@@ -294,11 +281,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private realtimeFlush?: ReturnType<typeof setTimeout>;
   private vehicleLookup?: { vehicles: LiveVehicle[]; index: VehicleIndex };
   private readonly subscription = new Subscription();
-  private readonly apiSnapshots = new Map<number, LiveVehicle>();
   private readonly realtimeVehicles = new Set<number>();
   private selectionRequest = 0;
   private requestedVehicleId = '';
-  private fullscreenTrackingTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly api: LiveTrackingApiService,
@@ -317,17 +302,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       navigationState?.['vehicleId'] ?? route.snapshot.queryParamMap.get('vehicle_id') ?? '',
     );
     this.selectedFleet.set(route.snapshot.queryParamMap.get('fleet_id') ?? 'all');
-    effect(() => {
-      if (!this.isFullscreen() || !this.liveTrackingEnabled() || !this.selectedVehicle()) {
-        this.fullscreenTrackingState.set('idle');
-        return;
-      }
-      if (this.fullscreenTrackingState() !== 'enabling') {
-        this.fullscreenTrackingState.set(
-          this.selectedVehicle()?.lastSignalAt ? 'active' : 'waiting',
-        );
-      }
-    });
   }
 
   ngOnInit(): void {
@@ -426,13 +400,11 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     const currentVehicles = new Map(this.vehicles().map((vehicle) => [vehicle.numericId, vehicle]));
     const vehicles = records.map((record) => {
       const snapshot = this.toTrackedVehicle(record);
-      this.apiSnapshots.set(record.id, snapshot);
       const current = currentVehicles.get(record.id);
-      const tracked = this.liveTrackingEnabled() && record.id === selectedId;
       // The fleet stream moves every vehicle, so a fresh live fix outranks the
       // poll's REST position, which would otherwise drag the marker backwards.
       const freshLive = Date.now() - (current?.lastSignalAt ?? 0) < LiveTrackingPage.LIVE_FRESH_MS;
-      return current && this.realtimeVehicles.has(record.id) && (tracked || freshLive)
+      return current && this.realtimeVehicles.has(record.id) && freshLive
         ? {
             ...snapshot,
             lat: current.lat,
@@ -495,11 +467,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       this.clearSelectedVehicle();
       return;
     }
-    const previousId = this.selectedVehicle()?.numericId;
-    if (previousId !== undefined) this.restoreApiVehicle(previousId);
     const selected =
       this.vehicles().find((item) => item.id === vehicle.id) ?? (vehicle as LiveVehicle);
-    this.liveTrackingEnabled.set(false);
     this.selectedVehicle.set(selected);
     this.resolveSelectedVehicleDevice(selected);
   }
@@ -517,47 +486,12 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
 
   protected clearSelectedVehicle(): void {
     this.selectionRequest += 1;
-    const selectedId = this.selectedVehicle()?.numericId;
-    if (selectedId !== undefined) this.restoreApiVehicle(selectedId);
-    this.liveTrackingEnabled.set(false);
     this.selectedVehicle.set(null);
   }
 
-  protected enableLiveTracking(): void {
-    const vehicleId = this.selectedVehicle()?.numericId;
-    if (vehicleId === undefined) return;
-    this.realtimeVehicles.delete(vehicleId);
-    this.liveTrackingEnabled.set(true);
-  }
-
-  protected toggleLiveTracking(): void {
-    this.liveTrackingEnabled() ? this.stopLiveTracking() : this.enableLiveTracking();
-  }
-
+  /** Fullscreen hides the details panel, so a marker click there just selects and follows the vehicle. */
   protected onFullscreenVehicleClick(vehicle: TrackedVehicle): void {
     if (this.selectedVehicle()?.id !== vehicle.id) this.selectVehicle(vehicle);
-    if (this.liveTrackingEnabled()) {
-      this.stopLiveTracking();
-      return;
-    }
-    this.enableLiveTracking();
-    this.fullscreenTrackingState.set('enabling');
-    clearTimeout(this.fullscreenTrackingTimeout);
-    this.fullscreenTrackingTimeout = setTimeout(() => {
-      this.fullscreenTrackingState.set(this.selectedVehicle()?.lastSignalAt ? 'active' : 'waiting');
-    }, 800);
-  }
-
-  protected onFullscreenChanged(entering: boolean): void {
-    if (entering) {
-      if (this.selectedVehicle()) this.enableLiveTracking();
-    }
-  }
-
-  protected stopLiveTracking(): void {
-    const vehicleId = this.selectedVehicle()?.numericId;
-    this.liveTrackingEnabled.set(false);
-    if (vehicleId !== undefined) this.restoreApiVehicle(vehicleId);
   }
 
   protected lastSignalLabel(vehicle: LiveVehicle): string {
@@ -736,7 +670,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     const vehicles = this.vehicles();
     const index = this.vehicleIndex(vehicles);
     const activeVehicle = this.selectedVehicle();
-    const trackingOnly = activeVehicle && this.liveTrackingEnabled() ? activeVehicle.numericId : null;
     // Copied once on the first match; untouched vehicles keep their object identity, so
     // the map and list only redo work for the vehicles that actually moved.
     let next: LiveVehicle[] | null = null;
@@ -745,7 +678,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       if (update.rtp !== undefined && Number(update.rtp) !== 1) continue;
       for (const position of this.matchingVehicles(index, update)) {
         const vehicle = (next ?? vehicles)[position];
-        if (trackingOnly !== null && vehicle.numericId !== trackingOnly) continue;
         const changed = this.withPacket(vehicle, update);
         next ??= vehicles.slice();
         next[position] = changed;
@@ -807,22 +739,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     };
   }
 
-  private restoreApiVehicle(vehicleId: number): void {
-    const snapshot = this.apiSnapshots.get(vehicleId);
-    this.realtimeVehicles.delete(vehicleId);
-    if (!snapshot) return;
-    const selectedDeviceId =
-      this.selectedVehicle()?.numericId === vehicleId ? this.selectedVehicle()?.deviceId : '';
-    const resolvedDeviceId =
-      this.vehicles().find((vehicle) => vehicle.numericId === vehicleId)?.deviceId ||
-      selectedDeviceId;
-    const restored = { ...snapshot, deviceId: resolvedDeviceId || snapshot.deviceId };
-    this.vehicles.update((vehicles) =>
-      vehicles.map((vehicle) => (vehicle.numericId === vehicleId ? restored : vehicle)),
-    );
-    if (this.selectedVehicle()?.numericId === vehicleId) this.selectedVehicle.set(restored);
-  }
-
   private resolveSelectedVehicleDevice(vehicle: LiveVehicle): void {
     const request = ++this.selectionRequest;
     if (vehicle.deviceId) return;
@@ -836,8 +752,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
             return;
           const deviceId = String(response.data?.data?.[0]?.device_id ?? '').trim();
           if (!deviceId) return;
-          const snapshot = this.apiSnapshots.get(vehicle.numericId);
-          if (snapshot) this.apiSnapshots.set(vehicle.numericId, { ...snapshot, deviceId });
           this.vehicles.update((vehicles) =>
             vehicles.map((item) =>
               item.numericId === vehicle.numericId ? { ...item, deviceId } : item,
@@ -883,7 +797,6 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
     void this.liveSource.disconnect();
-    clearTimeout(this.fullscreenTrackingTimeout);
     clearTimeout(this.realtimeFlush);
   }
 }

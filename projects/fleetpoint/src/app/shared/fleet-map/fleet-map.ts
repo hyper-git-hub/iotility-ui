@@ -643,7 +643,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const statusColor = this.statusColor(vehicle.status);
     const speed = vehicle.speed > 0 ? `<span class="vp-detail">${Math.round(vehicle.speed)} km/h</span>` : '';
     const fuel = vehicle.fuel > 0 ? `<span class="vp-detail">Fuel ${Math.round(vehicle.fuel)}%</span>` : '';
-    const footerText = this.isFullscreen() ? 'Click to enable live tracking' : 'Click for full details';
+    const footerText = this.isFullscreen() ? 'Click to follow this vehicle' : 'Click for full details';
     return `
       <div class="vehicle-popup">
         <div class="vp-head">
