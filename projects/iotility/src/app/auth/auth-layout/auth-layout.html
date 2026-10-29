@@ -1,19 +1,64 @@
 <main class="auth-shell">
   <section class="auth-brand-panel">
-    <div class="auth-glow" aria-hidden="true"></div>
+    <div class="auth-backdrop" aria-hidden="true"></div>
 
     <div class="auth-brand-row">
-      <img src="assets/hypernym-full.svg" alt="Hypernym" />
+      <img src="assets/hypernym-loader-full.svg" alt="Hypernym" />
       <span aria-hidden="true"></span>
-      <img src="assets/iotility-light.svg" alt="IoTility" />
+      <img src="assets/iotility-loader-light.svg" alt="IoTility" />
     </div>
 
-    <div class="auth-illustration" aria-hidden="true">
-      <img src="assets/login.svg" alt="" />
+    <div class="auth-diagram" role="img" [attr.aria-label]="modulesLabel">
+      <svg class="auth-links" viewBox="0 0 1000 460" aria-hidden="true">
+        @for (item of modules; track item.id; let i = $index) {
+          <path
+            class="link"
+            [class.active]="hovered() === item.id"
+            [attr.d]="item.path"
+            pathLength="1"
+            [style.animation-delay.ms]="220 + i * 70"
+          />
+          <!-- A short glowing stretch of the line travels out to the module, then rests. -->
+          <path
+            class="flow"
+            [attr.d]="item.path"
+            pathLength="1"
+            [style.animation-delay]="pulseDelay(i) + 's'"
+            [style.animation-duration]="pulseSeconds + 's'"
+          />
+        }
+      </svg>
+
+      <div class="auth-hub" [class.active]="hovered() !== null">
+        <span class="auth-hub-glow"></span>
+        <span class="auth-hub-tile"><img src="assets/hypernym.svg" alt="" /></span>
+      </div>
+
+      @for (item of modules; track item.id; let i = $index) {
+        <div
+          class="auth-module"
+          [class.active]="hovered() === item.id"
+          [style.left.%]="item.x / 10"
+          [style.top.%]="(item.y / 460) * 100"
+          [style.--enter-delay]="420 + i * 80 + 'ms'"
+          [style.--pulse-delay]="pulseDelay(i) + 's'"
+          [style.--pulse-duration]="pulseSeconds + 's'"
+          (mouseenter)="hovered.set(item.id)"
+          (mouseleave)="hovered.set(null)"
+        >
+          <span class="auth-module-icon">
+            <svg viewBox="0 0 24 24"><path [attr.d]="item.icon" /></svg>
+          </span>
+          <span class="auth-module-copy">
+            <strong><b>{{ item.name }}</b> {{ item.rest }}</strong>
+            <small>{{ item.tagline }}</small>
+          </span>
+        </div>
+      }
     </div>
 
     <div class="auth-tagline">
-      <h1>Your ultimate toolkit for<br />everything you need!</h1>
+      <h1>Your ultimate toolkit for<br /><span>everything you need!</span></h1>
       <p>Tailored just for your wild IoT adventures!</p>
     </div>
   </section>
