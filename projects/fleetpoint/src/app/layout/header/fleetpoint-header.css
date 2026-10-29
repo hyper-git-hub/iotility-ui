@@ -96,3 +96,40 @@
   .search-results>footer { @apply hidden; }
   .notification-panel { @apply fixed left-3 right-3 top-[4.5rem] w-auto; }
 }
+
+/* New alert: the bell swings once from its top and the count pops. */
+.notification-trigger svg.ring { transform-origin: 50% 8%; animation: motion-shake 700ms ease-in-out; }
+.notification-trigger > span.bump { animation: motion-bump 420ms var(--ease-out); }
+/* Notifications slide into the list as they arrive. */
+.notification-item.notification-item-enter { animation: notification-item-in 280ms var(--ease-out) both; }
+@keyframes notification-item-in { from { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .notification-trigger svg.ring,
+  .notification-trigger > span.bump,
+  .notification-item.notification-item-enter { animation: none; }
+}
+/* Command palette: a soft brand glow around the open panel, and an accent bar that grows on
+   whichever result is active (keyboard or mouse). */
+.search-results {
+  box-shadow:
+    var(--shadow-popover),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-500) 14%, transparent),
+    0 22px 60px -24px color-mix(in srgb, var(--color-brand-600) 55%, transparent);
+}
+.search-results > button { position: relative; }
+.search-results > button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-brand-500);
+  transform: scaleY(0);
+  transition: transform 180ms var(--ease-out);
+}
+.search-results > button.active::before { transform: scaleY(1); }
+@media (prefers-reduced-motion: reduce) {
+  .search-results > button::before { transition: none; }
+}

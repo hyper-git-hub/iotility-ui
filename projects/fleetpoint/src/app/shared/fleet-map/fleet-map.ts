@@ -588,8 +588,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     }
     const size = selected ? 44 : 34;
     return markerElement(`
-      <div class="vehicle-marker${selected ? ' selected' : ''}"
-        style="width:${size}px;height:${size}px;border-color:${color};
+      <div class="vehicle-marker${selected ? ' selected' : ''}${vehicle.status === 'Alert' ? ' alert' : ''}"
+        style="--marker-color:${color};width:${size}px;height:${size}px;border-color:${color};
           box-shadow:0 2px 8px rgb(0 0 0 / .25)${selected ? `, 0 0 0 4px ${color}44` : ''}">
         <img src="${escapeHtml(image)}" alt="${escapeHtml(vehicle.id)}" onerror="this.onerror=null;this.src='assets/fleetpoint/def-car.svg'">
       </div>
@@ -608,7 +608,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const width = `${size}px`;
     const color = this.statusColor(vehicle.status);
     const arrow = vehicle.variant === 'arrow';
-    element.className = `vehicle-marker${arrow ? ' vehicle-marker--arrow' : ''}${selected ? ' selected' : ''}${vehicle.live ? ' live' : ''}`;
+    element.className = `vehicle-marker${arrow ? ' vehicle-marker--arrow' : ''}${selected ? ' selected' : ''}${vehicle.live ? ' live' : ''}${vehicle.status === 'Alert' ? ' alert' : ''}`;
     if (element.style.getPropertyValue('--marker-color') !== color)
       element.style.setProperty('--marker-color', color);
     // The arrow variant is sized entirely by CSS, so only the shared image

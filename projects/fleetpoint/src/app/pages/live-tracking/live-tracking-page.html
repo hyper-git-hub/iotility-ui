@@ -247,6 +247,10 @@
       animate.leave="details-panel-leave"
       [class.panel-hidden]="isFullscreen()"
     >
+      <!-- Keyed on the vehicle so the edge light plays again whenever the selection changes. -->
+      @for (key of [vehicle.id]; track key) {
+        <span class="details-trace" aria-hidden="true"></span>
+      }
       <header>
         <span class="vehicle-avatar"
           ><img

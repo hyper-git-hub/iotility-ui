@@ -141,8 +141,36 @@
     box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-brand-600) 0%, transparent);
   }
 }
+/* Vehicles in Alert keep pinging in their status colour, so they stand out among hundreds. */
+:host ::ng-deep .vehicle-marker.alert:not(.vehicle-marker--arrow),
+.vehicle-marker.alert:not(.vehicle-marker--arrow) {
+  animation: vehicle-marker-alert 1.6s ease-out infinite;
+}
+@keyframes vehicle-marker-alert {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--marker-color) 60%, transparent); }
+  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--marker-color) 0%, transparent); }
+}
+/* Selecting a vehicle sends one ripple out from its marker; any live/alert loop resumes after. */
+:host ::ng-deep .vehicle-marker.selected:not(.vehicle-marker--arrow),
+.vehicle-marker.selected:not(.vehicle-marker--arrow) {
+  animation: vehicle-marker-ripple 900ms ease-out;
+}
+:host ::ng-deep .vehicle-marker.selected.live:not(.vehicle-marker--arrow),
+.vehicle-marker.selected.live:not(.vehicle-marker--arrow) {
+  animation: vehicle-marker-ripple 900ms ease-out, vehicle-marker-pulse 1.8s ease-out 900ms infinite;
+}
+:host ::ng-deep .vehicle-marker.selected.alert:not(.vehicle-marker--arrow),
+.vehicle-marker.selected.alert:not(.vehicle-marker--arrow) {
+  animation: vehicle-marker-ripple 900ms ease-out, vehicle-marker-alert 1.6s ease-out 900ms infinite;
+}
+@keyframes vehicle-marker-ripple {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--marker-color) 55%, transparent); }
+  100% { box-shadow: 0 0 0 22px color-mix(in srgb, var(--marker-color) 0%, transparent); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .vehicle-marker.live {
+  .vehicle-marker.live,
+  .vehicle-marker.alert,
+  .vehicle-marker.selected {
     animation: none;
   }
 }

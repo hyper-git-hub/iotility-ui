@@ -1,4 +1,4 @@
-import { Component, computed, HostListener, isDevMode, output, signal } from '@angular/core';
+import { Component, computed, effect, HostListener, isDevMode, output, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { DropdownOption, PlatformHeader, SmoothHeight, Tooltip, secureStorage } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
@@ -31,6 +31,8 @@ export class FleetpointHeader {
   protected readonly searchQuery = signal('');
   protected readonly activeResult = signal(0);
   protected readonly notificationsOpen = signal(false);
+  /** Bumped when the unread count rises; keys the bell and badge so their attention animation replays. */
+  protected readonly bellRing = signal(0);
   private readonly recentIds = signal<string[]>(this.readRecentIds());
   private readonly showAllDevelopmentItems = isDevMode();
   private searchCloseTimer?: number;
@@ -42,7 +44,15 @@ export class FleetpointHeader {
     private readonly features: FeatureAccessService,
     protected readonly notificationService: NotificationService,
     protected readonly fleetStatus: FleetStatusService,
-  ) {}
+  ) {
+    // Ring once per new alert (count going up), never on the initial load or on mark-as-read.
+    let previous: number | null = null;
+    effect(() => {
+      const count = this.notificationService.unreadCount();
+      if (previous !== null && count > previous) untracked(() => this.bellRing.update((value) => value + 1));
+      previous = count;
+    });
+  }
 
   protected toggleNotifications(event: MouseEvent): void {
     event.stopPropagation();

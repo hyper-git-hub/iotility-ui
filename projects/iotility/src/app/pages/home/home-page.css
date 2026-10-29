@@ -34,3 +34,25 @@
     transform: none;
   }
 }
+
+/* A soft brand glow rises behind the module icon as it floats on hover. */
+.module-card div:has(> .module-card-icon)::before {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-brand-500) 45%, transparent), transparent 70%);
+  filter: blur(14px);
+  opacity: 0;
+  transition: opacity 300ms var(--ease-out);
+  pointer-events: none;
+}
+.module-card-icon {
+  position: relative;
+  z-index: 1;
+}
+@media (hover: hover) and (pointer: fine) {
+  .module-card:hover div:has(> .module-card-icon)::before {
+    opacity: 1;
+  }
+}

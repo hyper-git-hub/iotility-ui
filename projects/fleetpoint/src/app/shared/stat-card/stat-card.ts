@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import { Skeleton, SpotlightBorder } from '@iotility/shared-ui';
+import { CountUp, Skeleton, SpotlightBorder } from '@iotility/shared-ui';
 
 export type StatCardTone = 'brand' | 'info' | 'success' | 'warning' | 'danger' | 'priority' | 'neutral';
 
@@ -11,7 +11,7 @@ export type StatCardTone = 'brand' | 'info' | 'success' | 'warning' | 'danger' |
  */
 @Component({
   selector: 'app-stat-card',
-  imports: [Skeleton, SpotlightBorder],
+  imports: [CountUp, Skeleton, SpotlightBorder],
   templateUrl: './stat-card.html',
   styleUrl: './stat-card.css',
 })

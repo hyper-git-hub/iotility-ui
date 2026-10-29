@@ -399,6 +399,18 @@ strong {
 .empty {
   @apply text-center;
 }
+/* Empty result: an inbox outline draws itself in once above the message. */
+.empty-state {
+  @apply inline-flex flex-col items-center gap-2 py-6 text-xs text-muted dark:text-brand-300;
+}
+.empty-state svg {
+  @apply size-8 text-brand-300 dark:text-brand-500;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 @media (max-width: 700px) {
   .table-card > header {
     @apply flex-col items-start;

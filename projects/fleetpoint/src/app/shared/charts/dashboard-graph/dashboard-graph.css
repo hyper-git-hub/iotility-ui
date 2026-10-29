@@ -50,3 +50,5 @@ header span { @apply rounded-full bg-brand-50 px-2 py-1 text-[9px] capitalize te
 .driver-stats > span { @apply rounded-xl bg-canvas px-2 py-3 dark:bg-dark-canvas; }
 .driver-stats b { @apply block text-[11px] font-semibold text-ink dark:text-white; }
 .driver-stats small { @apply mt-1 block text-[9px] text-muted dark:text-brand-300; }
+
+.actions-card.urgent { @apply relative; --orbit-color: var(--color-danger); }

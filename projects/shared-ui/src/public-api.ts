@@ -17,6 +17,7 @@ export * from './lib/user-menu/user-menu';
 export * from './lib/secure-storage/secure-storage';
 export * from './lib/tab-indicator/tab-indicator';
 export * from './lib/motion/linger';
+export * from './lib/motion/count-up';
 export * from './lib/spotlight-border/spotlight-border';
 export * from './lib/charts/chart-theme';
 export * from './lib/charts/chart-canvas';

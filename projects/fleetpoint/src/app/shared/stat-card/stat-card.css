@@ -120,7 +120,7 @@
 }
 :host-context(.dark) .stat-card small { color: var(--color-brand-300); }
 
-/* Number pop-in: skeleton → value and every live update blur-rise into place. */
+/* Number pop-in: the value blur-rises into place when it first replaces the skeleton. */
 .stat-card-value {
   transition:
     opacity 260ms var(--ease-out),
@@ -134,8 +134,20 @@
     filter: blur(2px);
   }
 }
+/* Live updates: the number counts to its new value (uiCountUp) while the card glows once in its tone. */
+.stat-card:has(.stat-card-value[data-trend]) {
+  animation: stat-card-flash 1.2s var(--ease-out);
+}
+@keyframes stat-card-flash {
+  0% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--card-tone) 55%, transparent),
+      0 0 24px -6px color-mix(in srgb, var(--card-tone) 55%, transparent);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .stat-card-value { transition-property: opacity; }
+  .stat-card:has(.stat-card-value[data-trend]) { animation: none; }
 }
 
 /* Projected mask icons (.color-icon) get the same chip-relative size as SVGs/images. */

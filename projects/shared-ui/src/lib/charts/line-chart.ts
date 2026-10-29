@@ -53,7 +53,11 @@ export class LineChart {
           ...tooltipBase(palette),
           trigger: 'axis',
           formatter: axisTooltip(palette, format),
-          axisPointer: { type: 'line', lineStyle: { color: withAlpha(palette.text, 0.4), width: 1, type: [4, 4] } },
+          // A soft glowing crosshair in the brand colour follows the cursor across the plot.
+          axisPointer: {
+            type: 'line',
+            lineStyle: { color: withAlpha(palette.brand, 0.55), width: 1.5, shadowBlur: 8, shadowColor: withAlpha(palette.brand, 0.6) },
+          },
         },
         xAxis: { type: 'category', data: this.categories(), boundaryGap: false, ...axisStyle(palette, 'category') },
         yAxis: {

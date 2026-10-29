@@ -137,3 +137,14 @@
     .dialog-panel { transform: none; }
   }
 }
+/* Success check: drawn as a stroke (white on the success tile) so it can draw itself in. */
+.dialog-check {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  --draw-delay: 140ms;
+}

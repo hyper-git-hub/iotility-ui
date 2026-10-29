@@ -88,3 +88,17 @@
 @keyframes addon-card-fade {
   from { opacity: 0; }
 }
+
+/* Available add-ons: the logo floats and picks up a soft brand glow on hover. */
+.addon-logo:not(.addon-logo-muted) {
+  transition: transform 300ms var(--ease-out), filter 300ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .addon-card:hover .addon-logo:not(.addon-logo-muted) {
+    transform: translateY(-3px);
+    filter: drop-shadow(0 8px 14px color-mix(in srgb, var(--color-brand-500) 40%, transparent));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .addon-card:hover .addon-logo:not(.addon-logo-muted) { transform: none; }
+}

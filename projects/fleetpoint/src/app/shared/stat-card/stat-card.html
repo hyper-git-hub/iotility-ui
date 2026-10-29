@@ -27,10 +27,8 @@
         radius="0.3rem"
       />
     } @else {
-      <!-- Keyed on the value: each new number is a fresh element, so @starting-style plays a pop-in. -->
-      @for (current of [value()]; track current) {
-        <strong class="stat-card-value">{{ current }}</strong>
-      }
+      <!-- Counts from the previous value to the new one; flags data-trend so the card flashes the change. -->
+      <strong class="stat-card-value" [uiCountUp]="value()"></strong>
     }
     @if (suffix()) {
       <small>{{ suffix() }}</small>

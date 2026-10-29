@@ -1,5 +1,5 @@
 <section class="prediction-page">
-  <header class="ai-banner"><img src="assets/fleetpoint/icons/ai-chip-brand.svg" alt="" aria-hidden="true" /><span><strong>AI-Powered Predictive Maintenance</strong><small>Monthly predicted maintenance compared with previous maintenance, from the predictive-maintenance service. Per-vehicle predictions (component, confidence, failure date) aren't provided by the API yet.</small></span></header>
+  <header class="ai-banner ai-sheen"><img src="assets/fleetpoint/icons/ai-chip-brand.svg" alt="" aria-hidden="true" /><span><strong>AI-Powered Predictive Maintenance</strong><small>Monthly predicted maintenance compared with previous maintenance, from the predictive-maintenance service. Per-vehicle predictions (component, confidence, failure date) aren't provided by the API yet.</small></span></header>
   <ui-chart-card title="Predicted vs Previous" [subtitle]="loading() ? '' : totals().predicted + ' predicted · ' + totals().previous + ' previous'" [legend]="legend()" [height]="360" [loading]="loading()" skeleton="bar" [empty]="!months().length" emptyMessage="No predicted maintenance yet.">
     <ui-bar-chart [categories]="categories()" [series]="series()" [legend]="false" />
   </ui-chart-card>

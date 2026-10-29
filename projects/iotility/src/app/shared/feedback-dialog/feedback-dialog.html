@@ -18,7 +18,8 @@
       >
         @switch (config.type) {
           @case ('success') {
-            <img src="assets/icons/check.svg" alt="" />
+            <!-- The check draws itself in once, confirming the action. -->
+            <svg class="dialog-check draw-in" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" pathLength="1" /></svg>
           }
           @case ('warning') {
             <img src="assets/icons/alert-triangle.svg" alt="" />
