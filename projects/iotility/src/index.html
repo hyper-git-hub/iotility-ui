@@ -8,162 +8,80 @@
     <link rel="icon" type="image/png" href="assets/favicon.png" />
     <style>
       /* Boot screen. Same design as src/app/shared/loading (app-loading); keep the two in step. */
-      @property --loader-angle {
-        syntax: '<angle>';
-        inherits: false;
-        initial-value: 0deg;
-      }
-
       .bootstrap-loading {
         position: fixed;
         inset: 0;
         z-index: 9999;
         display: grid;
+        place-items: center;
         min-height: 100vh;
         overflow: hidden;
         padding: 0 1.5rem;
         box-sizing: border-box;
         color: #fff;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        /* Black base with smooth, edge-free brand glows: a core behind the logo, ambient light, footer warmth. */
         background:
-          radial-gradient(ellipse 70% 55% at 50% 38%, rgb(124 58 237 / 26%), transparent 70%),
-          linear-gradient(160deg, #0b0a14 0%, #120a24 55%, #1e0b3d 100%);
+          /* Soft core right behind the logo. */
+          radial-gradient(18rem 13rem at 50% 44%, color-mix(in srgb, var(--color-brand-500, #a855f7) 22%, transparent) 0%, color-mix(in srgb, var(--color-brand-500, #a855f7) 15.84%, transparent) 18%, color-mix(in srgb, var(--color-brand-500, #a855f7) 9.24%, transparent) 36%, color-mix(in srgb, var(--color-brand-500, #a855f7) 4.4%, transparent) 54%, color-mix(in srgb, var(--color-brand-500, #a855f7) 1.54%, transparent) 72%, color-mix(in srgb, var(--color-brand-500, #a855f7) 0.33%, transparent) 88%, color-mix(in srgb, var(--color-brand-500, #a855f7) 0%, transparent) 100%),
+          /* Wide ambient glow around the centre, fading out with no visible edge. */
+          radial-gradient(60vmax 44vmax at 50% 44%, color-mix(in srgb, var(--color-brand-600, #9333ea) 14%, transparent) 0%, color-mix(in srgb, var(--color-brand-600, #9333ea) 10.08%, transparent) 18%, color-mix(in srgb, var(--color-brand-600, #9333ea) 5.88%, transparent) 36%, color-mix(in srgb, var(--color-brand-600, #9333ea) 2.8%, transparent) 54%, color-mix(in srgb, var(--color-brand-600, #9333ea) 0.98%, transparent) 72%, color-mix(in srgb, var(--color-brand-600, #9333ea) 0.21%, transparent) 88%, color-mix(in srgb, var(--color-brand-600, #9333ea) 0%, transparent) 100%),
+          /* Gentle warmth along the bottom, behind the footer. */
+          radial-gradient(130vw 34vh at 50% 108%, color-mix(in srgb, var(--color-brand-700, #7e22ce) 26%, transparent) 0%, color-mix(in srgb, var(--color-brand-700, #7e22ce) 18.72%, transparent) 18%, color-mix(in srgb, var(--color-brand-700, #7e22ce) 10.92%, transparent) 36%, color-mix(in srgb, var(--color-brand-700, #7e22ce) 5.2%, transparent) 54%, color-mix(in srgb, var(--color-brand-700, #7e22ce) 1.82%, transparent) 72%, color-mix(in srgb, var(--color-brand-700, #7e22ce) 0.39%, transparent) 88%, color-mix(in srgb, var(--color-brand-700, #7e22ce) 0%, transparent) 100%),
+          #000;
         -webkit-font-smoothing: antialiased;
         transition: opacity 320ms cubic-bezier(0.23, 1, 0.32, 1), transform 320ms cubic-bezier(0.23, 1, 0.32, 1);
       }
-
       .bootstrap-loading.is-leaving {
         opacity: 0;
         transform: scale(1.015);
         pointer-events: none;
       }
 
-      /* Two slow aurora glows drifting behind everything. */
-      .bootstrap-loading__aurora {
-        position: absolute;
-        inset: 0;
-        overflow: hidden;
-        pointer-events: none;
-      }
-      .bootstrap-loading__aurora::before,
-      .bootstrap-loading__aurora::after {
-        content: '';
-        position: absolute;
-        width: 46vmax;
-        height: 46vmax;
-        border-radius: 50%;
-        filter: blur(90px);
-        opacity: 0.38;
-        will-change: transform;
-      }
-      .bootstrap-loading__aurora::before {
-        top: -16vmax;
-        left: -10vmax;
-        background: #7c3aed;
-        animation: bootstrap-loading-drift 18s ease-in-out infinite alternate;
-      }
-      .bootstrap-loading__aurora::after {
-        right: -14vmax;
-        bottom: -20vmax;
-        background: #3978d4;
-        opacity: 0.26;
-        animation: bootstrap-loading-drift 22s ease-in-out infinite alternate-reverse;
-      }
-
-      /* Faint connected-grid texture, fading toward the edges. */
-      .bootstrap-loading::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background-image:
-          linear-gradient(rgb(216 180 254 / 5%) 1px, transparent 1px),
-          linear-gradient(90deg, rgb(216 180 254 / 5%) 1px, transparent 1px);
-        background-size: 48px 48px;
-        -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 42%, #000 0%, transparent 75%);
-        mask-image: radial-gradient(ellipse 60% 55% at 50% 42%, #000 0%, transparent 75%);
-        pointer-events: none;
-      }
-
+      /* One centred stack on an 8px rhythm: logo → progress → status → message. */
       .bootstrap-loading__content {
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        max-width: 30rem;
-        margin: auto;
+        display: flex;
+        max-width: 26rem;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
       }
-
-      /* Staggered entrance, once. */
-      .bootstrap-loading__content > * {
-        animation: bootstrap-loading-rise 560ms cubic-bezier(0.23, 1, 0.32, 1) both;
-      }
-      .bootstrap-loading__content > :nth-child(2) { animation-delay: 70ms; }
-      .bootstrap-loading__content > :nth-child(3) { animation-delay: 120ms; }
-      .bootstrap-loading__content > :nth-child(4) { animation-delay: 170ms; }
-
-      .bootstrap-loading__hero {
-        display: flex;
-        justify-content: center;
-        margin: 0 auto 2.25rem;
-      }
-
-      /* Glass card with a light that travels around its border. */
       .bootstrap-loading__logos {
-        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 1.5rem;
-        padding: 1.375rem 2.25rem;
-        border-radius: 1.5rem;
-        background: linear-gradient(160deg, rgb(255 255 255 / 9%), rgb(255 255 255 / 3%));
-        box-shadow:
-          inset 0 0 0 1px rgb(255 255 255 / 10%),
-          inset 0 1px 0 rgb(255 255 255 / 14%),
-          0 24px 60px -18px rgb(5 3 15 / 80%),
-          0 0 80px -20px rgb(124 58 237 / 55%);
-        -webkit-backdrop-filter: blur(16px);
-        backdrop-filter: blur(16px);
+        gap: 1.25rem;
+        animation: bootstrap-loading-logo-in 560ms cubic-bezier(0.23, 1, 0.32, 1) both;
       }
-      .bootstrap-loading__logos::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        padding: 1px;
-        border-radius: inherit;
-        background: conic-gradient(from var(--loader-angle), transparent 0deg, transparent 220deg, rgb(192 132 252 / 90%) 290deg, rgb(57 120 212 / 90%) 330deg, transparent 360deg);
-        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-        animation: bootstrap-loading-orbit 4.5s linear infinite;
-        pointer-events: none;
-      }
-
       .bootstrap-loading__logo {
         display: block;
         width: auto;
-        max-width: 16rem;
-        height: 2.75rem;
+        max-width: 18rem;
+        height: 3.25rem;
         flex-shrink: 0;
       }
       .bootstrap-loading__logos.has-pair .bootstrap-loading__logo {
-        max-width: 13rem;
-        height: 2.5rem;
+        max-width: 14rem;
+        height: 2.625rem;
       }
-
+      .bootstrap-loading__separator {
+        width: 1px;
+        height: 2.25rem;
+        flex-shrink: 0;
+        background: linear-gradient(180deg, transparent, rgb(255 255 255 / 28%), transparent);
+      }
       .bootstrap-loading__initials {
         display: grid;
         place-items: center;
         width: 2.75rem;
         height: 2.75rem;
         border-radius: 0.875rem;
-        background: linear-gradient(145deg, #a855f7, #6d28d9);
+        background: linear-gradient(145deg, var(--color-brand-500, #a855f7), var(--color-brand-700, #7e22ce));
         font-size: 1rem;
         font-weight: 700;
         letter-spacing: -0.02em;
         box-shadow: inset 0 1px 0 rgb(255 255 255 / 25%);
       }
-
       .bootstrap-loading__label {
         margin: 0;
         font-size: 1.125rem;
@@ -171,51 +89,44 @@
         letter-spacing: -0.02em;
       }
 
-      .bootstrap-loading__separator {
-        width: 1px;
-        height: 2.25rem;
-        flex-shrink: 0;
-        background: linear-gradient(180deg, transparent, rgb(255 255 255 / 30%), transparent);
-      }
-
-      .bootstrap-loading__title {
-        margin: 0;
-        font-size: 1.75rem;
-        font-weight: 650;
-        line-height: 2.25rem;
-        letter-spacing: -0.025em;
-      }
-
-      .bootstrap-loading__message {
-        margin: 0.5rem 0 0;
-        color: rgb(216 180 254 / 85%);
-        font-size: 0.875rem;
-        line-height: 1.375rem;
-      }
-
+      /* Slim indeterminate progress, right under the logo where the eye already is. */
       .bootstrap-loading__track {
         position: relative;
-        width: 100%;
-        max-width: 14rem;
-        height: 3px;
-        margin: 1.75rem auto 0;
+        width: 9rem;
+        height: 2px;
+        margin-top: 1.75rem;
         overflow: hidden;
         border-radius: 9999px;
-        background: rgb(255 255 255 / 9%);
+        background: rgb(255 255 255 / 8%);
+        animation: bootstrap-loading-fade 480ms ease-out 120ms both;
       }
-
       .bootstrap-loading__bar {
-        width: 38%;
+        width: 45%;
         height: 100%;
         border-radius: 9999px;
-        background: linear-gradient(90deg, rgb(168 85 247 / 0%), #a855f7 45%, #60a5fa);
-        box-shadow: 0 0 12px rgb(168 85 247 / 70%);
-        animation: bootstrap-loading-bar 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+        background: linear-gradient(90deg, transparent, var(--color-brand-400, #c084fc) 55%, var(--color-brand-200, #e9d5ff));
+        box-shadow: 0 0 8px color-mix(in srgb, var(--color-brand-500, #a855f7) 80%, transparent);
+        animation: bootstrap-loading-bar 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+      }
+      .bootstrap-loading__status {
+        margin: 1.25rem 0 0;
+        color: rgb(255 255 255 / 88%);
+        font-size: 0.875rem;
+        font-weight: 550;
+        line-height: 1.25rem;
+        letter-spacing: -0.005em;
+        animation: bootstrap-loading-fade 480ms ease-out 160ms both;
+      }
+      .bootstrap-loading__message {
+        margin: 0.375rem 0 0;
+        color: rgb(255 255 255 / 45%);
+        font-size: 0.75rem;
+        line-height: 1.125rem;
+        animation: bootstrap-loading-fade 480ms ease-out 200ms both;
       }
 
       .bootstrap-loading__powered {
         position: absolute;
-        z-index: 1;
         left: 50%;
         bottom: 2rem;
         display: flex;
@@ -223,52 +134,44 @@
         gap: 0.625rem;
         margin: 0;
         transform: translateX(-50%);
-        color: rgb(255 255 255 / 45%);
+        color: rgb(255 255 255 / 40%);
         font-size: 0.625rem;
         font-weight: 600;
         letter-spacing: 0.18em;
         text-transform: uppercase;
         white-space: nowrap;
-        animation: bootstrap-loading-fade 700ms 250ms ease-out both;
+        animation: bootstrap-loading-fade 700ms ease-out 300ms both;
       }
       .bootstrap-loading__powered img {
         display: block;
         width: auto;
-        height: 1.125rem;
+        height: 1rem;
       }
 
-      @keyframes bootstrap-loading-bar {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(270%); }
-      }
-      @keyframes bootstrap-loading-orbit {
-        to { --loader-angle: 360deg; }
-      }
-      @keyframes bootstrap-loading-drift {
-        to { transform: translate(8vmax, 6vmax) scale(1.08); }
-      }
-      @keyframes bootstrap-loading-rise {
-        from { opacity: 0; transform: translateY(10px); }
+      @keyframes bootstrap-loading-logo-in {
+        from { opacity: 0; transform: translateY(6px) scale(0.97); }
       }
       @keyframes bootstrap-loading-fade {
         from { opacity: 0; }
       }
+      @keyframes bootstrap-loading-bar {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(225%); }
+      }
 
       @media (max-width: 480px) {
-        .bootstrap-loading__logos { gap: 1rem; padding: 1.125rem 1.5rem; }
-        .bootstrap-loading__logo,
+        .bootstrap-loading__logo { height: 2.5rem; max-width: 13rem; }
         .bootstrap-loading__logos.has-pair .bootstrap-loading__logo { height: 2rem; max-width: 9rem; }
-        .bootstrap-loading__separator { height: 1.75rem; }
-        .bootstrap-loading__title { font-size: 1.5rem; line-height: 2rem; }
+        .bootstrap-loading__logos { gap: 0.875rem; }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .bootstrap-loading__aurora::before,
-        .bootstrap-loading__aurora::after,
-        .bootstrap-loading__logos::before,
-        .bootstrap-loading__content > *,
+        .bootstrap-loading__logos,
+        .bootstrap-loading__track,
+        .bootstrap-loading__status,
+        .bootstrap-loading__message,
         .bootstrap-loading__powered { animation: none; }
-        .bootstrap-loading__bar { animation-timing-function: linear; }
+        .bootstrap-loading__bar { animation-duration: 2.4s; animation-timing-function: linear; }
         .bootstrap-loading { transition: opacity 200ms linear; }
         .bootstrap-loading.is-leaving { transform: none; }
       }
@@ -276,22 +179,15 @@
   </head>
   <body>
     <main id="bootstrap-loading" class="bootstrap-loading">
-      <div class="bootstrap-loading__aurora" aria-hidden="true"></div>
-      <section class="bootstrap-loading__content" aria-live="polite" aria-busy="true">
-        <div class="bootstrap-loading__hero" aria-hidden="true">
-          <div class="bootstrap-loading__logos">
-            <img src="assets/iotility-loader-light.svg" alt="" class="bootstrap-loading__logo" />
-          </div>
+      <section class="bootstrap-loading__content" role="status" aria-live="polite" aria-busy="true">
+        <div class="bootstrap-loading__logos" aria-hidden="true">
+          <img src="assets/iotility-loader-light.svg" alt="" class="bootstrap-loading__logo" />
         </div>
-        <h1 class="bootstrap-loading__title">Loading IoTility</h1>
+        <div class="bootstrap-loading__track" aria-hidden="true"><div class="bootstrap-loading__bar"></div></div>
+        <p class="bootstrap-loading__status">Starting IoTility</p>
         <p class="bootstrap-loading__message">Preparing your connected operations platform&hellip;</p>
-        <div class="bootstrap-loading__track" aria-hidden="true">
-          <div class="bootstrap-loading__bar"></div>
-        </div>
       </section>
-      <p class="bootstrap-loading__powered">
-        Powered by <img src="assets/hypernym-loader-full.svg" alt="Hypernym" />
-      </p>
+      <p class="bootstrap-loading__powered">Powered by <img src="assets/hypernym-loader-full.svg" alt="Hypernym" /></p>
     </main>
     <app-root></app-root>
     <script>
