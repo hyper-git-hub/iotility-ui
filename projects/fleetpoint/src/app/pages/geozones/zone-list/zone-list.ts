@@ -1,21 +1,27 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import {
   DropdownOption,
   FilterBar,
   FilterChangeEvent,
   FilterDropdown,
+  Skeleton,
   SmoothHeight,
   Tooltip,
 } from '@iotility/shared-ui';
-import { GEOZONES, GeozoneRecord, GeozoneType, ZONE_TYPE_LABELS } from '../geozones.data';
+import { GeozoneRecord, GeozoneType, NOT_AVAILABLE, ZONE_TYPE_LABELS } from '../geozones.data';
+import { GeozonesStore } from '../geozones.store';
 
 @Component({
   selector: 'app-zone-list',
-  imports: [FilterBar, SmoothHeight, Tooltip],
+  imports: [FilterBar, Skeleton, SmoothHeight, Tooltip],
   templateUrl: './zone-list.html',
   styleUrl: './zone-list.css',
 })
 export class ZoneList {
+  private readonly store = inject(GeozonesStore);
+  protected readonly loaded = this.store.loaded;
+  protected readonly notAvailable = NOT_AVAILABLE;
+  protected readonly skeletonCards = [0, 1, 2, 3];
   protected readonly search = signal('');
   protected readonly type = signal<'all' | GeozoneType>('all');
   protected readonly expandedId = signal<string | null>(null);
@@ -35,7 +41,7 @@ export class ZoneList {
   ]);
   protected readonly filtered = computed(() => {
     const query = this.search().trim().toLowerCase();
-    return GEOZONES.filter(
+    return this.store.zones().filter(
       (zone) =>
         (this.type() === 'all' || zone.type === this.type()) &&
         (!query ||
@@ -56,6 +62,10 @@ export class ZoneList {
 
   protected toggle(zone: GeozoneRecord): void {
     this.expandedId.update((id) => (id === zone.id ? null : zone.id));
+  }
+
+  protected async remove(zone: GeozoneRecord): Promise<void> {
+    if (await this.store.remove(zone)) this.expandedId.update((id) => (id === zone.id ? null : id));
   }
 
   protected label(type: GeozoneType): string {

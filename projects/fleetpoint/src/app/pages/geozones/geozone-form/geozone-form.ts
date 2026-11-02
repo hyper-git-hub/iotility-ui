@@ -1,14 +1,38 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DateTimePicker, Dropdown, DropdownOption, SmoothHeight } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
 import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
+import { CreateGeozonePayload } from '../../../shared/services/geozones-api.service';
+import { RoutesApiService } from '../../../shared/services/routes-api.service';
 import { GeozoneDrawingMap,GeozoneGeometry } from './geozone-drawing-map';
 
 export interface GeozoneFormValue {
   type:string; name:string; description:string; shape:string; radius:number; geometry:string;
   alertOnEntry:boolean; alertOnExit:boolean; speedLimit:number|null; maxDwell:number|null;
   curfewStart:string; curfewEnd:string; assignment:string; assignedTarget:string; poi:string; route:string;
+  /** Vehicle ids the assignment resolves to. */
+  vehicles:number[];
+}
+
+/** The geo-zone API keeps access type, POI flag, shape and vehicles; rules, curfew and links aren't sent. */
+export function toCreateGeozonePayload(value:GeozoneFormValue):CreateGeozonePayload{
+  const geometry:GeozoneGeometry=JSON.parse(value.geometry);
+  const center=geometry.shape==='circle'?geometry.center:undefined;
+  return{
+    name:value.name.trim(),
+    description:value.description.trim(),
+    access_type:value.type==='restricted'?2:1,
+    is_poi:value.type==='poi',
+    status:1,
+    vehicle:value.vehicles,
+    zone_type:center?1:2,
+    // fms-fleet takes a circle's radius in kilometres.
+    territory:JSON.stringify(center
+      ?{lat:center.latitude,lng:center.longitude,radius:(geometry.radius??value.radius)/1000}
+      :(geometry.points??[]).map(point=>({lat:point.latitude,lng:point.longitude}))),
+  };
 }
 
 @Component({
@@ -19,6 +43,7 @@ export interface GeozoneFormValue {
 })
 export class GeozoneForm {
   readonly open=input(false);
+  readonly saving=input(false);
   readonly cancelled=output<void>();
   readonly created=output<GeozoneFormValue>();
   protected readonly activeStep=signal(0);
@@ -39,30 +64,20 @@ export class GeozoneForm {
   ];
   protected readonly assignmentOptions:DropdownOption[]=[
     {id:'all',label:'All vehicles'},{id:'fleet',label:'Specific fleet'},
-    {id:'vehicle',label:'Specific vehicle'},{id:'driver',label:'Specific driver'},
+    {id:'vehicle',label:'Specific vehicle'},
   ];
-  protected readonly fleetOptions:DropdownOption[]=[
-    {id:'london',label:'London Delivery Fleet'},{id:'midlands',label:'Midlands Operations'},{id:'north',label:'Northern Distribution'},
-  ];
-  protected readonly vehicleOptions:DropdownOption[]=[
-    {id:'LP-4821',label:'LP-4821'},{id:'LP-7734',label:'LP-7734'},{id:'LP-9901',label:'LP-9901'},
-  ];
-  protected readonly driverOptions:DropdownOption[]=[
-    {id:'james',label:'James Wilson'},{id:'mohammed',label:'Mohammed Al-Rashid'},{id:'aisha',label:'Aisha Khan'},
-  ];
-  protected readonly poiOptions:DropdownOption[]=[
-    {id:'',label:'No POI link'},{id:'stratford',label:'Stratford Logistics Park — HQ'},
-    {id:'amazon',label:'Amazon BHX2 Fulfilment Centre'},{id:'tesco',label:'Tesco RDC — Daventry'},
-  ];
-  protected readonly routeOptions:DropdownOption[]=[
-    {id:'',label:'No route link'},{id:'london-birmingham',label:'London → Birmingham Express'},
-    {id:'cold-chain',label:'Cold Chain — London to Tilbury'},{id:'manchester',label:'Manchester Urban Van Loop'},
-  ];
+  /** Fleets with their assigned vehicles; a geo-zone is assigned to vehicles. */
+  private readonly fleets=toSignal(inject(RoutesApiService).fleets(),{initialValue:[]});
+  protected readonly fleetOptions=computed<DropdownOption[]>(()=>this.fleets().map(fleet=>({id:String(fleet.id),label:fleet.name})));
+  protected readonly vehicleOptions=computed<DropdownOption[]>(()=>this.fleets().flatMap(fleet=>fleet.vehicles.map(vehicle=>({id:String(vehicle.id),label:vehicle.name}))));
+  /** The geo-zone API has no POI or route link. */
+  protected readonly poiOptions:DropdownOption[]=[{id:'',label:'No POI link'}];
+  protected readonly routeOptions:DropdownOption[]=[{id:'',label:'No route link'}];
   protected readonly form;
 
   constructor(formBuilder:FormBuilder){
     this.form=formBuilder.nonNullable.group({
-      type:['allowed',Validators.required],name:['',Validators.required],description:[''],
+      type:['allowed',Validators.required],name:['',Validators.required],description:['',Validators.required],
       shape:formBuilder.control<'circle'|'polygon'>('circle',{nonNullable:true,validators:[Validators.required]}),
       radius:[250,[Validators.required,Validators.min(10)]],geometry:['',Validators.required],
       alertOnEntry:[false],alertOnExit:[true],speedLimit:formBuilder.control<number|null>(null),
@@ -83,18 +98,24 @@ export class GeozoneForm {
     if(control==='assignment')this.form.controls.assignedTarget.setValue('');
   }
   protected label(options:DropdownOption[],value:string,fallback:string):string{return options.find(option=>option.id===value)?.label??fallback;}
-  protected assignmentTargets():DropdownOption[]{return this.form.controls.assignment.value==='fleet'?this.fleetOptions:this.form.controls.assignment.value==='driver'?this.driverOptions:this.vehicleOptions;}
+  protected assignmentTargets():DropdownOption[]{return this.form.controls.assignment.value==='fleet'?this.fleetOptions():this.vehicleOptions();}
   protected goToStep(index:number):void{this.activeStep.set(index);}
   protected next():void{this.submitted.set(true);if(!this.stepValid())return;this.submitted.set(false);this.activeStep.update(step=>Math.min(3,step+1));}
   protected back():void{if(this.activeStep()===0){this.cancel();return;}this.submitted.set(false);this.activeStep.update(step=>step-1);}
-  protected submit():void{this.submitted.set(true);if(this.form.invalid||!this.assignmentValid())return;this.created.emit(this.form.getRawValue());this.reset();}
+  protected submit():void{this.submitted.set(true);if(this.saving()||this.form.invalid||!this.assignmentValid())return;this.created.emit({...this.form.getRawValue(),vehicles:this.assignedVehicles()});}
   protected cancel():void{this.reset();this.cancelled.emit();}
-  protected invalid(control:'name'|'radius'):boolean{return this.submitted()&&this.form.controls[control].invalid;}
+  protected invalid(control:'name'|'description'|'radius'):boolean{return this.submitted()&&this.form.controls[control].invalid;}
   private stepValid():boolean{
-    if(this.activeStep()===1){this.form.controls.name.markAsTouched();this.form.controls.radius.markAsTouched();this.form.controls.geometry.markAsTouched();return !this.form.controls.name.invalid&&!this.form.controls.radius.invalid&&!this.form.controls.geometry.invalid;}
+    if(this.activeStep()===1){this.form.controls.name.markAsTouched();this.form.controls.description.markAsTouched();this.form.controls.radius.markAsTouched();this.form.controls.geometry.markAsTouched();return !this.form.controls.name.invalid&&!this.form.controls.description.invalid&&!this.form.controls.radius.invalid&&!this.form.controls.geometry.invalid;}
     return this.activeStep()!==3||this.assignmentValid();
   }
   private assignmentValid():boolean{return this.form.controls.assignment.value==='all'||!!this.form.controls.assignedTarget.value;}
+  private assignedVehicles():number[]{
+    const {assignment,assignedTarget}=this.form.getRawValue();
+    if(assignment==='vehicle')return [Number(assignedTarget)];
+    const fleets=assignment==='fleet'?this.fleets().filter(fleet=>String(fleet.id)===assignedTarget):this.fleets();
+    return [...new Set(fleets.flatMap(fleet=>fleet.vehicles.map(vehicle=>vehicle.id)))];
+  }
   private reset():void{
     this.form.reset({type:'allowed',name:'',description:'',shape:'circle',radius:250,geometry:'',alertOnEntry:false,alertOnExit:true,speedLimit:null,maxDwell:null,curfewStart:'',curfewEnd:'',assignment:'all',assignedTarget:'',poi:'',route:''});
     this.activeStep.set(0);this.submitted.set(false);

@@ -24,7 +24,7 @@
         }@else if(activeStep()===1){
           <section class="form-step details-grid"><header class="full"><h3>Zone Details &amp; Shape</h3><p>Name the zone and define its boundary type.</p></header>
             <label class="shared-form-field full"><span>Zone Name <b>*</b></span><input class="ui-control" formControlName="name" placeholder="e.g. Stratford Depot Yard" [attr.aria-invalid]="invalid('name')"/>@if(invalid('name')){<small class="shared-form-error">Enter a zone name.</small>}</label>
-            <label class="shared-form-field full"><span>Description</span><textarea class="ui-control" formControlName="description" rows="2" placeholder="What is this zone used for?"></textarea></label>
+            <label class="shared-form-field full"><span>Description <b>*</b></span><textarea class="ui-control" formControlName="description" rows="2" placeholder="What is this zone used for?" [attr.aria-invalid]="invalid('description')"></textarea>@if(invalid('description')){<small class="shared-form-error">Enter a description.</small>}</label>
             <div class="shape-field full"><span>Shape Type</span><div>
               <button type="button" [class.selected]="form.controls.shape.value==='circle'" (click)="chooseShape('circle')"><img src="assets/fleetpoint/icons/radius.svg" alt="" aria-hidden="true" />Circle</button>
               <button type="button" [class.selected]="form.controls.shape.value==='polygon'" (click)="chooseShape('polygon')"><img src="assets/fleetpoint/icons/polygon.svg" alt="" aria-hidden="true" />Polygon</button>
@@ -54,5 +54,5 @@
       </form>
     </shared-smooth-height>
   </div>
-  <div modal-footer class="zone-form-actions"><button type="button" class="shared-button-secondary" (click)="back()">{{activeStep()===0?'Cancel':'Back'}}</button>@if(activeStep()<3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="geozone-form" class="shared-button-primary">Create Zone</button>}</div>
+  <div modal-footer class="zone-form-actions"><button type="button" class="shared-button-secondary" (click)="back()">{{activeStep()===0?'Cancel':'Back'}}</button>@if(activeStep()<3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="geozone-form" class="shared-button-primary" [disabled]="saving()">{{saving()?'Creating…':'Create Zone'}}</button>}</div>
 </app-modal>

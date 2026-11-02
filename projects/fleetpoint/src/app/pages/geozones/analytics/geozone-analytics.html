@@ -1,19 +1,31 @@
 <section class="analytics-grid">
-  <ui-chart-card title="Visits Today — by Zone" subtitle="Daily zone traffic" [height]="320"><ui-bar-chart [categories]="zones" [series]="visits" [horizontal]="true" [legend]="false"/></ui-chart-card>
-  <ui-chart-card title="Violations — by Zone" subtitle="Triggered geozone events" [height]="320"><ui-bar-chart [categories]="zones" [series]="violations" [horizontal]="true" [legend]="false"/></ui-chart-card>
+  <ui-chart-card title="Visits Today — by Zone" subtitle="Daily zone traffic" [height]="320" [loading]="!loaded()" [empty]="true" [emptyMessage]="emptyMessage"></ui-chart-card>
+  <ui-chart-card title="Violations — by Zone" subtitle="Triggered geozone events" [height]="320" [loading]="!loaded()" [empty]="true" [emptyMessage]="emptyMessage"></ui-chart-card>
 </section>
 
+@if (!loaded()) {
+<ui-data-table-skeleton
+  title="Zone Summary"
+  [columns]="columns.length"
+  [columnLabels]="columnLabels"
+  [rows]="5"
+  [showToolbar]="false"
+  [minTableWidth]="1100"
+/>
+} @else {
 <shared-data-table
   title="Zone Summary"
   [columns]="columns"
-  [rows]="rows"
+  [rows]="rows()"
   [showToolbar]="false"
   [showExport]="false"
   [showPrimaryAction]="false"
   [minTableWidth]="1100"
 >
   <ng-template tableCell="violationsLabel" let-row>
-    @if (+row['violations'] === 0) {
+    @if (row['violations'] === '') {
+      <span class="no-link">—</span>
+    } @else if (+row['violations'] === 0) {
       <span class="no-violations">
         <img src="assets/fleetpoint/icons/check.svg" alt="" aria-hidden="true" />
         None
@@ -36,3 +48,4 @@
     }
   </ng-template>
 </shared-data-table>
+}

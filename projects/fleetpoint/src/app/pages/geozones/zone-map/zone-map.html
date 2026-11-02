@@ -85,24 +85,24 @@
         <section class="zone-details-summary" [attr.data-type]="zone.type">
           <h2>{{ zone.name }}</h2>
           <span class="detail-type">{{ label(zone.type) }}</span>
-          <p>{{ zone.description }} — {{ zone.assigned }} fleet only</p>
+          <p>{{ zone.description }} — {{ zone.assigned }}</p>
         </section>
 
         <section class="zone-rules">
           <h3>Rules</h3>
           <dl>
-            <div><dt>Alert on Entry</dt><dd class="disabled">× No</dd></div>
-            <div><dt>Alert on Exit</dt><dd class="enabled">✓ Yes</dd></div>
-            <div><dt>Speed Limit</dt><dd class="speed">{{ zone.speed ? zone.speed + ' km/h' : '—' }}</dd></div>
-            <div><dt>Curfew</dt><dd class="curfew">{{ zone.hours || 'Not set' }}</dd></div>
+            <div><dt>Alert on Entry</dt><dd>{{ notAvailable }}</dd></div>
+            <div><dt>Alert on Exit</dt><dd>{{ notAvailable }}</dd></div>
+            <div><dt>Speed Limit</dt><dd class="speed">{{ zone.speed ? zone.speed + ' km/h' : notAvailable }}</dd></div>
+            <div><dt>Curfew</dt><dd class="curfew">{{ zone.hours || notAvailable }}</dd></div>
           </dl>
         </section>
 
         <section class="detail-metrics">
-          <article><strong>{{ zone.visitsToday }}</strong><span>Today</span></article>
-          <article><strong>{{ zone.visitsWeek }}</strong><span>This Week</span></article>
+          <article><strong>{{ zone.visitsToday ?? notAvailable }}</strong><span>Today</span></article>
+          <article><strong>{{ zone.visitsWeek ?? notAvailable }}</strong><span>This Week</span></article>
           <article><strong>{{ zone.avgDwell }}</strong><span>Avg Dwell</span></article>
-          <article><strong>{{ zone.violations }}</strong><span>Violations</span></article>
+          <article><strong>{{ zone.violations ?? notAvailable }}</strong><span>Violations</span></article>
         </section>
 
         @if (zone.link === 'POI' || zone.link === 'Route') {
@@ -110,7 +110,7 @@
             <h3>Linked To</h3>
             <a href="javascript:void(0)">
               <img src="assets/fleetpoint/icons/pin-brand.svg" alt="" aria-hidden="true" />
-              {{ zone.link }}: {{ zone.id.replace('GZ-', 'EP') }}
+              {{ zone.link }}
             </a>
           </section>
         }
@@ -131,7 +131,7 @@
           <img src="assets/fleetpoint/icons/edit.svg" alt="" aria-hidden="true" />
           Edit
         </button>
-        <button type="button" class="delete-zone">
+        <button type="button" class="delete-zone" (click)="remove(zone)">
           <img src="assets/fleetpoint/icons/trash-danger.svg" alt="" aria-hidden="true" />
           Delete
         </button>

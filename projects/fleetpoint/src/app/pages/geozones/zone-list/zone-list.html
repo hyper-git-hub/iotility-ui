@@ -11,6 +11,16 @@
   />
 
   <div class="zone-cards">
+    @if (!loaded()) {
+      @for (card of skeletonCards; track card) {
+        <article class="zone-card" aria-hidden="true">
+          <div class="zone-summary">
+            <ui-skeleton width="2.5rem" height="2.5rem" radius="0.75rem" />
+            <span class="zone-copy"><ui-skeleton width="45%" height="0.8rem" /><ui-skeleton width="65%" height="0.6rem" /></span>
+          </div>
+        </article>
+      }
+    } @else {
     @for (zone of filtered(); track zone.id) {
       <article
         class="zone-card"
@@ -57,7 +67,7 @@
           </span>
 
           <span class="zone-counts">
-            <span><strong>{{ zone.visitsToday }}</strong><small>Today</small></span>
+            <span><strong>{{ zone.visitsToday ?? notAvailable }}</strong><small>Today</small></span>
             @if (zone.inside) {
               <span class="inside"><strong>{{ zone.inside }}</strong><small>Inside</small></span>
             }
@@ -68,7 +78,7 @@
 
           <span class="zone-actions" (click)="$event.stopPropagation()">
             <button type="button" aria-label="Edit zone" tooltip="Edit zone"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/edit.svg')" aria-hidden="true"></span></button>
-            <button type="button" class="delete" aria-label="Delete zone" tooltip="Delete zone"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/trash-muted.svg')" aria-hidden="true"></span></button>
+            <button type="button" class="delete" aria-label="Delete zone" tooltip="Delete zone" (click)="remove(zone)"><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/trash-muted.svg')" aria-hidden="true"></span></button>
           </span>
           <span class="expand-icon"><img src="assets/fleetpoint/icons/chevron-down.svg" alt="" aria-hidden="true" /></span>
         </div>
@@ -77,10 +87,10 @@
           @if (expandedId() === zone.id) {
             <section class="zone-expanded">
               <div class="zone-metrics">
-                <article><strong>{{ zone.visitsToday }}</strong><span>Visits Today</span></article>
-                <article><strong>{{ zone.visitsWeek }}</strong><span>This Week</span></article>
+                <article><strong>{{ zone.visitsToday ?? notAvailable }}</strong><span>Visits Today</span></article>
+                <article><strong>{{ zone.visitsWeek ?? notAvailable }}</strong><span>This Week</span></article>
                 <article><strong>{{ zone.avgDwell }}</strong><span>Avg Dwell</span></article>
-                <article><strong>{{ zone.violations }}</strong><span>Violations</span></article>
+                <article><strong>{{ zone.violations ?? notAvailable }}</strong><span>Violations</span></article>
               </div>
               <h3>Recent Events</h3>
               <div class="recent-events">
@@ -97,6 +107,7 @@
       </article>
     } @empty {
       <div class="zone-empty">No zones match your search.</div>
+    }
     }
   </div>
 </section>
