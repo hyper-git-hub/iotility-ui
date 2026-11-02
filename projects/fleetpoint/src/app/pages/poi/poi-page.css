@@ -127,3 +127,4 @@
 .poi-tabs button[data-type].active:hover { @apply border-brand-600; }
 .poi-card { box-shadow: var(--shadow-card); }
 .poi-card:not(.expanded):hover { box-shadow: var(--shadow-card-hover); }
+.poi-card-skeleton { @apply cursor-default hover:border-line dark:hover:border-dark-line; }.poi-skeleton-lines { @apply grid min-w-0 flex-1 gap-2; }

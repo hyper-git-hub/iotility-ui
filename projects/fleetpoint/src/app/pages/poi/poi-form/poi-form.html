@@ -30,7 +30,7 @@
           <section class="form-step details-grid"><header class="full"><h3>POI Details &amp; Location</h3><p>Enter the POI information and map coordinates.</p></header>
             <label class="shared-form-field full"><span>POI Name <b>*</b></span><input class="ui-control" formControlName="name" placeholder="e.g. Amazon BHX2 Fulfilment" [attr.aria-invalid]="invalid('name')"/>@if(invalid('name')){<small class="shared-form-error">Enter a POI name.</small>}</label>
             <label class="shared-form-field full"><span>Address <b>*</b></span><input class="ui-control" formControlName="address" placeholder="Full address or postcode" [attr.aria-invalid]="invalid('address')"/>@if(invalid('address')){<small class="shared-form-error">Enter an address.</small>}</label>
-            <label class="shared-form-field"><span>Radius (meters) <b>*</b></span><input type="number" min="10" class="ui-control" formControlName="radius" [attr.aria-invalid]="invalid('radius')"/></label>
+            <label class="shared-form-field"><span>Radius (meters) <b>*</b></span><input type="number" [min]="radiusMin" class="ui-control" formControlName="radius" [attr.aria-invalid]="invalid('radius')"/>@if(invalid('radius')){<small class="shared-form-error">Radius must be at least {{ radiusMin }}m.</small>}</label>
             <span></span>
             <div class="location-picker full">
               <div class="location-picker-heading"><span><strong>Choose location <b>*</b></strong><small>Click anywhere on the map to place the marker. Drag it to adjust the position.</small></span>
@@ -79,5 +79,5 @@
       </form>
     </shared-smooth-height>
   </div>
-  <div modal-footer class="poi-form-actions"><button type="button" class="shared-button-secondary" (click)="back()">{{ activeStep() === 0 ? 'Cancel' : 'Back' }}</button>@if(activeStep() < 3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="poi-form" class="shared-button-primary">Create POI</button>}</div>
+  <div modal-footer class="poi-form-actions"><button type="button" class="shared-button-secondary" (click)="back()">{{ activeStep() === 0 ? 'Cancel' : 'Back' }}</button>@if(activeStep() < 3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="poi-form" class="shared-button-primary" [disabled]="saving()">{{ saving() ? 'Creating...' : 'Create POI' }}</button>}</div>
 </app-modal>

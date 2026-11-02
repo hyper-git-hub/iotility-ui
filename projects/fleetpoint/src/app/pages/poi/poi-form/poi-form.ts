@@ -1,16 +1,22 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Dropdown, DropdownOption, SmoothHeight } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
+import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { POI_MARKER_TYPE, PoisApiService } from '../../../shared/services/pois-api.service';
+import { RoutesApiService } from '../../../shared/services/routes-api.service';
 import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
 import { PoiCoordinates, PoiLocationPicker } from './poi-location-picker';
 
-export interface PoiFormValue {
-  type: string; name: string; address: string; radius: number; latitude: string; longitude: string;
-  assignment: string; assignedTarget: string; alertOnEntry: boolean; alertOnExit: boolean;
-  maxDwell: number | null; geozone: string; notes: string;
-}
+/** fms-fleet keeps POIs of at least this radius (hypernym-fms-fe enforces the same). */
+const POI_RADIUS_MIN = 50;
 
+/**
+ * Creates a POI the way hypernym-fms-fe does: name, radius and the map position (POST /api/poi).
+ * The API has a single "Marker" type and no address, assignment, alert, dwell, geozone or notes
+ * fields, so those steps are kept for the layout but not sent.
+ */
 @Component({
   selector: 'app-poi-form',
   imports: [Dropdown, Modal, PoiLocationPicker, ReactiveFormsModule, SmoothHeight, Stepper],
@@ -20,7 +26,13 @@ export interface PoiFormValue {
 export class PoiForm {
   readonly open = input(false);
   readonly cancelled = output<void>();
-  readonly created = output<PoiFormValue>();
+  readonly created = output<void>();
+  private readonly api = inject(PoisApiService);
+  private readonly feedback = inject(FeedbackDialogBridgeService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly fleets = toSignal(inject(RoutesApiService).fleets(), { initialValue: [] });
+  protected readonly saving = signal(false);
+  protected readonly radiusMin = POI_RADIUS_MIN;
   protected readonly activeStep = signal(0);
   protected readonly submitted = signal(false);
   protected readonly steps: StepperStep[] = [
@@ -43,22 +55,15 @@ export class PoiForm {
   protected readonly assignmentOptions: DropdownOption[] = [
     { id:'all',label:'All vehicles' }, { id:'fleet',label:'Specific fleet' }, { id:'vehicle',label:'Specific vehicle' },
   ];
-  protected readonly fleetOptions: DropdownOption[] = [
-    { id:'north',label:'Northern Distribution' }, { id:'midlands',label:'Midlands Operations' }, { id:'london',label:'London Delivery Fleet' },
-  ];
-  protected readonly vehicleOptions: DropdownOption[] = [
-    { id:'LP-4821',label:'LP-4821' }, { id:'LP-6612',label:'LP-6612' }, { id:'LP-3312',label:'LP-3312' }, { id:'LP-5531',label:'LP-5531' },
-  ];
-  protected readonly geozoneOptions: DropdownOption[] = [
-    { id:'',label:'No geozone' }, { id:'london-lez',label:'London Low Emission Zone' },
-    { id:'birmingham-b',label:'Birmingham Depot Zone B' }, { id:'manchester-curfew',label:'Manchester Night Curfew' },
-  ];
+  protected readonly fleetOptions = computed<DropdownOption[]>(() => this.fleets().map((fleet) => ({ id: String(fleet.id), label: fleet.name })));
+  protected readonly vehicleOptions = computed<DropdownOption[]>(() => this.fleets().flatMap((fleet) => fleet.vehicles).map((vehicle) => ({ id: String(vehicle.id), label: vehicle.name })));
+  protected readonly geozoneOptions: DropdownOption[] = [{ id:'',label:'No geozone' }];
   protected readonly form;
 
   constructor(formBuilder: FormBuilder) {
     this.form = formBuilder.nonNullable.group({
       type: ['', Validators.required], name: ['', Validators.required], address: ['', Validators.required],
-      radius: [200, [Validators.required, Validators.min(10)]], latitude: ['', Validators.required],
+      radius: [200, [Validators.required, Validators.min(POI_RADIUS_MIN)]], latitude: ['', Validators.required],
       longitude: ['', Validators.required], assignment: ['all', Validators.required], assignedTarget: [''],
       alertOnEntry: [true], alertOnExit: [true], maxDwell: formBuilder.control<number | null>(null),
       geozone: [''], notes: [''],
@@ -80,7 +85,7 @@ export class PoiForm {
     return options.find((option) => option.id === value)?.label ?? fallback;
   }
   protected assignmentTargets(): DropdownOption[] {
-    return this.form.controls.assignment.value === 'fleet' ? this.fleetOptions : this.vehicleOptions;
+    return this.form.controls.assignment.value === 'fleet' ? this.fleetOptions() : this.vehicleOptions();
   }
   protected selectedTypeLabel(): string { return this.poiTypes.find((type) => type.id === this.form.controls.type.value)?.label ?? 'Not selected'; }
   protected goToStep(index: number): void { this.activeStep.set(index); }
@@ -96,9 +101,24 @@ export class PoiForm {
     this.activeStep.update((step) => step - 1);
   }
   protected submit(): void {
-    if (this.form.invalid || !this.assignmentValid()) return;
-    this.created.emit(this.form.getRawValue());
-    this.reset();
+    if (this.form.invalid || !this.assignmentValid() || this.saving()) return;
+    const value = this.form.getRawValue();
+    const failed = (message?: string) => void this.feedback.open({ type: 'error', title: 'Unable to create POI', message: message || 'The POI could not be created. Please try again.', showCancel: false });
+    this.saving.set(true);
+    this.api.create({
+      name: value.name.trim(),
+      type: POI_MARKER_TYPE,
+      radius: Number(value.radius),
+      territory: JSON.stringify({ lat: Number(value.latitude), lng: Number(value.longitude) }),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        this.saving.set(false);
+        if (response.status === 1002) return failed(response.message);
+        this.reset();
+        this.created.emit();
+      },
+      error: (error: { error?: { message?: string } }) => { this.saving.set(false); failed(error.error?.message); },
+    });
   }
   protected cancel(): void { this.reset(); this.cancelled.emit(); }
   protected invalid(control: 'name'|'address'|'radius'|'latitude'|'longitude'): boolean {

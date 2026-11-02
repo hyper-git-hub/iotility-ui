@@ -1,8 +1,13 @@
-import { Component, computed, signal } from '@angular/core';
-import { SmoothHeight, Tooltip } from '@iotility/shared-ui';
+import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Skeleton, SmoothHeight, Tooltip } from '@iotility/shared-ui';
+import { Subscription } from 'rxjs';
+import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
+import { PoiApiRecord, PoisApiService } from '../../shared/services/pois-api.service';
+import { NOT_AVAILABLE, text } from '../maintenance/maintenance.data';
 import { FleetMap, MapZoneOverlay, TrackedVehicle, VehicleStatus } from '../../shared/fleet-map/fleet-map';
 import { StatCard } from '../../shared/stat-card/stat-card';
-import { PoiForm, PoiFormValue } from './poi-form/poi-form';
+import { PoiForm } from './poi-form/poi-form';
 
 type PoiType =
   | 'depot' | 'customer' | 'fuel' | 'rest' | 'exclusion'
@@ -114,9 +119,37 @@ const POI_MAP_COLORS: Record<PoiType, string> = {
   custom: '#6b7280',
 };
 interface PoiRecord {
-  id: string; name: string; address: string; type: PoiType; visitsToday: number; assigned: string;
-  radius: number; geozone: boolean; alerts: number; sla?: number; lat: number; lng: number;
-  visitsWeek: number; avgDwell: string; contact?: string; phone?: string; visits: PoiVisit[];
+  recordId: number; id: string; name: string; address: string; type: PoiType; typeName: string;
+  visitsToday: string; assigned: string; radius: number; geozone: boolean; alerts: number; sla?: number;
+  lat: number; lng: number; visitsWeek: string; avgDwell: string; contact?: string; phone?: string; visits: PoiVisit[];
+}
+
+/**
+ * Binds what GET fms-fleet/api/poi sends. The API has one generic "Marker" type, no address and
+ * no visit, alert or SLA tracking, so those read "—" and every POI uses the generic Custom pin.
+ */
+function toPoiRecord(poi: PoiApiRecord): PoiRecord | null {
+  const point = territory(poi.territory);
+  if (!point) return null;
+  const vehicles = poi.assigned_trucks_count;
+  return {
+    recordId: poi.id, id: `POI${String(poi.id).padStart(2, '0')}`, name: text(poi.name), address: NOT_AVAILABLE,
+    type: 'custom', typeName: text(poi.type_name ?? poi.poi_type_name ?? 'Marker'), visitsToday: NOT_AVAILABLE,
+    assigned: vehicles ? `${vehicles} vehicle${vehicles === 1 ? '' : 's'}` : NOT_AVAILABLE,
+    radius: Number(poi.radius) || POI_RADIUS_MIN, geozone: poi.geo_zone != null, alerts: 0, lat: point.lat, lng: point.lng,
+    visitsWeek: NOT_AVAILABLE, avgDwell: NOT_AVAILABLE, visits: [],
+  };
+}
+
+/** territory arrives as {"lat","lng"}, either parsed or as a JSON string. */
+function territory(value: PoiApiRecord['territory']): { lat: number; lng: number } | null {
+  let parsed: unknown = value;
+  if (typeof value === 'string') {
+    try { parsed = JSON.parse(value); } catch { return null; }
+  }
+  const point = parsed as { lat?: unknown; lng?: unknown } | null;
+  const lat = Number(point?.lat), lng = Number(point?.lng);
+  return Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng) ? { lat, lng } : null;
 }
 
 /** Lucide icon paths from the `main` branch POI card (Clock, Users, MapPin, ShieldCheck, ChevronDown). */
@@ -133,11 +166,18 @@ const ICONS: Record<string, string[]> = {
 
 @Component({
   selector: 'app-poi-page',
-  imports: [FleetMap, PoiForm, SmoothHeight, StatCard, Tooltip],
+  imports: [FleetMap, PoiForm, Skeleton, SmoothHeight, StatCard, Tooltip],
   templateUrl: './poi-page.html',
   styleUrl: './poi-page.css',
 })
 export class PoiPage {
+  private readonly api = inject(PoisApiService);
+  private readonly feedback = inject(FeedbackDialogBridgeService);
+  private readonly destroyRef = inject(DestroyRef);
+  private request?: Subscription;
+  /** False until the first POI response; stat cards and the list show skeletons. */
+  protected readonly loaded = signal(false);
+  protected readonly skeletonCards = [0, 1, 2, 3];
   protected readonly search = signal('');
   protected readonly typeFilter = signal<'all' | PoiType>('all');
   protected readonly expandedId = signal<string | null>(null);
@@ -149,44 +189,32 @@ export class PoiPage {
     { id: 'unsafe', label: 'Unsafe Area' }, { id: 'competitor', label: 'Competitor' },
     { id: 'route', label: 'Route' }, { id: 'custom', label: 'Custom' },
   ];
-  /** Seeded listing, all placed across the Islamabad–Rawalpindi corridor. */
-  private readonly records: PoiRecord[] = [
-    { id:'POI01',name:'Islamabad Logistics Park — HQ',address:'Islamabad Industrial Zone, Sector I-9',type:'depot',visitsToday:8,assigned:'All vehicles',radius:200,geozone:true,alerts:0,lat:33.6989,lng:73.0665,visitsWeek:42,avgDwell:'34min',contact:'James Hartley',phone:'+92 300 1234501',visits:[{vehicle:'LP-4821',driver:'James Hartley',time:'06:12 → 06:48',dwell:'36min'},{vehicle:'LP-7734',driver:'Mohammed Al-Rashid',time:'07:05 → 07:31',dwell:'26min'}]},
-    { id:'POI02',name:'Rawalpindi Distribution Centre',address:'Rawat Industrial Estate, Rawalpindi',type:'depot',visitsToday:5,assigned:'1 fleet',radius:150,geozone:true,alerts:0,lat:33.6010,lng:73.0479,visitsWeek:31,avgDwell:'29min',visits:[{vehicle:'LP-6612',driver:'Thomas Griffiths',time:'07:02 → 07:38',dwell:'36min'}]},
-    { id:'POI03',name:'Sahiwal Road Depot',address:'Sahiwal Road, Rawalpindi',type:'depot',visitsToday:3,assigned:'1 fleet',radius:120,geozone:false,alerts:0,lat:33.6540,lng:73.0760,visitsWeek:18,avgDwell:'41min',visits:[]},
-    { id:'POI04',name:'Saidpur Fulfilment Centre',address:'Saidpur Road, Saidpur, Islamabad',type:'customer',visitsToday:4,assigned:'All vehicles',radius:300,geozone:true,alerts:1,sla:82,lat:33.6350,lng:73.0400,visitsWeek:22,avgDwell:'68min',visits:[{vehicle:'LP-4821',driver:'James Hartley',time:'08:51 → 10:08',dwell:'77min',breach:true}]},
-    { id:'POI05',name:'Blue Area RDC — Islamabad',address:'Fazal-e-Haq Road, Blue Area, Islamabad',type:'customer',visitsToday:2,assigned:'2 fleets',radius:250,geozone:false,alerts:0,sla:94,lat:33.7100,lng:73.0600,visitsWeek:15,avgDwell:'52min',visits:[{vehicle:'LP-3312',driver:'Oliver Pemberton',time:'09:10 → 09:54',dwell:'44min'}]},
-    { id:'POI06',name:'M-2 Northbound Fuel Station',address:'M-2 Motorway, Kaharwan Interchange, Islamabad',type:'fuel',visitsToday:4,assigned:'All vehicles',radius:100,geozone:false,alerts:0,lat:33.7300,lng:72.8500,visitsWeek:27,avgDwell:'18min',visits:[]},
-    { id:'POI07',name:'Islamabad Low Emission Exclusion',address:'Red Zone restricted boundary, Islamabad',type:'exclusion',visitsToday:6,assigned:'All vehicles',radius:500,geozone:true,alerts:1,lat:33.6844,lng:73.0479,visitsWeek:36,avgDwell:'12min',visits:[{vehicle:'LP-5531',driver:'Priya Sharma',time:'10:22 → 10:34',dwell:'12min',breach:true}]},
-    { id:'POI08',name:'Rawalpindi Driver Rest Area',address:'Pir Wadhai Road Service Area, Rawalpindi',type:'rest',visitsToday:0,assigned:'All vehicles',radius:120,geozone:false,alerts:0,lat:33.5900,lng:73.0400,visitsWeek:9,avgDwell:'27min',visits:[]},
-    { id:'POI09',name:'Taxila Unsafe Loading Area',address:'Margalla Industrial Zone, Taxila',type:'unsafe',visitsToday:0,assigned:'2 vehicles',radius:80,geozone:true,alerts:0,lat:33.7450,lng:72.7900,visitsWeek:3,avgDwell:'8min',visits:[]},
-    { id:'POI10',name:'Chakri Custom Checkpoint',address:'Chakri Interchange, Rawalpindi',type:'custom',visitsToday:0,assigned:'1 fleet',radius:90,geozone:false,alerts:0,lat:33.6700,lng:72.9400,visitsWeek:6,avgDwell:'14min',visits:[]},
-    { id:'POI11',name:'Islamabad Airport Fuel Station',address:'Islamabad International Airport, Attock',type:'fuel',visitsToday:0,assigned:'All vehicles',radius:110,geozone:false,alerts:0,lat:33.5600,lng:72.8517,visitsWeek:5,avgDwell:'22min',visits:[]},
-  ];
+  private readonly records = signal<PoiRecord[]>([]);
   protected readonly visibleTabs = computed(() => this.typeTabs
     .filter((tab) => tab.id === 'all' || this.count(tab.id) > 0));
-  protected readonly total = this.records.length;
-  protected readonly visitsToday = this.records.reduce((sum, poi) => sum + poi.visitsToday, 0);
-  protected readonly activeAlerts = this.records.filter((poi) => poi.alerts > 0).length;
-  protected readonly slaBreaches = this.records.filter((poi) => poi.sla !== undefined && poi.sla < 100).length;
-  protected readonly exclusionViolations = this.records.filter((poi) => poi.type === 'exclusion' && poi.alerts > 0).length;
+  protected readonly total = computed(() => this.records().length);
+  /** The API has no visit, alert, SLA or exclusion tracking. */
+  protected readonly visitsToday = NOT_AVAILABLE;
+  protected readonly activeAlerts = NOT_AVAILABLE;
+  protected readonly slaBreaches = NOT_AVAILABLE;
+  protected readonly exclusionViolations = NOT_AVAILABLE;
   protected readonly filtered = computed(() => {
     const query = this.search().trim().toLowerCase();
-    return this.records.filter((poi) => (this.typeFilter() === 'all' || poi.type === this.typeFilter())
+    return this.records().filter((poi) => (this.typeFilter() === 'all' || poi.type === this.typeFilter())
       && (!query || `${poi.name} ${poi.address}`.toLowerCase().includes(query)));
   });
   /**
    * Filter signature handed to the fleet map. The type tabs and the search box
    * reshape the visible POI set, so the map must re-frame on them — without
    * this the camera stays parked on whichever POI was last focused and a
-   * filtered set that does not contain it renders off-screen. Static data, so
-   * the key is stable between edits and never re-fits on its own.
+   * filtered set that does not contain it renders off-screen. The record count
+   * is included so the map re-frames once the POIs load or one is added.
    */
   protected readonly mapFilterKey = computed(
-    () => `${this.typeFilter()}|${this.search().trim().toLowerCase()}`,
+    () => `${this.typeFilter()}|${this.search().trim().toLowerCase()}|${this.records().length}`,
   );
   protected readonly mapPois = computed<TrackedVehicle[]>(() => this.filtered().map((poi) => ({
-    id: poi.id, model: poi.name, driver: this.typeLabel(poi.type), status: this.mapStatus(poi),
+    id: poi.id, model: poi.name, driver: poi.typeName, status: this.mapStatus(poi),
     speed: 0, fuel: 0, location: poi.address, updated: `${poi.visitsToday} visits today`,
     lat: poi.lat, lng: poi.lng, image: POI_MARKER_ASSETS[poi.type],
   })));
@@ -214,8 +242,8 @@ export class PoiPage {
    * alerts. Colours come from the app theme tokens, so it follows light/dark.
    */
   protected readonly poiPopupTemplate = (item: TrackedVehicle): string => {
-    const poi = this.records.find((record) => record.id === item.id);
-    const visits = poi?.visitsToday ?? 0;
+    const poi = this.records().find((record) => record.id === item.id);
+    const visits = poi?.visitsToday ?? NOT_AVAILABLE;
     const alerts = poi?.alerts ?? 0;
     const alertRow = alerts
       ? `<p class="poi-popup-alert"><span aria-hidden="true">⚠</span> ${alerts} active alert${alerts === 1 ? '' : 's'}</p>`
@@ -234,8 +262,37 @@ export class PoiPage {
   protected selectFromMap(item: TrackedVehicle): void { this.expandedId.set(item.id); }
   protected openPoiForm(): void { this.poiFormOpen.set(true); }
   protected closePoiForm(): void { this.poiFormOpen.set(false); }
-  protected createPoi(_: PoiFormValue): void { this.closePoiForm(); }
-  protected count(type: 'all' | PoiType): number { return type === 'all' ? this.total : this.records.filter((poi) => poi.type === type).length; }
+  protected createPoi(): void { this.closePoiForm(); this.api.changed(); }
+  protected count(type: 'all' | PoiType): number { return type === 'all' ? this.total() : this.records().filter((poi) => poi.type === type).length; }
+
+  constructor() {
+    effect(() => {
+      this.api.version();
+      untracked(() => this.load());
+    });
+  }
+
+  protected async remove(poi: PoiRecord): Promise<void> {
+    const confirmed = await this.feedback.open({ type: 'warning', title: 'Delete POI?', message: `${poi.name} will be permanently deleted.`, confirmText: 'Delete', cancelText: 'Cancel', showCancel: true });
+    if (!confirmed) return;
+    const failed = (message?: string) => void this.feedback.open({ type: 'error', title: 'Unable to delete', message: message || 'The POI could not be deleted. Please try again.', showCancel: false });
+    this.api.delete(poi.recordId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        if (response.status === 1002) return failed(response.message);
+        if (this.expandedId() === poi.id) this.expandedId.set(null);
+        this.api.changed();
+      },
+      error: (error: { error?: { message?: string } }) => failed(error.error?.message),
+    });
+  }
+
+  private load(): void {
+    this.request?.unsubscribe();
+    this.request = this.api.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (pois) => { this.records.set(pois.map(toPoiRecord).filter((poi): poi is PoiRecord => !!poi)); this.loaded.set(true); },
+      error: () => { this.records.set([]); this.loaded.set(true); },
+    });
+  }
   protected typeIconPaths(type: PoiType): string[] {
     return POI_TYPE_CONFIG.find((config) => config.id === type)?.paths ?? POI_TYPE_CONFIG[8].paths;
   }
