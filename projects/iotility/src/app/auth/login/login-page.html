@@ -38,11 +38,8 @@
         [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
         (click)="togglePasswordVisibility()"
       >
-        @if (showPassword()) {
-          <span class="color-icon icon-swap size-4" style="--icon: url('/assets/icons/eye.svg')" aria-hidden="true"></span>
-        } @else {
-          <span class="color-icon icon-swap size-4" style="--icon: url('/assets/icons/eye-off.svg')" aria-hidden="true"></span>
-        }
+        <span class="color-icon icon-swap size-4" [class.shown]="showPassword()" style="--icon: url('/assets/icons/eye.svg')" aria-hidden="true"></span>
+        <span class="color-icon icon-swap size-4" [class.shown]="!showPassword()" style="--icon: url('/assets/icons/eye-off.svg')" aria-hidden="true"></span>
       </button>
     </div>
     @if (form.controls.password.touched && form.controls.password.invalid) {

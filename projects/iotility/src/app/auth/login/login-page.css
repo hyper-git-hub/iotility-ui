@@ -40,18 +40,20 @@
   80% { transform: translateX(6px); }
 }
 
-/* Show/hide password: the new icon blurs and scales into the slot. */
-.icon-swap {
+/* Show/hide password: both icons share the slot and crossfade, the incoming one blurring and scaling in. */
+.password-toggle .icon-swap {
+  grid-area: 1 / 1;
+  opacity: 0;
+  scale: 0.6;
+  filter: blur(2px);
   transition:
     opacity 200ms ease,
     scale 200ms var(--ease-out),
     filter 200ms ease;
 }
-@starting-style {
-  .icon-swap { opacity: 0; scale: 0.6; filter: blur(2px); }
-}
+.password-toggle .icon-swap.shown { opacity: 1; scale: 1; filter: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .is-shaking .form-control:has(input.ng-invalid.ng-touched) { animation: none; }
-  .icon-swap { transition-property: opacity; }
+  .password-toggle .icon-swap { transition-property: opacity; }
 }
