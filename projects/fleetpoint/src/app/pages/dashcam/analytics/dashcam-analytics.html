@@ -1,9 +1,9 @@
 <section class="analytics-top">
   <ui-chart-card title="Events by Category" [height]="360">
     <div class="category-body">
-      <ui-donut-chart class="category-donut" [slices]="slices" [legend]="false" centerLabel="Events" />
+      <ui-donut-chart class="category-donut" [slices]="slices()" [legend]="false" centerLabel="Events" />
       <div class="category-legend">
-        @for (item of categories; track item.id) {
+        @for (item of categories(); track item.id) {
           <p>
             <i [style.background]="item.color"></i><span>{{ item.label }}</span
             ><strong>{{ item.value }}</strong>
@@ -13,16 +13,16 @@
     </div>
   </ui-chart-card>
   <ui-chart-card title="Events by Driver" [height]="360">
-    <ui-bar-chart [categories]="drivers" [series]="driverSeries" />
+    <ui-bar-chart [categories]="drivers()" [series]="driverSeries()" />
   </ui-chart-card>
 </section>
 <ui-chart-card class="trend-card" title="Event Trend — Last 7 Days" [height]="310">
-  <ui-line-chart [categories]="days" [series]="trendSeries" [showPoints]="true" />
+  <ui-line-chart [categories]="days()" [series]="trendSeries()" [showPoints]="true" />
 </ui-chart-card>
 <aside class="ai-note">
   <img src="assets/fleetpoint/icons/robot.svg" alt="" aria-hidden="true" />
   <div>
-    <h3>False Positive Rate: {{ falsePositiveRate }}%</h3>
+    <h3>False Positive Rate: {{ falsePositiveRate }}</h3>
     <p>
       BSJ IOT AI cameras occasionally over-trigger, especially Yawn Detection and Driver ID events.
       Mark false positives during review to improve model accuracy and reduce unnecessary alerts

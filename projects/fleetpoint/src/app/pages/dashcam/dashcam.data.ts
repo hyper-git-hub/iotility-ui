@@ -1,4 +1,12 @@
 import { DropdownOption } from '@iotility/shared-ui';
+import {
+  DASHCAM_MEDIA_URL,
+  DashcamDeviceRecord,
+  DashcamViolationRecord,
+} from '../../shared/services/dashcam-api.service';
+import { NOT_AVAILABLE, text } from '../maintenance/maintenance.data';
+
+export { NOT_AVAILABLE };
 
 export type DashcamCategory =
   'safety-critical' | 'fatigue' | 'distraction' | 'driving-style' | 'identity' | 'camera';
@@ -17,184 +25,113 @@ export interface DashcamVehicle {
 export interface DashcamEvent {
   id: string;
   timestamp: string;
+  /** Event time in ms, for day buckets; null when the API sends none. */
+  time: number | null;
   eventType: string;
-  category: DashcamCategory;
-  severity: DashcamSeverity;
-  review: DashcamReview;
+  /** Grouped from the violation type; null for a type outside the AI camera set. */
+  category: DashcamCategory | null;
+  /** The API has no severity, review state or score impact for DashCam events. */
+  severity: DashcamSeverity | null;
+  review: DashcamReview | null;
   driver: string;
   vehicle: string;
   location: string;
-  speed: number;
-  scoreImpact: number;
+  speed: number | null;
+  scoreImpact: number | null;
   device: string;
   cameras: string[];
+  /** Evidence clip or snapshot, when the device uploaded one. */
+  mediaUrl: string;
 }
 
-export const DASHCAM_VEHICLES: DashcamVehicle[] = [
-  {
-    id: 'V1',
-    plate: 'LP-4821',
-    model: 'Volvo FH',
-    driver: 'Mohammed Al-Rashid',
-    cameras: ['Front', 'Cabin', 'Rear'],
-    online: true,
-  },
-  {
-    id: 'V2',
-    plate: 'LP-0392',
-    model: 'Volvo FH Reefer',
-    driver: 'Aisha Khan',
-    cameras: ['Front', 'Cabin'],
-    online: true,
-  },
-  {
-    id: 'V3',
-    plate: 'LP-9901',
-    model: 'Volvo FH',
-    driver: 'Connor Murphy',
-    cameras: ['Front', 'Cabin', 'Rear', 'Side'],
-    online: true,
-  },
-  {
-    id: 'V4',
-    plate: 'LP-2201',
-    model: 'Mercedes Actros',
-    driver: 'Oliver Price',
-    cameras: ['Front', 'Cabin'],
-    online: true,
-  },
-  {
-    id: 'V5',
-    plate: 'LP-7734',
-    model: 'DAF XF',
-    driver: 'James Wilson',
-    cameras: ['Front', 'Cabin'],
-    online: false,
-  },
-];
+/** Camera views per device model, as hypernym-fms-fe's livestream channel picker offers them. */
+const DEVICE_CAMERAS: Record<string, string[]> = {
+  'Howen DC': ['Front', 'Cabin'],
+  'BSJ EH3T SC': ['Front'],
+  'BSJ EH3T DC': ['Front', 'Rear'],
+  'BSJ EH13P DC': ['Front', 'Rear'],
+  'BSJ EH3T TC': ['Front', 'Rear', 'Cabin'],
+  'BSJ EH13P TC': ['Front', 'Rear', 'Cabin'],
+  'BSJ Multiple Channel': ['Front', 'Rear'],
+};
 
-export const DASHCAM_EVENTS: DashcamEvent[] = [
-  {
-    id: 'EVT-1048',
-    timestamp: 'Today · 14:38',
-    eventType: 'Road Departure Warning',
-    category: 'safety-critical',
-    severity: 'Critical',
-    review: 'Unreviewed',
-    driver: 'Mohammed Al-Rashid',
-    vehicle: 'LP-4821',
-    location: 'M40 Southbound, Bicester',
-    speed: 88,
-    scoreImpact: -15,
-    device: 'BSJ-4821',
-    cameras: ['Front', 'Cabin'],
-  },
-  {
-    id: 'EVT-1047',
-    timestamp: 'Today · 14:24',
-    eventType: 'Mobile Phone Use',
-    category: 'distraction',
-    severity: 'Critical',
-    review: 'Violation',
-    driver: 'Mohammed Al-Rashid',
-    vehicle: 'LP-4821',
-    location: 'M40 Southbound',
-    speed: 74,
-    scoreImpact: -10,
-    device: 'BSJ-4821',
-    cameras: ['Cabin'],
-  },
-  {
-    id: 'EVT-1046',
-    timestamp: 'Today · 13:52',
-    eventType: 'Driver Yawning',
-    category: 'fatigue',
-    severity: 'Warning',
-    review: 'False Positive',
-    driver: 'Aisha Khan',
-    vehicle: 'LP-0392',
-    location: 'A38, Lichfield',
-    speed: 58,
-    scoreImpact: 0,
-    device: 'BSJ-0392',
-    cameras: ['Cabin'],
-  },
-  {
-    id: 'EVT-1045',
-    timestamp: 'Today · 12:06',
-    eventType: 'Harsh Braking',
-    category: 'driving-style',
-    severity: 'Warning',
-    review: 'Unreviewed',
-    driver: 'Connor Murphy',
-    vehicle: 'LP-9901',
-    location: 'Trafford Park, Manchester',
-    speed: 42,
-    scoreImpact: -5,
-    device: 'BSJ-9901',
-    cameras: ['Front'],
-  },
-  {
-    id: 'EVT-1044',
-    timestamp: 'Today · 11:41',
-    eventType: 'Seatbelt Not Detected',
-    category: 'safety-critical',
-    severity: 'Critical',
-    review: 'Unreviewed',
-    driver: 'Oliver Price',
-    vehicle: 'LP-2201',
-    location: 'Birmingham Ring Road',
-    speed: 36,
-    scoreImpact: -12,
-    device: 'BSJ-2201',
-    cameras: ['Cabin'],
-  },
-  {
-    id: 'EVT-1043',
-    timestamp: 'Today · 10:18',
-    eventType: 'Camera Obscured',
-    category: 'camera',
-    severity: 'Info',
-    review: 'Acknowledged',
-    driver: 'Aisha Khan',
-    vehicle: 'LP-0392',
-    location: 'A5, Tamworth',
-    speed: 0,
-    scoreImpact: 0,
-    device: 'BSJ-0392',
-    cameras: ['Rear'],
-  },
-  {
-    id: 'EVT-1042',
-    timestamp: 'Today · 09:34',
-    eventType: 'Driver Identification',
-    category: 'identity',
-    severity: 'Info',
-    review: 'False Positive',
-    driver: 'James Wilson',
-    vehicle: 'LP-7734',
-    location: 'Bicester Depot',
-    speed: 0,
-    scoreImpact: 0,
-    device: 'BSJ-7734',
-    cameras: ['Cabin'],
-  },
-  {
-    id: 'EVT-1041',
-    timestamp: 'Today · 08:15',
-    eventType: 'Forward Collision Warning',
-    category: 'safety-critical',
-    severity: 'Critical',
-    review: 'Violation',
-    driver: 'Connor Murphy',
-    vehicle: 'LP-9901',
-    location: 'M6 Northbound',
-    speed: 92,
-    scoreImpact: -18,
-    device: 'BSJ-9901',
-    cameras: ['Front'],
-  },
-];
+export function deviceCameras(deviceType: string | null | undefined): string[] {
+  if (!deviceType) return [];
+  if (deviceType.toLowerCase().startsWith('concox')) return ['Front', 'Rear'];
+  return DEVICE_CAMERAS[deviceType] ?? ['Front'];
+}
+
+const VIOLATION_CATEGORIES: Record<string, DashcamCategory> = {
+  'eye closing': 'fatigue',
+  yawning: 'fatigue',
+  'fatigue alert': 'fatigue',
+  calling: 'distraction',
+  smoking: 'distraction',
+  glancing: 'distraction',
+  'camera covered': 'camera',
+  'pedestrian collision': 'safety-critical',
+  'lane departure': 'safety-critical',
+  'too close to the vehicle ahead': 'safety-critical',
+  'distance too close': 'safety-critical',
+  'forward & backward collision': 'safety-critical',
+};
+
+export function toDashcamVehicle(device: DashcamDeviceRecord, events: DashcamEvent[]): DashcamVehicle {
+  const plate = text(device.name);
+  return {
+    id: String(device.vehicle_id),
+    plate,
+    model: text(device.device_type),
+    driver: events.find((event) => event.vehicle === plate && event.driver !== NOT_AVAILABLE)?.driver ?? NOT_AVAILABLE,
+    cameras: deviceCameras(device.device_type),
+    // The endpoint lists only the dashcams currently available for streaming.
+    online: true,
+  };
+}
+
+export function toDashcamEvent(record: DashcamViolationRecord, devices: DashcamDeviceRecord[]): DashcamEvent {
+  const type = record.violation_name ?? record.violation_type;
+  const device = devices.find((item) => item.vehicle_id === record.vehicle);
+  const time = record.event_generation_time ? new Date(record.event_generation_time).getTime() : NaN;
+  const speed = record.speed === null || record.speed === '' ? NaN : Number(record.speed);
+  return {
+    id: `EVT-${record.id}`,
+    timestamp: Number.isNaN(time) ? NOT_AVAILABLE : eventTimestamp(new Date(time)),
+    time: Number.isNaN(time) ? null : time,
+    eventType: text(type),
+    category: VIOLATION_CATEGORIES[type?.trim().toLowerCase() ?? ''] ?? null,
+    severity: null,
+    review: null,
+    driver: text(record.driver_name),
+    vehicle: text(record.vehicle_name),
+    location: text(record.location),
+    speed: Number.isNaN(speed) ? null : speed,
+    scoreImpact: null,
+    device: text(record.device_id),
+    cameras: deviceCameras(device?.device_type),
+    mediaUrl: record.file_name ? DASHCAM_MEDIA_URL + record.file_name : '',
+  };
+}
+
+/** "Today · 14:38", or "28 Oct · 14:38" for an earlier day. */
+function eventTimestamp(date: Date): string {
+  const clock = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const day =
+    date.toDateString() === new Date().toDateString()
+      ? 'Today'
+      : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return `${day} · ${clock}`;
+}
+
+export function initials(name: string): string {
+  if (name === NOT_AVAILABLE) return NOT_AVAILABLE;
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export const CATEGORY_LABELS: Record<DashcamCategory, string> = {
   'safety-critical': 'Safety Critical',
@@ -204,6 +141,10 @@ export const CATEGORY_LABELS: Record<DashcamCategory, string> = {
   identity: 'Identity',
   camera: 'Camera',
 };
+
+export function categoryLabel(category: DashcamCategory | null): string {
+  return category ? CATEGORY_LABELS[category] : NOT_AVAILABLE;
+}
 
 export const CATEGORY_OPTIONS: DropdownOption[] = [
   { id: 'all', label: 'All Categories' },

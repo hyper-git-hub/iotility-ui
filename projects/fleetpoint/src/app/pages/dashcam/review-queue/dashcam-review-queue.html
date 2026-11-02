@@ -9,6 +9,18 @@
 </section>
 
 <section class="review-list">
+  @if (!loaded()) {
+    @for (row of [0, 1, 2]; track row) {
+      <article class="review-item" aria-hidden="true">
+        <ui-skeleton height="7rem" radius="0.75rem" />
+        <div class="review-main">
+          <ui-skeleton width="40%" height="0.9rem" />
+          <ui-skeleton width="70%" height="0.65rem" />
+          <ui-skeleton height="2.25rem" radius="0.5rem" />
+        </div>
+      </article>
+    }
+  } @else {
   @for (event of queue(); track event.id) {
     <article class="review-item" [class.critical]="event.severity === 'Critical'" (animate.leave)="collapseResolved($event)">
       <div class="preview-pair">
@@ -20,19 +32,19 @@
         <header>
           <div>
             <h3>{{ event.eventType }}</h3>
-            <span class="category">{{ event.category }}</span
+            <span class="category">{{ categoryLabel(event.category) }}</span
             ><span class="severity" [attr.data-severity]="event.severity"
-              ><i></i>{{ event.severity }}</span
+              ><i></i>{{ event.severity ?? notAvailable }}</span
             >
           </div>
-          <strong>{{ event.scoreImpact }} pts</strong>
+          <strong>{{ event.scoreImpact === null ? notAvailable : event.scoreImpact + ' pts' }}</strong>
         </header>
         <p class="event-meta">
           <span>♟ {{ event.driver }}</span
           ><span>🚚 {{ event.vehicle }}</span
           ><span>◷ {{ event.timestamp.replace('Today · ', '') }}</span
           ><span>📍 {{ event.location }}</span
-          ><span>ϟ {{ event.speed }} km/h</span>
+          ><span>ϟ {{ event.speed === null ? notAvailable : event.speed + ' km/h' }}</span>
         </p>
         <textarea class="ui-control" rows="1" placeholder="Add review note (optional)..."></textarea>
         <footer>
@@ -69,5 +81,6 @@
       <h2>Review queue is clear</h2>
       <p>There are no DashCam events awaiting review.</p>
     </section>
+  }
   }
 </section>

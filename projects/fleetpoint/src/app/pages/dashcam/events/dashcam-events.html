@@ -10,6 +10,17 @@
 />
 <section class="events-workspace" [class.details-open]="selected()">
   <div class="events-table">
+    @if (!loaded()) {
+    <ui-data-table-skeleton
+      title="DashCam Events"
+      [columns]="columns.length"
+      [columnLabels]="columnLabels"
+      [rows]="6"
+      [showToolbar]="false"
+      [leadingVisual]="true"
+      [twoLineFirstColumn]="true"
+    />
+    } @else {
     <shared-data-table
       title="DashCam Events"
       [subtitle]="'Showing ' + rows().length + ' events'"
@@ -38,6 +49,7 @@
         <span class="score-cell" [class.has-score]="row.score < 0">{{ row.scoreLabel }}</span>
       </ng-template>
     </shared-data-table>
+    }
   </div>
   <aside class="event-details" [attr.aria-hidden]="!selected()" [inert]="!selected()">
     @if (shownEvent(); as event) {
@@ -49,9 +61,9 @@
         <section class="event-summary">
           <h3>{{ event.eventType }}</h3>
           <div>
-            <span class="category-badge">{{ categoryLabels[event.category] }}</span
+            <span class="category-badge">{{ categoryLabel(event.category) }}</span
             ><span class="severity-badge" [attr.data-severity]="event.severity">{{
-              event.severity
+              event.severity ?? notAvailable
             }}</span>
           </div>
         </section>
@@ -66,11 +78,11 @@
           </div>
           <div>
             <dt>Fleet</dt>
-            <dd>London HGV</dd>
+            <dd>{{ notAvailable }}</dd>
           </div>
           <div>
             <dt>Speed</dt>
-            <dd>{{ event.speed }} km/h</dd>
+            <dd>{{ event.speed === null ? notAvailable : event.speed + ' km/h' }}</dd>
           </div>
           <div>
             <dt>Location</dt>
@@ -78,16 +90,16 @@
           </div>
           <div>
             <dt>Job</dt>
-            <dd>Amazon BHX2 Morning Delivery</dd>
+            <dd>{{ notAvailable }}</dd>
           </div>
           <div>
             <dt>Route</dt>
-            <dd>London → Birmingham Express</dd>
+            <dd>{{ notAvailable }}</dd>
           </div>
           <div>
             <dt>Score Impact</dt>
             <dd class="impact">
-              {{ event.scoreImpact || '—' }}{{ event.scoreImpact ? ' pts' : '' }}
+              {{ event.scoreImpact || notAvailable }}{{ event.scoreImpact ? ' pts' : '' }}
             </dd>
           </div>
           <div>
@@ -110,9 +122,8 @@
         <section class="review-note">
           <h3>Review Note</h3>
           <p>
-            {{ event.review === 'Unreviewed' ? 'Awaiting review.' : 'Warned driver. Monitoring.' }}
+            {{ notAvailable }}
           </p>
-          <small>by Ali Mujtaba</small>
         </section>
       </div>
     }

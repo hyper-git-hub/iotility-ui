@@ -1,18 +1,23 @@
-import { AnimationCallbackEvent, Component, signal } from '@angular/core';
-import { SmoothHeight } from '@iotility/shared-ui';
-import { DASHCAM_EVENTS, DashcamEvent } from '../dashcam.data';
+import { AnimationCallbackEvent, Component, computed, inject, signal } from '@angular/core';
+import { Skeleton, SmoothHeight } from '@iotility/shared-ui';
+import { DashcamEvent, NOT_AVAILABLE, categoryLabel } from '../dashcam.data';
+import { DashcamStore } from '../dashcam.store';
 import { DashcamVideoTile } from '../video-tile/video-tile';
 
 @Component({
   selector: 'app-dashcam-review-queue',
-  imports: [DashcamVideoTile, SmoothHeight],
+  imports: [DashcamVideoTile, Skeleton, SmoothHeight],
   templateUrl: './dashcam-review-queue.html',
   styleUrl: './dashcam-review-queue.css',
 })
 export class DashcamReviewQueue {
-  protected readonly queue = signal(
-    DASHCAM_EVENTS.filter((event) => event.review === 'Unreviewed'),
-  );
+  private readonly store = inject(DashcamStore);
+  protected readonly loaded = this.store.loaded;
+  protected readonly notAvailable = NOT_AVAILABLE;
+  protected readonly categoryLabel = categoryLabel;
+  /** Events resolved in this session; the API keeps no review state for DashCam events. */
+  private readonly resolved = signal<ReadonlySet<string>>(new Set());
+  protected readonly queue = computed(() => this.store.events().filter((event) => !this.resolved().has(event.id)));
   protected readonly expandedId = signal<string | null>(null);
 
   protected toggle(event: DashcamEvent): void {
@@ -20,12 +25,12 @@ export class DashcamReviewQueue {
   }
 
   protected resolve(event: DashcamEvent): void {
-    this.queue.update((events) => events.filter((item) => item.id !== event.id));
+    this.resolved.update((ids) => new Set(ids).add(event.id));
     if (this.expandedId() === event.id) this.expandedId.set(null);
   }
 
   protected resolveAll(): void {
-    this.queue.set([]);
+    this.resolved.set(new Set(this.store.events().map((event) => event.id)));
     this.expandedId.set(null);
   }
 
@@ -57,7 +62,8 @@ export class DashcamReviewQueue {
       .finished.finally(() => event.animationComplete());
   }
 
+  /** The event's evidence clip plays in the front view, as the FMS playback does; other views have none. */
   protected footage(event: DashcamEvent, camera: string): string {
-    return `videos/dashcam/events/${event.id}_${camera.toLowerCase()}.mp4`;
+    return camera === 'Front' ? event.mediaUrl : '';
   }
 }

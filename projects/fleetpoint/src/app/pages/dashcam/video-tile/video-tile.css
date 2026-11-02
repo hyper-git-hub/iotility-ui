@@ -2,7 +2,8 @@
 .video-tile {
   @apply relative aspect-video min-h-0 overflow-hidden rounded-xl bg-[#080910];
 }
-.video-tile video {
+.video-tile video,
+.video-tile > img {
   @apply size-full object-cover;
 }
 .video-empty {

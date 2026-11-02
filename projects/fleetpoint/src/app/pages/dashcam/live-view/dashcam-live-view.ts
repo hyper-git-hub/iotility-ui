@@ -1,19 +1,28 @@
-import { Component, computed, signal } from '@angular/core';
-import { DropdownOption } from '@iotility/shared-ui';
-import { DASHCAM_EVENTS, DASHCAM_VEHICLES, DashcamVehicle } from '../dashcam.data';
+import { Component, computed, inject, signal } from '@angular/core';
+import { DropdownOption, Skeleton } from '@iotility/shared-ui';
+import { DashcamVehicle, NOT_AVAILABLE } from '../dashcam.data';
+import { DashcamStore } from '../dashcam.store';
 import { DashcamVideoTile } from '../video-tile/video-tile';
 
 @Component({
   selector: 'app-dashcam-live-view',
-  imports: [DashcamVideoTile],
+  imports: [DashcamVideoTile, Skeleton],
   templateUrl: './dashcam-live-view.html',
   styleUrl: './dashcam-live-view.css',
 })
 export class DashcamLiveView {
-  protected readonly vehicles = DASHCAM_VEHICLES;
-  protected readonly selected = signal<DashcamVehicle>(
-    DASHCAM_VEHICLES.find((vehicle) => vehicle.online)!,
-  );
+  private readonly store = inject(DashcamStore);
+  protected readonly loaded = this.store.loaded;
+  protected readonly skeletonRows = [0, 1, 2, 3];
+  protected readonly vehicles = this.store.vehicles;
+  private readonly chosenId = signal<string | null>(null);
+  /** The picked vehicle, else the first online one; null while there are no dashcam devices. */
+  protected readonly selected = computed<DashcamVehicle | null>(() => {
+    const vehicles = this.vehicles();
+    return (
+      vehicles.find((vehicle) => vehicle.id === this.chosenId()) ?? vehicles.find((vehicle) => vehicle.online) ?? null
+    );
+  });
   protected readonly layout = signal<'1' | '2' | '3' | '4'>('2');
   protected readonly layoutOptions: DropdownOption[] = [
     { id: '1', label: '1×1' },
@@ -21,39 +30,20 @@ export class DashcamLiveView {
     { id: '3', label: '3×3' },
     { id: '4', label: '4×4' },
   ];
-  protected readonly liveAlerts = DASHCAM_EVENTS.filter(
-    (event) => event.review === 'Unreviewed' || event.severity === 'Critical',
-  ).slice(0, 6);
-  protected readonly recentEvents = computed(() =>
-    DASHCAM_EVENTS.filter((event) => event.vehicle === this.selected().plate).slice(0, 3),
-  );
+  /** Latest AI camera events; the API has no live/unreviewed flag. */
+  protected readonly liveAlerts = computed(() => this.store.events().slice(0, 6));
   protected readonly displayedCameras = computed(() => {
     const capacity = { '1': 1, '2': 4, '3': 9, '4': 16 }[this.layout()];
-    return this.selected().cameras.slice(0, capacity);
+    return (this.selected()?.cameras ?? []).slice(0, capacity);
   });
+  protected select(vehicle: DashcamVehicle): void {
+    if (vehicle.online) this.chosenId.set(vehicle.id);
+  }
   protected hasAlert(vehicle: DashcamVehicle): boolean {
-    return DASHCAM_EVENTS.some(
-      (event) => event.vehicle === vehicle.plate && event.review === 'Unreviewed',
-    );
+    return this.store.events().some((event) => event.vehicle === vehicle.plate);
   }
-  protected chooseLayout(option: DropdownOption): void {
-    this.layout.set(option.id as '1' | '2' | '3' | '4');
-  }
-  protected layoutLabel(): string {
-    return this.layoutOptions.find((option) => option.id === this.layout())?.label ?? '';
-  }
-  protected status(): { speed: number; location: string } {
-    return (
-      {
-        'LP-4821': { speed: 74, location: 'M40 Northbound, London' },
-        'LP-0392': { speed: 0, location: 'Birmingham Depot — Zone B' },
-        'LP-9901': { speed: 52, location: 'M6 Northbound' },
-        'LP-2201': { speed: 36, location: 'Birmingham Ring Road' },
-        'LP-7734': { speed: 0, location: 'Bicester Depot' },
-      }[this.selected().plate] ?? { speed: 0, location: 'Location unavailable' }
-    );
-  }
-  protected videoPath(camera: string): string {
-    return `videos/dashcam/live/${this.selected().plate}_${camera.toLowerCase()}.mp4`;
+  /** Live speed and position aren't part of the DashCam device list. */
+  protected status(): { speed: string; location: string } {
+    return { speed: NOT_AVAILABLE, location: NOT_AVAILABLE };
   }
 }

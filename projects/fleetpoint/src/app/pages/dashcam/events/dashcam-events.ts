@@ -1,8 +1,9 @@
 import { lingerWhileClosing } from '@iotility/shared-ui';
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import {
   DataTable,
   DataTableCellTemplate,
+  DataTableSkeleton,
   FilterBar,
   FilterChangeEvent,
   FilterDropdown,
@@ -11,26 +12,31 @@ import {
   Tooltip,
 } from '@iotility/shared-ui';
 import {
-  CATEGORY_LABELS,
   CATEGORY_OPTIONS,
-  DASHCAM_EVENTS,
   DashcamCategory,
   DashcamEvent,
   DashcamReview,
   DashcamSeverity,
+  NOT_AVAILABLE,
   REVIEW_OPTIONS,
   SEVERITY_OPTIONS,
+  categoryLabel,
+  initials,
 } from '../dashcam.data';
+import { DashcamStore } from '../dashcam.store';
 import { DashcamVideoTile } from '../video-tile/video-tile';
 
 @Component({
   selector: 'app-dashcam-events',
-  imports: [DashcamVideoTile, DataTable, DataTableCellTemplate, FilterBar, Tooltip],
+  imports: [DashcamVideoTile, DataTable, DataTableCellTemplate, DataTableSkeleton, FilterBar, Tooltip],
   templateUrl: './dashcam-events.html',
   styleUrl: './dashcam-events.css',
 })
 export class DashcamEvents {
-  protected readonly categoryLabels = CATEGORY_LABELS;
+  private readonly store = inject(DashcamStore);
+  protected readonly loaded = this.store.loaded;
+  protected readonly categoryLabel = categoryLabel;
+  protected readonly notAvailable = NOT_AVAILABLE;
   protected readonly categoryOptions = CATEGORY_OPTIONS;
   protected readonly severityOptions = SEVERITY_OPTIONS;
   protected readonly reviewOptions = REVIEW_OPTIONS;
@@ -54,9 +60,10 @@ export class DashcamEvents {
     { key: 'review', label: 'Status', type: 'status' },
     { key: 'scoreLabel', label: 'Score' },
   ];
+  protected readonly columnLabels = this.columns.map((column) => column.label);
   protected readonly filtered = computed(() => {
     const query = this.search().trim().toLowerCase();
-    return DASHCAM_EVENTS.filter(
+    return this.store.events().filter(
       (event) =>
         (!query ||
           `${event.eventType} ${event.driver} ${event.vehicle} ${event.location}`
@@ -72,18 +79,18 @@ export class DashcamEvents {
       id: event.id,
       eventType: event.eventType,
       driver: event.driver,
-      driverInitials: this.initials(event.driver),
+      driverInitials: initials(event.driver),
       vehicle: event.vehicle,
-      categoryLabel: CATEGORY_LABELS[event.category],
-      severity: event.severity,
+      categoryLabel: categoryLabel(event.category),
+      severity: event.severity ?? NOT_AVAILABLE,
       time: event.timestamp.split('·').at(-1)?.trim() ?? event.timestamp,
       location: event.location,
-      speed: event.speed,
-      speedLabel: `${event.speed} km/h`,
-      jobRoute: this.jobRoute(event),
-      review: event.review,
-      score: event.scoreImpact,
-      scoreLabel: event.scoreImpact ? String(event.scoreImpact) : '—',
+      speed: event.speed ?? 0,
+      speedLabel: event.speed === null ? NOT_AVAILABLE : `${event.speed} km/h`,
+      jobRoute: NOT_AVAILABLE,
+      review: event.review ?? NOT_AVAILABLE,
+      score: event.scoreImpact ?? 0,
+      scoreLabel: event.scoreImpact ? String(event.scoreImpact) : NOT_AVAILABLE,
     })),
   );
   protected readonly filterDropdowns = computed<FilterDropdown[]>(() => [
@@ -126,29 +133,13 @@ export class DashcamEvents {
     this.selected.set(null);
   }
   protected selectRow(row: TableRow): void {
-    this.selected.set(DASHCAM_EVENTS.find((event) => event.id === row['id']) ?? null);
+    this.selected.set(this.store.events().find((event) => event.id === row['id']) ?? null);
   }
   protected closeDetails(): void {
     this.selected.set(null);
   }
+  /** The event's evidence clip plays in the front view, as the FMS playback does; other views have none. */
   protected footage(event: DashcamEvent, camera: string): string {
-    return `videos/dashcam/events/${event.id}_${camera.toLowerCase()}.mp4`;
-  }
-  private initials(name: string): string {
-    return name
-      .split(/\s+/)
-      .map((part) => part[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-  }
-  private jobRoute(event: DashcamEvent): string {
-    const routes: Record<string, string> = {
-      'LP-4821': 'Amazon BHX2 Morning Delivery',
-      'LP-9901': 'Tesco RDC Scheduled Delivery',
-      'LP-0392': 'Cold Chain Manchester Collection',
-      'LP-2201': 'Birmingham Urban Delivery',
-    };
-    return routes[event.vehicle] ?? '—';
+    return camera === 'Front' ? event.mediaUrl : '';
   }
 }

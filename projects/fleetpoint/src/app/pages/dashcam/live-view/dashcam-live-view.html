@@ -1,15 +1,24 @@
 <section class="live-view">
   <aside class="vehicle-list">
     <header>
-      <strong>Vehicles</strong><span>{{ vehicles.length }}</span>
+      <strong>Vehicles</strong><span>{{ vehicles().length }}</span>
     </header>
     <div>
-      @for (vehicle of vehicles; track vehicle.id) {
+      @if (!loaded()) {
+        @for (row of skeletonRows; track row) {
+          <button type="button" disabled aria-hidden="true">
+            <ui-skeleton width="2rem" height="2rem" radius="0.5rem" /><span
+              ><ui-skeleton width="5rem" height="0.7rem" /><ui-skeleton width="3.5rem" height="0.55rem"
+            /></span>
+          </button>
+        }
+      }
+      @for (vehicle of vehicles(); track vehicle.id) {
         <button
           type="button"
-          [class.active]="selected().id === vehicle.id"
+          [class.active]="selected()?.id === vehicle.id"
           [class.offline]="!vehicle.online"
-          (click)="vehicle.online && selected.set(vehicle)"
+          (click)="select(vehicle)"
         >
           <span class="vehicle-icon"
             ><img src="assets/fleetpoint/icons/vehicle.svg" alt="" aria-hidden="true" />
@@ -28,9 +37,9 @@
   <div class="live-content">
     <header class="live-toolbar">
       <p>
-        <i [class.offline]="!selected().online"></i
-        ><strong>{{ selected().plate }} — {{ selected().driver }}</strong
-        ><span>· {{ status().speed }}mph · {{ status().location }}</span>
+        <i [class.offline]="!selected()?.online"></i
+        ><strong>{{ selected()?.plate ?? '—' }} — {{ selected()?.driver ?? '—' }}</strong
+        ><span>· {{ status().speed }} · {{ status().location }}</span>
       </p>
       <div class="layout-switch">
         @for (option of layoutOptions; track option.id) {
@@ -46,16 +55,16 @@
     </header>
     <div class="camera-grid" [attr.data-columns]="layout()">
       @for (camera of displayedCameras(); track camera) {
-        <app-dashcam-video-tile [src]="videoPath(camera)" [label]="camera + ' Camera'" />
+        <app-dashcam-video-tile src="" [label]="camera + ' Camera'" />
       }
     </div>
   </div>
   <aside class="live-alerts">
     <header>
-      <i></i><strong>Live Alerts</strong><span>{{ liveAlerts.length }}</span>
+      <i></i><strong>Live Alerts</strong><span>{{ liveAlerts().length }}</span>
     </header>
     <div>
-      @for (event of liveAlerts; track event.id) {
+      @for (event of liveAlerts(); track event.id) {
         <button type="button" [attr.data-severity]="event.severity">
           <i></i
           ><span

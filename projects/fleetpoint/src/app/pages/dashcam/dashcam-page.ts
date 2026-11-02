@@ -1,8 +1,9 @@
 import { TabIndicator } from '@iotility/shared-ui';
-import { Component } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { StatCard } from '../../shared/stat-card/stat-card';
-import { DASHCAM_EVENTS } from './dashcam.data';
+import { NOT_AVAILABLE } from './dashcam.data';
+import { DashcamStore } from './dashcam.store';
 
 @Component({
   selector: 'app-dashcam-page',
@@ -11,16 +12,22 @@ import { DASHCAM_EVENTS } from './dashcam.data';
   styleUrl: './dashcam-page.css',
 })
 export class DashcamPage {
-  protected readonly total = DASHCAM_EVENTS.length;
-  protected readonly critical = DASHCAM_EVENTS.filter((event) => event.severity === 'Critical')
-    .length;
-  protected readonly unreviewed = DASHCAM_EVENTS.filter((event) => event.review === 'Unreviewed')
-    .length;
-  protected readonly violations = DASHCAM_EVENTS.filter((event) => event.review === 'Violation')
-    .length;
-  protected readonly falsePositiveRate = Math.round(
-    (DASHCAM_EVENTS.filter((event) => event.review === 'False Positive').length /
-      DASHCAM_EVENTS.length) *
-      100,
-  );
+  private readonly store = inject(DashcamStore);
+  /** False until the first devices/events response; stat cards show skeletons. */
+  protected readonly loaded = this.store.loaded;
+  protected readonly total = computed(() => this.store.events().length);
+  protected readonly today = computed(() => {
+    const day = new Date().toDateString();
+    return this.store.events().filter((event) => event.time !== null && new Date(event.time).toDateString() === day)
+      .length;
+  });
+  /** The API has no severity or review state for DashCam events. */
+  protected readonly critical = NOT_AVAILABLE;
+  protected readonly unreviewed = NOT_AVAILABLE;
+  protected readonly violations = NOT_AVAILABLE;
+  protected readonly falsePositiveRate = NOT_AVAILABLE;
+
+  constructor() {
+    this.store.refresh();
+  }
 }

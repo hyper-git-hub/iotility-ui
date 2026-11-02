@@ -3,7 +3,6 @@ import { FleetDashboardApiService } from './fleet-dashboard-api.service';
 import { ViolationsApiService, ViolationFilters, violationDateRange } from './violations-api.service';
 import { MaintenanceApiService } from './maintenance-api.service';
 import { JobsApiService } from './jobs-api.service';
-import { DASHCAM_EVENTS } from '../../pages/dashcam/dashcam.data';
 
 @Injectable({ providedIn: 'root' })
 export class SidebarBadgeService {
@@ -15,6 +14,7 @@ export class SidebarBadgeService {
   readonly jobsCount = signal<number>(0);
   readonly maintenanceCount = signal<number>(0);
   readonly violationsCount = signal<number>(0);
+  /** The DashCam API keeps no review state, so there is no unreviewed count to badge. */
   readonly dashcamCount = signal<number>(0);
 
   readonly badgeCounts = signal<Record<string, number>>({});
@@ -93,12 +93,5 @@ export class SidebarBadgeService {
         this.badgeCounts.update((prev) => ({ ...prev, violations: 0 }));
       },
     });
-
-    // DashCam: count unreviewed events as "live" camera count
-    const unreviewedEvents = DASHCAM_EVENTS.filter(
-      (event) => event.review === 'Unreviewed',
-    ).length;
-    this.dashcamCount.set(unreviewedEvents);
-
   }
 }

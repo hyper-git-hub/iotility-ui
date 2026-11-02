@@ -1,6 +1,10 @@
 <article class="video-tile" [class.compact]="compact()">
   @if (!unavailable()) {
-    <video [src]="src()" autoplay muted loop playsinline (error)="unavailable.set(true)"></video>
+    @if (image()) {
+      <img [src]="src()" [alt]="label()" (error)="unavailable.set(true)" />
+    } @else {
+      <video [src]="src()" autoplay muted loop playsinline (error)="unavailable.set(true)"></video>
+    }
   } @else {
     <div class="video-empty">
       <img src="assets/fleetpoint/icons/video-camera.svg" alt="" aria-hidden="true" />
