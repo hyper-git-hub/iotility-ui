@@ -1,21 +1,16 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
+import { catchError, of } from 'rxjs';
 import { Modal } from '../../../shared/modal/modal';
+import { DriverApiService } from '../../../shared/services/driver-api.service';
+import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { JobsApiService } from '../../../shared/services/jobs-api.service';
+import { MaintenanceApiService } from '../../../shared/services/maintenance-api.service';
+import { toUtcDateTime } from '../jobs.data';
 
-export interface JobFormValue {
-  name: string;
-  type: string;
-  priority: string;
-  driver: string;
-  vehicle: string;
-  pickup: string;
-  dropoff: string;
-  startTime: string;
-  endTime: string;
-  notes: string;
-}
-
+/** Creates a job the way hypernym-fms-fe does: name, driver, dates, job type and one pickup → dropoff task. */
 @Component({
   selector: 'app-job-form',
   imports: [DateTimePicker, Dropdown, Modal, ReactiveFormsModule],
@@ -25,54 +20,63 @@ export interface JobFormValue {
 export class JobForm {
   readonly open = input(false);
   readonly cancelled = output<void>();
-  readonly created = output<JobFormValue>();
+  readonly created = output<void>();
+  private readonly api = inject(JobsApiService);
+  private readonly driverApi = inject(DriverApiService);
+  private readonly maintenanceApi = inject(MaintenanceApiService);
+  private readonly feedback = inject(FeedbackDialogBridgeService);
+  private readonly destroyRef = inject(DestroyRef);
+  private saving = false;
   protected readonly submitted = signal(false);
+  /** fms-driver job_type ids. */
   protected readonly typeOptions: DropdownOption[] = [
-    { id: 'Delivery', label: 'Delivery' },
-    { id: 'Collection', label: 'Collection' },
-    { id: 'Ad Hoc', label: 'Ad Hoc' },
-    { id: 'Inspection', label: 'Inspection' },
-    { id: 'Transfer', label: 'Transfer' },
+    { id: '1', label: 'Ad-Hoc' },
+    { id: '2', label: 'Scheduled' },
   ];
+  /** Kept for the layout; the API has no job priority, so it isn't sent. */
   protected readonly priorityOptions: DropdownOption[] = [
     { id: 'Normal', label: 'Normal' },
     { id: 'High', label: 'High' },
     { id: 'Low', label: 'Low' },
   ];
-  protected readonly driverOptions: DropdownOption[] = [
-    { id: 'James Hartley', label: 'James Hartley' },
-    { id: 'Thomas Griffiths', label: 'Thomas Griffiths' },
-    { id: 'Oliver Pemberton', label: 'Oliver Pemberton' },
-    { id: 'Priya Sharma', label: 'Priya Sharma' },
-    { id: 'Aisha Okonkwo', label: 'Aisha Okonkwo' },
-    { id: 'Sarah Whitfield', label: 'Sarah Whitfield' },
-    { id: 'Connor McBride', label: 'Connor McBride' },
-    { id: 'Mohammed Al-Rashid', label: 'Mohammed Al-Rashid' },
-  ];
-  protected readonly vehicleOptions: DropdownOption[] = [
-    { id: 'LP-4821', label: 'LP-4821' }, { id: 'LP-6612', label: 'LP-6612' },
-    { id: 'LP-3312', label: 'LP-3312' }, { id: 'LP-5531', label: 'LP-5531' },
-    { id: 'LP-2201', label: 'LP-2201' }, { id: 'LP-2244', label: 'LP-2244' },
-    { id: 'LP-9901', label: 'LP-9901' }, { id: 'LP-3388', label: 'LP-3388' },
-  ];
-  protected readonly form;
+  protected readonly driverOptions = signal<DropdownOption[]>([]);
+  /** A job's vehicle comes from the driver's allocation, so this isn't sent either. */
+  protected readonly vehicleOptions = signal<DropdownOption[]>([]);
+  protected readonly locationOptions = signal<DropdownOption[]>([]);
+  protected readonly form = inject(FormBuilder).nonNullable.group({
+    name: ['', Validators.required],
+    type: ['2', Validators.required],
+    priority: ['Normal', Validators.required],
+    driver: ['', Validators.required],
+    vehicle: [''],
+    pickup: ['', Validators.required],
+    dropoff: ['', Validators.required],
+    startTime: ['', Validators.required],
+    endTime: ['', Validators.required],
+    notes: [''],
+  });
 
-  constructor(formBuilder: FormBuilder) {
-    this.form = formBuilder.nonNullable.group({
-      name: ['', Validators.required],
-      type: ['Delivery', Validators.required],
-      priority: ['Normal', Validators.required],
-      driver: ['', Validators.required],
-      vehicle: [''],
-      pickup: ['', Validators.required],
-      dropoff: ['', Validators.required],
-      startTime: ['', Validators.required],
-      endTime: ['', Validators.required],
-      notes: [''],
+  constructor() {
+    // Lookups load the first time the modal opens rather than with the page.
+    let fetched = false;
+    effect(() => {
+      if (!this.open() || fetched) return;
+      fetched = true;
+      untracked(() => {
+        this.driverApi.getActiveDrivers().pipe(catchError(() => of(null)), takeUntilDestroyed(this.destroyRef)).subscribe((response) =>
+          this.driverOptions.set((response?.data?.data ?? []).map((driver) => ({ id: String(driver.id), label: driver.name }))),
+        );
+        this.maintenanceApi.vehicles().pipe(catchError(() => of([])), takeUntilDestroyed(this.destroyRef)).subscribe((vehicles) =>
+          this.vehicleOptions.set(vehicles.map((vehicle) => ({ id: String(vehicle.id), label: vehicle.name }))),
+        );
+        this.api.locations().pipe(catchError(() => of([])), takeUntilDestroyed(this.destroyRef)).subscribe((locations) =>
+          this.locationOptions.set(locations.map((location) => ({ id: String(location.id), label: location.address }))),
+        );
+      });
     });
   }
 
-  protected select(control: 'type' | 'priority' | 'driver' | 'vehicle', option: DropdownOption): void {
+  protected select(control: 'type' | 'priority' | 'driver' | 'vehicle' | 'pickup' | 'dropoff', option: DropdownOption): void {
     this.form.controls[control].setValue(option.id);
     this.form.controls[control].markAsTouched();
   }
@@ -82,9 +86,38 @@ export class JobForm {
   protected submit(): void {
     this.submitted.set(true);
     this.form.markAllAsTouched();
-    if (this.form.invalid || this.form.controls.endTime.value <= this.form.controls.startTime.value) return;
-    this.created.emit(this.form.getRawValue());
-    this.reset();
+    if (this.form.invalid || this.form.controls.endTime.value <= this.form.controls.startTime.value || this.saving) return;
+    const value = this.form.getRawValue();
+    const failed = (message?: string) =>
+      void this.feedback.open({
+        type: 'error',
+        title: 'Unable to create job',
+        message: message || 'The job could not be created. Please try again.',
+        showCancel: false,
+      });
+    this.saving = true;
+    this.api
+      .create({
+        job_name: value.name.trim(),
+        driver: Number(value.driver),
+        start_date: toUtcDateTime(value.startTime),
+        end_date: toUtcDateTime(value.endTime),
+        job_type: Number(value.type),
+        tasks: [{ priority: 1, pick_up: Number(value.pickup), drop_off: Number(value.dropoff) }],
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.saving = false;
+          if (response.status === 1002) return failed(response.message);
+          this.reset();
+          this.created.emit();
+        },
+        error: (error: { error?: { message?: string } }) => {
+          this.saving = false;
+          failed(error.error?.message);
+        },
+      });
   }
   protected cancel(): void { this.reset(); this.cancelled.emit(); }
   protected invalid(name: keyof typeof this.form.controls): boolean {
@@ -95,7 +128,7 @@ export class JobForm {
       && this.form.controls.endTime.value <= this.form.controls.startTime.value;
   }
   private reset(): void {
-    this.form.reset({ name: '', type: 'Delivery', priority: 'Normal', driver: '', vehicle: '', pickup: '', dropoff: '', startTime: '', endTime: '', notes: '' });
+    this.form.reset({ name: '', type: '2', priority: 'Normal', driver: '', vehicle: '', pickup: '', dropoff: '', startTime: '', endTime: '', notes: '' });
     this.submitted.set(false);
   }
 }

@@ -2,14 +2,15 @@ import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { FleetDashboardApiService } from './fleet-dashboard-api.service';
 import { ViolationsApiService, ViolationFilters, violationDateRange } from './violations-api.service';
 import { MaintenanceApiService } from './maintenance-api.service';
+import { JobsApiService } from './jobs-api.service';
 import { DASHCAM_EVENTS } from '../../pages/dashcam/dashcam.data';
-import { jobsData } from '../../pages/jobs/jobs.data';
 
 @Injectable({ providedIn: 'root' })
 export class SidebarBadgeService {
   private readonly dashboardApi = inject(FleetDashboardApiService);
   private readonly violationsApi = inject(ViolationsApiService);
   private readonly maintenanceApi = inject(MaintenanceApiService);
+  private readonly jobsApi = inject(JobsApiService);
 
   readonly jobsCount = signal<number>(0);
   readonly maintenanceCount = signal<number>(0);
@@ -25,6 +26,23 @@ export class SidebarBadgeService {
       this.maintenanceApi.version();
       untracked(() => this.loadMaintenanceCount());
     });
+    // Reloads after a job is created on the Jobs page.
+    effect(() => {
+      this.jobsApi.version();
+      untracked(() => this.loadJobsCount());
+    });
+  }
+
+  /** Open jobs: pending (1) and in progress (2). */
+  private loadJobsCount(): void {
+    this.jobsApi.list().subscribe({
+      next: (jobs) => {
+        const open = jobs.filter((job) => job.job_status === '1' || job.job_status === '2').length;
+        this.jobsCount.set(open);
+        this.badgeCounts.update((prev) => ({ ...prev, jobs: open }));
+      },
+      error: () => undefined,
+    });
   }
 
   /** Active work orders, from the same analytics cards as the Maintenance header. */
@@ -39,12 +57,6 @@ export class SidebarBadgeService {
   }
 
   private loadCounts(): void {
-    // Jobs: count pending and in-progress jobs
-    const pendingJobs = jobsData.filter(
-      (job) => job.status === 'Pending' || job.status === 'In Progress' || job.status === 'Assigned',
-    ).length;
-    this.jobsCount.set(pendingJobs);
-
     // Count today's violations using the same local-day range as the All Violations page.
     const { start_datetime, end_datetime } = violationDateRange('today');
     const filters: ViolationFilters = {

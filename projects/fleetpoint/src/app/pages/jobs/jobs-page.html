@@ -2,7 +2,7 @@
   <header class="jobs-heading smooth-reveal">
     <div>
       <h1>Jobs</h1>
-      <p>{{ total }} jobs today · {{ inProgress }} in progress · {{ highPriority }} high priority</p>
+      <p>{{ total() }} jobs today · {{ inProgress() }} in progress · {{ highPriority }} high priority</p>
     </div>
     <div class="heading-actions">
       <div class="view-switch" aria-label="Job view">
@@ -15,12 +15,12 @@
   </header>
 
   <section class="jobs-stats smooth-reveal" aria-label="Job summary">
-    <app-stat-card label="Total Jobs" [value]="total" tone="brand" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5v-1h6v1M8.5 9h7M8.5 13h7M8.5 17H13"/></svg></app-stat-card>
-    <app-stat-card label="Pending" [value]="pending" tone="warning" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2M7 3.8 4.5 6M17 3.8 19.5 6"/></svg></app-stat-card>
-    <app-stat-card label="In Progress" [value]="inProgress" tone="info" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8.5 12h6.5m-2.5-2.5L15 12l-2.5 2.5"/></svg></app-stat-card>
-    <app-stat-card label="Completed" [value]="completed" tone="success" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg></app-stat-card>
-    <app-stat-card label="Failed" [value]="failed" tone="danger" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg></app-stat-card>
-    <app-stat-card label="High Priority" [value]="highPriority" tone="priority" [compact]="true"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.2 4.7 3.5 17a2 2 0 0 0 1.8 3h13.4a2 2 0 0 0 1.8-3L13.8 4.7a2 2 0 0 0-3.6 0Z"/><path d="M12 9v4.5M12 17h.01"/></svg></app-stat-card>
+    <app-stat-card label="Total Jobs" [value]="total()" tone="brand" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5v-1h6v1M8.5 9h7M8.5 13h7M8.5 17H13"/></svg></app-stat-card>
+    <app-stat-card label="Pending" [value]="pending()" tone="warning" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2M7 3.8 4.5 6M17 3.8 19.5 6"/></svg></app-stat-card>
+    <app-stat-card label="In Progress" [value]="inProgress()" tone="info" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8.5 12h6.5m-2.5-2.5L15 12l-2.5 2.5"/></svg></app-stat-card>
+    <app-stat-card label="Completed" [value]="completed()" tone="success" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg></app-stat-card>
+    <app-stat-card label="Failed" [value]="failed()" tone="danger" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg></app-stat-card>
+    <app-stat-card label="High Priority" [value]="highPriority" tone="priority" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.2 4.7 3.5 17a2 2 0 0 0 1.8 3h13.4a2 2 0 0 0 1.8-3L13.8 4.7a2 2 0 0 0-3.6 0Z"/><path d="M12 9v4.5M12 17h.01"/></svg></app-stat-card>
   </section>
 
   @if (activeView() === 'list') {
@@ -42,6 +42,18 @@
   </shared-filter-bar>
   <section class="jobs-workspace view-enter smooth-reveal" [class.details-open]="selectedJob()">
     <div class="jobs-list-column">
+    @if (!loaded()) {
+    <ui-data-table-skeleton
+      title="Job List"
+      [columns]="columns.length"
+      [columnLabels]="columnLabels"
+      [rows]="6"
+      [showToolbar]="false"
+      [leadingVisual]="true"
+      [twoLineFirstColumn]="true"
+      [minTableWidth]="1450"
+    />
+    } @else {
     <shared-data-table
       class="jobs-table"
       title="Job List"
@@ -61,10 +73,11 @@
       searchPlaceholder="Search job name, driver, vehicle, location..."
       (pageChange)="goToPage($event)"
       (searchChange)="tableSearchChanged($event)"
-      (cellSelected)="openVehicle()"
+      (cellSelected)="openVehicle($event.row)"
       (rowSelected)="selectJob($event)"
       (rowAction)="selectJob($event.row)"
     />
+    }
     </div>
 
     <aside class="job-details" [attr.aria-hidden]="!selectedJob()" [inert]="!selectedJob()">
@@ -79,11 +92,11 @@
             <div><dt>Driver</dt><dd>{{ job.driver }}</dd></div>
             <div><dt>Vehicle</dt><dd>{{ job.vehicle }}</dd></div>
             <div><dt>Type</dt><dd>{{ job.type }}</dd></div>
-            <div><dt>Distance</dt><dd>{{ job.type === 'Inspection' ? '24 miles' : '118 miles' }}</dd></div>
-            <div><dt>Est. Time</dt><dd>{{ job.type === 'Inspection' ? '180 mins' : '134 mins' }}</dd></div>
+            <div><dt>Distance</dt><dd>{{ job.distance }}</dd></div>
+            <div><dt>Est. Time</dt><dd>{{ notAvailable }}</dd></div>
             <div><dt>Scheduled</dt><dd>{{ job.scheduled }}</dd></div>
-            <div><dt>Started</dt><dd>{{ job.status === 'Pending' || job.status === 'Assigned' ? 'Not started' : '06:12' }}</dd></div>
-            <div><dt>Completed</dt><dd>{{ job.status === 'Completed' ? '09:18' : '—' }}</dd></div>
+            <div><dt>Started</dt><dd>{{ job.started }}</dd></div>
+            <div><dt>Completed</dt><dd>{{ job.completed }}</dd></div>
           </dl>
           <section class="job-locations">
             <div><i class="pickup-dot"></i><span><strong>Pickup</strong><small>{{ job.pickup }}</small></span></div>
@@ -91,12 +104,12 @@
           </section>
           <section class="job-tasks">
             <h4>Tasks ({{ job.tasks }})</h4>
-            @for (task of taskItems(job); track task; let index = $index) {
-              <div [class.complete]="index < completedTasks(job)"><i>{{ index < completedTasks(job) ? '✓' : index + 1 }}</i><span>{{ task }}</span></div>
+            @for (task of job.taskList; track $index; let index = $index) {
+              <div [class.complete]="task.done"><i>{{ task.done ? '✓' : index + 1 }}</i><span>{{ task.label }}</span></div>
             }
           </section>
-          <section class="job-notes"><strong>Notes</strong><p>Priority delivery — time sensitive. Call the site manager on arrival.</p></section>
-          <footer>Created by Ali Mujtaba · 20 May</footer>
+          <section class="job-notes"><strong>Notes</strong><p>{{ job.notes }}</p></section>
+          <footer>Created by {{ job.createdBy }} · {{ job.createdAt }}</footer>
         </div>
       }
     </aside>
@@ -105,18 +118,27 @@
     <section class="jobs-workspace dispatch-workspace view-enter smooth-reveal" [class.details-open]="selectedJob()">
     <section class="dispatch-card">
       <header>
-        <div><h2>Dispatch Calendar — Today</h2><span>Thursday 23 July</span></div>
+        <div><h2>Dispatch Calendar — Today</h2><span>{{ today }}</span></div>
         <div class="dispatch-legend"><span class="pending"><i></i>Pending</span><span class="assigned"><i></i>Assigned</span><span class="progress"><i></i>In Progress</span><span class="completed"><i></i>Completed</span></div>
       </header>
       <div class="dispatch-scroll">
         <div class="dispatch-hours"><span></span>@for (hour of dispatchHours; track hour) { <span>{{ hour }}</span> }</div>
-        @for (row of dispatchRows; track row.vehicle) {
+        @if (!loaded()) {
+          @for (row of skeletonRows; track row) {
+            <div class="dispatch-row" aria-hidden="true">
+              <div class="dispatch-driver"><ui-skeleton variant="circle" width="1.75rem" height="1.75rem" /><span class="dispatch-skeleton-text"><ui-skeleton width="4.5rem" height="0.625rem" /><ui-skeleton width="3rem" height="0.5rem" /></span></div>
+              <ui-skeleton class="dispatch-skeleton" [style.--job-start]="2 + row * 4" [style.--job-span]="6 + (row % 3) * 2" height="auto" radius="0.5rem" />
+            </div>
+          }
+        } @else {
+        @for (row of dispatchRows(); track row.jobId) {
           <div class="dispatch-row">
             <div class="dispatch-driver"><i>{{ row.initials }}</i><span><strong>{{ row.driver }}</strong><small>{{ row.vehicle }}</small></span></div>
             <button type="button" class="dispatch-job" [attr.data-tone]="row.tone" [style.--job-start]="row.start" [style.--job-span]="row.span" (click)="selectDispatchJob(row.jobId)">
               <strong>{{ row.title }}</strong><small>{{ row.time }}</small>
             </button>
           </div>
+        }
         }
       </div>
       <footer>💡 Click any job block to see details · Click an empty slot to create a job</footer>
@@ -128,17 +150,17 @@
           <section class="job-summary"><h3>{{ job.name }}</h3><div><span class="status" [class]="'status status-' + job.status.toLowerCase().replaceAll(' ', '-')">{{ job.status }}</span><span class="priority" [class.high]="job.priority === 'High'">{{ job.priority }} priority</span></div></section>
           <dl class="job-facts">
             <div><dt>Driver</dt><dd>{{ job.driver }}</dd></div><div><dt>Vehicle</dt><dd>{{ job.vehicle }}</dd></div><div><dt>Type</dt><dd>{{ job.type }}</dd></div>
-            <div><dt>Distance</dt><dd>{{ job.type === 'Inspection' ? '24 miles' : '118 miles' }}</dd></div><div><dt>Est. Time</dt><dd>{{ job.type === 'Inspection' ? '180 mins' : '134 mins' }}</dd></div>
-            <div><dt>Scheduled</dt><dd>{{ job.scheduled }}</dd></div><div><dt>Started</dt><dd>{{ job.status === 'Pending' || job.status === 'Assigned' ? 'Not started' : '06:12' }}</dd></div><div><dt>Completed</dt><dd>{{ job.status === 'Completed' ? '09:18' : '—' }}</dd></div>
+            <div><dt>Distance</dt><dd>{{ job.distance }}</dd></div><div><dt>Est. Time</dt><dd>{{ notAvailable }}</dd></div>
+            <div><dt>Scheduled</dt><dd>{{ job.scheduled }}</dd></div><div><dt>Started</dt><dd>{{ job.started }}</dd></div><div><dt>Completed</dt><dd>{{ job.completed }}</dd></div>
           </dl>
           <section class="job-locations"><div><i class="pickup-dot"></i><span><strong>Pickup</strong><small>{{ job.pickup }}</small></span></div><div><i class="dropoff-dot"></i><span><strong>Dropoff</strong><small>{{ job.dropoff }}</small></span></div></section>
-          <section class="job-tasks"><h4>Tasks ({{ job.tasks }})</h4>@for (task of taskItems(job); track task; let index = $index) { <div [class.complete]="index < completedTasks(job)"><i>{{ index < completedTasks(job) ? '✓' : index + 1 }}</i><span>{{ task }}</span></div> }</section>
-          <section class="job-notes"><strong>Notes</strong><p>Priority delivery — time sensitive. Call the site manager on arrival.</p></section>
-          <footer>Created by Ali Mujtaba · 20 May</footer>
+          <section class="job-tasks"><h4>Tasks ({{ job.tasks }})</h4>@for (task of job.taskList; track $index; let index = $index) { <div [class.complete]="task.done"><i>{{ task.done ? '✓' : index + 1 }}</i><span>{{ task.label }}</span></div> }</section>
+          <section class="job-notes"><strong>Notes</strong><p>{{ job.notes }}</p></section>
+          <footer>Created by {{ job.createdBy }} · {{ job.createdAt }}</footer>
         </div>
       }
     </aside>
     </section>
   }
-  <app-job-form [open]="jobFormOpen()" (cancelled)="closeJobForm()" (created)="createJob($event)" />
+  <app-job-form [open]="jobFormOpen()" (cancelled)="closeJobForm()" (created)="createJob()" />
 </section>

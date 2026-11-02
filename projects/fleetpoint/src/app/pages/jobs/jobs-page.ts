@@ -1,8 +1,10 @@
-import { lingerWhileClosing } from '@iotility/shared-ui';
-import { Component, computed, signal } from '@angular/core';
+import { Skeleton, lingerWhileClosing } from '@iotility/shared-ui';
+import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import {
   DataTable,
+  DataTableSkeleton,
   DropdownOption,
   FilterBar,
   FilterChangeEvent,
@@ -11,34 +13,36 @@ import {
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
+import { Subscription, catchError, of } from 'rxjs';
+import { DriverApiService } from '../../shared/services/driver-api.service';
+import { JobApiRecord, JobsApiService } from '../../shared/services/jobs-api.service';
+import { MaintenanceApiService } from '../../shared/services/maintenance-api.service';
 import { StatCard } from '../../shared/stat-card/stat-card';
-import { JobForm, JobFormValue } from './job-form/job-form';
+import { JobForm } from './job-form/job-form';
+import { JobRecord, JobStatus, NOT_AVAILABLE, toJobRecord } from './jobs.data';
 
-type JobStatus = 'Pending' | 'In Progress' | 'Completed' | 'Failed' | 'Assigned';
-type JobPriority = 'High' | 'Normal';
-
-interface JobRecord {
-  id: string;
-  name: string;
-  driver: string;
-  vehicle: string;
-  type: string;
-  priority: JobPriority;
-  pickup: string;
-  dropoff: string;
-  scheduled: string;
-  status: JobStatus;
-  tasks: string;
-}
+/** Dispatch calendar: 06:00–20:00 in half-hour slots; grid column 1 is the driver. */
+const DISPATCH_START_HOUR = 6;
+const DISPATCH_SLOTS = 28;
+const DISPATCH_TONE: Record<JobStatus, string> = {
+  Pending: 'pending',
+  Assigned: 'assigned',
+  'In Progress': 'progress',
+  Completed: 'completed',
+  Failed: 'failed',
+};
 
 @Component({
   selector: 'app-jobs-page',
-  imports: [DataTable, FilterBar, JobForm, StatCard],
+  imports: [DataTable, DataTableSkeleton, FilterBar, JobForm, Skeleton, StatCard],
   templateUrl: './jobs-page.html',
   styleUrl: './jobs-page.css',
 })
 export class JobsPage {
-  constructor(private readonly router: Router) {}
+  private readonly router = inject(Router);
+  private readonly api = inject(JobsApiService);
+  private readonly destroyRef = inject(DestroyRef);
+  private request?: Subscription;
 
   protected readonly search = signal('');
   protected readonly filter = signal('all');
@@ -54,17 +58,20 @@ export class JobsPage {
   protected readonly jobFormOpen = signal(false);
   protected readonly offset = signal(0);
   protected readonly limit = 10;
-  protected readonly dispatchHours = Array.from({ length: 14 }, (_, index) => `${String(index + 6).padStart(2, '0')}:00`);
-  protected readonly dispatchRows = [
-    { jobId: 'JOB001', initials: 'JH', driver: 'James', vehicle: 'LP-4821', title: 'Morning Delivery', time: '06:00 → 09:30', start: 2, span: 7, tone: 'completed' },
-    { jobId: 'JOB002', initials: 'OP', driver: 'Oliver', vehicle: 'LP-3312', title: 'Scheduled Delivery', time: '08:00 → 11:00', start: 6, span: 6, tone: 'progress' },
-    { jobId: 'JOB007', initials: 'MA', driver: 'Mohammed', vehicle: 'LP-3388', title: 'M1 Northbound Transfer', time: '15:00 → 19:00', start: 20, span: 8, tone: 'assigned' },
-    { jobId: 'JOB005', initials: 'SW', driver: 'Sarah', vehicle: 'LP-2244', title: 'Ad Hoc Collection', time: '11:00 → 13:00', start: 12, span: 4, tone: 'pending' },
-    { jobId: 'JOB006', initials: 'CM', driver: 'Connor', vehicle: 'LP-9901', title: 'LP-9901', time: '14:00 → 17:00', start: 18, span: 6, tone: 'pending' },
-    { jobId: 'JOB008', initials: 'PS', driver: 'Priya', vehicle: 'LP-5531', title: 'Manchester Local Deliveries', time: '09:00 → 12:00', start: 8, span: 6, tone: 'failed' },
-    { jobId: 'JOB003', initials: 'TG', driver: 'Thomas', vehicle: 'LP-6612', title: 'Manchester Collection', time: '07:00 → 13:00', start: 4, span: 12, tone: 'progress' },
-    { jobId: 'JOB004', initials: 'AO', driver: 'Aisha', vehicle: 'LP-2201', title: 'Urban Delivery Run', time: '10:00 → 15:00', start: 10, span: 10, tone: 'pending' },
-  ];
+  protected readonly notAvailable = NOT_AVAILABLE;
+  /** False until the first jobs response; stat cards, the table and the calendar show skeletons. */
+  protected readonly loaded = signal(false);
+  protected readonly skeletonRows = [0, 1, 2, 3, 4];
+  protected readonly today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  protected readonly dispatchHours = Array.from(
+    { length: DISPATCH_SLOTS / 2 },
+    (_, index) => `${String(index + DISPATCH_START_HOUR).padStart(2, '0')}:00`,
+  );
+
+  private readonly records = signal<JobApiRecord[]>([]);
+  private readonly vehicleNames = signal<ReadonlyMap<string, string>>(new Map());
+  private readonly jobs = computed(() => this.records().map((record) => toJobRecord(record, this.vehicleNames())));
+  private readonly drivers = signal<DropdownOption[]>([]);
 
   protected readonly filterOptions: DropdownOption[] = [
     { id: 'all', label: 'All statuses' },
@@ -76,28 +83,15 @@ export class JobsPage {
   ];
   protected readonly jobTypeOptions: DropdownOption[] = [
     { id: 'all', label: 'All job types' },
-    { id: 'delivery', label: 'Delivery' },
-    { id: 'collection', label: 'Collection' },
-    { id: 'ad-hoc', label: 'Ad Hoc' },
-    { id: 'inspection', label: 'Inspection' },
-    { id: 'transfer', label: 'Transfer' },
+    { id: 'ad-hoc', label: 'Ad-Hoc' },
+    { id: 'scheduled', label: 'Scheduled' },
   ];
-  protected readonly driverOptions: DropdownOption[] = [
-    { id: 'all', label: 'All drivers' },
-    { id: 'james-hartley', label: 'James Hartley' },
-    { id: 'thomas-griffiths', label: 'Thomas Griffiths' },
-    { id: 'oliver-pemberton', label: 'Oliver Pemberton' },
-    { id: 'priya-sharma', label: 'Priya Sharma' },
-    { id: 'aisha-okonkwo', label: 'Aisha Okonkwo' },
-    { id: 'sarah-whitfield', label: 'Sarah Whitfield' },
-    { id: 'connor-mcbride', label: 'Connor McBride' },
-    { id: 'mohammed-al-rashid', label: 'Mohammed Al-Rashid' },
-  ];
+  protected readonly driverOptions = computed<DropdownOption[]>(() => [{ id: 'all', label: 'All drivers' }, ...this.drivers()]);
 
   protected readonly columns: TableColumn[] = [
     { key: 'job', label: 'Job', type: 'user', secondaryKey: 'jobId' },
     { key: 'driver', label: 'Driver' },
-    { key: 'vehicle', label: 'Vehicle', clickable: true },
+    { key: 'vehicle', label: 'Vehicle', clickable: true, clickableWhenKey: 'vehicleLink' },
     { key: 'type', label: 'Type' },
     { key: 'priority', label: 'Priority', type: 'priority' },
     { key: 'pickup', label: 'Pickup' },
@@ -107,37 +101,36 @@ export class JobsPage {
     { key: 'tasks', label: 'Tasks', type: 'tasks' },
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];
+  protected readonly columnLabels = this.columns.map((column) => column.label);
   protected readonly tableActions: TableAction[] = ['view'];
 
-  private readonly jobs: JobRecord[] = [
-    { id: 'JOB001', name: 'Amazon BHX2 — Morning Delivery', driver: 'James Hartley', vehicle: 'LP-4821', type: 'Delivery', priority: 'High', pickup: 'Stratford Logistics Park', dropoff: 'Amazon BHX2', scheduled: '06:00 → 09:30', status: 'Completed', tasks: '3/3' },
-    { id: 'JOB003', name: 'Cold Chain — Manchester Collection', driver: 'Thomas Griffiths', vehicle: 'LP-6612', type: 'Collection', priority: 'High', pickup: 'Trafford Park DC', dropoff: 'Tilbury Cold Storage', scheduled: '07:00 → 13:00', status: 'In Progress', tasks: '2/4' },
-    { id: 'JOB002', name: 'Tesco RDC — Scheduled Delivery', driver: 'Oliver Pemberton', vehicle: 'LP-3312', type: 'Delivery', priority: 'High', pickup: 'Stratford Logistics Park', dropoff: 'Tesco RDC', scheduled: '08:00 → 11:00', status: 'In Progress', tasks: '1/3' },
-    { id: 'JOB008', name: 'Priya — Manchester Local Deliveries', driver: 'Priya Sharma', vehicle: 'LP-5531', type: 'Delivery', priority: 'Normal', pickup: 'Trafford Park DC', dropoff: 'Northern Quarter', scheduled: '09:00 → 12:00', status: 'Failed', tasks: '1/2' },
-    { id: 'JOB004', name: 'Birmingham Ops — Urban Delivery Run', driver: 'Aisha Okonkwo', vehicle: 'LP-2201', type: 'Delivery', priority: 'Normal', pickup: 'Aston Depot', dropoff: 'Multiple stops — Digbeth', scheduled: '10:00 → 15:00', status: 'Pending', tasks: '0/4' },
-    { id: 'JOB005', name: 'Manchester Van — Ad Hoc Collection', driver: 'Sarah Whitfield', vehicle: 'LP-2244', type: 'Ad Hoc', priority: 'High', pickup: 'Salford Business Park', dropoff: 'Trafford Park DC', scheduled: '11:00 → 13:00', status: 'Pending', tasks: '0/2' },
-    { id: 'JOB006', name: 'Vehicle Inspection — LP-9901', driver: 'Connor McBride', vehicle: 'LP-9901', type: 'Inspection', priority: 'High', pickup: 'Stratford Depot', dropoff: 'Volvo Truck Centre', scheduled: '14:00 → 17:00', status: 'Pending', tasks: '0/3' },
-    { id: 'JOB007', name: 'Leeds — M1 Northbound Transfer', driver: 'Mohammed Al-Rashid', vehicle: 'LP-3388', type: 'Transfer', priority: 'Normal', pickup: 'Stourton Hub', dropoff: 'Stratford Logistics Park', scheduled: '15:00 → 19:00', status: 'Assigned', tasks: '0/2' },
-  ];
-
-  protected readonly total = this.jobs.length;
-  protected readonly pending = this.countStatus('Pending');
-  protected readonly inProgress = this.countStatus('In Progress');
-  protected readonly completed = this.countStatus('Completed');
-  protected readonly failed = this.countStatus('Failed');
-  protected readonly highPriority = this.jobs.filter((job) => job.priority === 'High').length;
+  protected readonly total = computed(() => this.jobs().length);
+  protected readonly pending = computed(() => this.countStatus('Pending'));
+  protected readonly inProgress = computed(() => this.countStatus('In Progress'));
+  protected readonly completed = computed(() => this.countStatus('Completed'));
+  protected readonly failed = computed(() => this.countStatus('Failed'));
+  /** The API has no job priority. */
+  protected readonly highPriority = NOT_AVAILABLE;
 
   protected readonly filteredRows = computed<TableRow[]>(() => {
     const query = this.search().trim().toLowerCase();
-    return this.jobs
+    return this.jobs()
       .filter((job) => this.matchesFilter(job))
-      .filter((job) => !query || Object.values(job).some((value) => value.toLowerCase().includes(query)))
+      .filter(
+        (job) =>
+          !query ||
+          [job.id, job.name, job.driver, job.vehicle, job.type, job.pickup, job.dropoff, job.status]
+            .join(' ')
+            .toLowerCase()
+            .includes(query),
+      )
       .map((job) => ({
         id: job.id,
         job: job.name,
         jobId: job.id,
         driver: job.driver,
         vehicle: job.vehicle,
+        vehicleLink: !!job.vehicleId,
         type: job.type,
         priority: job.priority,
         pickup: job.pickup,
@@ -150,6 +143,31 @@ export class JobsPage {
   });
   protected readonly rows = computed(() => this.filteredRows());
   protected readonly filteredTotal = computed(() => this.filteredRows().length);
+
+  /** Jobs running at some point today, clipped to the calendar's window. */
+  protected readonly dispatchRows = computed(() => {
+    const dayStart = new Date();
+    dayStart.setHours(DISPATCH_START_HOUR, 0, 0, 0);
+    const windowEnd = dayStart.getTime() + DISPATCH_SLOTS * 30 * 60_000;
+    const slot = (time: number) => Math.round((time - dayStart.getTime()) / (30 * 60_000));
+    return this.jobs()
+      .filter((job) => job.start && job.end && job.start.getTime() < windowEnd && job.end.getTime() > dayStart.getTime())
+      .map((job) => {
+        const from = Math.max(0, slot(job.start!.getTime()));
+        const to = Math.min(DISPATCH_SLOTS, Math.max(from + 1, slot(job.end!.getTime())));
+        return {
+          jobId: job.id,
+          initials: initials(job.driver),
+          driver: job.driver.split(' ')[0],
+          vehicle: job.vehicle,
+          title: job.name,
+          time: job.scheduled,
+          start: from + 2,
+          span: to - from,
+          tone: DISPATCH_TONE[job.status],
+        };
+      });
+  });
 
   // Selections stay "pending" until Apply filters commits them, matching the
   // previous Reset/Apply behaviour.
@@ -166,7 +184,7 @@ export class JobsPage {
       id: 'driver',
       label: 'Driver',
       ariaLabel: 'Filter by driver',
-      options: this.driverOptions,
+      options: this.driverOptions(),
       selected: this.driverFilter(),
       placeholder: 'All drivers',
       searchable: true,
@@ -181,6 +199,24 @@ export class JobsPage {
       placeholder: 'All statuses',
     },
   ]);
+
+  constructor() {
+    effect(() => {
+      this.api.version();
+      untracked(() => this.load());
+    });
+    inject(MaintenanceApiService)
+      .vehicles()
+      .pipe(catchError(() => of([])), takeUntilDestroyed())
+      .subscribe((vehicles) => this.vehicleNames.set(new Map(vehicles.map((vehicle) => [String(vehicle.id), vehicle.name]))));
+    inject(DriverApiService)
+      .getActiveDrivers()
+      .pipe(catchError(() => of(null)), takeUntilDestroyed())
+      .subscribe((response) =>
+        this.drivers.set((response?.data?.data ?? []).map((driver) => ({ id: String(driver.id), label: driver.name }))),
+      );
+  }
+
   protected selectFilter(event: FilterChangeEvent): void {
     if (event.id === 'status') this.filter.set(event.option.id);
     else if (event.id === 'jobType') this.jobTypeFilter.set(event.option.id);
@@ -214,37 +250,55 @@ export class JobsPage {
   }
   protected openJobForm(): void { this.jobFormOpen.set(true); }
   protected closeJobForm(): void { this.jobFormOpen.set(false); }
-  protected createJob(_: JobFormValue): void { this.closeJobForm(); }
+  protected createJob(): void {
+    this.closeJobForm();
+    this.api.changed();
+  }
   protected selectJob(row: TableRow): void {
-    this.selectedJob.set(this.jobs.find((job) => job.id === String(row['id'])) ?? null);
+    this.selectedJob.set(this.jobs().find((job) => job.id === String(row['id'])) ?? null);
   }
   protected selectDispatchJob(jobId: string): void {
-    this.selectedJob.set(this.jobs.find((job) => job.id === jobId) ?? null);
+    this.selectedJob.set(this.jobs().find((job) => job.id === jobId) ?? null);
   }
   protected closeJobDetails(): void { this.selectedJob.set(null); }
-  protected openVehicle(): void {
-    void this.router.navigateByUrl('/fleetpoint/vehicles/vehicle-detail');
-  }
-  protected completedTasks(job: JobRecord): number { return Number(job.tasks.split('/')[0]) || 0; }
-  protected totalTasks(job: JobRecord): number { return Number(job.tasks.split('/')[1]) || 0; }
-  protected taskItems(job: JobRecord): string[] {
-    const byType: Record<string, string[]> = {
-      Collection: ['Confirm collection reference', 'Collect and secure cargo', 'Upload collection receipt', 'Complete delivery handoff'],
-      Inspection: ['Check vehicle exterior', 'Complete safety inspection', 'Upload inspection report'],
-      Transfer: ['Confirm transfer manifest', 'Complete destination handoff'],
-    };
-    return byType[job.type] ?? ['Load cargo at pickup point', `Deliver to ${job.dropoff}`, 'Obtain proof of delivery', 'Complete job handoff'];
+  protected openVehicle(row: TableRow): void {
+    const job = this.jobs().find((item) => item.id === String(row['id']));
+    if (job?.vehicleId) void this.router.navigate(['/fleetpoint/vehicles', job.vehicleId]);
   }
 
-  private countStatus(status: JobStatus): number { return this.jobs.filter((job) => job.status === status).length; }
+  private load(): void {
+    this.request?.unsubscribe();
+    this.request = this.api
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (records) => {
+          this.records.set(records);
+          // Keep the drawer on the refreshed copy, or close it if the job is gone.
+          const selected = this.selectedJob();
+          if (selected) this.selectedJob.set(this.jobs().find((job) => job.id === selected.id) ?? null);
+          this.loaded.set(true);
+        },
+        error: () => {
+          this.records.set([]);
+          this.loaded.set(true);
+        },
+      });
+  }
+  private countStatus(status: JobStatus): number { return this.jobs().filter((job) => job.status === status).length; }
   private matchesFilter(job: JobRecord): boolean {
     const status = this.appliedStatusFilter();
     const type = this.appliedJobTypeFilter();
     const driver = this.appliedDriverFilter();
     const statusMatches = status === 'all'
       || (status === 'high-priority' ? job.priority === 'High' : job.status.toLowerCase().replaceAll(' ', '-') === status);
-    const typeMatches = type === 'all' || job.type.toLowerCase().replaceAll(' ', '-') === type;
-    const driverMatches = driver === 'all' || job.driver.toLowerCase().replaceAll(' ', '-') === driver;
+    const typeMatches = type === 'all' || job.type.toLowerCase() === type;
+    const driverMatches = driver === 'all' || job.driverId === driver;
     return statusMatches && typeMatches && driverMatches;
   }
+}
+
+function initials(name: string): string {
+  if (name === NOT_AVAILABLE) return NOT_AVAILABLE;
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join('');
 }
