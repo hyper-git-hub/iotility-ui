@@ -2,9 +2,10 @@ import { Component, DestroyRef, computed, inject, input, output, signal, viewChi
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Dropdown, DropdownOption } from '@iotility/shared-ui';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, switchMap } from 'rxjs';
 import { Modal } from '../../../shared/modal/modal';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { GeoPoint, RoutesApiService, SaveRoutePayload } from '../../../shared/services/routes-api.service';
 import { encodePolyline } from '../routes.data';
 import { RouteBuilderMap, RouteCalculation, RoutePoint } from './route-builder-map';
@@ -17,12 +18,13 @@ import { RouteBuilderMap, RouteCalculation, RoutePoint } from './route-builder-m
 export class RouteForm {
   readonly open=input(false);readonly cancelled=output<void>();readonly created=output<void>();private readonly builder=viewChild(RouteBuilderMap);
   private readonly api=inject(RoutesApiService);private readonly feedback=inject(FeedbackDialogBridgeService);private readonly destroyRef=inject(DestroyRef);
+  private readonly modal=viewChild.required(Modal);private readonly flow=inject(FormFlowService);
   protected readonly mode=signal<'start'|'stop'|'end'>('start');protected readonly points=signal<RoutePoint[]>([]);protected readonly submitted=signal(false);
   protected readonly calculating=signal(false);protected readonly routeCalculated=signal(false);protected readonly saving=signal(false);
   private readonly fleets=toSignal(this.api.fleets(),{initialValue:[]});
   protected readonly fleetOptions=computed<DropdownOption[]>(()=>[{id:'',label:'Unassigned'},...this.fleets().map(f=>({id:String(f.id),label:f.name}))]);
   protected readonly form=inject(FormBuilder).nonNullable.group({name:['',Validators.required],description:[''],tolerance:[500,[Validators.required,Validators.min(10)]],fleet:['']});
-  protected selectFleet(option:DropdownOption){this.form.controls.fleet.setValue(option.id);}protected fleetLabel(){return this.fleetOptions().find(o=>o.id===this.form.controls.fleet.value)?.label??'Unassigned';}
+  protected selectFleet(option:DropdownOption){this.form.controls.fleet.setValue(option.id);this.form.controls.fleet.markAsDirty();}protected fleetLabel(){return this.fleetOptions().find(o=>o.id===this.form.controls.fleet.value)?.label??'Unassigned';}
   protected addPoint(point:RoutePoint){this.points.update(points=>[...points,point]);this.routeCalculated.set(false);if(point.type==='start')this.mode.set('stop');if(point.type==='end')this.mode.set('end');}
   protected chooseMode(mode:'start'|'stop'|'end'){if(mode==='end'&&!this.hasStart())return;this.mode.set(mode);}
   protected hasStart(){return this.points().some(point=>point.type==='start');}protected hasEnd(){return this.points().some(point=>point.type==='end');}
@@ -36,16 +38,22 @@ export class RouteForm {
     const calculation=this.builder()?.calculation;
     if(!calculation){this.saving.set(false);void this.feedback.open({type:'error',title:'Route not calculated',message:'The road route could not be calculated. Try moving the points and calculate again.',showCancel:false});return;}
     const geo=(point:RoutePoint):GeoPoint=>({latitude:point.lat,longitude:point.lng});
-    const failed=(message?:string)=>{this.saving.set(false);void this.feedback.open({type:'error',title:'Unable to create route',message:message||'The route could not be saved. Please try again.',showCancel:false});};
-    forkJoin(calculation.points.length?calculation.points.map(point=>this.api.placeName(geo(point))):[of(null)]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(names=>{
+    const name=this.form.controls.name.value.trim();
+    const request=forkJoin(calculation.points.length?calculation.points.map(point=>this.api.placeName(geo(point))):[of(null)]).pipe(switchMap(names=>{
       const nameOf=(index:number)=>names[index]??`${calculation.points[index].lat}, ${calculation.points[index].lng}`;
-      this.api.saveRoute(this.payload(this.form.controls.name.value.trim(),calculation,nameOf)).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next:response=>{if(response.status!==1000)return failed(response.message);this.saving.set(false);this.reset();this.created.emit();},
-        error:(error:{error?:{message?:string;data?:{error?:string}}})=>failed(error.error?.data?.error??error.error?.message),
-      });
+      return this.api.saveRoute(this.payload(name,calculation,nameOf));
+    }));
+    const response=await this.flow.submit(this.modal(),request,{
+      loading:'Creating route...',
+      success:{title:'Route created',message:`${name} was created successfully.`},
+      failure:{title:'Unable to create route',message:'The route could not be saved. Please try again.'},
+      ok:response=>response.status===1000,
     });
+    this.saving.set(false);
+    if(!response)return;
+    this.reset();this.created.emit();
   }
-  protected cancel(){this.reset();this.cancelled.emit();}
+  protected async cancel(){if(this.saving())return;if(!(await this.flow.close(this.modal(),this.form.dirty)))return;this.reset();this.cancelled.emit();}
   private reset(){this.form.reset({name:'',description:'',tolerance:500,fleet:''});this.resetRoute();this.submitted.set(false);}
 
   /** Same shape hypernym-fms-fe saves; every leg carries its own polyline, endpoints and arrival time. */

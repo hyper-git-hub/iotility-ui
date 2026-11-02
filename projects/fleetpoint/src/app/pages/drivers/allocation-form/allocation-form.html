@@ -1,9 +1,8 @@
-<ui-blocking-loader [visible]="loading()" [compact]="true" label="Creating allocation..." />
-<app-modal [open]="open()" [busy]="loading()" size="lg" labelledBy="allocation-form-title" (closed)="cancel()">
-  <div modal-header><h2 id="allocation-form-title">{{ editing() ? 'Update Allocation' : lockVehicle() ? 'Assign Driver' : 'Create Allocation' }}</h2><p class="form-subtitle">{{ editing() ? 'Update driver assignment details' : 'Assign drivers to a vehicle' }}</p></div>
+<app-modal [open]="open()" size="lg" labelledBy="allocation-form-title" (closed)="cancel()">
+  <div modal-header><h2 id="allocation-form-title">{{ editing() ? 'Update Allocation' : lockVehicle() ? 'Assign Driver' : 'Create Allocation' }}</h2><p>{{ editing() ? 'Update driver assignment details' : 'Assign drivers to a vehicle' }}</p></div>
   <form id="allocation-form" class="allocation-form" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
-      <div class="form-error wide">{{ error() }}</div>
+      <div class="shared-form-alert wide">{{ error() }}</div>
     }
     <label class="shared-form-field"
       ><span>Vehicle <b>*</b></span
@@ -27,7 +26,7 @@
         </button></shared-dropdown
       >
       @if (submitted() && form.controls.vehicle.invalid) {
-        <small class="field-error">Select a vehicle.</small>
+        <small class="shared-form-error">Select a vehicle.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -48,7 +47,7 @@
         </button></shared-dropdown
       >
       @if (submitted() && !form.controls.drivers.value.length) {
-        <small class="field-error">Select at least one driver.</small>
+        <small class="shared-form-error">Select at least one driver.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -59,7 +58,7 @@
         ariaLabel="Choose allocation start date"
       />
       @if (submitted() && form.controls.start_date.invalid) {
-        <small class="field-error">Select a start date.</small>
+        <small class="shared-form-error">Select a start date.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -70,11 +69,11 @@
         ariaLabel="Choose allocation end date"
       />
       @if (submitted() && form.controls.end_date.invalid) {
-        <small class="field-error">Select an end date.</small>
+        <small class="shared-form-error">Select an end date.</small>
       }
     </label>
   </form>
-  <div modal-footer class="allocation-form-footer">
+  <div modal-footer class="form-actions">
     <button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">
       Cancel</button
     ><button

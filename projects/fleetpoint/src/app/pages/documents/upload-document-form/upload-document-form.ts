@@ -1,11 +1,11 @@
-import { Component, DestroyRef, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
 import { catchError, forkJoin, of } from 'rxjs';
 import { Modal } from '../../../shared/modal/modal';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { DOCUMENT_TYPES, DocumentEntityType, DocumentsApiService } from '../../../shared/services/documents-api.service';
-import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 
 /** A "Linked To" choice: a vehicle (grouped by fleet) or a driver (grouped by driver group). */
 interface LinkedRecord {
@@ -26,7 +26,8 @@ export class UploadDocumentForm {
   readonly cancelled=output<void>();
   readonly created=output<void>();
   private readonly api=inject(DocumentsApiService);
-  private readonly feedback=inject(FeedbackDialogBridgeService);
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   private readonly destroyRef=inject(DestroyRef);
   protected readonly submitted=signal(false);
   protected readonly fileName=signal('');
@@ -67,7 +68,7 @@ export class UploadDocumentForm {
   }
 
   protected select(control:'type'|'linkedTo',option:DropdownOption):void{
-    this.form.controls[control].setValue(option.id);this.form.controls[control].markAsTouched();
+    this.form.controls[control].setValue(option.id);this.form.controls[control].markAsDirty();this.form.controls[control].markAsTouched();
     if(control==='type'){
       const entity=this.entityByType.get(option.id)??null;
       this.entity.set(entity);
@@ -93,14 +94,14 @@ export class UploadDocumentForm {
     body.append(record.entity==='D'?'driver':'vehicle',String(record.id));
     body.append('entity_name',record.name);
     body.append('document_type',value.type);
-    const failed=(message?:string)=>void this.feedback.open({type:'error',title:'Unable to upload',message:message||'The document could not be uploaded. Please try again.',showCancel:false});
     this.saving=true;
-    this.api.create(body).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next:response=>{this.saving=false;if(response.status===1002)return failed(response.message);this.reset();this.created.emit();},
-      error:()=>{this.saving=false;failed();},
-    });
+    void this.flow.submit(this.modal(),this.api.create(body),{
+      loading:'Uploading document...',
+      success:{title:'Document uploaded',message:`${value.type} for ${record.name} was uploaded successfully.`},
+      failure:{title:'Unable to upload',message:'The document could not be uploaded. Please try again.'},
+    }).then(response=>{this.saving=false;if(!response)return;this.reset();this.created.emit();});
   }
-  protected cancel():void{this.reset();this.cancelled.emit();}
+  protected async cancel():Promise<void>{if(this.saving)return;if(!(await this.flow.close(this.modal(),this.form.dirty)))return;this.reset();this.cancelled.emit();}
   private reset():void{
     this.form.reset({type:'',linkedTo:'',issueDate:'',expiryDate:'',issuedBy:'',documentNumber:''});
     this.entity.set(null);this.file=null;this.fileName.set('');this.submitted.set(false);

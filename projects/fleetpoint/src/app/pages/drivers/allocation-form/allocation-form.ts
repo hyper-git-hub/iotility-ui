@@ -1,25 +1,17 @@
-import {
-  Component,
-  OnChanges,
-  SimpleChanges,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, OnChanges, SimpleChanges, computed, input, output, signal, inject, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BlockingLoader, DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
+import { DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
 import { Modal } from '../../../shared/modal/modal';
 import {
   DriverApiService,
   DriverVehicleAllocation,
 } from '../../../shared/services/driver-api.service';
-import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 
 @Component({
   selector: 'app-allocation-form',
-  imports: [BlockingLoader, DateTimePicker, Dropdown, Modal, ReactiveFormsModule],
+  imports: [DateTimePicker, Dropdown, Modal, ReactiveFormsModule],
   templateUrl: './allocation-form.html',
   styleUrl: './allocation-form.css',
 })
@@ -32,7 +24,10 @@ export class AllocationForm implements OnChanges {
   readonly cancelled = output<void>();
   readonly saved = output<void>();
   protected readonly editing = computed(() => !!this.allocation());
+  /** True from submit until the form flow finishes (fold away, request, feedback). */
   protected readonly loading = signal(false);
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   protected readonly optionsLoading = signal(false);
   protected readonly submitted = signal(false);
   protected readonly error = signal('');
@@ -42,7 +37,6 @@ export class AllocationForm implements OnChanges {
   constructor(
     private readonly fb: FormBuilder,
     private readonly api: DriverApiService,
-    private readonly feedback: FeedbackDialogBridgeService,
   ) {
     this.form = this.fb.nonNullable.group({
       vehicle: ['', Validators.required],
@@ -59,7 +53,7 @@ export class AllocationForm implements OnChanges {
     }
   }
   protected selectVehicle(option: DropdownOption): void {
-    if (!this.lockVehicle()) this.form.controls.vehicle.setValue(option.id);
+    if (!this.lockVehicle()) this.form.controls.vehicle.setValue(option.id);this.form.controls.vehicle.markAsDirty();
   }
   protected selectDrivers(ids: string[]): void {
     this.form.controls.drivers.setValue(ids);
@@ -98,34 +92,26 @@ export class AllocationForm implements OnChanges {
           payload,
         )
       : this.api.createDriverVehicleAllocation(payload);
-    request.pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: async (response) => {
-        const action = current ? 'updated' : 'added';
-        await this.feedback.open({
-          type: 'success',
+    const action = current ? 'updated' : 'added';
+    void this.flow
+      .submit(this.modal(), request, {
+        loading: current ? 'Updating allocation...' : 'Creating allocation...',
+        success: {
           title: `Allocation ${action}`,
-          message: response.message || `The driver allocation was ${action} successfully.`,
-          confirmText: 'Done',
-          showCancel: false,
-        });
+          message: (response) => response.message || `The driver allocation was ${action} successfully.`,
+        },
+        failure: { title: 'Unable to save allocation', message: 'The allocation could not be saved.' },
+      })
+      .then((response) => {
+        this.loading.set(false);
+        if (!response) return;
         this.saved.emit();
         this.reset();
-      },
-      error: (response) => {
-        const message = response.error?.message || 'The allocation could not be saved.';
-        this.error.set(message);
-        void this.feedback.open({
-          type: 'error',
-          title: 'Unable to save allocation',
-          message,
-          confirmText: 'Close',
-          showCancel: false,
-        });
-      },
-    });
+      });
   }
-  protected cancel(): void {
+  protected async cancel(): Promise<void> {
     if (this.loading()) return;
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
     this.reset();
     this.cancelled.emit();
   }

@@ -1,9 +1,9 @@
-import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Dropdown, DropdownOption, SmoothHeight } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
-import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { POI_MARKER_TYPE, PoisApiService } from '../../../shared/services/pois-api.service';
 import { RoutesApiService } from '../../../shared/services/routes-api.service';
 import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
@@ -28,7 +28,8 @@ export class PoiForm {
   readonly cancelled = output<void>();
   readonly created = output<void>();
   private readonly api = inject(PoisApiService);
-  private readonly feedback = inject(FeedbackDialogBridgeService);
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fleets = toSignal(inject(RoutesApiService).fleets(), { initialValue: [] });
   protected readonly saving = signal(false);
@@ -78,7 +79,7 @@ export class PoiForm {
     this.form.controls.longitude.markAsTouched();
   }
   protected select(control: 'assignment' | 'assignedTarget' | 'geozone', option: DropdownOption): void {
-    this.form.controls[control].setValue(option.id);
+    this.form.controls[control].setValue(option.id);this.form.controls[control].markAsDirty();
     if (control === 'assignment') this.form.controls.assignedTarget.setValue('');
   }
   protected optionsLabel(options: DropdownOption[], value: string, fallback: string): string {
@@ -103,24 +104,32 @@ export class PoiForm {
   protected submit(): void {
     if (this.form.invalid || !this.assignmentValid() || this.saving()) return;
     const value = this.form.getRawValue();
-    const failed = (message?: string) => void this.feedback.open({ type: 'error', title: 'Unable to create POI', message: message || 'The POI could not be created. Please try again.', showCancel: false });
     this.saving.set(true);
-    this.api.create({
+    const request = this.api.create({
       name: value.name.trim(),
       type: POI_MARKER_TYPE,
       radius: Number(value.radius),
       territory: JSON.stringify({ lat: Number(value.latitude), lng: Number(value.longitude) }),
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (response) => {
+    });
+    void this.flow
+      .submit(this.modal(), request, {
+        loading: 'Creating POI...',
+        success: { title: 'POI created', message: `${value.name.trim()} was added to your points of interest.` },
+        failure: { title: 'Unable to create POI', message: 'The POI could not be created. Please try again.' },
+      })
+      .then((response) => {
         this.saving.set(false);
-        if (response.status === 1002) return failed(response.message);
+        if (!response) return;
         this.reset();
         this.created.emit();
-      },
-      error: (error: { error?: { message?: string } }) => { this.saving.set(false); failed(error.error?.message); },
-    });
+      });
   }
-  protected cancel(): void { this.reset(); this.cancelled.emit(); }
+  protected async cancel(): Promise<void> {
+    if (this.saving()) return;
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
+    this.reset();
+    this.cancelled.emit();
+  }
   protected invalid(control: 'name'|'address'|'radius'|'latitude'|'longitude'): boolean {
     return this.submitted() && this.form.controls[control].invalid;
   }

@@ -1,5 +1,5 @@
 <app-modal [open]="open()" size="lg" labelledBy="poi-form-title" (closed)="cancel()">
-  <div modal-header><h2 id="poi-form-title">Add Point of Interest</h2></div>
+  <div modal-header><h2 id="poi-form-title">Add Point of Interest</h2><p>Step {{ activeStep() + 1 }} of {{ steps.length }}</p></div>
   <div class="poi-form-layout">
     <app-stepper [steps]="steps" [activeIndex]="activeStep()" (stepSelected)="goToStep($event)"/>
     <shared-smooth-height>
@@ -79,5 +79,5 @@
       </form>
     </shared-smooth-height>
   </div>
-  <div modal-footer class="poi-form-actions"><button type="button" class="shared-button-secondary" (click)="back()">{{ activeStep() === 0 ? 'Cancel' : 'Back' }}</button>@if(activeStep() < 3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="poi-form" class="shared-button-primary" [disabled]="saving()">{{ saving() ? 'Creating...' : 'Create POI' }}</button>}</div>
+  <div modal-footer class="form-actions with-stepper"><button type="button" class="shared-button-secondary" (click)="back()">{{ activeStep() === 0 ? 'Cancel' : 'Back' }}</button>@if(activeStep() < 3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="poi-form" class="shared-button-primary" [disabled]="saving()">{{ saving() ? 'Creating...' : 'Create POI' }}</button>}</div>
 </app-modal>

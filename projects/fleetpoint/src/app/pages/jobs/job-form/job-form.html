@@ -1,5 +1,5 @@
 <app-modal [open]="open()" labelledBy="job-form-title" (closed)="cancel()">
-  <h2 modal-header id="job-form-title">Create Job</h2>
+  <div modal-header><h2 id="job-form-title">Create Job</h2><p>Assign pickup and drop-off tasks to a driver</p></div>
   <form id="job-form" class="job-form" [formGroup]="form" (ngSubmit)="submit()">
     <label class="shared-form-field full"><span>Job Name <b>*</b></span><input class="ui-control" formControlName="name" placeholder="e.g. Morning Delivery" [attr.aria-invalid]="invalid('name')"/>@if (invalid('name')) { <small class="shared-form-error">Enter a job name.</small> }</label>
 
@@ -17,5 +17,5 @@
 
     <label class="shared-form-field full"><span>Notes</span><textarea class="ui-control" formControlName="notes" rows="3" placeholder="Any special instructions..."></textarea></label>
   </form>
-  <div modal-footer class="job-form-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="job-form" class="shared-button-primary">Create Job</button></div>
+  <div modal-footer class="form-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="job-form" class="shared-button-primary">Create Job</button></div>
 </app-modal>

@@ -1,28 +1,22 @@
-<ui-blocking-loader
-  [visible]="loading()"
-  [compact]="true"
-  [label]="editing() ? 'Updating driver...' : 'Creating driver...'"
-/>
 <app-modal
   [open]="open()"
-  [busy]="loading()"
   size="lg"
   labelledBy="add-driver-title"
   (closed)="cancel()"
 >
   <div modal-header>
     <h2 id="add-driver-title">{{ editing() ? 'Update Driver' : 'Create Driver' }}</h2>
-    <p class="form-subtitle">{{ editing() ? 'Update driver details' : 'Add a new driver record' }}</p>
+    <p>{{ editing() ? 'Update driver details' : 'Add a new driver record' }}</p>
   </div>
   <form id="driver-form" class="driver-form" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
-      <div class="form-error wide" role="alert">{{ error() }}</div>
+      <div class="shared-form-alert wide" role="alert">{{ error() }}</div>
     }
     <label class="shared-form-field"
       ><span>Name <b>*</b></span
       ><input class="ui-control" formControlName="name" placeholder="Enter name" />
       @if (submitted() && form.controls.name.invalid) {
-        <small class="field-error">Name is required.</small>
+        <small class="shared-form-error">Name is required.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -33,14 +27,14 @@
         placeholder="Enter employee ID"
       />
       @if (submitted() && form.controls.employee_id.invalid) {
-        <small class="field-error">Employee ID is required.</small>
+        <small class="shared-form-error">Employee ID is required.</small>
       }
     </label>
     <label class="shared-form-field"
       ><span>Birth Date <b>*</b></span
       ><shared-date-time-picker mode="date" formControlName="dob" ariaLabel="Choose birth date" />
       @if (submitted() && form.controls.dob.invalid) {
-        <small class="field-error">Birth date is required.</small>
+        <small class="shared-form-error">Birth date is required.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -51,7 +45,7 @@
         ariaLabel="Choose joining date"
       />
       @if (submitted() && form.controls.data_joined.invalid) {
-        <small class="field-error">Joining date is required.</small>
+        <small class="shared-form-error">Joining date is required.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -64,7 +58,7 @@
         placeholder="Enter salary"
       />
       @if (submitted() && form.controls.salary.invalid) {
-        <small class="field-error">Enter a valid salary.</small>
+        <small class="shared-form-error">Enter a valid salary.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -85,7 +79,7 @@
         </button></shared-dropdown
       >
       @if (submitted() && form.controls.marital_status.invalid) {
-        <small class="field-error">Marital status is required.</small>
+        <small class="shared-form-error">Marital status is required.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -104,18 +98,18 @@
         </button></shared-dropdown
       >
       @if (submitted() && form.controls.gender.invalid) {
-        <small class="field-error">Gender is required.</small>
+        <small class="shared-form-error">Gender is required.</small>
       }
     </label>
     <label class="shared-form-field"
       ><span>Contact Number <b>*</b></span
       ><input type="tel" class="ui-control" formControlName="phone" />
       @if (submitted() && form.controls.phone.invalid) {
-        <small class="field-error">Enter a valid contact number.</small>
+        <small class="shared-form-error">Enter a valid contact number.</small>
       }
     </label>
     <label class="shared-form-field"
-      ><span>Email *</span
+      ><span>Email <b>*</b></span
       ><input
         type="email"
         class="ui-control"
@@ -123,7 +117,7 @@
         placeholder="Enter email"
       />
       @if (submitted() && form.controls.email.invalid) {
-        <small class="field-error">Enter a valid email address.</small>
+        <small class="shared-form-error">Enter a valid email address.</small>
       }
     </label>
     @if (!editing()) {
@@ -145,7 +139,7 @@
           </button></span
         >
         @if (submitted() && form.controls.password.invalid) {
-          <small class="field-error"
+          <small class="shared-form-error"
             >Use 8–15 characters with uppercase, lowercase and a number.</small
           >
         }
@@ -219,7 +213,7 @@
           placeholder="Enter beacon ID"
         />
         @if (submitted() && form.controls.beacon_id.invalid) {
-          <small class="field-error">Maximum 300 characters are allowed.</small>
+          <small class="shared-form-error">Maximum 300 characters are allowed.</small>
         }
       </label>
     }
@@ -254,7 +248,7 @@
       </div>
     </section>
   </form>
-  <div modal-footer class="driver-form-actions">
+  <div modal-footer class="form-actions">
     <button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">
       Cancel</button
     ><button

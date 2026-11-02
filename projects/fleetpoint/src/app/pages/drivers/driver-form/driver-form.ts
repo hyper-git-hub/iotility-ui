@@ -1,15 +1,6 @@
-import {
-  Component,
-  OnChanges,
-  SimpleChanges,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, OnChanges, SimpleChanges, computed, input, output, signal, inject, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BlockingLoader, DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
-import { finalize } from 'rxjs';
+import { DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
 import {
   DriverApiService,
@@ -17,12 +8,12 @@ import {
   DriverRfidDevice,
   DriverRecord,
 } from '../../../shared/services/driver-api.service';
-import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { FeatureAccessService } from '../../../shared/services/feature-access.service';
 
 @Component({
   selector: 'app-driver-form',
-  imports: [BlockingLoader, DateTimePicker, Dropdown, Modal, ReactiveFormsModule],
+  imports: [DateTimePicker, Dropdown, Modal, ReactiveFormsModule],
   templateUrl: './driver-form.html',
   styleUrl: './driver-form.css',
 })
@@ -32,7 +23,10 @@ export class DriverForm implements OnChanges {
   readonly driver = input<DriverRecord | null>(null);
   readonly cancelled = output<void>();
   readonly created = output<void>();
+  /** True from submit until the form flow finishes (fold away, request, feedback). */
   protected readonly loading = signal(false);
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   protected readonly submitted = signal(false);
   protected readonly error = signal('');
   protected readonly showPassword = signal(false);
@@ -68,7 +62,6 @@ export class DriverForm implements OnChanges {
   constructor(
     private readonly fb: FormBuilder,
     private readonly api: DriverApiService,
-    private readonly feedback: FeedbackDialogBridgeService,
     private readonly features: FeatureAccessService,
   ) {
     const required = Validators.required;
@@ -102,16 +95,16 @@ export class DriverForm implements OnChanges {
   }
 
   protected selectGender(option: DropdownOption): void {
-    this.form.controls.gender.setValue(option.id);
+    this.form.controls.gender.setValue(option.id);this.form.controls.gender.markAsDirty();
   }
   protected selectMarital(option: DropdownOption): void {
     this.form.controls.marital_status.setValue(option.id);
   }
   protected selectGroup(option: DropdownOption): void {
-    this.form.controls.group.setValue(option.id);
+    this.form.controls.group.setValue(option.id);this.form.controls.group.markAsDirty();
   }
   protected selectStatus(option: DropdownOption): void {
-    this.form.controls.status.setValue(option.id);
+    this.form.controls.status.setValue(option.id);this.form.controls.status.markAsDirty();
   }
   protected selectRfid(option: DropdownOption): void {
     this.form.controls.rfid_tag.setValue(option.id);
@@ -184,36 +177,24 @@ export class DriverForm implements OnChanges {
     const request = this.editing()
       ? this.api.updateDriver(this.driver()!.id, payload, this.imageRemoved())
       : this.api.createDriver(payload);
-    request.pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: async () => {
-        const action = this.editing() ? 'updated' : 'added';
-        await this.feedback.open({
-          type: 'success',
-          title: `Driver ${action}`,
-          message: `${raw.name} was ${action} successfully.`,
-          confirmText: 'Done',
-          showCancel: false,
-        });
+    const editing = this.editing();
+    const action = editing ? 'updated' : 'added';
+    void this.flow
+      .submit(this.modal(), request, {
+        loading: editing ? 'Updating driver...' : 'Creating driver...',
+        success: { title: `Driver ${action}`, message: `${raw.name} was ${action} successfully.` },
+        failure: { title: `Unable to ${editing ? 'update' : 'add'} driver`, message: `Driver could not be ${editing ? 'updated' : 'created'}.` },
+      })
+      .then((response) => {
+        this.loading.set(false);
+        if (!response) return;
         this.created.emit();
         this.reset();
-      },
-      error: (response) => {
-        const message =
-          response.error?.message ||
-          `Driver could not be ${this.editing() ? 'updated' : 'created'}.`;
-        this.error.set(message);
-        void this.feedback.open({
-          type: 'error',
-          title: `Unable to ${this.editing() ? 'update' : 'add'} driver`,
-          message,
-          confirmText: 'Close',
-          showCancel: false,
-        });
-      },
-    });
+      });
   }
-  protected cancel(): void {
+  protected async cancel(): Promise<void> {
     if (this.loading()) return;
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
     this.reset();
     this.cancelled.emit();
   }

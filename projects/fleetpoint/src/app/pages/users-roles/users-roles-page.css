@@ -13,8 +13,7 @@
 .page-heading p {
   @apply mt-1 text-xs text-muted dark:text-brand-300;
 }
-.heading-actions,
-.modal-actions {
+.heading-actions {
   @apply flex gap-2;
 }
 .primary-action,
@@ -246,9 +245,6 @@
 }
 .user-choice-list {
   @apply grid max-h-72 gap-px overflow-y-auto bg-line dark:bg-dark-line;
-}
-.modal-actions {
-  @apply w-full justify-end;
 }
 @keyframes management-refresh-progress {
   0% {

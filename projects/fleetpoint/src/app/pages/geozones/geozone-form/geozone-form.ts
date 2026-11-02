@@ -1,10 +1,11 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DateTimePicker, Dropdown, DropdownOption, SmoothHeight } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
 import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
-import { CreateGeozonePayload } from '../../../shared/services/geozones-api.service';
+import { CreateGeozonePayload, GeozonesApiService } from '../../../shared/services/geozones-api.service';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { RoutesApiService } from '../../../shared/services/routes-api.service';
 import { GeozoneDrawingMap,GeozoneGeometry } from './geozone-drawing-map';
 
@@ -43,9 +44,12 @@ export function toCreateGeozonePayload(value:GeozoneFormValue):CreateGeozonePayl
 })
 export class GeozoneForm {
   readonly open=input(false);
-  readonly saving=input(false);
   readonly cancelled=output<void>();
-  readonly created=output<GeozoneFormValue>();
+  readonly created=output<void>();
+  private readonly modal=viewChild.required(Modal);
+  private readonly flow=inject(FormFlowService);
+  private readonly api=inject(GeozonesApiService);
+  protected readonly saving=signal(false);
   protected readonly activeStep=signal(0);
   protected readonly submitted=signal(false);
   protected readonly steps:StepperStep[]=[
@@ -94,7 +98,7 @@ export class GeozoneForm {
   }
   protected clearGeometry():void{this.form.controls.geometry.setValue('');}
   protected select(control:'assignment'|'assignedTarget'|'poi'|'route',option:DropdownOption):void{
-    this.form.controls[control].setValue(option.id);
+    this.form.controls[control].setValue(option.id);this.form.controls[control].markAsDirty();
     if(control==='assignment')this.form.controls.assignedTarget.setValue('');
   }
   protected label(options:DropdownOption[],value:string,fallback:string):string{return options.find(option=>option.id===value)?.label??fallback;}
@@ -102,8 +106,17 @@ export class GeozoneForm {
   protected goToStep(index:number):void{this.activeStep.set(index);}
   protected next():void{this.submitted.set(true);if(!this.stepValid())return;this.submitted.set(false);this.activeStep.update(step=>Math.min(3,step+1));}
   protected back():void{if(this.activeStep()===0){this.cancel();return;}this.submitted.set(false);this.activeStep.update(step=>step-1);}
-  protected submit():void{this.submitted.set(true);if(this.saving()||this.form.invalid||!this.assignmentValid())return;this.created.emit({...this.form.getRawValue(),vehicles:this.assignedVehicles()});}
-  protected cancel():void{this.reset();this.cancelled.emit();}
+  protected submit():void{
+    this.submitted.set(true);if(this.saving()||this.form.invalid||!this.assignmentValid())return;
+    const value={...this.form.getRawValue(),vehicles:this.assignedVehicles()};
+    this.saving.set(true);
+    void this.flow.submit(this.modal(),this.api.create(toCreateGeozonePayload(value)),{
+      loading:'Creating zone...',
+      success:{title:'Zone created',message:`${value.name.trim()} was created successfully.`},
+      failure:{title:'Unable to create zone',message:'The geozone could not be saved. Please try again.'},
+    }).then(response=>{this.saving.set(false);if(!response)return;this.reset();this.created.emit();});
+  }
+  protected async cancel():Promise<void>{if(this.saving())return;if(!(await this.flow.close(this.modal(),this.form.dirty)))return;this.reset();this.cancelled.emit();}
   protected invalid(control:'name'|'description'|'radius'):boolean{return this.submitted()&&this.form.controls[control].invalid;}
   private stepValid():boolean{
     if(this.activeStep()===1){this.form.controls.name.markAsTouched();this.form.controls.description.markAsTouched();this.form.controls.radius.markAsTouched();this.form.controls.geometry.markAsTouched();return !this.form.controls.name.invalid&&!this.form.controls.description.invalid&&!this.form.controls.radius.invalid&&!this.form.controls.geometry.invalid;}

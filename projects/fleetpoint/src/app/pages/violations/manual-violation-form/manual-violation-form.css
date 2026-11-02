@@ -5,7 +5,6 @@
 .shared-form-field b { @apply text-danger; }
 .form-dropdown { @apply block; }
 .manual-violation-form textarea { @apply resize-none; }
-.manual-violation-actions { @apply flex w-full gap-2; }
-.manual-violation-actions button { @apply flex-1; }
+
 :host ::ng-deep app-modal .modal-panel { max-width:34rem;overflow:visible; }
 :host ::ng-deep app-modal .modal-content { overflow:visible; }

@@ -1,5 +1,5 @@
 <section class="users-roles-page">
-  <ui-blocking-loader [visible]="actionLoading()" [compact]="true" label="Saving changes..." />
+  <ui-blocking-loader [visible]="actionLoading() && !userModalOpen() && !roleModalOpen() && !assignModalOpen()" [compact]="true" label="Saving changes..." />
 
   <header class="page-heading">
     <div>
@@ -140,12 +140,13 @@
 </section>
 
 <app-modal
+  #userModal
   [open]="userModalOpen()"
   size="lg"
   labelledBy="user-form-title"
   (closed)="userModalOpen.set(false)"
 >
-  <h2 modal-header id="user-form-title">{{ selectedUser() ? 'Edit user' : 'Add user' }}</h2>
+  <div modal-header><h2 id="user-form-title">{{ selectedUser() ? 'Edit user' : 'Add user' }}</h2><p>{{ selectedUser() ? 'Update user details and access' : 'Invite a user and give them access' }}</p></div>
   <form
     id="user-management-form"
     class="management-form"
@@ -290,12 +291,12 @@
       }
     </div>
   </form>
-  <div modal-footer class="modal-actions">
-    <button type="button" class="secondary-action" (click)="userModalOpen.set(false)">Cancel</button
+  <div modal-footer class="form-actions">
+    <button type="button" class="shared-button-secondary" (click)="userModalOpen.set(false)">Cancel</button
     ><button
       type="submit"
       form="user-management-form"
-      class="primary-action"
+      class="shared-button-primary"
       [disabled]="userForm.invalid || actionLoading()"
     >
       {{ selectedUser() ? 'Save changes' : 'Create user' }}
@@ -304,14 +305,16 @@
 </app-modal>
 
 <app-modal
+  #roleModal
   [open]="roleModalOpen()"
   size="xl"
   labelledBy="role-form-title"
   (closed)="roleModalOpen.set(false)"
 >
-  <h2 modal-header id="role-form-title">
-    {{ selectedRole() ? 'Edit access group' : 'Create access group' }}
-  </h2>
+  <div modal-header>
+    <h2 id="role-form-title">{{ selectedRole() ? 'Edit access group' : 'Create access group' }}</h2>
+    <p>Name the group and choose the features it can use</p>
+  </div>
   <form id="role-management-form" class="role-form" [formGroup]="roleForm" (ngSubmit)="saveRole()">
     <div class="role-basics">
       <label
@@ -418,12 +421,12 @@
       </section>
     }
   </form>
-  <div modal-footer class="modal-actions">
-    <button type="button" class="secondary-action" (click)="roleModalOpen.set(false)">Cancel</button
+  <div modal-footer class="form-actions">
+    <button type="button" class="shared-button-secondary" (click)="roleModalOpen.set(false)">Cancel</button
     ><button
       type="submit"
       form="role-management-form"
-      class="primary-action"
+      class="shared-button-primary"
       [disabled]="
         roleForm.invalid || !selectedFeatures().length || actionLoading() || featuresLoading()
       "
@@ -434,12 +437,13 @@
 </app-modal>
 
 <app-modal
+  #assignModal
   [open]="assignModalOpen()"
   size="lg"
   labelledBy="assign-form-title"
   (closed)="assignModalOpen.set(false)"
 >
-  <h2 modal-header id="assign-form-title">Assign users to an access group</h2>
+  <div modal-header><h2 id="assign-form-title">Assign users to an access group</h2><p>Choose the users who get this group's access</p></div>
   <form
     id="assign-users-form"
     class="assign-form"
@@ -511,13 +515,13 @@
       }
     </section>
   </form>
-  <div modal-footer class="modal-actions">
-    <button type="button" class="secondary-action" (click)="assignModalOpen.set(false)">
+  <div modal-footer class="form-actions">
+    <button type="button" class="shared-button-secondary" (click)="assignModalOpen.set(false)">
       Cancel</button
     ><button
       type="submit"
       form="assign-users-form"
-      class="primary-action"
+      class="shared-button-primary"
       [disabled]="
         assignForm.invalid ||
         !selectedAssignUsers().length ||

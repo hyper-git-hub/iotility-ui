@@ -1,11 +1,5 @@
-<ui-blocking-loader
-  [visible]="loading()"
-  [compact]="true"
-  [label]="editing() ? 'Updating vehicle...' : 'Creating vehicle...'"
-/>
 <app-modal
   [open]="open()"
-  [busy]="loading()"
   size="lg"
   labelledBy="add-vehicle-title"
   (closed)="cancel()"
@@ -19,7 +13,7 @@
     <shared-smooth-height class="step-content"
       ><form id="vehicle-form" [formGroup]="form" (ngSubmit)="submit()">
         @if (error()) {
-          <div class="form-error" role="alert">{{ error() }}</div>
+          <div class="shared-form-alert" role="alert">{{ error() }}</div>
         }
         @if (activeStep() === 0) {
           <section class="details-step step-enter">
@@ -28,95 +22,95 @@
               <p>Enter the vehicle identity, specifications and purchase information.</p>
             </header>
             <label class="shared-form-field"
-              ><span>Registration Number *</span
+              ><span>Registration Number <b>*</b></span
               ><input
                 class="ui-control"
                 formControlName="registration"
                 placeholder="e.g. LC-3029"
               />
               @if (submitted() && form.controls.registration.invalid) {
-                <small class="field-error">Registration number is required.</small>
+                <small class="shared-form-error">Registration number is required.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Engine Number *</span
+              ><span>Engine Number <b>*</b></span
               ><input class="ui-control" formControlName="engine_number" />
               @if (submitted() && form.controls.engine_number.invalid) {
-                <small class="field-error">Engine number is required.</small>
+                <small class="shared-form-error">Engine number is required.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Chassis Number *</span
+              ><span>Chassis Number <b>*</b></span
               ><input class="ui-control" formControlName="chassis_number" />
               @if (submitted() && form.controls.chassis_number.invalid) {
-                <small class="field-error">Chassis number is required.</small>
+                <small class="shared-form-error">Chassis number is required.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Make *</span
+              ><span>Make <b>*</b></span
               ><input class="ui-control" formControlName="make" placeholder="e.g. Volvo" />
               @if (submitted() && form.controls.make.invalid) {
-                <small class="field-error">Make is required.</small>
+                <small class="shared-form-error">Make is required.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Model *</span
+              ><span>Model <b>*</b></span
               ><input
                 class="ui-control"
                 formControlName="model"
                 placeholder="e.g. L150H"
               />
               @if (submitted() && form.controls.model.invalid) {
-                <small class="field-error">Model is required.</small>
+                <small class="shared-form-error">Model is required.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Year *</span
+              ><span>Year <b>*</b></span
               ><input type="number" class="ui-control" formControlName="year" />
               @if (submitted() && form.controls.year.invalid) {
-                <small class="field-error">Enter a valid vehicle year.</small>
+                <small class="shared-form-error">Enter a valid vehicle year.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Color *</span><input class="ui-control" formControlName="color" />
+              ><span>Color <b>*</b></span><input class="ui-control" formControlName="color" />
               @if (submitted() && form.controls.color.invalid) {
-                <small class="field-error">Color is required.</small>
+                <small class="shared-form-error">Color is required.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Odometer Reading *</span
+              ><span>Odometer Reading <b>*</b></span
               ><input type="number" class="ui-control" formControlName="odo_reading" />
               @if (submitted() && form.controls.odo_reading.invalid) {
-                <small class="field-error">Enter a valid odometer reading.</small>
+                <small class="shared-form-error">Enter a valid odometer reading.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Engine Capacity (CC) *</span
+              ><span>Engine Capacity (CC) <b>*</b></span
               ><input type="number" class="ui-control" formControlName="engine_capacity" />
               @if (submitted() && form.controls.engine_capacity.invalid) {
-                <small class="field-error">Enter a valid engine capacity.</small>
+                <small class="shared-form-error">Enter a valid engine capacity.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Wheels *</span
+              ><span>Wheels <b>*</b></span
               ><input type="number" class="ui-control" formControlName="wheels" />
               @if (submitted() && form.controls.wheels.invalid) {
-                <small class="field-error">Vehicle must have at least two wheels.</small>
+                <small class="shared-form-error">Vehicle must have at least two wheels.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Fuel Tank Capacity (litres) *</span
+              ><span>Fuel Tank Capacity (litres) <b>*</b></span
               ><input
                 type="number"
                 class="ui-control"
                 formControlName="fuel_tank_capacity"
               />
               @if (submitted() && form.controls.fuel_tank_capacity.invalid) {
-                <small class="field-error">Enter a valid fuel tank capacity.</small>
+                <small class="shared-form-error">Enter a valid fuel tank capacity.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Type of Purchase *</span
+              ><span>Type of Purchase <b>*</b></span
               ><shared-dropdown
                 class="form-dropdown"
                 [options]="purchaseOptions"
@@ -137,11 +131,11 @@
                 </button></shared-dropdown
               >
               @if (submitted() && form.controls.purchase_type.invalid) {
-                <small class="field-error">Purchase type is required.</small>
+                <small class="shared-form-error">Purchase type is required.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Type of Engine *</span
+              ><span>Type of Engine <b>*</b></span
               ><shared-dropdown
                 class="form-dropdown"
                 [options]="engineOptions"
@@ -162,7 +156,7 @@
                 </button></shared-dropdown
               >
               @if (submitted() && form.controls.engine_type.invalid) {
-                <small class="field-error">Engine type is required.</small>
+                <small class="shared-form-error">Engine type is required.</small>
               }
             </label>
             <div class="vehicle-picture wide">
@@ -187,7 +181,7 @@
               <p>Connect the vehicle to its device, owner, fleet and registration records.</p>
             </header>
             <label class="shared-form-field"
-              ><span>Vehicle Type *</span
+              ><span>Vehicle Type <b>*</b></span
               ><shared-dropdown
                 class="form-dropdown"
                 [options]="vehicleTypeDropdownOptions()"
@@ -210,11 +204,11 @@
                 </button></shared-dropdown
               >
               @if (submitted() && form.controls.type.invalid) {
-                <small class="field-error">Vehicle type is required.</small>
+                <small class="shared-form-error">Vehicle type is required.</small>
               }
             </label>
             <label class="shared-form-field"
-              ><span>Device Attached *</span
+              ><span>Device Attached <b>*</b></span
               ><shared-dropdown
                 class="form-dropdown"
                 [options]="deviceDropdownOptions()"
@@ -237,7 +231,7 @@
                 </button></shared-dropdown
               >
               @if (submitted() && form.controls.device.invalid) {
-                <small class="field-error">An attached device is required.</small>
+                <small class="shared-form-error">An attached device is required.</small>
               }
             </label>
             @if (canShowSecondaryDevice()) {
@@ -267,14 +261,14 @@
               >
             }
             <label class="shared-form-field"
-              ><span>Date Commissioned *</span
+              ><span>Date Commissioned <b>*</b></span
               ><shared-date-time-picker
                 mode="date"
                 formControlName="date_commissioned"
                 ariaLabel="Choose commissioned date"
               />
               @if (submitted() && form.controls.date_commissioned.invalid) {
-                <small class="field-error">Commissioned date is required.</small>
+                <small class="shared-form-error">Commissioned date is required.</small>
               }
             </label>
             <label class="shared-form-field"
@@ -392,7 +386,7 @@
             </fieldset>
             @if (form.controls.speed.value) {
               <label class="shared-form-field speed-threshold"
-                ><span>Speed Threshold ({{ isUkCustomer ? 'mph' : 'km/h' }}) *</span
+                ><span>Speed Threshold ({{ isUkCustomer ? 'mph' : 'km/h' }}) <b>*</b></span
                 ><input
                   type="number"
                   class="ui-control"
@@ -404,7 +398,7 @@
         }</form
     ></shared-smooth-height>
   </div>
-  <div modal-footer class="vehicle-form-actions">
+  <div modal-footer class="form-actions with-stepper">
     <button
       type="button"
       class="shared-button-secondary"

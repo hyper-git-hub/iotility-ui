@@ -1,18 +1,14 @@
-<ui-blocking-loader
-  [visible]="loading()"
-  [compact]="true"
-  [label]="editing() ? 'Updating manager...' : 'Creating manager...'"
-/><app-modal [open]="open()" [busy]="loading()" size="lg" labelledBy="manager-title" (closed)="cancel()"
-  ><div modal-header><h2 id="manager-title">{{ editing() ? 'Update Manager' : 'Create Manager' }}</h2><p class="form-subtitle">{{ editing() ? 'Update manager details' : 'Add a new fleet manager' }}</p></div>
+<app-modal [open]="open()" size="lg" labelledBy="manager-title" (closed)="cancel()"
+  ><div modal-header><h2 id="manager-title">{{ editing() ? 'Update Manager' : 'Create Manager' }}</h2><p>{{ editing() ? 'Update manager details' : 'Add a new fleet manager' }}</p></div>
   <form id="manager-form" class="manager-form" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
-      <div class="form-error wide">{{ error() }}</div>
+      <div class="shared-form-alert wide">{{ error() }}</div>
     }
     <label class="shared-form-field"
       ><span>Name <b>*</b></span
       ><input class="ui-control" formControlName="name" placeholder="Enter name" />
       @if (submitted() && form.controls.name.invalid) {
-        <small class="field-error">Enter a valid name.</small>
+        <small class="shared-form-error">Enter a valid name.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -24,7 +20,7 @@
         placeholder="Enter employee ID"
       />
       @if (submitted() && form.controls.employee_id.invalid) {
-        <small class="field-error">Employee ID must be 3–18 characters.</small>
+        <small class="shared-form-error">Employee ID must be 3–18 characters.</small>
       }
     </label>
     <label class="shared-form-field"
@@ -120,7 +116,7 @@
       </div>
     </section>
   </form>
-  <div modal-footer class="manager-form-actions">
+  <div modal-footer class="form-actions">
     <button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">Cancel</button
     ><button
       type="submit"

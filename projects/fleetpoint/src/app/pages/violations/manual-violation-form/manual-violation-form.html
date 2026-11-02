@@ -1,5 +1,5 @@
 <app-modal [open]="open()" labelledBy="manual-violation-title" (closed)="cancel()">
-  <h2 modal-header id="manual-violation-title">Add Manual Violation</h2>
+  <div modal-header><h2 id="manual-violation-title">Add Manual Violation</h2><p>Record a violation against a driver and vehicle</p></div>
   <form id="manual-violation-form" class="manual-violation-form" [formGroup]="form" (ngSubmit)="submit()">
     <label class="shared-form-field"><span>Driver <b>*</b></span><shared-dropdown class="form-dropdown" [options]="driverOptions" mode="single" align="left" [searchable]="true" searchPlaceholder="Search drivers" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="form.controls.driver.value ? [form.controls.driver.value] : []" (optionSelected)="select('driver',$event)"><button dropdown-trigger type="button">{{label(driverOptions,form.controls.driver.value,'Select driver...')}}</button></shared-dropdown>@if(invalid('driver')){<small class="shared-form-error">Select a driver.</small>}</label>
     <label class="shared-form-field"><span>Category <b>*</b></span><shared-dropdown class="form-dropdown" [options]="categoryOptions" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [selected]="[form.controls.category.value]" (optionSelected)="select('category',$event)"><button dropdown-trigger type="button">{{label(categoryOptions,form.controls.category.value,'Select category...')}}</button></shared-dropdown></label>
@@ -9,5 +9,5 @@
     <label class="shared-form-field"><span>Fine Amount (£)</span><input class="ui-control" type="number" min="0" formControlName="fineAmount" placeholder="0 if no fine"/></label>
     <label class="shared-form-field"><span>Fine Due Date</span><shared-date-time-picker mode="date" formControlName="fineDueDate" placeholder="Select due date" ariaLabel="Choose fine due date"/></label>
   </form>
-  <div modal-footer class="manual-violation-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="manual-violation-form" class="shared-button-primary">Add Violation</button></div>
+  <div modal-footer class="form-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="manual-violation-form" class="shared-button-primary">Add Violation</button></div>
 </app-modal>

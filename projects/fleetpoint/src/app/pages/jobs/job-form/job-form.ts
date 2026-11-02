@@ -1,9 +1,10 @@
-import { Component, DestroyRef, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
 import { catchError, of } from 'rxjs';
 import { Modal } from '../../../shared/modal/modal';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { DriverApiService } from '../../../shared/services/driver-api.service';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { JobsApiService } from '../../../shared/services/jobs-api.service';
@@ -25,6 +26,8 @@ export class JobForm {
   private readonly driverApi = inject(DriverApiService);
   private readonly maintenanceApi = inject(MaintenanceApiService);
   private readonly feedback = inject(FeedbackDialogBridgeService);
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   private readonly destroyRef = inject(DestroyRef);
   private saving = false;
   protected readonly submitted = signal(false);
@@ -77,7 +80,7 @@ export class JobForm {
   }
 
   protected select(control: 'type' | 'priority' | 'driver' | 'vehicle' | 'pickup' | 'dropoff', option: DropdownOption): void {
-    this.form.controls[control].setValue(option.id);
+    this.form.controls[control].setValue(option.id);this.form.controls[control].markAsDirty();
     this.form.controls[control].markAsTouched();
   }
   protected label(options: DropdownOption[], value: string, fallback: string): string {
@@ -88,15 +91,8 @@ export class JobForm {
     this.form.markAllAsTouched();
     if (this.form.invalid || this.form.controls.endTime.value <= this.form.controls.startTime.value || this.saving) return;
     const value = this.form.getRawValue();
-    const failed = (message?: string) =>
-      void this.feedback.open({
-        type: 'error',
-        title: 'Unable to create job',
-        message: message || 'The job could not be created. Please try again.',
-        showCancel: false,
-      });
     this.saving = true;
-    this.api
+    const request = this.api
       .create({
         job_name: value.name.trim(),
         driver: Number(value.driver),
@@ -104,22 +100,26 @@ export class JobForm {
         end_date: toUtcDateTime(value.endTime),
         job_type: Number(value.type),
         tasks: [{ priority: 1, pick_up: Number(value.pickup), drop_off: Number(value.dropoff) }],
+      });
+    void this.flow
+      .submit(this.modal(), request, {
+        loading: 'Creating job...',
+        success: { title: 'Job created', message: `${value.name.trim()} was created successfully.` },
+        failure: { title: 'Unable to create job', message: 'The job could not be created. Please try again.' },
       })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.saving = false;
-          if (response.status === 1002) return failed(response.message);
-          this.reset();
-          this.created.emit();
-        },
-        error: (error: { error?: { message?: string } }) => {
-          this.saving = false;
-          failed(error.error?.message);
-        },
+      .then((response) => {
+        this.saving = false;
+        if (!response) return;
+        this.reset();
+        this.created.emit();
       });
   }
-  protected cancel(): void { this.reset(); this.cancelled.emit(); }
+  protected async cancel(): Promise<void> {
+    if (this.saving) return;
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
+    this.reset();
+    this.cancelled.emit();
+  }
   protected invalid(name: keyof typeof this.form.controls): boolean {
     return this.submitted() && this.form.controls[name].invalid;
   }

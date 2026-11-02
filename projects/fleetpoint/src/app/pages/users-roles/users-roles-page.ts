@@ -1,5 +1,5 @@
 import { TabIndicator } from '@iotility/shared-ui';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   BlockingLoader,
@@ -17,6 +17,7 @@ import { secureStorage } from '@iotility/shared-ui';
 import { finalize, forkJoin, switchMap } from 'rxjs';
 import { Modal } from '../../shared/modal/modal';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
+import { FormFlowService } from '../../shared/services/form-flow.service';
 import {
   ListingQuery,
   ManagedUser,
@@ -62,6 +63,10 @@ export class UsersRolesPage implements OnInit {
   protected readonly usersRefreshing = computed(() => this.userLoading() && this.usersLoaded());
   protected readonly rolesRefreshing = computed(() => this.roleLoading() && this.rolesLoaded());
   protected readonly actionLoading = signal(false);
+  private readonly flow = inject(FormFlowService);
+  private readonly userModal = viewChild.required<Modal>('userModal');
+  private readonly roleModal = viewChild.required<Modal>('roleModal');
+  private readonly assignModal = viewChild.required<Modal>('assignModal');
   protected readonly assignmentOptionsLoading = signal(false);
   protected readonly featuresLoading = signal(false);
   protected readonly error = signal('');
@@ -322,15 +327,20 @@ export class UsersRolesPage implements OnInit {
     };
     const editing = !!this.selectedUser();
     this.actionLoading.set(true);
-    (editing ? this.api.updateUser(payload) : this.api.createUser(payload))
-      .pipe(finalize(() => this.actionLoading.set(false)))
-      .subscribe({
-        next: (response) => {
-          this.userModalOpen.set(false);
-          void this.success(editing ? 'User updated' : 'User created', response.message);
-          this.loadUsers();
+    void this.flow
+      .submit(this.userModal(), editing ? this.api.updateUser(payload) : this.api.createUser(payload), {
+        loading: editing ? 'Updating user...' : 'Creating user...',
+        success: {
+          title: editing ? 'User updated' : 'User created',
+          message: (response) => response.message || `${value.firstName} was ${editing ? 'updated' : 'created'} successfully.`,
         },
-        error: (response) => this.apiError(response, 'The user could not be saved.'),
+        failure: { title: 'Request unsuccessful', message: 'The user could not be saved.' },
+      })
+      .then((response) => {
+        this.actionLoading.set(false);
+        if (!response) return;
+        this.userModalOpen.set(false);
+        this.loadUsers();
       });
   }
 
@@ -381,8 +391,7 @@ export class UsersRolesPage implements OnInit {
       features: this.selectedFeatures(),
     };
     this.actionLoading.set(true);
-    (role ? this.api.updateRole(payload) : this.api.createRole(payload))
-      .pipe(
+    const request = (role ? this.api.updateRole(payload) : this.api.createRole(payload)).pipe(
         switchMap((response) =>
           role && this.selectedUnassignUsers().length
             ? this.api
@@ -390,18 +399,21 @@ export class UsersRolesPage implements OnInit {
                 .pipe(switchMap(() => [response]))
             : [response],
         ),
-      )
-      .pipe(finalize(() => this.actionLoading.set(false)))
-      .subscribe({
-        next: (response) => {
-          this.roleModalOpen.set(false);
-          void this.success(
-            role ? 'Access group updated' : 'Access group created',
-            response.message,
-          );
-          this.loadRoles();
+    );
+    void this.flow
+      .submit(this.roleModal(), request, {
+        loading: role ? 'Updating access group...' : 'Creating access group...',
+        success: {
+          title: role ? 'Access group updated' : 'Access group created',
+          message: (response) => response.message || `${payload.name} was saved successfully.`,
         },
-        error: (response) => this.apiError(response, 'The access group could not be saved.'),
+        failure: { title: 'Request unsuccessful', message: 'The access group could not be saved.' },
+      })
+      .then((response) => {
+        this.actionLoading.set(false);
+        if (!response) return;
+        this.roleModalOpen.set(false);
+        this.loadRoles();
       });
   }
 
@@ -442,16 +454,17 @@ export class UsersRolesPage implements OnInit {
     this.assignForm.markAllAsTouched();
     if (this.assignForm.invalid || !this.selectedAssignUsers().length) return;
     this.actionLoading.set(true);
-    this.api
-      .assignUsers(this.assignForm.getRawValue().groupId, this.selectedAssignUsers())
-      .pipe(finalize(() => this.actionLoading.set(false)))
-      .subscribe({
-        next: (response) => {
-          this.assignModalOpen.set(false);
-          void this.success('Users assigned', response.message);
-          this.loadRoles();
-        },
-        error: (response) => this.apiError(response, 'The users could not be assigned.'),
+    void this.flow
+      .submit(this.assignModal(), this.api.assignUsers(this.assignForm.getRawValue().groupId, this.selectedAssignUsers()), {
+        loading: 'Assigning users...',
+        success: { title: 'Users assigned', message: (response) => response.message || 'The users were assigned successfully.' },
+        failure: { title: 'Request unsuccessful', message: 'The users could not be assigned.' },
+      })
+      .then((response) => {
+        this.actionLoading.set(false);
+        if (!response) return;
+        this.assignModalOpen.set(false);
+        this.loadRoles();
       });
   }
 

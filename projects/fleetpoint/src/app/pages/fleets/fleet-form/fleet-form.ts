@@ -1,25 +1,18 @@
-import {
-  Component,
-  OnChanges,
-  SimpleChanges,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, OnChanges, SimpleChanges, computed, input, output, signal, inject, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BlockingLoader, Dropdown, DropdownOption } from '@iotility/shared-ui';
+import { Dropdown, DropdownOption } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import {
   FleetInventoryApiService,
   FleetInventoryRecord,
 } from '../../../shared/services/fleet-inventory-api.service';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { Modal } from '../../../shared/modal/modal';
 
 @Component({
   selector: 'app-fleet-form',
-  imports: [BlockingLoader, Dropdown, Modal, ReactiveFormsModule],
+  imports: [Dropdown, Modal, ReactiveFormsModule],
   templateUrl: './fleet-form.html',
   styleUrl: './fleet-form.css',
 })
@@ -29,7 +22,10 @@ export class FleetForm implements OnChanges {
   readonly cancelled = output<void>();
   readonly saved = output<void>();
   protected readonly submitted = signal(false);
+  /** True from submit until the form flow finishes (fold away, request, feedback). */
   protected readonly loading = signal(false);
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   protected readonly optionsLoading = signal(false);
   protected readonly vehicleOptions = signal<DropdownOption[]>([]);
   protected readonly editing = computed(() => !!this.fleet());
@@ -72,33 +68,25 @@ export class FleetForm implements OnChanges {
     const fleet = this.fleet();
     const request = fleet ? this.api.updateFleet(fleet.id, payload) : this.api.createFleet(payload);
     this.loading.set(true);
-    request.pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: async (response) => {
-        await this.feedback.open({
-          type: 'success',
+    void this.flow
+      .submit(this.modal(), request, {
+        loading: fleet ? 'Updating fleet...' : 'Creating fleet...',
+        success: {
           title: fleet ? 'Fleet updated' : 'Fleet created',
-          message:
-            response.message || `The fleet was ${fleet ? 'updated' : 'created'} successfully.`,
-          confirmText: 'Done',
-          showCancel: false,
-        });
+          message: (response) => response.message || `The fleet was ${fleet ? 'updated' : 'created'} successfully.`,
+        },
+        failure: { title: 'Unable to save fleet', message: 'The fleet could not be saved.' },
+      })
+      .then((response) => {
+        this.loading.set(false);
+        if (!response) return;
         this.reset();
         this.saved.emit();
-      },
-      error: (response) => {
-        const message = response.error?.message || 'The fleet could not be saved.';
-        void this.feedback.open({
-          type: 'error',
-          title: 'Unable to save fleet',
-          message,
-          confirmText: 'Close',
-          showCancel: false,
-        });
-      },
-    });
+      });
   }
-
-  protected cancel(): void {
+  protected async cancel(): Promise<void> {
+    if (this.loading()) return;
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
     this.reset();
     this.cancelled.emit();
   }

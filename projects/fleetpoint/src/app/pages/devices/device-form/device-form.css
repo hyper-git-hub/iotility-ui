@@ -10,12 +10,7 @@
 .device-dropdown {
   @apply block;
 }
-.device-form-actions {
-  @apply flex w-full gap-2;
-}
-.device-form-actions button {
-  @apply flex-1;
-}
+
 :host ::ng-deep app-modal .modal-panel {
   max-width: 28rem;
   overflow: visible;

@@ -1,5 +1,5 @@
 <app-modal [open]="open()" labelledBy="work-order-form-title" (closed)="cancel()">
-  <h2 modal-header id="work-order-form-title">New Work Order</h2>
+  <div modal-header><h2 id="work-order-form-title">New Work Order</h2><p>Raise a maintenance job for a vehicle</p></div>
   <form id="work-order-form" class="work-order-form" [formGroup]="form" (ngSubmit)="submit()">
     <label class="shared-form-field"><span>Vehicle <b>*</b></span><shared-dropdown class="form-dropdown" [options]="vehicleOptions()" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search vehicles" [selected]="[form.controls.vehicle.value]" (optionSelected)="select('vehicle',$event)"><button dropdown-trigger type="button">{{label(vehicleOptions(),form.controls.vehicle.value,'Select vehicle...')}}</button></shared-dropdown>@if(invalid('vehicle')){<small class="shared-form-error">Select a vehicle.</small>}</label>
     <label class="shared-form-field"><span>Service Type <b>*</b></span><shared-dropdown class="form-dropdown" [options]="serviceOptions()" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search services" [selected]="[form.controls.serviceType.value]" (optionSelected)="select('serviceType',$event)"><button dropdown-trigger type="button">{{label(serviceOptions(),form.controls.serviceType.value,'Select service...')}}</button></shared-dropdown>@if(invalid('serviceType')){<small class="shared-form-error">Select a service type.</small>}</label>
@@ -8,7 +8,6 @@
     <label class="shared-form-field full"><span>Description</span><textarea class="ui-control" formControlName="description" rows="3" placeholder="Describe the issue or service required..."></textarea></label>
     <label class="shared-form-field"><span>Est. Cost{{currency()?' ('+currency()+')':''}}</span><input class="ui-control" type="number" min="0" formControlName="estimatedCost" placeholder="0"/>@if(invalid('estimatedCost')){<small class="shared-form-error">Cost can't be negative.</small>}</label>
     <label class="shared-form-field"><span>Next Maintenance</span><shared-date-time-picker mode="date" formControlName="nextDate" placeholder="Select date" ariaLabel="Choose next maintenance date"/></label>
-    @if(error()){<p class="shared-form-error full">{{error()}}</p>}
   </form>
-  <div modal-footer class="work-order-form-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="work-order-form" class="shared-button-primary" [disabled]="saving()">{{saving()?'Raising…':'Raise Work Order'}}</button></div>
+  <div modal-footer class="form-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="work-order-form" class="shared-button-primary" [disabled]="saving()">{{saving()?'Raising...':'Raise Work Order'}}</button></div>
 </app-modal>

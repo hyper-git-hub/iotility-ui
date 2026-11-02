@@ -25,12 +25,36 @@
 .shared-form-field > span {
   @apply mb-1.5 block text-xs font-medium text-ink dark:text-brand-300;
 }
+/* Required marker: "Name <b>*</b>". */
+.shared-form-field > span b {
+  @apply font-medium text-danger;
+}
+/* Field-level validation message under a control. */
 .shared-form-error {
-  @apply mt-1 block text-[10px] text-danger;
+  @apply mt-1.5 block text-[10px] font-medium text-danger;
+}
+/* Form-level error from the API, shown above the fields. */
+.shared-form-alert {
+  @apply rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger;
 }
 .shared-button-primary {
   @apply inline-flex min-h-10 items-center justify-center rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50;
 }
 .shared-button-secondary {
   @apply inline-flex min-h-10 items-center justify-center rounded-xl border border-line px-4 text-sm font-medium text-muted transition hover:border-brand-400 hover:text-brand-600 disabled:opacity-50 disabled:hover:border-line disabled:hover:text-muted dark:border-dark-line dark:text-brand-300;
+}
+
+/* Modal form footer: secondary action then primary, equal width across the footer. */
+.form-actions {
+  @apply flex w-full gap-2;
+}
+.form-actions > button {
+  @apply flex-1;
+}
+/* With a step rail on the left, the buttons line up under the step content instead. */
+@media (min-width: 1024px) {
+  .form-actions.with-stepper {
+    @apply ml-auto;
+    width: calc(100% - 14rem);
+  }
 }

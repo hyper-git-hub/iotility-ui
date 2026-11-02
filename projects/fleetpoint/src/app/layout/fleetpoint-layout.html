@@ -1,3 +1,4 @@
+<ui-blocking-loader [visible]="!!formFlow.loading()" [compact]="true" [label]="formFlow.loading() ?? ''" />
 <div class="layout-shell">
   @if (!isFullscreen()) {
     @if (sidebarOpen()) {

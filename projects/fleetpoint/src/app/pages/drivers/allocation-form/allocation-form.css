@@ -1,3 +1,3 @@
 @reference "../../../../styles.css";
 @import "../../../shared/styles/fields.css";
-.allocation-form{@apply grid gap-3 sm:grid-cols-2;}.wide{@apply sm:col-span-2;}.form-subtitle{@apply text-[10px] text-muted dark:text-brand-300;}.shared-form-field b{@apply text-danger;}.form-error{@apply rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger;}.field-error{@apply mt-1.5 block text-[10px] font-medium text-danger;}.form-dropdown{@apply block;}.allocation-form-footer{@apply ml-auto flex w-full gap-2;}.allocation-form-footer button{@apply flex-1;}:host ::ng-deep app-modal .modal-panel,:host ::ng-deep app-modal .modal-content{overflow:visible;}
+.allocation-form{@apply grid gap-3 sm:grid-cols-2;}.wide{@apply sm:col-span-2;}.form-dropdown{@apply block;}:host ::ng-deep app-modal .modal-panel,:host ::ng-deep app-modal .modal-content{overflow:visible;}

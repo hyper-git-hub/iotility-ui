@@ -1,7 +1,8 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, inject, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Dropdown, DropdownOption } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { DeviceCategory } from '../devices.data';
 
 export interface DeviceFormValue {
@@ -21,6 +22,8 @@ export interface DeviceFormValue {
 export class DeviceForm {
   readonly open = input(false);
   readonly cancelled = output<void>();
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   readonly created = output<DeviceFormValue>();
   protected readonly submitted = signal(false);
   protected readonly typeOptions: DropdownOption[] = [
@@ -63,11 +66,15 @@ export class DeviceForm {
     this.submitted.set(true);
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
-    this.created.emit(this.form.getRawValue());
-    this.reset();
+    const value = this.form.getRawValue();
+    void this.flow.close(this.modal()).then(() => {
+      this.created.emit(value);
+      this.reset();
+    });
   }
 
-  protected cancel(): void {
+  protected async cancel(): Promise<void> {
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
     this.reset();
     this.cancelled.emit();
   }

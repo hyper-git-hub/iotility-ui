@@ -34,8 +34,7 @@
 .document-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5; }
 .driver-step > header { @apply mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center; }
 .driver-grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-3; }
-.vehicle-form-actions { @apply ml-auto flex w-full gap-2; }
-.vehicle-form-actions button { @apply flex-1; }
+
 .step-enter { animation: step-enter 240ms var(--ease-out) both; } @keyframes step-enter { from { opacity:0;transform:translateX(8px); } to { opacity:1;transform:none; } }
 @media (prefers-reduced-motion: reduce) { .step-enter { animation-name: step-fade; } } @keyframes step-fade { from { opacity:0; } }
 .vehicle-picture { @apply flex items-center justify-between gap-5 rounded-2xl border border-dashed border-line bg-canvas p-4 dark:border-dark-line dark:bg-dark-canvas; }
@@ -52,10 +51,9 @@
 .edit-settings label > span { @apply grid size-5 place-items-center rounded-full border border-line bg-white transition dark:border-dark-line dark:bg-dark-canvas; }
 .edit-settings label:has(input:checked) > span { @apply border-brand-600 bg-brand-600 shadow-[0_2px_6px_rgba(124,58,237,0.3)]; }
 .edit-settings label:has(input:checked) > span::after { content:'✓'; @apply text-[10px] font-bold text-white; }
-.form-error { @apply mb-4 rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger; }
-.field-error { @apply mt-1.5 block text-[10px] font-medium text-danger; }
+
 .form-dropdown { @apply block; }
 :host ::ng-deep .step-content .height-frame { overflow: visible; }
 :host ::ng-deep app-modal .modal-panel,
 :host ::ng-deep app-modal .modal-content { overflow: visible; }
-@media (min-width: 1024px) { .vehicle-form-actions { width: calc(100% - 14rem); } }
+

@@ -1,7 +1,8 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, inject, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 
 export interface ManualViolationValue {
   driver: string;
@@ -22,6 +23,8 @@ export interface ManualViolationValue {
 export class ManualViolationForm {
   readonly open = input(false);
   readonly cancelled = output<void>();
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   readonly created = output<ManualViolationValue>();
   protected readonly submitted = signal(false);
   protected readonly driverOptions: DropdownOption[] = [
@@ -49,7 +52,7 @@ export class ManualViolationForm {
   }
 
   protected select(control: 'driver' | 'category' | 'severity', option: DropdownOption): void {
-    this.form.controls[control].setValue(option.id);
+    this.form.controls[control].setValue(option.id);this.form.controls[control].markAsDirty();
     this.form.controls[control].markAsTouched();
   }
   protected label(options: DropdownOption[], value: string, fallback: string): string {
@@ -62,10 +65,14 @@ export class ManualViolationForm {
     this.submitted.set(true);
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
-    this.created.emit(this.form.getRawValue());
-    this.reset();
+    const value = this.form.getRawValue();
+    void this.flow.close(this.modal()).then(() => {
+      this.created.emit(value);
+      this.reset();
+    });
   }
-  protected cancel(): void {
+  protected async cancel(): Promise<void> {
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
     this.reset();
     this.cancelled.emit();
   }

@@ -1,5 +1,7 @@
 import { Component, ElementRef, HostListener, Injector, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { BlockingLoader } from '@iotility/shared-ui';
+import { FormFlowService } from '../shared/services/form-flow.service';
 import { FullscreenUiService } from '../shared/services/fullscreen-ui.service';
 import { FleetpointHeader } from './header/fleetpoint-header';
 import { FleetpointSidebar } from './sidebar/fleetpoint-sidebar';
@@ -10,12 +12,14 @@ const SIDEBAR_EASING = 'cubic-bezier(0.23, 1, 0.32, 1)';
 
 @Component({
   selector: 'app-fleetpoint-layout',
-  imports: [FleetpointHeader, FleetpointSidebar, RouterOutlet],
+  imports: [BlockingLoader, FleetpointHeader, FleetpointSidebar, RouterOutlet],
   templateUrl: './fleetpoint-layout.html',
   styleUrl: './fleetpoint-layout.css',
 })
 export class FleetpointLayout {
   private readonly fullscreenUi = inject(FullscreenUiService);
+  /** Form submits run their request behind this loader, between the form closing and the feedback dialog. */
+  protected readonly formFlow = inject(FormFlowService);
   private readonly injector = inject(Injector);
   private readonly sidebar = viewChild(FleetpointSidebar);
   private readonly content = viewChild<ElementRef<HTMLElement>>('content');

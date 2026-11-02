@@ -1,22 +1,13 @@
-import {
-  Component,
-  OnChanges,
-  SimpleChanges,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, OnChanges, SimpleChanges, computed, input, output, signal, inject, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BlockingLoader, DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
-import { finalize } from 'rxjs';
+import { DateTimePicker, Dropdown, DropdownOption } from '@iotility/shared-ui';
 import { Modal } from '../../../shared/modal/modal';
 import { DriverApiService, DriverManager } from '../../../shared/services/driver-api.service';
-import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 
 @Component({
   selector: 'app-manager-form',
-  imports: [BlockingLoader, DateTimePicker, Dropdown, Modal, ReactiveFormsModule],
+  imports: [DateTimePicker, Dropdown, Modal, ReactiveFormsModule],
   templateUrl: './manager-form.html',
   styleUrl: './manager-form.css',
 })
@@ -26,7 +17,10 @@ export class ManagerForm implements OnChanges {
   readonly cancelled = output<void>();
   readonly saved = output<void>();
   protected readonly editing = computed(() => !!this.manager());
+  /** True from submit until the form flow finishes (fold away, request, feedback). */
   protected readonly loading = signal(false);
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   protected readonly submitted = signal(false);
   protected readonly error = signal('');
   protected readonly imageFile = signal<File | null>(null);
@@ -49,7 +43,6 @@ export class ManagerForm implements OnChanges {
   constructor(
     private readonly fb: FormBuilder,
     private readonly api: DriverApiService,
-    private readonly feedback: FeedbackDialogBridgeService,
   ) {
     const r = Validators.required;
     this.form = this.fb.nonNullable.group({
@@ -103,38 +96,26 @@ export class ManagerForm implements OnChanges {
       : this.api.createManager(p);
     this.loading.set(true);
     this.error.set('');
-    request.pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: async () => {
-        const a = this.editing() ? 'updated' : 'added';
-        await this.feedback.open({
-          type: 'success',
-          title: `Manager ${a}`,
-          message: `${raw.name} was ${a} successfully.`,
-          confirmText: 'Done',
-          showCancel: false,
-        });
+    const editing = this.editing();
+    const action = editing ? 'updated' : 'added';
+    void this.flow
+      .submit(this.modal(), request, {
+        loading: editing ? 'Updating manager...' : 'Creating manager...',
+        success: { title: `Manager ${action}`, message: `${raw.name} was ${action} successfully.` },
+        failure: { title: `Unable to ${editing ? 'update' : 'add'} manager`, message: `Manager could not be ${editing ? 'updated' : 'created'}.` },
+      })
+      .then((response) => {
+        this.loading.set(false);
+        if (!response) return;
         this.saved.emit();
         this.reset();
-      },
-      error: (r) => {
-        const m =
-          r.error?.message || `Manager could not be ${this.editing() ? 'updated' : 'created'}.`;
-        this.error.set(m);
-        void this.feedback.open({
-          type: 'error',
-          title: `Unable to ${this.editing() ? 'update' : 'add'} manager`,
-          message: m,
-          confirmText: 'Close',
-          showCancel: false,
-        });
-      },
-    });
+      });
   }
-  protected cancel(): void {
-    if (!this.loading()) {
-      this.reset();
-      this.cancelled.emit();
-    }
+  protected async cancel(): Promise<void> {
+    if (this.loading()) return;
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
+    this.reset();
+    this.cancelled.emit();
   }
   private prepare(): void {
     this.reset();

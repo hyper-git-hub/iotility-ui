@@ -10,6 +10,6 @@
   <nav sharedTabIndicator class="geo-tabs"><a routerLink="map" routerLinkActive="active">Zone Map</a><a routerLink="list" routerLinkActive="active">Zone List</a><a routerLink="analytics" routerLinkActive="active">Analytics</a></nav>
   <router-outlet/>
   @if(formOpen()){
-    <app-geozone-form [open]="true" [saving]="saving()" (cancelled)="closeForm()" (created)="createZone($event)"/>
+    <app-geozone-form [open]="true" (cancelled)="closeForm()" (created)="createZone()"/>
   }
 </section>

@@ -54,5 +54,5 @@
       </form>
     </shared-smooth-height>
   </div>
-  <div modal-footer class="zone-form-actions"><button type="button" class="shared-button-secondary" (click)="back()">{{activeStep()===0?'Cancel':'Back'}}</button>@if(activeStep()<3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="geozone-form" class="shared-button-primary" [disabled]="saving()">{{saving()?'Creating…':'Create Zone'}}</button>}</div>
+  <div modal-footer class="form-actions with-stepper"><button type="button" class="shared-button-secondary" (click)="back()">{{activeStep()===0?'Cancel':'Back'}}</button>@if(activeStep()<3){<button type="button" class="shared-button-primary" (click)="next()">Next</button>}@else{<button type="submit" form="geozone-form" class="shared-button-primary" [disabled]="saving()">{{saving()?'Creating...':'Create Zone'}}</button>}</div>
 </app-modal>

@@ -1,3 +1,3 @@
 @reference "../../../../styles.css";
 @import '../../../shared/styles/fields.css';
-.workshop-form{@apply grid gap-3 sm:grid-cols-2;}.workshop-form .full{@apply sm:col-span-2;}.shared-form-field b{@apply text-danger;}.form-dropdown{@apply block;}.workshop-form-actions{@apply flex w-full gap-2;}.workshop-form-actions button{@apply flex-1;}:host ::ng-deep app-modal .modal-panel{max-width:32rem;overflow:visible;}:host ::ng-deep app-modal .modal-content{overflow:visible;}
+.workshop-form{@apply grid gap-3 sm:grid-cols-2;}.workshop-form .full{@apply sm:col-span-2;}.form-dropdown{@apply block;}:host ::ng-deep app-modal .modal-panel{max-width:32rem;overflow:visible;}:host ::ng-deep app-modal .modal-content{overflow:visible;}

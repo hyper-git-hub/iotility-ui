@@ -1,10 +1,9 @@
 <app-modal [open]="open()" labelledBy="workshop-form-title" (closed)="cancel()">
-  <h2 modal-header id="workshop-form-title">Add Workshop</h2>
+  <div modal-header><h2 id="workshop-form-title">Add Workshop</h2><p>Add a workshop that can take work orders</p></div>
   <form id="workshop-form" class="workshop-form" [formGroup]="form" (ngSubmit)="submit()">
     <label class="shared-form-field full"><span>Workshop Name <b>*</b></span><input class="ui-control" formControlName="name" placeholder="e.g. Mobi Workshop"/>@if(invalid('name')){<small class="shared-form-error">Enter a workshop name.</small>}</label>
     <label class="shared-form-field"><span>Location <b>*</b></span><input class="ui-control" formControlName="location" placeholder="e.g. Islamabad"/>@if(invalid('location')){<small class="shared-form-error">Enter the workshop location.</small>}</label>
     <label class="shared-form-field"><span>Owner <b>*</b></span><shared-dropdown class="form-dropdown" [options]="ownerOptions()" mode="single" align="left" [showOptionIcons]="false" [matchTriggerWidth]="true" [searchable]="true" searchPlaceholder="Search owners" [selected]="[form.controls.owner.value]" (optionSelected)="select($event)"><button dropdown-trigger type="button">{{ownerLabel()}}</button></shared-dropdown>@if(invalid('owner')){<small class="shared-form-error">Select the workshop owner.</small>}</label>
-    @if(error()){<p class="shared-form-error full">{{error()}}</p>}
   </form>
-  <div modal-footer class="workshop-form-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="workshop-form" class="shared-button-primary" [disabled]="saving()">{{saving()?'Adding…':'Add Workshop'}}</button></div>
+  <div modal-footer class="form-actions"><button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button><button type="submit" form="workshop-form" class="shared-button-primary" [disabled]="saving()">{{saving()?'Adding...':'Add Workshop'}}</button></div>
 </app-modal>

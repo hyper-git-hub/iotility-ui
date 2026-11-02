@@ -1,10 +1,5 @@
-<ui-blocking-loader
-  [visible]="loading()"
-  [compact]="true"
-  [label]="editing() ? 'Updating fleet...' : 'Creating fleet...'"
-/>
 <app-modal [open]="open()" labelledBy="fleet-form-title" (closed)="cancel()">
-  <h2 modal-header id="fleet-form-title">{{ editing() ? 'Update Fleet' : 'Create Fleet' }}</h2>
+  <div modal-header><h2 id="fleet-form-title">{{ editing() ? 'Update Fleet' : 'Create Fleet' }}</h2><p>{{ editing() ? 'Update fleet details' : 'Group vehicles into a new fleet' }}</p></div>
   <form id="fleet-form" class="fleet-form" [formGroup]="form" (ngSubmit)="submit()">
     <label class="shared-form-field"
       ><span>Name <b>*</b></span
@@ -40,7 +35,7 @@
       }
     </label>
   </form>
-  <div modal-footer class="fleet-form-actions">
+  <div modal-footer class="form-actions">
     <button type="button" class="shared-button-secondary" [disabled]="loading()" (click)="cancel()">
       Cancel</button
     ><button

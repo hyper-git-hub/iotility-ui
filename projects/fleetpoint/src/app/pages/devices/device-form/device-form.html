@@ -1,5 +1,5 @@
 <app-modal [open]="open()" labelledBy="device-form-title" (closed)="cancel()">
-  <h2 modal-header id="device-form-title">Register New Device</h2>
+  <div modal-header><h2 id="device-form-title">Register New Device</h2><p>Add a tracking device to your fleet</p></div>
   <form id="device-form" class="device-form" [formGroup]="form" (ngSubmit)="submit()">
     <label class="shared-form-field">
       <span>IMEI Number <b>*</b></span>
@@ -55,7 +55,7 @@
       </shared-dropdown>
     </label>
   </form>
-  <div modal-footer class="device-form-actions">
+  <div modal-footer class="form-actions">
     <button type="button" class="shared-button-secondary" (click)="cancel()">Cancel</button>
     <button type="submit" form="device-form" class="shared-button-primary">Register Device</button>
   </div>

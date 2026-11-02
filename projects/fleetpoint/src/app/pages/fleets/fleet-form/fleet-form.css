@@ -10,12 +10,7 @@
 .fleet-vehicle-dropdown {
   @apply block;
 }
-.fleet-form-actions {
-  @apply flex w-full gap-2;
-}
-.fleet-form-actions button {
-  @apply flex-1;
-}
+
 :host ::ng-deep app-modal .modal-panel,
 :host ::ng-deep app-modal .modal-content {
   overflow: visible;

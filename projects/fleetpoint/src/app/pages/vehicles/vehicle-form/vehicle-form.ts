@@ -3,9 +3,11 @@ import {
   OnChanges,
   SimpleChanges,
   computed,
+  inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   AbstractControl,
@@ -15,14 +17,13 @@ import {
   Validators,
 } from '@angular/forms';
 import {
-  BlockingLoader,
   DateTimePicker,
   Dropdown,
   DropdownOption,
   SmoothHeight,
 } from '@iotility/shared-ui';
 import { secureStorage } from '@iotility/shared-ui';
-import { finalize, forkJoin } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { Modal } from '../../../shared/modal/modal';
 import {
   DeviceOption,
@@ -31,7 +32,7 @@ import {
   VehicleInventoryRecord,
 } from '../../../shared/services/vehicle-inventory-api.service';
 import { Stepper, StepperStep } from '../../../shared/stepper/stepper';
-import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
+import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { FeatureAccessService } from '../../../shared/services/feature-access.service';
 
 const DASHCAM_DEVICE_TYPES = new Set(['concoxdc', 'howen dc']);
@@ -58,7 +59,6 @@ export interface VehicleFormValue {
 @Component({
   selector: 'app-vehicle-form',
   imports: [
-    BlockingLoader,
     DateTimePicker,
     Dropdown,
     Modal,
@@ -75,7 +75,10 @@ export class VehicleForm implements OnChanges {
   readonly cancelled = output<void>();
   readonly created = output<VehicleFormValue>();
   protected readonly submitted = signal(false);
+  /** True from submit until the form flow finishes (fold away, request, feedback). */
   protected readonly loading = signal(false);
+  private readonly modal = viewChild.required(Modal);
+  private readonly flow = inject(FormFlowService);
   protected readonly editing = computed(() => !!this.vehicle());
   protected readonly error = signal('');
   protected readonly activeStep = signal(0);
@@ -135,7 +138,6 @@ export class VehicleForm implements OnChanges {
   constructor(
     private readonly formBuilder: FormBuilder,
     private readonly api: VehicleInventoryApiService,
-    private readonly feedback: FeedbackDialogBridgeService,
     private readonly features: FeatureAccessService,
   ) {
     const required = Validators.required;
@@ -203,10 +205,10 @@ export class VehicleForm implements OnChanges {
     this.form.controls.engine_type.setValue(option.id);
   }
   protected selectVehicleType(option: DropdownOption): void {
-    this.form.controls.type.setValue(option.id);
+    this.form.controls.type.setValue(option.id);this.form.controls.type.markAsDirty();
   }
   protected selectDevice(option: DropdownOption): void {
-    this.form.controls.device.setValue(option.id);
+    this.form.controls.device.setValue(option.id);this.form.controls.device.markAsDirty();
     const selected = this.devices().find((device) => String(device.id) === option.id);
     if (selected && this.isRestrictedPrimaryDevice(selected)) {
       this.form.controls.camera_device.setValue('');
@@ -219,14 +221,14 @@ export class VehicleForm implements OnChanges {
     return this.features.has(151) && this.customerType === '2';
   }
   protected selectFleet(option: DropdownOption): void {
-    this.form.controls.fleet.setValue(option.id);
+    this.form.controls.fleet.setValue(option.id);this.form.controls.fleet.markAsDirty();
     this.form.controls.category.setValue('');
     this.api
       .getCategoryOptions(option.id)
       .subscribe({ next: (response) => this.categories.set(response.data?.data ?? []) });
   }
   protected selectCategory(option: DropdownOption): void {
-    this.form.controls.category.setValue(option.id);
+    this.form.controls.category.setValue(option.id);this.form.controls.category.markAsDirty();
   }
   protected optionLabel(options: DropdownOption[], value: string, fallback: string): string {
     return options.find((option) => option.id === value)?.label || fallback;
@@ -277,35 +279,27 @@ export class VehicleForm implements OnChanges {
     const request = this.editing()
       ? this.api.updateVehicle(this.vehicle()!.id, payload)
       : this.api.createVehicle(payload);
-    request.pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: async () => {
-        const action = this.editing() ? 'updated' : 'added';
-        await this.feedback.open({
-          type: 'success',
-          title: `Vehicle ${action}`,
-          message: `${raw.registration} was ${action} successfully.`,
-          confirmText: 'Done',
-          showCancel: false,
-        });
+    const editing = this.editing();
+    const action = editing ? 'updated' : 'added';
+    void this.flow
+      .submit(this.modal(), request, {
+        loading: editing ? 'Updating vehicle...' : 'Creating vehicle...',
+        success: { title: `Vehicle ${action}`, message: `${raw.registration} was ${action} successfully.` },
+        failure: {
+          title: `Unable to ${editing ? 'update' : 'add'} vehicle`,
+          message: `Vehicle could not be ${editing ? 'updated' : 'created'}.`,
+        },
+      })
+      .then((response) => {
+        this.loading.set(false);
+        if (!response) return;
         this.created.emit(raw as VehicleFormValue);
         this.reset();
-      },
-      error: (response) => {
-        const message =
-          response.error?.message ||
-          `Vehicle could not be ${this.editing() ? 'updated' : 'created'}.`;
-        this.error.set(message);
-        void this.feedback.open({
-          type: 'error',
-          title: `Unable to ${this.editing() ? 'update' : 'add'} vehicle`,
-          message,
-          confirmText: 'Close',
-          showCancel: false,
-        });
-      },
-    });
+      });
   }
-  protected cancel(): void {
+  protected async cancel(): Promise<void> {
+    if (this.loading()) return;
+    if (!(await this.flow.close(this.modal(), this.form.dirty))) return;
     this.reset();
     this.cancelled.emit();
   }
