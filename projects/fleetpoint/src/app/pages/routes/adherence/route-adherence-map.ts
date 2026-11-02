@@ -1,8 +1,9 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, effect, input, signal, viewChild } from '@angular/core';
 import maplibregl, { Map } from 'maplibre-gl';
 import {
   LatLng,
   createIotMap,
+  removeGeoJson,
   timezoneCenter,
   fitLatLngs,
   lineFeature,
@@ -33,20 +34,33 @@ import { MapControls } from '../../../shared/map-overlays/map-controls';
   `,
   styleUrl: './route-adherence-map.css',
 })
+/**
+ * Planned route (dashed) for the selected run. Actual and deviated tracks are drawn when the
+ * API provides them; until then only the plan shows.
+ */
 export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
+  /** Planned road path as [lat, lng] pairs. */
+  readonly planned = input<LatLng[]>([]);
+  readonly actual = input<LatLng[]>([]);
+  readonly deviated = input<LatLng[]>([]);
   private readonly element = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: Map;
   private markers: maplibregl.Marker[] = [];
+  private ready = false;
+
+  constructor() {
+    effect(() => {
+      const paths = { planned: this.planned(), actual: this.actual(), deviated: this.deviated() };
+      if (this.ready) this.render(paths, true);
+    });
+  }
 
   ngAfterViewInit(): void {
-    const planned: LatLng[] = [[51.54, -.08], [51.52, -.1], [51.49, -.2], [51.8, -1.2], [52.05, -1.4], [52.26, -1.5], [52.455, -1.73]];
-    const actual: LatLng[] = [[51.54, -.08], [51.515, -.095], [51.485, -.195], [51.81, -1.18], [52.06, -1.38], [52.27, -1.49], [52.46, -1.72]];
-    const deviated: LatLng[] = [[51.81, -1.18], [51.84, -1.12], [51.86, -1.15], [52.06, -1.38]];
     // Default map center to Pakistan; will override if geolocation succeeds
     this.map = createIotMap(this.element().nativeElement, timezoneCenter(), 7);
     this.map.on('click', () => {});
-    // Attempt live geolocation, overriding the default on success
-    if (navigator.geolocation) {
+    // Attempt live geolocation when there is no route to show
+    if (!this.planned().length && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           this.map!.easeTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 700 });
@@ -55,41 +69,44 @@ export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
         { enableHighAccuracy: true, timeout: 8000 },
       );
     }
-    const render = () => {
-      if (!this.map) return;
-      upsertGeoJson(this.map, 'adherence-routes', {
-        type: 'FeatureCollection',
-        features: [
-          lineFeature(planned, { kind: 'planned' }),
-          lineFeature(actual, { kind: 'actual' }),
-          lineFeature(deviated, { kind: 'deviation' }),
-        ],
-      }, [
-        {
-          id: 'adherence-planned', type: 'line', filter: ['==', ['get', 'kind'], 'planned'],
-          paint: { 'line-color': '#3b82f6', 'line-width': 5, 'line-dasharray': [2, 1.5] },
-        },
-        {
-          id: 'adherence-actual', type: 'line', filter: ['==', ['get', 'kind'], 'actual'],
-          paint: { 'line-color': '#22c55e', 'line-width': 5 },
-        },
-        {
-          id: 'adherence-deviation', type: 'line', filter: ['==', ['get', 'kind'], 'deviation'],
-          paint: { 'line-color': '#ef4444', 'line-width': 6 },
-        },
-      ]);
-      if (!this.markers.length) {
-        this.markers = [
-          this.endpoint(actual[0], '#22c55e', 'Route start'),
-          this.endpoint(actual.at(-1)!, '#ef4444', 'Route end'),
-        ];
-      }
-    };
-    this.map.on('style.load', render);
+    const paths = () => ({ planned: this.planned(), actual: this.actual(), deviated: this.deviated() });
+    this.map.on('style.load', () => this.render(paths(), false));
     this.map.once('load', () => {
-      render();
-      fitLatLngs(this.map!, [...planned, ...actual, ...deviated], 35);
+      this.ready = true;
+      this.render(paths(), true);
     });
+  }
+
+  private render({ planned, actual, deviated }: Record<'planned' | 'actual' | 'deviated', LatLng[]>, fit: boolean): void {
+    if (!this.map?.isStyleLoaded()) return;
+    this.markers.forEach((marker) => marker.remove());
+    this.markers = [];
+    const lines = [
+      planned.length > 1 ? lineFeature(planned, { kind: 'planned' }) : null,
+      actual.length > 1 ? lineFeature(actual, { kind: 'actual' }) : null,
+      deviated.length > 1 ? lineFeature(deviated, { kind: 'deviation' }) : null,
+    ].filter((feature) => !!feature);
+    if (!lines.length) {
+      removeGeoJson(this.map, 'adherence-routes', ['adherence-planned', 'adherence-actual', 'adherence-deviation']);
+      return;
+    }
+    upsertGeoJson(this.map, 'adherence-routes', { type: 'FeatureCollection', features: lines }, [
+      {
+        id: 'adherence-planned', type: 'line', filter: ['==', ['get', 'kind'], 'planned'],
+        paint: { 'line-color': '#3b82f6', 'line-width': 5, 'line-dasharray': [2, 1.5] },
+      },
+      {
+        id: 'adherence-actual', type: 'line', filter: ['==', ['get', 'kind'], 'actual'],
+        paint: { 'line-color': '#22c55e', 'line-width': 5 },
+      },
+      {
+        id: 'adherence-deviation', type: 'line', filter: ['==', ['get', 'kind'], 'deviation'],
+        paint: { 'line-color': '#ef4444', 'line-width': 6 },
+      },
+    ]);
+    const path = actual.length ? actual : planned;
+    this.markers = [this.endpoint(path[0], '#22c55e', 'Route start'), this.endpoint(path.at(-1)!, '#ef4444', 'Route end')];
+    if (fit) fitLatLngs(this.map, [...planned, ...actual, ...deviated], 35);
   }
 
   protected readonly isFullscreen = signal(false);

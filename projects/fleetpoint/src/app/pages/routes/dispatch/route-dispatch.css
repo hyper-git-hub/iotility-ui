@@ -17,3 +17,5 @@
 :host-context(.dark) .availability-row{background:color-mix(in srgb,var(--color-success) 9%,var(--color-dark-canvas));border-color:color-mix(in srgb,var(--color-success) 38%,var(--color-dark-line));}
 :host-context(.dark) .availability-row.scheduled{background:color-mix(in srgb,var(--color-warning) 9%,var(--color-dark-canvas));border-color:color-mix(in srgb,var(--color-warning) 38%,var(--color-dark-line));}
 :host-context(.dark) .availability-row.en-route{background:color-mix(in srgb,var(--color-danger) 9%,var(--color-dark-canvas));border-color:color-mix(in srgb,var(--color-danger) 38%,var(--color-dark-line));}
+.availability-row.loading{@apply border-line bg-transparent;}.skeleton-lines{@apply grid gap-1.5;}
+:host-context(.dark) .availability-row.loading{background:transparent;border-color:var(--color-dark-line);}

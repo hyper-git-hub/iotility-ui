@@ -16,6 +16,22 @@ import { environment } from '../../../../environments/environment';
 
 export interface RoutePoint { lat: number; lng: number; type: 'start' | 'stop' | 'end'; label: string; }
 
+/** A calculated road route; distance in metres, duration in seconds, one leg per pair of consecutive points. */
+export interface RouteCalculation {
+  points: RoutePoint[];
+  path: LatLng[];
+  distance: number;
+  duration: number;
+  legs: { distance: number; duration: number; path: LatLng[] }[];
+}
+
+interface OsrmRoute {
+  distance: number;
+  duration: number;
+  geometry?: { coordinates?: [number, number][] };
+  legs?: { distance: number; duration: number; steps?: { geometry?: { coordinates?: [number, number][] } }[] }[];
+}
+
 @Component({
   selector: 'app-route-builder-map',
   imports: [MapControls],
@@ -46,6 +62,8 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
   private points: RoutePoint[] = [];
   private routePath: LatLng[] = [];
   private resizeObserver?: ResizeObserver;
+  /** The last successful calculation, cleared whenever the points change. */
+  calculation: RouteCalculation | null = null;
 
   ngAfterViewInit(): void {
     // Default map center to Pakistan; will override if geolocation succeeds
@@ -104,6 +122,7 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
     this.markers = [];
     this.points = [];
     this.routePath = [];
+    this.calculation = null;
     if (this.map?.isStyleLoaded()) removeGeoJson(this.map, 'builder-route', ['builder-outline', 'builder-line']);
   }
 
@@ -112,14 +131,27 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
     const coordinates = this.points.map((point) => `${point.lng},${point.lat}`).join(';');
     for (const baseUrl of [environment.osrmBaseUrl]) {
       try {
-        const response = await fetch(`${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false`);
+        const response = await fetch(`${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`);
         if (!response.ok) continue;
-        const result = await response.json() as { code?: string; routes?: { geometry?: { coordinates?: [number, number][] } }[] };
-        const route = result.code === 'Ok' ? result.routes?.[0]?.geometry?.coordinates : undefined;
-        if (!route?.length) continue;
-        const roadPath = route.map(([lng, lat]) => [lat, lng] as LatLng);
+        const result = await response.json() as { code?: string; routes?: OsrmRoute[] };
+        const best = result.code === 'Ok' ? result.routes?.[0] : undefined;
+        const route = best?.geometry?.coordinates;
+        if (!best || !route?.length) continue;
+        const toLatLng = ([lng, lat]: [number, number]) => [lat, lng] as LatLng;
+        const roadPath = route.map(toLatLng);
         if (!this.matchesEndpoints(roadPath)) continue;
         this.routePath = roadPath;
+        this.calculation = {
+          points: [...this.points],
+          path: roadPath,
+          distance: best.distance,
+          duration: best.duration,
+          legs: (best.legs ?? []).map((leg) => ({
+            distance: leg.distance,
+            duration: leg.duration,
+            path: (leg.steps ?? []).flatMap((step) => (step.geometry?.coordinates ?? []).map(toLatLng)),
+          })),
+        };
         this.renderLine(false);
         fitLatLngs(this.map, roadPath, 42, 14);
         return true;
@@ -174,6 +206,7 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
     const point = { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)), type, label };
     this.points.push(point);
     this.routePath = [];
+    this.calculation = null;
     const color = type === 'start' ? '#10b981' : type === 'end' ? '#ef4444' : '#8b5cf6';
     const element = markerElement(`<span style="display:block;width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:${color}"></span>`);
     this.markers.push(new maplibregl.Marker({ element }).setLngLat([lng, lat]).setPopup(popup(label)).addTo(this.map!));
