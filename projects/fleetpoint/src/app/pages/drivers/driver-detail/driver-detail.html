@@ -294,11 +294,11 @@
                 [compact]="true"
                 [label]="card.name"
                 [value]="card.data ?? 0"
-                [tone]="$index % 2 ? 'info' : 'brand'"
-                [icon]="$index % 2 ? 'assets/fleetpoint/icons/info-brand.svg' : 'assets/fleetpoint/icons/activity.svg'"
+                tone="neutral"
+                icon="assets/fleetpoint/icons/activity.svg"
               />
             } @empty {
-              <app-stat-card [compact]="true" label="Distance travelled" [value]="graphs().total_distance_travelled || 0" tone="brand" icon="assets/fleetpoint/icons/route.svg" suffix="km" />
+              <app-stat-card [compact]="true" label="Distance travelled" [value]="graphs().total_distance_travelled || 0" tone="neutral" icon="assets/fleetpoint/icons/route.svg" suffix="km" />
               <app-stat-card [compact]="true" label="Total violations" [value]="totalViolations()" tone="danger" icon="assets/fleetpoint/icons/warning.svg" suffix="total" />
               <app-stat-card [compact]="true" label="Idle time" [value]="totalIdle()" tone="warning" icon="assets/fleetpoint/icons/history-muted.svg" suffix="min" />
               <app-stat-card [compact]="true" label="Recorded alerts" [value]="violationCount()" tone="info" icon="assets/fleetpoint/icons/bell.svg" suffix="total" />

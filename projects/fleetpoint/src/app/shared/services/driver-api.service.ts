@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { ExportFormat } from '@iotility/shared-ui';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { environment } from '../../../environments/environment';
 
@@ -120,6 +121,18 @@ export class DriverApiService {
     return this.http.get<ApiResponse<{ count: number; data: DriverRecord[] }>>(`${DRIVER_API}/`, {
       params,
     });
+  }
+
+  /** The driver list (same filters, every page) as a file: `export=xls|pdf` on the list endpoint, as the FMS web app does. */
+  exportDrivers(filters: DriverFilters, format: ExportFormat): Observable<Blob> {
+    let params = new HttpParams()
+      .set('export', format)
+      .set('limit', filters.limit)
+      .set('offset', filters.offset)
+      .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+    if (filters.searchText) params = params.set('search_text', filters.searchText);
+    if (filters.cardType) params = params.set('card_type', filters.cardType);
+    return this.http.get(`${DRIVER_API}/`, { params, responseType: 'blob' });
   }
 
   getGroups(): Observable<ApiResponse<{ count: number; data: DriverGroup[] }>> {

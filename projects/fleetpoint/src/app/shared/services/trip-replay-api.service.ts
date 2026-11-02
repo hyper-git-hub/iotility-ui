@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { ExportFormat } from '@iotility/shared-ui';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { DetailReportRecord, RealtimeVehicleRecord } from './live-tracking-api.service';
 import { ViolationRecord } from './violations-api.service';
@@ -110,6 +111,20 @@ export class TripReplayApiService {
         .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone),
     });
   }
+  /**
+   * The trip's travel history as a file, as the FMS web app's playback export does: the reports service,
+   * `export=excel|pdf`, and the time zone sent as `timezone`.
+   */
+  exportTravelHistory(range: PlaybackRange, format: ExportFormat): Observable<Blob> {
+    const params = this.params(range)
+      .set('order', '')
+      .set('order_by', '')
+      .set('search_key', '')
+      .set('export', format === 'pdf' ? 'pdf' : 'excel')
+      .set('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+    return this.http.get(`${environment.reportsBaseUrl}/reports/travel-history`, { params, responseType: 'blob' });
+  }
+
   private params(range: PlaybackRange): HttpParams {
     return new HttpParams()
       .set('vehicle_id', range.vehicleId)

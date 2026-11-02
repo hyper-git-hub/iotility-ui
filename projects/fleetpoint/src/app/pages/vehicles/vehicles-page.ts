@@ -1,3 +1,4 @@
+import { PluralPipe } from '@iotility/shared-ui';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { BlockingLoader, DataTable, DataTableSkeleton, DropdownOption, FilterBar, FilterChangeEvent, FilterDropdown, Skeleton, SmoothHeight, StatusBadge, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
@@ -16,7 +17,7 @@ import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dial
 
 @Component({
   selector: 'app-vehicles-page',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, FilterBar, ProgressBar, Skeleton, SmoothHeight, StatusBadge, VehicleForm],
+  imports: [PluralPipe, BlockingLoader, DataTable, DataTableSkeleton, FilterBar, ProgressBar, Skeleton, SmoothHeight, StatusBadge, VehicleForm],
   templateUrl: './vehicles-page.html',
   styleUrl: './vehicles-page.css',
 })

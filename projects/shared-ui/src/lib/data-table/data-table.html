@@ -40,7 +40,7 @@
         }
         <ng-content select="[table-toolbar]" />
         @if (showExport()) {
-          <button><span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>Export</button>
+          <shared-export-menu [formats]="exportFormats()" [exporting]="exporting()" [disabled]="!rows().length" (exportFormat)="exportFormat.emit($event)" />
         }
         @if (showPrimaryAction()) {
           <button class="primary" (click)="primaryAction.emit()">

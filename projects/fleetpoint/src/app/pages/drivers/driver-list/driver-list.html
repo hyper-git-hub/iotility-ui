@@ -53,6 +53,8 @@
         [clientSideSearch]="false"
         [showPrimaryAction]="false"
         [showExport]="true"
+        [exporting]="exporting()"
+        (exportFormat)="exportDrivers($event)"
         [showSearch]="false"
         [minTableWidth]="1250"
         [pagination]="groupId() || driverId() ? null : { totalItems: total(), pageSize: limit, page: offset() / limit + 1, loading: loading() }"

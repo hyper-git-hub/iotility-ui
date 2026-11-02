@@ -8,16 +8,13 @@
       </p>
     </div>
     <div class="heading-actions">
-      <button type="button" class="secondary">
-        <span class="color-icon size-4" style="--icon: url('/assets/fleetpoint/icons/export.svg')" aria-hidden="true"></span>
-        Export Report</button
-      ><button type="button" class="primary" (click)="openUpload()">＋ Upload Document</button>
+      <shared-export-menu [exporting]="exporting()" [disabled]="!documents().length" (exportFormat)="export($event)" /><button type="button" class="primary" (click)="openUpload()">＋ Upload Document</button>
     </div>
   </header>
 
   <section class="document-stats">
     <button type="button" (click)="setStatus('all')">
-      <app-stat-card label="Total Documents" [value]="counts().total" tone="brand"
+      <app-stat-card label="Total Documents" [value]="counts().total" tone="neutral"
         ><svg stat-card-icon viewBox="0 0 24 24">
           <path d="M6 4h12v16H6z" />
           <path d="M9 8h6M9 12h6M9 16h4" /></svg

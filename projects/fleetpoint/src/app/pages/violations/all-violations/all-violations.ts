@@ -284,6 +284,7 @@ export class AllViolations implements OnInit, OnDestroy {
     this.mapSequence++;
     this.mapSubscription?.unsubscribe();
     this.api.pageSummaryLoading.set(false);
+    this.api.exportFilters.set(null);
   }
 
   protected selectFilter(event: FilterChangeEvent): void {
@@ -423,6 +424,7 @@ export class AllViolations implements OnInit, OnDestroy {
     this.requestSubscription?.unsubscribe();
     this.syncUrl();
     const filters: ViolationFilters = { ...this.filters, offset: (this.page() - 1) * PAGE_SIZE, limit: PAGE_SIZE };
+    this.api.exportFilters.set(filters);
     const key = JSON.stringify(filters);
     const cached = this.pageCache.get(key);
     if (cached && Date.now() - cached.at < PAGE_CACHE_TTL_MS) {

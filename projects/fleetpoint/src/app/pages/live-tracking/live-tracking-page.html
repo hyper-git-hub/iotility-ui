@@ -26,7 +26,7 @@
           /></span>
         } @else {
           <span
-            >{{ fleetStatus.totalCount() }} vehicles · {{ fleetStatus.onlineCount() }} online</span
+            >{{ fleetStatus.totalCount() | plural: 'vehicle' }} · {{ fleetStatus.onlineCount() }} online</span
           >
         }
       </p>

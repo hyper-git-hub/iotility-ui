@@ -180,7 +180,7 @@
           </article>
           @if (fillupMarkers().length) {
             <article class="workspace-group map-panel">
-              <header><span class="group-icon success"><img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" /></span><h2>Fillup locations</h2><small>{{ fillupMarkers().length }} records</small></header>
+              <header><span class="group-icon success"><img src="assets/fleetpoint/icons/fuel-sensor.svg" alt="" /></span><h2>Fillup locations</h2><small>{{ fillupMarkers().length | plural: 'record' }}</small></header>
               <app-fleet-map class="snapshot-map" [vehicles]="fillupMarkers()" />
             </article>
           }
@@ -214,7 +214,7 @@
           </article>
           @if (violationMarkers().length) {
             <article class="workspace-group map-panel">
-              <header><span class="group-icon danger"><img src="assets/fleetpoint/icons/violation-location.svg" alt="" /></span><h2>Violation locations</h2><small>{{ violationMarkers().length }} records</small></header>
+              <header><span class="group-icon danger"><img src="assets/fleetpoint/icons/violation-location.svg" alt="" /></span><h2>Violation locations</h2><small>{{ violationMarkers().length | plural: 'record' }}</small></header>
               <app-fleet-map class="snapshot-map" [vehicles]="violationMarkers()" />
             </article>
           }

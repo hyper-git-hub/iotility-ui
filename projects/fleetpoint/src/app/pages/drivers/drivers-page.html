@@ -7,7 +7,7 @@
   </header>
   <section class="driver-stats">
     <!-- Real cards from the start: label and icon stay put, only the value shimmers until it pops in. -->
-    <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="brand" [loading]="loadingStats()">
+    <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="neutral" [loading]="loadingStats()">
       <span stat-card-icon class="color-icon size-[18px]" style="--icon: url('/assets/fleetpoint/sidebar-icons/drivers.svg')" aria-hidden="true"></span>
     </app-stat-card>
     <app-stat-card label="On Shift" [value]="onShift()" tone="success" [loading]="loadingStats()">

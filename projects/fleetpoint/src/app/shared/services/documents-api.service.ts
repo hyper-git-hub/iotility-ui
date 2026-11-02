@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { ExportFormat } from '@iotility/shared-ui';
 import { ApiResponse } from './fleet-dashboard-api.service';
 
 const DOCUMENT_API = `${environment.fleetBaseUrl}/api/document`;
@@ -74,6 +75,12 @@ export class DocumentsApiService {
     return this.http
       .get<ListResponse<DocumentRecord>>(DOCUMENT_API, { params: new HttpParams().set('limit', limit).set('offset', 0) })
       .pipe(map((response) => response.data?.data ?? []));
+  }
+
+  /** The same document list as a file: `export=xls|pdf` on the list endpoint, as the FMS web app does. */
+  export(format: ExportFormat, limit = 1000): Observable<Blob> {
+    const params = new HttpParams().set('export', format).set('limit', limit).set('offset', 0);
+    return this.http.get(DOCUMENT_API, { params, responseType: 'blob' });
   }
 
   /** Multipart body: files[], type, entity_group_id, driver|vehicle, entity_name, document_type. */

@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { ExportFormat } from '@iotility/shared-ui';
 import { ApiResponse } from './fleet-dashboard-api.service';
 
 const JOBS_API = `${environment.driverBaseUrl}/jobs`;
@@ -87,6 +88,12 @@ export class JobsApiService {
         params: new HttpParams().set('time_zone', this.timeZone).set('limit', limit).set('offset', 0),
       })
       .pipe(map((response) => response.data?.data ?? []));
+  }
+
+  /** The same job list as a file: `export=xls|pdf` on the list endpoint, as the FMS web app does. */
+  export(format: ExportFormat, limit = 1000): Observable<Blob> {
+    const params = new HttpParams().set('export', format).set('time_zone', this.timeZone).set('limit', limit).set('offset', 0);
+    return this.http.get(`${JOBS_API}/`, { params, responseType: 'blob' });
   }
 
   create(payload: CreateJobPayload): Observable<ApiResponse<unknown>> {

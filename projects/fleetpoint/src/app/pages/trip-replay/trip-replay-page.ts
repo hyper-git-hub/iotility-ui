@@ -1,7 +1,7 @@
-import { TabIndicator } from '@iotility/shared-ui';
+import { ExportFormat, ExportMenu, TabIndicator } from '@iotility/shared-ui';
 import { DecimalPipe } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { ProgressBar } from '../../shared/progress-bar/progress-bar';
@@ -16,6 +16,7 @@ import {
   TripReplayApiService,
 } from '../../shared/services/trip-replay-api.service';
 import { ViolationRecord } from '../../shared/services/violations-api.service';
+import { ExportRunnerService } from '../../shared/services/export-runner.service';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 import {
   TripPosition,
@@ -81,7 +82,7 @@ const MAX_PLAYBACK_GAP_MS = 5_000;
 
 @Component({
   selector: 'app-trip-replay-page',
-  imports: [TabIndicator, DateTimePicker, DecimalPipe, ProgressBar, Skeleton, Tooltip, TripReplayMap],
+  imports: [TabIndicator, DateTimePicker, ExportMenu, DecimalPipe, ProgressBar, Skeleton, Tooltip, TripReplayMap],
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
 })
@@ -196,6 +197,11 @@ export class TripReplayPage implements OnInit, OnDestroy {
     };
   });
 
+  protected readonly exporting = signal<ExportFormat | null>(null);
+  /** The vehicle and range of the trip on screen; Export Report downloads its travel history. */
+  protected readonly loadedRange = signal<{ vehicleId: number; start: string; end: string } | null>(null);
+  private readonly exporter = inject(ExportRunnerService);
+
   constructor(
     private readonly api: TripReplayApiService,
     private readonly feedback: FeedbackDialogBridgeService,
@@ -300,6 +306,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       start: this.apiDate(this.startDate()),
       end: this.apiDate(this.endDate()),
     };
+    this.loadedRange.set(range);
     forkJoin({
       detail: this.api.getDetailReport(range).pipe(catchError(() => of(null))),
       vehicleDetail: this.api.getVehicleDetail().pipe(catchError(() => of(null))),
@@ -949,6 +956,13 @@ export class TripReplayPage implements OnInit, OnDestroy {
     };
     return `${format(this.startDate())} to ${format(this.endDate())}`;
   }
+  protected exportReport(format: ExportFormat): void {
+    const range = this.loadedRange();
+    if (!range) return;
+    const name = `Trip ${this.vehicle()?.registration ?? range.vehicleId}`;
+    this.exporter.run(this.api.exportTravelHistory(range, format), name, format, this.exporting);
+  }
+
   private apiDate(value: string): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return `${value.replace('T', ' ')}:00`;

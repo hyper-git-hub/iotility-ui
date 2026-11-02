@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { ExportFormat } from '@iotility/shared-ui';
 import { ApiResponse } from './fleet-dashboard-api.service';
 import { ProfileApiService } from './profile-api.service';
 
@@ -159,6 +160,15 @@ export class MaintenanceApiService {
   log(filters: MaintenanceListFilters): Observable<ListResponse<MaintenanceRecord>> {
     return this.http.get<ListResponse<MaintenanceRecord>>(`${MAINTENANCE_API}/maintenance/maintenance-log`, {
       params: this.params({ ...filters, time_zone: this.timeZone }),
+    });
+  }
+
+  /** Work orders or the service log as a file: `export=xls|pdf` on the list endpoint, as the FMS web app does. */
+  export(list: 'work-orders' | 'service-log', format: ExportFormat, limit = 1000): Observable<Blob> {
+    const path = list === 'service-log' ? 'maintenance/maintenance-log' : 'maintenance';
+    return this.http.get(`${MAINTENANCE_API}/${path}`, {
+      params: this.params({ export: format, offset: 0, limit, time_zone: this.timeZone }),
+      responseType: 'blob',
     });
   }
 

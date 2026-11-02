@@ -1,11 +1,11 @@
 <div class="user-menu">
-<button class="theme" type="button" (click)="toggleTheme()" [tooltip]="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
+<button class="theme" type="button" (click)="toggleTheme()" [tooltip]="isDark ? 'Switch to light theme' : 'Switch to dark theme'" [attr.aria-label]="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
   @if (isDark) {
     <img src="assets/fleetpoint/icons/sun-brand.svg" alt="" aria-hidden="true"/>
-    Light
+    <span class="theme-label">Light</span>
   } @else {
     <img src="assets/fleetpoint/icons/moon-muted.svg" alt="" aria-hidden="true"/>
-    Dark
+    <span class="theme-label">Dark</span>
   }
 </button>
 <shared-dropdown [options]="profileOptions" mode="action" (optionSelected)="selectProfileOption($event)">

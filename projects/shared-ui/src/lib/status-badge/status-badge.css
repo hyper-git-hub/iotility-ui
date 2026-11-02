@@ -122,4 +122,8 @@
   .status-dot::after {
     animation: none !important;
   }
+}/* Phones: the header live badge shrinks to its pulsing dot (aria-label still carries the state). */
+@media (max-width: 520px) {
+  .status-badge.header { @apply size-9 w-9 p-0; }
+  .status-badge.header .status-label { @apply sr-only; }
 }

@@ -3,6 +3,7 @@
   sharedSpotlightBorder
   [class.compact]="compact()"
   [attr.data-tone]="tone()"
+  [attr.data-zero]="isZero() || null"
   [style.--card-tone]="accent() || null"
 >
   <header>
@@ -10,7 +11,7 @@
     @if (showIcon()) {
       <i class="stat-card-icon">
         @if (icon()) {
-          <img [src]="icon()" alt="" aria-hidden="true" />
+          <span class="color-icon" [style.--icon]="'url(' + icon() + ')'" aria-hidden="true"></span>
         } @else {
           <ng-content select="[stat-card-icon]" />
         }

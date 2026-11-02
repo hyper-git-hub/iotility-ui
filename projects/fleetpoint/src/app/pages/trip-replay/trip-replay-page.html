@@ -4,14 +4,7 @@
       <h1>Trip Replay</h1>
       <p>Animated trip playback with events, stops and journey insights</p>
     </div>
-    <button type="button" class="export" tooltip="Export report">
-      <span
-        class="color-icon size-4"
-        style="--icon: url('/assets/fleetpoint/icons/export.svg')"
-        aria-hidden="true"
-      ></span>
-      Export Report
-    </button>
+    <shared-export-menu label="Export Report" [exporting]="exporting()" [disabled]="!loadedRange()" (exportFormat)="exportReport($event)" />
   </header>
   <div class="replay-workspace">
     <aside class="trip-list-panel">

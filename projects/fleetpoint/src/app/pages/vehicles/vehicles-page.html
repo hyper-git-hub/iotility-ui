@@ -10,7 +10,7 @@
             ><ui-skeleton width="8rem" height="0.75rem" radius="0.3rem"
           /></span>
         } @else {
-          <span>{{ total() }} vehicles in inventory</span>
+          <span>{{ total() | plural: 'vehicle' }} in inventory</span>
         }
       </p>
     </div>
@@ -40,7 +40,7 @@
     <section class="fleet-status-card">
       <div class="status-title">
         <shared-status-badge variant="dot" [online]="fleetStatus.hasOnlineVehicles()" /><strong>Live Fleet Status</strong
-        ><small>{{ total() }} vehicles</small>
+        ><small>{{ total() | plural: 'vehicle' }}</small>
       </div>
       <div class="status-bar">
         @if (moving() > 0) {

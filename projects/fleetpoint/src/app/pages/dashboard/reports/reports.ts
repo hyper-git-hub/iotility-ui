@@ -1,3 +1,4 @@
+import { ExportMenu, PluralPipe } from '@iotility/shared-ui';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import {
@@ -6,7 +7,6 @@ import {
   DataTableSkeleton,
   Skeleton,
   TableRow,
-  Tooltip,
 } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
@@ -33,7 +33,7 @@ const JOB_STATUS: Record<string, string> = {
 
 @Component({
   selector: 'app-dashboard-reports',
-  imports: [BlockingLoader, DataTable, DataTableSkeleton, ProgressBar, Skeleton, Tooltip],
+  imports: [PluralPipe, ExportMenu, BlockingLoader, DataTable, DataTableSkeleton, ProgressBar, Skeleton],
   templateUrl: './reports.html',
   styleUrl: './reports.css',
 })

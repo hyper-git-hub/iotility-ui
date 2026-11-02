@@ -1,4 +1,4 @@
-import { lingerWhileClosing } from '@iotility/shared-ui';
+import { ExportFormat, ExportMenu, lingerWhileClosing } from '@iotility/shared-ui';
 import { TabIndicator } from '@iotility/shared-ui';
 import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,6 +16,7 @@ import {
 } from '@iotility/shared-ui';
 import { Subscription } from 'rxjs';
 import { DocumentRecord, DocumentsApiService } from '../../shared/services/documents-api.service';
+import { ExportRunnerService } from '../../shared/services/export-runner.service';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { DocumentCategory, DocumentStatus, FleetDocument, NOT_AVAILABLE, toFleetDocument } from './documents.data';
@@ -28,6 +29,7 @@ import { UploadDocumentForm } from './upload-document-form/upload-document-form'
     TabIndicator,
     DataTable,
     DataTableCellTemplate,
+    ExportMenu,
     FilterBar,
     RouterLink,
     RouterLinkActive,
@@ -41,6 +43,8 @@ import { UploadDocumentForm } from './upload-document-form/upload-document-form'
 export class DocumentsPage {
   private readonly api = inject(DocumentsApiService);
   private readonly feedback = inject(FeedbackDialogBridgeService);
+  private readonly exporter = inject(ExportRunnerService);
+  protected readonly exporting = signal<ExportFormat | null>(null);
   private readonly destroyRef = inject(DestroyRef);
   private request?: Subscription;
   private readonly records = signal<DocumentRecord[]>([]);
@@ -166,6 +170,10 @@ export class DocumentsPage {
       if (item) this.show(item);
     }
   }
+  protected export(format: ExportFormat): void {
+    this.exporter.run(this.api.export(format, Math.max(1000, this.records().length)), 'Documents', format, this.exporting);
+  }
+
   protected openUpload(): void {
     this.uploadOpen.set(true);
   }

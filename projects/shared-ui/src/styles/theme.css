@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+/* Inter, self-hosted (variable weight + optical size; OFL licence beside the files). Without these
+   every stack below silently fell back to Segoe UI / system-ui. Root-relative URLs, so the host and
+   the standalone remote each serve their own copy from public/assets/fonts. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/assets/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/assets/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
 @theme {
   /* This creates the 'bg-brand-gradient' utility */
   --background-image-fp-brand-gradient: linear-gradient(to bottom right,
@@ -26,7 +49,9 @@
   --color-brand-900: var(--color-purple-900);
   --color-brand-950: var(--color-purple-950);
   --color-ink: #1e1b4b;
-  --color-muted: #94a3b8;
+  /* Secondary text. Ink-tinted (not blue slate) and AA on white/canvas: 5.2:1 / 4.8:1. The old
+     #94a3b8 was 2.6:1. `.dark` swaps in a lighter value below. */
+  --color-muted: #6e6a85;
   --color-line: #e7e2ed;
   --color-canvas: #f8f7fa;
   --color-danger: #d9435f;
@@ -51,13 +76,21 @@
   --color-dialog-light-muted: #716b7d;
   --color-dialog-on-accent: #fff;
 
+  /* Type: Inter first everywhere (body and every font-sans utility). */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
   /* Motion: strong curves replace Tailwind's weak defaults (also powers ease-out / ease-in-out utilities). */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* `:not(:not(*))` is always true and adds zero specificity; it is there for Angular. For a selector
+   list (`th, td { @apply dark:… }`) Tailwind emits `:is(th, td):where(.dark, .dark *)`, and Angular's
+   style encapsulation scopes the contents of a compound made only of :is()/:where() — turning `.dark`
+   into `.dark[_ngcontent-…]`, which never matches <html>. Any other pseudo in the compound makes Angular
+   scope the subject element instead and leave `.dark` global, so dark styles on selector lists apply. */
+@custom-variant dark (&:where(.dark, .dark *):not(:not(*)));
 
 :root {
   /* Form controls: every input, select-style dropdown, date picker and search box sizes from these. */
@@ -104,6 +137,8 @@ app-fleetpoint-layout {
 }
 
 .dark {
+  /* Muted text without its own dark: override stays readable on dark surfaces (~7:1). */
+  --color-muted: #a29db6;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-card-hover: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 28px -8px rgb(0 0 0 / 0.55),
     0 0 0 1px rgb(168 85 247 / 0.08);
@@ -172,6 +207,10 @@ app-fleetpoint-layout {
 router-outlet + * {
   animation: route-page-in 160ms var(--ease-out) backwards;
 }
+/* A page continuing a full-screen loader from the previous one appears at once, so the loader never dips. */
+router-outlet + [data-route-instant] {
+  animation: none;
+}
 @keyframes route-page-in {
   from {
     opacity: 0;
@@ -205,14 +244,21 @@ body {
 
 body {
   margin: 0;
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-sans);
+  /* cv05: lowercase l with a tail, so plates, IMEIs and IDs never confuse l / I / 1. */
+  font-feature-settings: 'cv05';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings: Inter tightens with size; the optical-size axis handles letterforms, this handles spacing. */
+:where(h1, h2) {
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+:where(p) {
+  text-wrap: pretty;
 }
 
 button:not(:disabled) {

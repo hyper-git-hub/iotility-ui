@@ -12,14 +12,16 @@
   @apply text-sm font-semibold text-ink dark:text-white;
 }
 .addon-grid {
-  @apply mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5;
+  /* Cards stretch to fill the row (auto-fit collapses empty tracks) and wrap when space runs out,
+     so a card never overflows onto its neighbour's logo. */
+  @apply mt-5 grid gap-4;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14.5rem), 1fr));
 }
 .addon-card {
   @apply relative flex h-[139px] min-w-0 flex-col justify-between rounded-xl bg-white p-4 dark:bg-dark-canvas/40;
   box-shadow: var(--shadow-card);
   transition: box-shadow 200ms ease;
   animation: addon-card-in 300ms var(--ease-out) backwards;
-  width: 320px;
 }
 .addon-copy {
   @apply flex min-w-0 flex-col items-start;

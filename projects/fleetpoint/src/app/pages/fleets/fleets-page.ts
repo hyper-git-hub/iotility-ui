@@ -1,3 +1,4 @@
+import { PluralPipe } from '@iotility/shared-ui';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Dropdown, DropdownOption, Skeleton } from '@iotility/shared-ui';
@@ -30,7 +31,7 @@ interface FleetSummary {
 
 @Component({
   selector: 'app-fleets-page',
-  imports: [Dropdown, FleetForm, ProgressBar, Skeleton, StatCard],
+  imports: [PluralPipe, Dropdown, FleetForm, ProgressBar, Skeleton, StatCard],
   templateUrl: './fleets-page.html',
   styleUrl: './fleets-page.css',
 })

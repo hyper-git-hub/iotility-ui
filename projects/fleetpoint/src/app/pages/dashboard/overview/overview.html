@@ -64,7 +64,7 @@
     @if (graphsLoading()) {
       <ui-skeleton class="skeleton-report-count" width="4.5rem" height="1.45rem" radius="9999px" />
     } @else {
-      <span>{{ visibleGraphs().length }} reports</span>
+      <span>{{ visibleGraphs().length | plural: 'report' }}</span>
     }
   </div>
 

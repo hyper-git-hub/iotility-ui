@@ -122,6 +122,8 @@ export class ViolationsApiService {
   });
   /** True while a filtered violations request is in flight, so cards can show skeletons. */
   readonly pageSummaryLoading = signal(false);
+  /** Filters of the list on screen (set by All Violations), so the page's Export matches it; null on other tabs. */
+  readonly exportFilters = signal<ViolationFilters | null>(null);
   private readonly violationRequests = new Map<
     string,
     Observable<ApiResponse<{ count: number; data: ViolationRecord[] }>>

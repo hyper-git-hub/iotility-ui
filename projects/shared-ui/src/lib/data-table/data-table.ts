@@ -18,6 +18,8 @@ import {
 } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
 import { Tooltip } from '../tooltip/tooltip';
+import { ExportMenu } from '../export-menu/export-menu';
+import { ExportFormat } from '../export-menu/export-file';
 import { DataTablePagination } from './data-table-pagination';
 
 export interface DataTablePaginationConfig {
@@ -79,7 +81,7 @@ export class DataTableCellTemplate {
 }
 @Component({
   selector: 'shared-data-table',
-  imports: [DataTablePagination, Dropdown, NgTemplateOutlet, Tooltip],
+  imports: [DataTablePagination, Dropdown, ExportMenu, NgTemplateOutlet, Tooltip],
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
   // The card header already renders the title, so keep it out of the browser's native tooltip.
@@ -102,7 +104,10 @@ export class DataTable implements AfterViewInit, OnDestroy {
   /** Hides just the toolbar search box, for pages that own search in a filter bar. */
   readonly showSearch = input(true);
   readonly showHeader = input(true);
-  readonly showExport = input(true);
+  /** Opt-in: shows the shared Export menu; the page handles (exportFormat) and passes back [exporting]. */
+  readonly showExport = input(false);
+  readonly exportFormats = input<ExportFormat[]>(['xls', 'pdf']);
+  readonly exporting = input<ExportFormat | null>(null);
   readonly showPrimaryAction = input(true);
   readonly clientSideSearch = input(true);
   readonly actions = input<TableAction[]>([]);
@@ -119,6 +124,7 @@ export class DataTable implements AfterViewInit, OnDestroy {
   readonly clientSidePagination = input(false);
   readonly pageChange = output<number>();
   readonly primaryAction = output<void>();
+  readonly exportFormat = output<ExportFormat>();
   readonly searchChange = output<string>();
   readonly headerFilterChange = output<DropdownOption>();
   readonly rowAction = output<{ action: TableAction; row: TableRow }>();

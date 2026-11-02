@@ -1,13 +1,17 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { CountUp, Skeleton, SpotlightBorder } from '@iotility/shared-ui';
 
 export type StatCardTone = 'brand' | 'info' | 'success' | 'warning' | 'danger' | 'priority' | 'neutral';
 
 /**
  * The FleetPoint metric card (vehicle-detail style): small uppercase label, tone-tinted icon chip,
- * bold value with an optional unit suffix. Icon is either an image (`icon`) or a projected
- * `<svg stat-card-icon>` that inherits the tone colour.
+ * bold value with an optional unit suffix. Icon is either an SVG URL (`icon`, drawn as a mask so it
+ * takes the tone colour) or a projected `<svg stat-card-icon>` that inherits the tone colour.
  * On hover, a tone-coloured gradient lights up the border nearest the cursor ([sharedSpotlightBorder]).
+ *
+ * Colour carries meaning: use a tone for a status, severity or performance level, and `neutral`
+ * for plain counts and totals. A card whose value is 0 drops to neutral, since a red "0 alerts"
+ * would ask for attention it doesn't need.
  */
 @Component({
   selector: 'app-stat-card',
@@ -31,4 +35,11 @@ export class StatCard {
   readonly loading = input(false);
   /** Skeleton width while loading. */
   readonly skeletonWidth = input('');
+
+  /** A loaded value of exactly zero (0, "0", "0.0"); text values like "Off" or "—" don't count. */
+  protected readonly isZero = computed(() => {
+    const value = this.value();
+    if (this.loading() || value === '' || value === null || value === undefined) return false;
+    return Number(value) === 0;
+  });
 }

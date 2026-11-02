@@ -28,3 +28,9 @@
 .profile-button:focus-visible .profile-avatar {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 22%, transparent);
 }
+/* Phones: the theme pill becomes a round icon button; the button keeps its name via aria-label. */
+@media (max-width: 520px) {
+  .user-menu { @apply gap-2; }
+  .theme { @apply size-9 w-9 p-0; }
+  .theme-label { @apply sr-only; }
+}

@@ -1,3 +1,4 @@
+import { PluralPipe } from '@iotility/shared-ui';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -85,7 +86,7 @@ interface TrackingDriver {
 
 @Component({
   selector: 'app-live-tracking-page',
-  imports: [
+  imports: [PluralPipe,
     Dropdown,
     Skeleton,
     FleetMap,

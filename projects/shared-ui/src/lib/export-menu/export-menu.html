@@ -1,0 +1,37 @@
+@if (formats().length === 1) {
+  <button
+    type="button"
+    class="export-trigger"
+    [disabled]="disabled() || busy()"
+    [attr.aria-busy]="busy()"
+    (click)="exportFormat.emit(formats()[0])"
+  >
+    <ng-container *ngTemplateOutlet="content" />
+  </button>
+} @else {
+  <shared-dropdown [options]="options()" mode="action" (optionSelected)="choose($event)">
+    <button
+      dropdown-trigger
+      type="button"
+      class="export-trigger"
+      aria-haspopup="menu"
+      [disabled]="disabled() || busy()"
+      [attr.aria-busy]="busy()"
+    >
+      <ng-container *ngTemplateOutlet="content" />
+      <svg class="export-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
+  </shared-dropdown>
+}
+
+<ng-template #content>
+  @if (busy()) {
+    <span class="export-spinner" aria-hidden="true"></span>
+    <span>Exporting…</span>
+  } @else {
+    <svg class="export-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 17v1.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V17" />
+    </svg>
+    <span>{{ label() }}</span>
+  }
+</ng-template>

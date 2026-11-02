@@ -175,3 +175,10 @@
     transition: opacity 150ms ease;
   }
 }
+/* File-format icons (Excel, PDF) carry their own colour, so they sit on a neutral chip. */
+.option-icon.file-icon {
+  @apply bg-canvas dark:bg-white/5;
+}
+.option-icon.file-icon img {
+  @apply size-[18px];
+}

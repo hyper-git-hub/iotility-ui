@@ -17,12 +17,6 @@
 .devices-heading button {
   @apply inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold;
 }
-.export {
-  @apply border border-line bg-white text-muted dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
-}
-.export img {
-  @apply size-4;
-}
 .register {
   @apply bg-brand-600 text-white;
 }

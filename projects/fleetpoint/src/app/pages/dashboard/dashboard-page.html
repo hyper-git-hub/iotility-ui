@@ -24,21 +24,21 @@
     @for (tab of tabs; track tab.path) {
       @if (tab.placeholder) {
         <button type="button" [class.active]="activeTab() === tab.path" (click)="activeTab.set(tab.path)">
-          <span aria-hidden="true">{{ tab.emoji }}</span>{{ tab.label }}
+          <span class="tab-icon color-icon" [style.--icon]="'url(' + tab.icon + ')'" aria-hidden="true"></span>{{ tab.label }}
         </button>
       } @else {
         <a
           [routerLink]="tab.path"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: tab.exact }"
-          ><span aria-hidden="true">{{ tab.emoji }}</span>{{ tab.label }}</a
+          ><span class="tab-icon color-icon" [style.--icon]="'url(' + tab.icon + ')'" aria-hidden="true"></span>{{ tab.label }}</a
         >
       }
     }
   </nav>
   @if (activeTab() === 'reports') {
     <section class="dashboard-coming-soon">
-      <span class="coming-soon-icon" aria-hidden="true">📈</span>
+      <span class="coming-soon-icon color-icon" style="--icon: url('assets/fleetpoint/sidebar-icons/reports.svg')" aria-hidden="true"></span>
       <h2>Reports Coming Soon</h2>
       <p>Scheduled reports, exports and the custom report builder will be available here.</p>
     </section>

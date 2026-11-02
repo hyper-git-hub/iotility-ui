@@ -25,15 +25,6 @@ router-outlet + * {
 .heading-actions button {
   @apply h-10 rounded-xl border px-4 text-xs font-semibold transition;
 }
-.heading-actions .secondary {
-  @apply inline-flex items-center gap-1.5;
-}
-.heading-actions .secondary img {
-  @apply size-4;
-}
-.heading-actions .secondary {
-  @apply border-line bg-white text-muted hover:bg-canvas dark:border-dark-line dark:bg-dark-surface dark:text-brand-300 dark:hover:bg-dark-canvas;
-}
 .heading-actions .primary {
   @apply border-brand-600 bg-brand-600 text-white hover:bg-brand-700;
 }

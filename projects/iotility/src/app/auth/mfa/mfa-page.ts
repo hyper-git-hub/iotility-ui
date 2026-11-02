@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BlockingLoader, SmoothHeight, secureStorage } from '@iotility/shared-ui';
@@ -24,11 +24,18 @@ type MfaMode = 'otp' | 'passkey';
   imports: [BlockingLoader, NgTemplateOutlet, ReactiveFormsModule, SmoothHeight],
   templateUrl: './mfa-page.html',
   styleUrl: './mfa-page.css',
+  // Skips the route fade-in when taking over login's loader, which would otherwise fade our loader in too.
+  host: { '[attr.data-route-instant]': 'loaderHandoff || null' },
 })
 export class MfaPage implements OnInit, OnDestroy {
   protected readonly view = signal<MfaView>('loading');
   protected readonly mode = signal<MfaMode>('otp');
-  protected readonly submitting = signal(false);
+  /** Requests (and the final navigation) in flight. A count, not a flag: when one call's success starts the
+      next, the first call's finalize must not switch the loader off while the second is still running. */
+  private readonly pending = signal(0);
+  protected readonly submitting = computed(() => this.pending() > 0);
+  /** Arrived from login with its loader still up: show ours at full opacity so the hand-off doesn't blink. */
+  protected readonly loaderHandoff = Boolean(inject(Router).getCurrentNavigation()?.extras.state?.['loaderHandoff']);
   protected readonly message = signal('');
   protected readonly error = signal('');
   protected readonly secondsLeft = signal(0);
@@ -219,16 +226,19 @@ export class MfaPage implements OnInit, OnDestroy {
       secureStorage.set('roleAccess', JSON.stringify(roleData));
       sessionStorage.removeItem('pendingAuthProfile');
       const returnUrl = this.safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
-      void this.router.navigateByUrl(
-        localStorage.getItem('firstLoginCompleted') === 'true' ? returnUrl : '/home',
-      );
+      // Keep the loader up until the app has opened, rather than dropping it before the next page renders.
+      this.pending.update((count) => count + 1);
+      const settle = () => this.pending.update((count) => count - 1);
+      this.router
+        .navigateByUrl(localStorage.getItem('firstLoginCompleted') === 'true' ? returnUrl : '/home')
+        .then((opened) => opened || settle(), settle);
     });
   }
 
   private request<T>(request: import('rxjs').Observable<AuthApiResponse<T>>, success: (response: AuthApiResponse<T>) => void): void {
-    this.submitting.set(true);
+    this.pending.update((count) => count + 1);
     this.error.set('');
-    request.pipe(finalize(() => this.submitting.set(false))).subscribe({
+    request.pipe(finalize(() => this.pending.update((count) => count - 1))).subscribe({
       next: (response) => {
         if (response.error && response.status !== 322) {
           this.showError(response.message || 'The request could not be completed.');

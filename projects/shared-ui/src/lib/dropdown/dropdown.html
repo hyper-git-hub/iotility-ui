@@ -43,7 +43,7 @@
             (click)="choose(option)"
           >
             @if (showOptionIcons()) {
-              <span class="option-icon">
+              <span class="option-icon" [class.file-icon]="option.icon === 'excel' || option.icon === 'pdf'">
                 @if (option.icon === 'location') {
                   ⌖
                 } @else if (option.icon === 'view') {
@@ -54,6 +54,10 @@
                   <img src="assets/fleetpoint/icons/trash-option-danger.svg" alt="" aria-hidden="true"/>
                 } @else if (option.icon === 'logout') {
                   ↪
+                } @else if (option.icon === 'excel') {
+                  <img src="assets/fleetpoint/report-icons/excel.svg" alt="" aria-hidden="true"/>
+                } @else if (option.icon === 'pdf') {
+                  <img src="assets/fleetpoint/report-icons/pdf.svg" alt="" aria-hidden="true"/>
                 } @else if (option.icon === 'user') {
                   <img src="assets/fleetpoint/icons/user.svg" alt="user" aria-hidden="true"/>
                 } @else {

@@ -26,3 +26,6 @@ export * from './lib/charts/chart-card';
 export * from './lib/charts/line-chart';
 export * from './lib/charts/bar-chart';
 export * from './lib/charts/donut-chart';
+export * from './lib/plural/plural';
+export * from './lib/export-menu/export-menu';
+export * from './lib/export-menu/export-file';

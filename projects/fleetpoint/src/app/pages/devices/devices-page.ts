@@ -1,3 +1,4 @@
+import { PluralPipe } from '@iotility/shared-ui';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
@@ -29,7 +30,7 @@ import {
 import { DeviceForm, DeviceFormValue } from './device-form/device-form';
 @Component({
   selector: 'app-devices-page',
-  imports: [
+  imports: [PluralPipe,
     DataTable,
     DataTableCellTemplate,
     DataTableSkeleton,

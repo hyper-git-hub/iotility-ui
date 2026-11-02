@@ -1,9 +1,10 @@
-import { TabIndicator } from '@iotility/shared-ui';
-import { Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { ExportFormat, ExportMenu, TabIndicator } from '@iotility/shared-ui';
+import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, forkJoin, map } from 'rxjs';
 import { MaintenanceApiService, PredictedMonth } from '../../shared/services/maintenance-api.service';
+import { ExportRunnerService } from '../../shared/services/export-runner.service';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { NOT_AVAILABLE } from './maintenance.data';
 import { WorkOrderForm } from './work-order-form/work-order-form';
@@ -15,7 +16,7 @@ function predictedThisMonth(months: PredictedMonth[]): number | null {
   return match ? Number(match.predicted) || 0 : null;
 }
 
-@Component({selector:'app-maintenance-page',imports:[TabIndicator, RouterLink,RouterLinkActive,RouterOutlet,StatCard,WorkOrderForm],templateUrl:'./maintenance-page.html',styleUrl:'./maintenance-page.css'})
+@Component({selector:'app-maintenance-page',imports:[TabIndicator, ExportMenu, RouterLink,RouterLinkActive,RouterOutlet,StatCard,WorkOrderForm],templateUrl:'./maintenance-page.html',styleUrl:'./maintenance-page.css'})
 export class MaintenancePage {
   private readonly api=inject(MaintenanceApiService);
   private readonly destroyRef=inject(DestroyRef);
@@ -28,9 +29,28 @@ export class MaintenancePage {
   protected readonly completed=signal(0);
   protected readonly predictions=signal<number|string>(NOT_AVAILABLE);
   protected readonly workshopCount=signal<number|null>(null);
+  private readonly exporter=inject(ExportRunnerService);
+  private readonly router=inject(Router);
+  protected readonly exporting=signal<ExportFormat|null>(null);
+  private readonly url=toSignal(
+    this.router.events.pipe(filter((event)=>event instanceof NavigationEnd),map(()=>this.router.url)),
+    {initialValue:this.router.url},
+  );
+  /** What Export downloads on the open tab: the service log there, work orders on Overview/Work Orders, nothing elsewhere. */
+  protected readonly exportList=computed<'work-orders'|'service-log'|null>(()=>{
+    const path=this.url().split(/[?#]/)[0];
+    if(path.endsWith('/service-log'))return 'service-log';
+    return /\/(overview|work-orders)$/.test(path)||path.endsWith('/maintenance')?'work-orders':null;
+  });
 
   constructor(){
     effect(()=>{this.api.version();untracked(()=>this.load());});
+  }
+
+  protected export(format:ExportFormat):void{
+    const list=this.exportList();
+    if(!list)return;
+    this.exporter.run(this.api.export(list,format),list==='service-log'?'Service Log':'Work Orders',format,this.exporting);
   }
 
   protected created():void{this.workOrderFormOpen.set(false);this.api.changed();}

@@ -3,7 +3,7 @@ import { Component, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BlockingLoader, SmoothHeight, secureStorage } from '@iotility/shared-ui';
-import { finalize, from, switchMap, tap } from 'rxjs';
+import { from, switchMap, tap } from 'rxjs';
 import { AuthApiResponse, AuthApiService } from '../../shared/services/auth-api.service';
 import { AuthSessionService } from '../../shared/services/auth-session.service';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
@@ -71,20 +71,25 @@ export class LoginPage {
         }),
         switchMap((response) => from(this.firebaseAuth.signIn(response.data?.fb_auth_token))),
         switchMap(() => this.authApi.getUserProfile()),
-        finalize(() => this.submitting.set(false)),
       )
       .subscribe({
         next: (profile) => {
           if (profile.error) {
+            this.submitting.set(false);
             this.clearSession();
             this.error.set(profile.message || 'Unable to load your profile.');
             return;
           }
           sessionStorage.setItem('pendingAuthProfile', JSON.stringify(profile.data ?? {}));
           const returnUrl = this.safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
-          void this.router.navigate(['/auth/mfa'], { queryParams: { returnUrl } });
+          // The loader stays up through the navigation; MFA's own loader takes over without a fade
+          // (loaderHandoff), so login → MFA reads as one continuous wait instead of a blink.
+          this.router
+            .navigate(['/auth/mfa'], { queryParams: { returnUrl }, state: { loaderHandoff: true } })
+            .then((opened) => opened || this.submitting.set(false), () => this.submitting.set(false));
         },
         error: (response: HttpErrorResponse | Error) => {
+          this.submitting.set(false);
           this.clearSession();
           const message = this.errorMessage(response);
           this.error.set('');

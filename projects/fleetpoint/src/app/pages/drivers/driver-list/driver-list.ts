@@ -5,6 +5,7 @@ import {
   DataTable,
   DataTableSkeleton,
   DropdownOption,
+  ExportFormat,
   FilterBar,
   FilterChangeEvent,
   FilterDropdown,
@@ -22,6 +23,7 @@ import {
   FleetInventoryApiService,
   FleetInventoryRecord,
 } from '../../../shared/services/fleet-inventory-api.service';
+import { ExportRunnerService } from '../../../shared/services/export-runner.service';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { DriverForm } from '../driver-form/driver-form';
 
@@ -149,11 +151,13 @@ export class DriverList implements OnInit, OnDestroy {
     }),
   );
   protected readonly hasMore = computed(() => this.records().length < this.total());
+  protected readonly exporting = signal<ExportFormat | null>(null);
   constructor(
     private readonly api: DriverApiService,
     private readonly fleetApi: FleetInventoryApiService,
     private readonly feedback: FeedbackDialogBridgeService,
     private readonly router: Router,
+    private readonly exporter: ExportRunnerService,
   ) {}
   ngOnInit(): void {
     this.refreshGroups();
@@ -277,6 +281,15 @@ export class DriverList implements OnInit, OnDestroy {
     this.offset.set((page - 1) * this.limit);
     this.loadDrivers();
   }
+  /** Same filters as the list on screen, across every page. */
+  protected exportDrivers(format: ExportFormat): void {
+    const request = this.api.exportDrivers(
+      { limit: Math.max(this.total(), this.limit), offset: 0, searchText: this.search().trim(), cardType: this.cardType() },
+      format,
+    );
+    this.exporter.run(request, 'Drivers', format, this.exporting);
+  }
+
   protected loadDrivers(append = false, requestOffset = this.offset()): void {
     if (append) this.loadingMore.set(true);
     else this.loading.set(true);

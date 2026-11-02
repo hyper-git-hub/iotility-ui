@@ -34,12 +34,12 @@ export class DashboardPage {
     new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
   );
 
-  protected readonly tabs: Array<{ label: string; path: string; exact: boolean; placeholder?: boolean; emoji: string }> = [
-    { label: 'Overview', path: 'overview', exact: true, emoji: '📊' },
-    { label: 'Safety', path: 'safety', exact: true, emoji: '🛡️' },
-    { label: 'Maintenance', path: 'maintenance', exact: true, emoji: '🔧' },
-    { label: 'Jobs', path: 'jobs', exact: true, emoji: '📋' },
-    // { label: 'Reports', path: 'reports', exact: true, placeholder: true, emoji: '📈' },
+  protected readonly tabs: Array<{ label: string; path: string; exact: boolean; placeholder?: boolean; icon: string }> = [
+    { label: 'Overview', path: 'overview', exact: true, icon: 'assets/fleetpoint/sidebar-icons/dashboard.svg' },
+    { label: 'Safety', path: 'safety', exact: true, icon: 'assets/fleetpoint/icons/shield-check.svg' },
+    { label: 'Maintenance', path: 'maintenance', exact: true, icon: 'assets/fleetpoint/sidebar-icons/maintenance.svg' },
+    { label: 'Jobs', path: 'jobs', exact: true, icon: 'assets/fleetpoint/sidebar-icons/jobs.svg' },
+    // { label: 'Reports', path: 'reports', exact: true, placeholder: true, icon: 'assets/fleetpoint/sidebar-icons/reports.svg' },
   ];
 
   constructor() {

@@ -43,7 +43,9 @@
 .stat-card[data-tone='warning'] { --card-tone: var(--color-warning); }
 .stat-card[data-tone='danger'] { --card-tone: var(--color-danger); }
 .stat-card[data-tone='priority'] { --card-tone: #f97316; }
-.stat-card[data-tone='neutral'] { --card-tone: #64748b; }
+.stat-card[data-tone='neutral'] { --card-tone: var(--color-muted); }
+/* Nothing to report: any tone falls back to neutral so colour only appears when it means something. */
+.stat-card[data-zero] { --card-tone: var(--color-muted); }
 
 .stat-card header {
   display: flex;
@@ -72,6 +74,9 @@
   border-radius: 6px;
   color: var(--card-tone);
   background: color-mix(in srgb, var(--card-tone) 12%, transparent);
+  transition:
+    color 300ms ease,
+    background-color 300ms ease;
 }
 .stat-card:not(.compact) .stat-card-icon {
   width: 28px;
@@ -103,7 +108,9 @@
   color: var(--color-ink);
   font-size: 20px;
   font-weight: 750;
-  font-variant-numeric: tabular-nums;
+  /* Proportional digits: a headline figure has no column to align with, and Inter's tabular "1"
+     carries a foot serif that clashes with every other number in the app at this size. */
+  font-variant-numeric: proportional-nums;
   letter-spacing: -0.025em;
   line-height: 1;
   text-overflow: ellipsis;
@@ -111,8 +118,8 @@
 }
 .stat-card.compact .stat-card-value { font-size: 16px; }
 :host-context(.dark) .stat-card-value { color: #fff; }
-.stat-card[data-tone='danger'] .stat-card-value { color: var(--color-danger); }
-.stat-card[data-tone='success'] .stat-card-value { color: var(--color-success); }
+.stat-card[data-tone='danger']:not([data-zero]) .stat-card-value { color: var(--color-danger); }
+.stat-card[data-tone='success']:not([data-zero]) .stat-card-value { color: var(--color-success); }
 .stat-card small {
   color: var(--color-muted);
   font-size: 10px;

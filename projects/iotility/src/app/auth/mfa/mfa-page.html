@@ -1,5 +1,5 @@
 <div class="mfa-content">
-  <ui-blocking-loader [visible]="submitting() || view() === 'loading'" label="Securing your account" message="Verifying your authentication settings..." />
+  <ui-blocking-loader [visible]="submitting() || view() === 'loading'" [instant]="loaderHandoff" label="Securing your account" message="Verifying your authentication settings..." />
   <header class="mfa-heading">
     <img src="assets/iotility-dark.svg" alt="IoTility" class="mobile-logo" />
     <h2>Secure your account</h2>

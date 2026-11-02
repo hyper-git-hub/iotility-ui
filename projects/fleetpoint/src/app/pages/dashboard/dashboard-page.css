@@ -12,7 +12,7 @@
 .status-segment.stopped { @apply bg-slate-400; }
 .status-segment.alert { @apply bg-danger; }
 .status-segment.offline { @apply bg-slate-700; }
-.fleet-status-grid { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-6; }
+.fleet-status-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6; }
 /* Status tiles are app-stat-card; only the alert tile is a link (to today's violations). */
 .fleet-status-grid app-stat-card.clickable { cursor: pointer; border-radius: 14px; transition: scale var(--duration-press) var(--ease-out); }
 .fleet-status-grid app-stat-card.clickable:active { scale: 0.97; }

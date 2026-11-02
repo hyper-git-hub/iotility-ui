@@ -1,3 +1,4 @@
+import { PluralPipe } from '@iotility/shared-ui';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
@@ -22,7 +23,7 @@ interface OverviewSkeleton {
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [ChartSkeleton, Skeleton, DashboardGraphComponent, NgTemplateOutlet, StatCard],
+  imports: [PluralPipe, ChartSkeleton, Skeleton, DashboardGraphComponent, NgTemplateOutlet, StatCard],
   templateUrl: './overview.html',
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })
@@ -247,7 +248,7 @@ export class Overview implements OnInit {
   }
 
   private readonly statusCardTones: Record<string, StatCardTone> = {
-    total: 'info',
+    total: 'neutral',
     moving: 'success',
     idling: 'warning',
     stopped: 'neutral',

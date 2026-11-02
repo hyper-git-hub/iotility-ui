@@ -1,4 +1,5 @@
-import { Skeleton, lingerWhileClosing } from '@iotility/shared-ui';
+import { PluralPipe } from '@iotility/shared-ui';
+import { ExportFormat, ExportMenu, Skeleton, lingerWhileClosing } from '@iotility/shared-ui';
 import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -16,6 +17,7 @@ import {
 import { Subscription, catchError, of } from 'rxjs';
 import { DriverApiService } from '../../shared/services/driver-api.service';
 import { JobApiRecord, JobsApiService } from '../../shared/services/jobs-api.service';
+import { ExportRunnerService } from '../../shared/services/export-runner.service';
 import { MaintenanceApiService } from '../../shared/services/maintenance-api.service';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { JobForm } from './job-form/job-form';
@@ -34,13 +36,16 @@ const DISPATCH_TONE: Record<JobStatus, string> = {
 
 @Component({
   selector: 'app-jobs-page',
-  imports: [DataTable, DataTableSkeleton, FilterBar, JobForm, Skeleton, StatCard],
+  imports: [PluralPipe, DataTable, ExportMenu, DataTableSkeleton, FilterBar, JobForm, Skeleton, StatCard],
   templateUrl: './jobs-page.html',
   styleUrl: './jobs-page.css',
 })
 export class JobsPage {
   private readonly router = inject(Router);
   private readonly api = inject(JobsApiService);
+  private readonly exporter = inject(ExportRunnerService);
+  protected readonly exporting = signal<ExportFormat | null>(null);
+  protected readonly hasJobs = computed(() => this.records().length > 0);
   private readonly destroyRef = inject(DestroyRef);
   private request?: Subscription;
 
@@ -249,6 +254,10 @@ export class JobsPage {
     if (view === 'dispatch') this.closeJobDetails();
   }
   protected openJobForm(): void { this.jobFormOpen.set(true); }
+
+  protected export(format: ExportFormat): void {
+    this.exporter.run(this.api.export(format, Math.max(1000, this.records().length)), 'Jobs', format, this.exporting);
+  }
   protected closeJobForm(): void { this.jobFormOpen.set(false); }
   protected createJob(): void {
     this.closeJobForm();

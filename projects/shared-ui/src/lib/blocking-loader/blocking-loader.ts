@@ -11,4 +11,6 @@ export class BlockingLoader {
   readonly message = input('Please wait while we process your request.');
   readonly animationOnly = input(false);
   readonly compact = input(false);
+  /** Appear at full opacity: for a loader taking over from the previous page's, so the hand-off doesn't blink. */
+  readonly instant = input(false);
 }

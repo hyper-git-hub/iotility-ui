@@ -16,7 +16,7 @@ export interface DropdownOption {
   label: string;
   description?: string;
   route?: string;
-  icon?: 'user' | 'logout' | 'settings' | 'check' | 'location' | 'view' | 'edit' | 'delete';
+  icon?: 'user' | 'logout' | 'settings' | 'check' | 'location' | 'view' | 'edit' | 'delete' | 'excel' | 'pdf';
   disabled?: boolean;
 }
 /** Open-state clip (matches .dropdown-panel in dropdown.css): reaches past the box so the shadow isn't cut. */

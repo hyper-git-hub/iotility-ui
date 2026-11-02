@@ -1,3 +1,4 @@
+import { PluralPipe } from '@iotility/shared-ui';
 import { TabIndicator } from '@iotility/shared-ui';
 import { Component,signal } from '@angular/core';
 import { RouterLink,RouterLinkActive,RouterOutlet } from '@angular/router';
@@ -7,7 +8,7 @@ import { GEOZONES } from './geozones.data';
 
 @Component({
   selector:'app-geozones-page',
-  imports:[TabIndicator, GeozoneForm,RouterLink,RouterLinkActive,RouterOutlet,StatCard],
+  imports:[PluralPipe, TabIndicator, GeozoneForm,RouterLink,RouterLinkActive,RouterOutlet,StatCard],
   templateUrl:'./geozones-page.html',
   styleUrl:'./geozones-page.css',
 })

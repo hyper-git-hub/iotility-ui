@@ -1,3 +1,4 @@
+import { PluralPipe } from '@iotility/shared-ui';
 import { TabIndicator } from '@iotility/shared-ui';
 import { StatCard } from '../../../shared/stat-card/stat-card';
 import { ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
@@ -17,9 +18,9 @@ import { FleetMap, TrackedVehicle } from '../../../shared/fleet-map/fleet-map';
 import { TripPosition, TripReplayEvent, TripReplayMap } from '../../../shared/trip-replay-map/trip-replay-map';
 
 interface DetailItem { label: string; value: string; }
-interface SummaryCard { label: string; value: string; suffix: string; tone: 'brand' | 'info' | 'success' | 'warning' | 'danger'; icon: string; }
+interface SummaryCard { label: string; value: string; suffix: string; tone: 'brand' | 'info' | 'success' | 'warning' | 'danger' | 'neutral'; icon: string; }
 
-@Component({ selector: 'app-vehicle-detail', imports: [TabIndicator, DateTimePicker, DecimalPipe, FleetMap, Skeleton, StatCard, StatusBadge, TripReplayMap, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css', changeDetection: ChangeDetectionStrategy.OnPush })
+@Component({ selector: 'app-vehicle-detail', imports: [PluralPipe, TabIndicator, DateTimePicker, DecimalPipe, FleetMap, Skeleton, StatCard, StatusBadge, TripReplayMap, VehicleForm, VehicleHud], templateUrl: './vehicle-detail.html', styleUrl: './vehicle-detail.css', changeDetection: ChangeDetectionStrategy.OnPush })
 export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly vehicleId: string;
   protected readonly loading = signal(true);
@@ -70,14 +71,14 @@ export class VehicleDetail implements OnInit, OnDestroy {
     const fuelText = this.text(fuel, '—');
     const enabledRules = this.monitoring().filter((item) => item.enabled).length;
     return [
-      { label: 'Total distance', value: Number.isFinite(totalDistance) ? Math.round(totalDistance).toLocaleString() : '0', suffix: 'km', tone: 'info', icon: 'assets/fleetpoint/icons/route.svg' },
-      { label: 'Distance today', value: this.text(dailyDistance, '0').replace(/\s*km$/i, ''), suffix: 'km', tone: 'brand', icon: 'assets/fleetpoint/icons/map-pin-brand.svg' },
+      { label: 'Total distance', value: Number.isFinite(totalDistance) ? Math.round(totalDistance).toLocaleString() : '0', suffix: 'km', tone: 'neutral', icon: 'assets/fleetpoint/icons/route.svg' },
+      { label: 'Distance today', value: this.text(dailyDistance, '0').replace(/\s*km$/i, ''), suffix: 'km', tone: 'neutral', icon: 'assets/fleetpoint/icons/map-pin-brand.svg' },
       { label: 'Current speed', value: this.text(vehicle?.speed, '0'), suffix: 'km/h', tone: Number(vehicle?.speed ?? 0) > 80 ? 'danger' : 'success', icon: 'assets/fleetpoint/icons/speedometer.svg' },
       { label: 'Violations', value: this.violationMetric(), suffix: 'total', tone: 'danger', icon: 'assets/fleetpoint/icons/warning.svg' },
-      { label: 'Fuel status', value: fuelText, suffix: fuelText === '—' || fuelText.includes('%') ? '' : '%', tone: fuelText === '—' ? 'warning' : Number(String(fuel).replace(/[^0-9.]/g, '')) < 20 ? 'danger' : 'warning', icon: 'assets/fleetpoint/icons/fuel-sensor.svg' },
-      { label: 'Ignition', value: vehicle?.ignition_status ? 'On' : 'Off', suffix: vehicle?.online_status ? 'live' : 'reported', tone: vehicle?.ignition_status ? 'success' : 'warning', icon: 'assets/fleetpoint/icons/ignition.svg' },
-      { label: 'Safety rules', value: String(enabledRules), suffix: 'enabled', tone: 'success', icon: 'assets/fleetpoint/icons/shield-check.svg' },
-      { label: 'Maintenance', value: String(this.count(this.maintenance())), suffix: 'records', tone: 'brand', icon: 'assets/fleetpoint/icons/wrench.svg' },
+      { label: 'Fuel status', value: fuelText, suffix: fuelText === '—' || fuelText.includes('%') ? '' : '%', tone: fuelText !== '—' && Number(String(fuel).replace(/[^0-9.]/g, '')) < 20 ? 'danger' : 'neutral', icon: 'assets/fleetpoint/icons/fuel-sensor.svg' },
+      { label: 'Ignition', value: vehicle?.ignition_status ? 'On' : 'Off', suffix: vehicle?.online_status ? 'live' : 'reported', tone: vehicle?.ignition_status ? 'success' : 'neutral', icon: 'assets/fleetpoint/icons/ignition.svg' },
+      { label: 'Safety rules', value: String(enabledRules), suffix: 'enabled', tone: 'neutral', icon: 'assets/fleetpoint/icons/shield-check.svg' },
+      { label: 'Maintenance', value: String(this.count(this.maintenance())), suffix: 'records', tone: 'neutral', icon: 'assets/fleetpoint/icons/wrench.svg' },
     ];
   });
 
@@ -370,14 +371,14 @@ export class VehicleDetail implements OnInit, OnDestroy {
   /* Skeleton cards reuse the real static parts (label, tone, icon, suffix) so
      only the value swaps from a shimmer bar to text on load — no reflow. */
   protected readonly skeletonSummaryCards = [
-    { label: 'Total distance', tone: 'info', icon: 'assets/fleetpoint/icons/route.svg', suffix: 'km', valueWidth: '3rem' },
-    { label: 'Distance today', tone: 'brand', icon: 'assets/fleetpoint/icons/map-pin-brand.svg', suffix: 'km', valueWidth: '3.5rem' },
+    { label: 'Total distance', tone: 'neutral', icon: 'assets/fleetpoint/icons/route.svg', suffix: 'km', valueWidth: '3rem' },
+    { label: 'Distance today', tone: 'neutral', icon: 'assets/fleetpoint/icons/map-pin-brand.svg', suffix: 'km', valueWidth: '3.5rem' },
     { label: 'Current speed', tone: 'success', icon: 'assets/fleetpoint/icons/speedometer.svg', suffix: 'km/h', valueWidth: '3rem' },
     { label: 'Violations', tone: 'danger', icon: 'assets/fleetpoint/icons/warning.svg', suffix: 'total', valueWidth: '2.5rem' },
-    { label: 'Fuel status', tone: 'warning', icon: 'assets/fleetpoint/icons/fuel-sensor.svg', suffix: '', valueWidth: '2.25rem' },
-    { label: 'Ignition', tone: 'warning', icon: 'assets/fleetpoint/icons/ignition.svg', suffix: 'reported', valueWidth: '2.5rem' },
-    { label: 'Safety rules', tone: 'success', icon: 'assets/fleetpoint/icons/shield-check.svg', suffix: 'enabled', valueWidth: '1.5rem' },
-    { label: 'Maintenance', tone: 'brand', icon: 'assets/fleetpoint/icons/wrench.svg', suffix: 'records', valueWidth: '1.5rem' },
+    { label: 'Fuel status', tone: 'neutral', icon: 'assets/fleetpoint/icons/fuel-sensor.svg', suffix: '', valueWidth: '2.25rem' },
+    { label: 'Ignition', tone: 'neutral', icon: 'assets/fleetpoint/icons/ignition.svg', suffix: 'reported', valueWidth: '2.5rem' },
+    { label: 'Safety rules', tone: 'neutral', icon: 'assets/fleetpoint/icons/shield-check.svg', suffix: 'enabled', valueWidth: '1.5rem' },
+    { label: 'Maintenance', tone: 'neutral', icon: 'assets/fleetpoint/icons/wrench.svg', suffix: 'records', valueWidth: '1.5rem' },
   ] as const;
 
   private readonly subscription = new Subscription();
