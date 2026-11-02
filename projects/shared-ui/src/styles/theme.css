@@ -74,6 +74,15 @@
   --duration-tooltip: 125ms;
   --duration-popover: 200ms;
   --duration-modal: 250ms;
+  /* Dialogs: backdrop fades first, the panel glides up on a sheet curve, content follows; exits accelerate away.
+     Keep --duration-dialog-out in sync with the close timers (modal.ts, feedback-dialog.service.ts). */
+  --duration-dialog-backdrop: 300ms;
+  --duration-dialog-in: 420ms;
+  --duration-dialog-fade: 260ms;
+  --duration-dialog-out: 200ms;
+  --delay-dialog-panel: 40ms;
+  --ease-dialog: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-dialog-out: cubic-bezier(0.4, 0, 1, 1);
   /* Small physical overshoot for toggles/checks only (transitions.dev ease-bounce). */
   --ease-overshoot: cubic-bezier(0.34, 1.36, 0.64, 1);
   /* Real spring (bounce 0.15) as CSS linear(): 90% there by ~130ms, settles at 333ms. For popovers that should feel physical. */

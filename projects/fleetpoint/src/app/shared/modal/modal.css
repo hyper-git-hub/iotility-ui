@@ -2,14 +2,14 @@
 
 .modal-backdrop {
   @apply fixed inset-0 z-[1600] grid place-items-center overflow-y-auto bg-dark-canvas/65 p-4 backdrop-blur-sm;
-  transition: opacity var(--duration-modal) var(--ease-out);
+  transition: opacity var(--duration-dialog-backdrop) ease-out;
 }
 .modal-panel {
   @apply my-auto w-full max-w-md overflow-hidden rounded-3xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
   box-shadow: var(--shadow-modal);
   transition:
-    opacity var(--duration-modal) var(--ease-out),
-    transform var(--duration-modal) var(--ease-out);
+    opacity var(--duration-dialog-fade) ease-out var(--delay-dialog-panel),
+    transform var(--duration-dialog-in) var(--ease-dialog) var(--delay-dialog-panel);
 }
 .modal-panel.modal-large { @apply max-w-3xl; }
 .modal-panel.modal-extra-large { @apply max-w-6xl; }
@@ -34,30 +34,53 @@
 .modal-content { @apply max-h-[75vh] overflow-y-auto px-6 py-3; }
 .modal-footer { @apply flex gap-2 px-6 pb-6 pt-3; }
 
+/* Header, body and footer settle in just behind the panel. */
+.modal-header,
+.modal-content,
+.modal-footer {
+  transition:
+    opacity var(--duration-dialog-fade) ease-out var(--section-delay),
+    transform var(--duration-dialog-in) var(--ease-dialog) var(--section-delay);
+}
+.modal-header { --section-delay: 90ms; }
+.modal-content { --section-delay: 130ms; }
+.modal-footer { --section-delay: 170ms; }
+
 /* Transitions, not keyframes: reopening mid-close retargets instead of restarting. */
 @starting-style {
   .modal-backdrop { opacity: 0; }
-  .modal-panel { opacity: 0; transform: translateY(8px) scale(0.96); }
+  .modal-panel { opacity: 0; transform: translateY(16px) scale(0.97); }
+  .modal-header,
+  .modal-content,
+  .modal-footer { opacity: 0; transform: translateY(6px); }
 }
 
-/* Exit snaps faster than entry. Keep 180ms in sync with the close timer in modal.ts. */
+/* Exit is quicker than entry and accelerates away. Keep in sync with the close timer in modal.ts. */
 .modal-backdrop.modal-closing {
   opacity: 0;
-  transition-duration: 180ms;
+  transition: opacity var(--duration-dialog-out) var(--ease-dialog-out);
+  pointer-events: none;
 }
 .modal-backdrop.modal-closing .modal-panel {
   opacity: 0;
-  transform: scale(0.97);
-  transition-duration: 180ms;
-  pointer-events: none;
+  transform: translateY(8px) scale(0.98);
+  transition:
+    opacity var(--duration-dialog-out) var(--ease-dialog-out),
+    transform var(--duration-dialog-out) var(--ease-dialog-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .modal-panel,
+  .modal-header,
+  .modal-content,
+  .modal-footer,
   .modal-backdrop.modal-closing .modal-panel {
     transform: none;
   }
   @starting-style {
-    .modal-panel { transform: none; }
+    .modal-panel,
+    .modal-header,
+    .modal-content,
+    .modal-footer { transform: none; }
   }
 }

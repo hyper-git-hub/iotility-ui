@@ -27,7 +27,7 @@
   padding: 1.25rem;
   background: color-mix(in srgb, var(--feedback-backdrop) 72%, transparent);
   backdrop-filter: blur(5px);
-  transition: opacity var(--duration-modal) var(--ease-out);
+  transition: opacity var(--duration-dialog-backdrop) ease-out;
 }
 .dialog-panel {
   width: 100%;
@@ -39,12 +39,33 @@
   color: var(--feedback-text);
   box-shadow: var(--shadow-modal);
   transition:
-    opacity var(--duration-modal) var(--ease-out),
-    transform var(--duration-modal) var(--ease-out);
+    opacity var(--duration-dialog-fade) ease-out var(--delay-dialog-panel),
+    transform var(--duration-dialog-in) var(--ease-dialog) var(--delay-dialog-panel);
 }
-/* Exit snaps faster than entry; keep 180ms in sync with feedback-dialog.service.ts. */
-.dialog-backdrop.dialog-closing { opacity: 0; transition-duration: 180ms; pointer-events: none; }
-.dialog-backdrop.dialog-closing .dialog-panel { opacity: 0; transform: scale(0.97); transition-duration: 180ms; }
+/* Exit is quicker than entry and accelerates away; keep in sync with feedback-dialog.service.ts. */
+.dialog-backdrop.dialog-closing {
+  opacity: 0;
+  transition: opacity var(--duration-dialog-out) var(--ease-dialog-out);
+  pointer-events: none;
+}
+.dialog-backdrop.dialog-closing .dialog-panel {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition:
+    opacity var(--duration-dialog-out) var(--ease-dialog-out),
+    transform var(--duration-dialog-out) var(--ease-dialog-out);
+}
+/* Title, message and actions settle in just behind the panel. */
+.dialog-title,
+.dialog-message,
+.dialog-actions {
+  transition:
+    opacity var(--duration-dialog-fade) ease-out var(--section-delay),
+    transform var(--duration-dialog-in) var(--ease-dialog) var(--section-delay);
+}
+.dialog-title { --section-delay: 110ms; }
+.dialog-message { --section-delay: 150ms; }
+.dialog-actions { --section-delay: 190ms; }
 .dialog-icon {
   display: grid;
   width: 3rem;
@@ -123,14 +144,23 @@
 /* Transitions, not keyframes: closing mid-open retargets instead of restarting. */
 @starting-style {
   .dialog-backdrop { opacity: 0; }
-  .dialog-panel { opacity: 0; transform: translateY(8px) scale(0.95); }
+  .dialog-panel { opacity: 0; transform: translateY(16px) scale(0.96); }
+  .dialog-title,
+  .dialog-message,
+  .dialog-actions { opacity: 0; transform: translateY(6px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dialog-panel,
+  .dialog-title,
+  .dialog-message,
+  .dialog-actions,
   .dialog-backdrop.dialog-closing .dialog-panel { transform: none; }
   @starting-style {
-    .dialog-panel { transform: none; }
+    .dialog-panel,
+    .dialog-title,
+    .dialog-message,
+    .dialog-actions { transform: none; }
   }
 }
 /* Dialog icons are drawn as strokes (white on the coloured tile) so they can draw themselves in. */
@@ -142,5 +172,5 @@
   stroke-width: 2.25;
   stroke-linecap: round;
   stroke-linejoin: round;
-  --draw-delay: 140ms;
+  --draw-delay: 240ms;
 }

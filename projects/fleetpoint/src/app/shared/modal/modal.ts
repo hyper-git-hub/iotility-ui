@@ -26,7 +26,7 @@ export class Modal implements OnDestroy {
         this.closeTimer = setTimeout(() => {
           this.rendered.set(false);
           this.closing.set(false);
-        }, 180);
+        }, 200); // --duration-dialog-out
       }
     });
   }

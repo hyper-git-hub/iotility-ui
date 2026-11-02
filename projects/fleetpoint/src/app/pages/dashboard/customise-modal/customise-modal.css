@@ -2,15 +2,15 @@
 
 .customise-overlay {
   @apply fixed inset-0 z-50 grid place-items-center bg-ink/50 p-4 backdrop-blur-sm;
-  transition: opacity var(--duration-modal) var(--ease-out);
+  transition: opacity var(--duration-dialog-backdrop) ease-out;
 }
 
 .customise-panel {
   @apply flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
   box-shadow: var(--shadow-modal);
   transition:
-    opacity var(--duration-modal) var(--ease-out),
-    transform var(--duration-modal) var(--ease-out);
+    opacity var(--duration-dialog-fade) ease-out var(--delay-dialog-panel),
+    transform var(--duration-dialog-in) var(--ease-dialog) var(--delay-dialog-panel);
 }
 
 .customise-header {
@@ -100,7 +100,7 @@
 
 @starting-style {
   .customise-overlay { opacity: 0; }
-  .customise-panel { opacity: 0; transform: translateY(8px) scale(0.96); }
+  .customise-panel { opacity: 0; transform: translateY(16px) scale(0.97); }
 }
 @media (prefers-reduced-motion: reduce) {
   .customise-panel { transition-property: opacity; }
