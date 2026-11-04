@@ -8,71 +8,63 @@
   }
 
   @if (loading()) {
-    <section class="summary-heading">
-      <div class="summary-copy">
+    <header class="detail-heading">
+      <div class="heading-copy">
         <button type="button" (click)="back()" aria-label="Back to drivers">&larr;</button>
         <div>
-          <p class="driver-breadcrumb-skeleton">
-            Drivers / <ui-skeleton width="6rem" height="0.625rem" radius="0.25rem" />
-          </p>
-          <h2>Driver overview</h2>
-          <span>High-level driver metrics for the selected preset</span>
+          <p>Drivers</p>
+          <h1><ui-skeleton width="10rem" height="1.625rem" /></h1>
+          <span class="heading-meta"><ui-skeleton width="15rem" height="0.75rem" /></span>
         </div>
       </div>
-      <label class="cards-filter"
-        ><span>Cards period</span
-        ><shared-dropdown
-          class="card-period-dropdown"
-          [options]="cardPeriodOptions"
-          mode="single"
-          align="right"
-          [showOptionIcons]="false"
-          [matchTriggerWidth]="true"
-          [selected]="[cardPeriod()]"
-          (optionSelected)="updateCardPeriod($event)"
-          ><button dropdown-trigger type="button" disabled>
-            <span>{{ cardPeriodLabel() }}</span>
-          </button></shared-dropdown
-        ></label
-      >
-    </section>
+      <div class="heading-actions">
+        <ui-skeleton width="7rem" height="1.75rem" radius="999px" />
+        <button type="button" class="secondary-action" disabled>Show on Live Map</button>
+        <button type="button" class="secondary-action" disabled>Assign Vehicle</button>
+        <button type="button" class="primary-action" disabled>Edit Driver</button>
+      </div>
+    </header>
 
-    <section class="driver-overview-grid">
-      <article class="detail-card profile-panel profile-panel-skeleton" aria-hidden="true">
+    <section class="driver-overview-grid" aria-busy="true">
+      <article class="detail-card profile-panel" aria-hidden="true">
         <header>
           <h2>Driver profile</h2>
-          <ui-skeleton width="6rem" height="0.625rem" radius="0.25rem" />
+          <ui-skeleton width="3rem" height="0.625rem" />
         </header>
-        <div class="driver-identity">
-          <ui-skeleton width="9.375rem" height="9.375rem" radius="1rem" />
-          <div>
-            <h3><ui-skeleton width="8rem" height="1.125rem" /></h3>
-            <p class="email-badge-skeleton"><ui-skeleton width="10rem" height="0.625rem" /></p>
+        <div class="profile-body">
+          <div class="driver-identity">
+            <ui-skeleton width="7.5rem" height="7.5rem" radius="1rem" />
           </div>
+          <dl class="details-list">
+            @for (label of profileLabels; track label) {
+              <div>
+                <dt>{{ label }}</dt>
+                <dd><ui-skeleton [width]="$index % 2 ? '7rem' : '5.5rem'" height="0.75rem" /></dd>
+              </div>
+            }
+          </dl>
         </div>
-        <dl class="details-list">
-          @for (
-            label of [
-              'Phone',
-              'Driver group',
-              'Salary',
-              'Date of birth',
-              'Date joined',
-              'Shift status',
-              'Gender',
-              'Marital status',
-            ];
-            track label
-          ) {
-            <div>
-              <dt>{{ label }}</dt>
-              <dd><ui-skeleton [width]="$index % 2 ? '7rem' : '6rem'" height="0.75rem" /></dd>
-            </div>
-          }
-        </dl>
       </article>
-      <section class="cards-column">
-        <div class="metric-grid" aria-label="Driver summary loading">
+      <section class="detail-card cards-panel">
+        <header>
+          <div>
+            <h2>Driver summary</h2>
+            <p>Dashboard totals for the selected period</p>
+          </div>
+          <shared-dropdown
+            class="card-period-dropdown"
+            [options]="cardPeriodOptions"
+            mode="single"
+            align="right"
+            [showOptionIcons]="false"
+            [matchTriggerWidth]="true"
+            [selected]="[cardPeriod()]"
+            ><button dropdown-trigger type="button" disabled aria-label="Summary period">
+              <span>{{ cardPeriodLabel() }}</span>
+            </button></shared-dropdown
+          >
+        </header>
+        <div class="metric-grid">
           <!-- Card labels come from the API, so these mirror the card shape; widths vary so it reads as text. -->
           @for (labelWidth of ['4.5rem', '5.5rem', '3.75rem', '5rem', '4rem', '6rem', '4.75rem', '3.5rem', '5.25rem', '4.25rem', '5.75rem', '3.75rem']; track $index) {
             <ui-stat-card-skeleton [compact]="true" [labelWidth]="labelWidth" [valueWidth]="$index % 3 ? '2.5rem' : '3.25rem'" />
@@ -81,219 +73,133 @@
       </section>
     </section>
 
-    <section class="detail-card filter-panel">
-      <header>
-        <div>
-          <h2>Performance filters</h2>
-          <p>
-            Updates the period summary, violation breakdown, idle history and driver alerts below
-          </p>
-        </div>
+    <section class="detail-card driver-workspace" aria-busy="true">
+      <nav class="detail-tabs" aria-label="Driver performance sections">
+        <button type="button" class="active" disabled><img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Performance</button>
+        <button type="button" disabled><img src="assets/fleetpoint/icons/bell.svg" alt="" aria-hidden="true" />Alerts</button>
+      </nav>
+      <div class="workspace-toolbar">
         <div class="report-presets" aria-label="Performance period">
-          <button
-            type="button"
-            [class.active]="reportPeriod() === 'today'"
-            (click)="applyPreset('today')"
-          >
-            Today
-          </button>
-          <button
-            type="button"
-            [class.active]="reportPeriod() === 'yesterday'"
-            (click)="applyPreset('yesterday')"
-          >
-            Yesterday
-          </button>
-          <button
-            type="button"
-            [class.active]="reportPeriod() === 'week'"
-            (click)="applyPreset('week')"
-          >
-            This Week
-          </button>
-          <button
-            type="button"
-            [class.active]="reportPeriod() === 'month'"
-            (click)="applyPreset('month')"
-          >
-            This Month
-          </button>
+          @for (preset of periodPresets; track preset.id) {
+            <button type="button" [class.active]="reportPeriod() === preset.id" disabled>{{ preset.label }}</button>
+          }
         </div>
-      </header>
-      <div class="period-controls">
-        <label
-          ><span>From</span
-          ><shared-date-time-picker
-            [value]="startDate()"
-            (valueChange)="updateStart($event)"
-            ariaLabel="Choose performance start date and time"
-        /></label>
-        <label
-          ><span>To</span
-          ><shared-date-time-picker
-            [value]="endDate()"
-            (valueChange)="updateEnd($event)"
-            ariaLabel="Choose performance end date and time"
-        /></label>
-        <button type="button" disabled>Apply filters</button>
+        <div class="period-controls">
+          <label><span>From</span><shared-date-time-picker [value]="startDate()" ariaLabel="Choose performance start date and time" /></label>
+          <label><span>To</span><shared-date-time-picker [value]="endDate()" ariaLabel="Choose performance end date and time" /></label>
+          <button type="button" disabled>Apply</button>
+        </div>
       </div>
-    </section>
-
-    <section class="performance-summary" aria-label="Selected-period summary loading">
-      @for (label of ['Distance', 'Violations', 'Idle time', 'Alerts']; track label) {
-        <div>
-          <span>{{ label }}</span
-          ><strong><ui-skeleton width="4.5rem" height="1.125rem" /></strong>
-        </div>
-      }
-    </section>
-
-    <section class="analytics-grid">
-      @for (
-        chart of [
-          {
-            title: 'Violation breakdown',
-            subtitle: 'Events grouped by safety category',
-            suffix: 'total',
-          },
-          {
-            title: 'Idle history',
-            subtitle: 'Idle duration recorded over the selected period',
-            suffix: 'Minutes',
-          },
-        ];
-        track chart.title
-      ) {
-        <article class="detail-card analytics-card analytics-card-skeleton">
-          <header>
-            <div>
-              <h2>{{ chart.title }}</h2>
-              <p>{{ chart.subtitle }}</p>
+      <div class="analytics-grid">
+        @for (rows of [[1, 2, 3, 4, 5], [1, 2, 3, 4]]; track $index) {
+          <article class="analytics-card">
+            <div class="analytics-list-skeleton">
+              @for (row of rows; track row) {
+                <div>
+                  <ui-skeleton width="6rem" height="0.6875rem" /><ui-skeleton width="100%" height="0.5rem" radius="999px" /><ui-skeleton width="2.5rem" height="0.6875rem" />
+                </div>
+              }
             </div>
-            @if (chart.suffix === 'total') {
-              <ui-skeleton width="3.5rem" height="0.625rem" />
-            } @else {
-              <span>{{ chart.suffix }}</span>
-            }
-          </header>
-          <div class="analytics-list-skeleton">
-            @for (row of chart.suffix === 'total' ? [1, 2, 3, 4, 5] : [1, 2, 3, 4]; track row) {
-              <div>
-                <ui-skeleton width="6rem" height="0.6875rem" /><ui-skeleton
-                  width="100%"
-                  height="0.5rem"
-                  radius="999px"
-                /><ui-skeleton width="2.5rem" height="0.6875rem" />
-              </div>
-            }
-          </div>
-        </article>
-      }
-    </section>
-
-    <section class="alerts-section">
-      <ui-data-table-skeleton
-        title="Driver alerts"
-        [columns]="alertColumns.length"
-        [columnLabels]="alertColumnLabels"
-        [rows]="10"
-        [showToolbar]="false"
-        [minTableWidth]="760"
-      />
+          </article>
+        }
+      </div>
     </section>
   } @else if (driver(); as item) {
     <div class="driver-detail-content" [class.refreshing]="dataLoading()">
-      <section class="summary-heading">
-        <div class="summary-copy">
+      <header class="detail-heading">
+        <div class="heading-copy">
           <button type="button" (click)="back()" aria-label="Back to drivers">&larr;</button>
           <div>
-            <p>Drivers / {{ item.name }}</p>
-            <h2>Driver overview</h2>
-            <span>High-level driver metrics for the selected preset</span>
+            <p>Drivers · Employee {{ text(item.employee_id) }}</p>
+            <h1>{{ item.name }}</h1>
+            <span class="heading-meta">{{ text(item.email) }} · {{ text(item.phone) }}</span>
           </div>
         </div>
-        <label class="cards-filter"
-          ><span>Cards period</span
-          ><shared-dropdown
-            class="card-period-dropdown"
-            [options]="cardPeriodOptions"
-            mode="single"
-            align="right"
-            [showOptionIcons]="false"
-            [matchTriggerWidth]="true"
-            [selected]="[cardPeriod()]"
-            (optionSelected)="updateCardPeriod($event)"
-            ><button dropdown-trigger type="button">
-              <span>{{ cardPeriodLabel() }}</span>
-            </button></shared-dropdown
-          ></label
-        >
-      </section>
+        <div class="heading-actions">
+          <span class="shift-pill" [class.on]="item.driver_shift_status"><i aria-hidden="true"></i>{{ shiftLabel() }}</span>
+          <button type="button" class="secondary-action" (click)="showOnMap()">Show on Live Map</button>
+          <button type="button" class="secondary-action" (click)="openAllocation()">Assign Vehicle</button>
+          <button type="button" class="primary-action" (click)="openEdit()">Edit Driver</button>
+        </div>
+      </header>
 
       <section class="driver-overview-grid">
         <article class="detail-card profile-panel">
           <header>
             <h2>Driver profile</h2>
-            <span>{{ item.employee_id || 'No employee ID' }}</span>
+            <span class="status-chip" [class.active]="item.status == 1">{{ item.status == 1 ? 'Active' : 'Inactive' }}</span>
           </header>
-          <div class="driver-identity">
-            <img [src]="image()" (error)="useFallbackImage($event)" alt="Driver" />
-            <div>
-              <h3>{{ item.name }}</h3>
-              <p class="email-badge">{{ item.email || 'Email unavailable' }}</p>
+          <div class="profile-body">
+            <div class="driver-identity">
+              <img [src]="image()" (error)="useFallbackImage($event)" [alt]="item.name" />
             </div>
+            <dl class="details-list">
+              <div>
+                <dt>Driver group</dt>
+                <dd>{{ text(item.group) }}</dd>
+              </div>
+              <div>
+                <dt>Shift</dt>
+                <dd>{{ item.shift_allocated?.[0]?.shift__name || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Licence number</dt>
+                <dd>{{ licenceNumber(item) }}</dd>
+              </div>
+              <div>
+                <dt>Licence expiry</dt>
+                <dd>{{ licenceExpiry(item) }}</dd>
+              </div>
+              <div>
+                <dt>Date of birth</dt>
+                <dd>{{ formatDay(item.dob) }}</dd>
+              </div>
+              <div>
+                <dt>Date joined</dt>
+                <dd>{{ formatDay(item.data_joined) }}</dd>
+              </div>
+              <div>
+                <dt>Salary</dt>
+                <dd>{{ text(item.salary) }}</dd>
+              </div>
+              <div>
+                <dt>Gender</dt>
+                <dd>{{ gender(item.gender) }}</dd>
+              </div>
+              <div>
+                <dt>Marital status</dt>
+                <dd>{{ maritalStatus(item.marital_status) }}</dd>
+              </div>
+            </dl>
           </div>
-          <dl class="details-list">
-            <div>
-              <dt>Phone</dt>
-              <dd>{{ text(item.phone) }}</dd>
-            </div>
-            <div>
-              <dt>Driver group</dt>
-              <dd>{{ item.group || 'No driver group' }}</dd>
-            </div>
-            <div>
-              <dt>Salary</dt>
-              <dd>{{ text(item.salary) }}</dd>
-            </div>
-            <div>
-              <dt>Date of birth</dt>
-              <dd>{{ formatDate(item.dob) }}</dd>
-            </div>
-            <div>
-              <dt>Date joined</dt>
-              <dd>{{ formatDate(item.data_joined) }}</dd>
-            </div>
-            <div>
-              <dt>Shift status</dt>
-              <dd>
-                {{
-                  item.driver_shift_status === null
-                    ? 'Not available'
-                    : item.driver_shift_status
-                      ? 'On shift'
-                      : 'Off shift'
-                }}
-              </dd>
-            </div>
-            <div>
-              <dt>Gender</dt>
-              <dd>{{ gender(item.gender) }}</dd>
-            </div>
-            <div>
-              <dt>Marital status</dt>
-              <dd>{{ maritalStatus(item.marital_status) }}</dd>
-            </div>
-          </dl>
         </article>
 
-        <section class="cards-column">
+        <section class="detail-card cards-panel">
+          <header>
+            <div>
+              <h2>Driver summary</h2>
+              <p>Dashboard totals for the selected period</p>
+            </div>
+            <shared-dropdown
+              class="card-period-dropdown"
+              [options]="cardPeriodOptions"
+              mode="single"
+              align="right"
+              [showOptionIcons]="false"
+              [matchTriggerWidth]="true"
+              [selected]="[cardPeriod()]"
+              (optionSelected)="updateCardPeriod($event)"
+              ><button dropdown-trigger type="button" aria-label="Summary period">
+                <span>{{ cardPeriodLabel() }}</span>
+              </button></shared-dropdown
+            >
+          </header>
           <div class="metric-grid" aria-label="Driver summary">
-            @for (card of cards(); track card.code || $index) {
+            @for (card of displayCards(); track card.code || $index) {
               <app-stat-card
                 [compact]="true"
                 [label]="card.name"
-                [value]="card.data ?? 0"
+                [value]="card.value"
                 tone="neutral"
                 icon="assets/fleetpoint/icons/activity.svg"
               />
@@ -307,133 +213,119 @@
         </section>
       </section>
 
-      <section class="detail-card filter-panel">
-        <header>
-          <div>
-            <h2>Performance filters</h2>
-            <p>
-              Updates the period summary, violation breakdown, idle history and driver alerts below
-            </p>
-          </div>
+      <section class="detail-card driver-workspace">
+        <nav sharedTabIndicator [tabIndicatorInset]="10" class="detail-tabs" aria-label="Driver performance sections">
+          <button type="button" [class.active]="activeTab() === 'performance'" (click)="activeTab.set('performance')">
+            <img src="assets/fleetpoint/icons/activity.svg" alt="" aria-hidden="true" />Performance
+          </button>
+          <button type="button" [class.active]="activeTab() === 'alerts'" (click)="activeTab.set('alerts')">
+            <img src="assets/fleetpoint/icons/bell.svg" alt="" aria-hidden="true" />Alerts
+            @if (violationCount()) {
+              <em>{{ violationCount() }}</em>
+            }
+          </button>
+        </nav>
+
+        <!-- One period for both tabs; the summary cards above keep their own (the cards API only offers fixed periods). -->
+        <div class="workspace-toolbar">
           <div class="report-presets" aria-label="Performance period">
-            <button
-              type="button"
-              [class.active]="reportPeriod() === 'today'"
-              (click)="applyPreset('today')"
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              [class.active]="reportPeriod() === 'yesterday'"
-              (click)="applyPreset('yesterday')"
-            >
-              Yesterday
-            </button>
-            <button
-              type="button"
-              [class.active]="reportPeriod() === 'week'"
-              (click)="applyPreset('week')"
-            >
-              This Week
-            </button>
-            <button
-              type="button"
-              [class.active]="reportPeriod() === 'month'"
-              (click)="applyPreset('month')"
-            >
-              This Month
-            </button>
-          </div>
-        </header>
-        <div class="period-controls">
-          <label
-            ><span>From</span
-            ><shared-date-time-picker
-              [value]="startDate()"
-              (valueChange)="updateStart($event)"
-              ariaLabel="Choose performance start date and time"
-          /></label>
-          <label
-            ><span>To</span
-            ><shared-date-time-picker
-              [value]="endDate()"
-              (valueChange)="updateEnd($event)"
-              ariaLabel="Choose performance end date and time"
-          /></label>
-          <button type="button" (click)="applyPeriod()">Apply filters</button>
-        </div>
-      </section>
-
-      <section class="performance-summary" aria-label="Selected-period summary">
-        <div>
-          <span>Distance</span><strong>{{ graphs().total_distance_travelled || 0 }} km</strong>
-        </div>
-        <div>
-          <span>Violations</span><strong>{{ totalViolations() }}</strong>
-        </div>
-        <div>
-          <span>Idle time</span><strong>{{ totalIdle() }} min</strong>
-        </div>
-        <div>
-          <span>Alerts</span><strong>{{ violationCount() }}</strong>
-        </div>
-      </section>
-
-      <section class="analytics-grid">
-        <article class="detail-card analytics-card">
-          <header>
-            <div>
-              <h2>Violation breakdown</h2>
-              <p>Events grouped by safety category</p>
-            </div>
-            <span>{{ totalViolations() }} total</span>
-          </header>
-          <div class="bar-list">
-            @for (metric of graphs().violation_graph; track metric.label) {
-              <div>
-                <span>{{ metric.label }}</span
-                ><i><b [style.width.%]="barWidth(metric)"></b></i
-                ><strong>{{ metric.value }}</strong>
-              </div>
-            } @empty {
-              <p class="empty-state">No violation metrics for this period.</p>
+            @for (preset of periodPresets; track preset.id) {
+              <button type="button" [class.active]="reportPeriod() === preset.id" (click)="applyPreset(preset.id)">
+                {{ preset.label }}
+              </button>
             }
           </div>
-        </article>
-        <article class="detail-card analytics-card">
-          <header>
-            <div>
-              <h2>Idle history</h2>
-              <p>Idle duration recorded over the selected period</p>
-            </div>
-            <span>Minutes</span>
-          </header>
-          <div class="idle-list">
-            @for (point of graphs().idle_history; track point.date) {
-              <div>
-                <span>{{ formatDate(point.date) }}</span
-                ><i><b [style.width.%]="idleWidth(point)"></b></i
-                ><strong>{{ point.value }} min</strong>
-              </div>
-            } @empty {
-              <p class="empty-state chart-empty-state">No idle history for this period.</p>
-            }
+          <div class="period-controls">
+            <label
+              ><span>From</span
+              ><shared-date-time-picker
+                [value]="startDate()"
+                (valueChange)="updateStart($event)"
+                ariaLabel="Choose performance start date and time"
+            /></label>
+            <label
+              ><span>To</span
+              ><shared-date-time-picker
+                [value]="endDate()"
+                (valueChange)="updateEnd($event)"
+                ariaLabel="Choose performance end date and time"
+            /></label>
+            <button type="button" (click)="applyPeriod()">Apply</button>
           </div>
-        </article>
+        </div>
+
+        @if (activeTab() === 'performance') {
+          <div class="analytics-grid">
+            <article class="analytics-card">
+              <header>
+                <div>
+                  <h2>Violation breakdown</h2>
+                  <p>Events grouped by safety category</p>
+                </div>
+                <span>{{ totalViolations() }} total</span>
+              </header>
+              <div class="bar-list">
+                @for (metric of graphs().violation_graph; track metric.label) {
+                  <div>
+                    <span>{{ metric.label }}</span
+                    ><i><b [style.width.%]="barWidth(metric)"></b></i
+                    ><strong>{{ metric.value }}</strong>
+                  </div>
+                } @empty {
+                  <p class="empty-state">No violations in this period.</p>
+                }
+              </div>
+            </article>
+            <article class="analytics-card">
+              <header>
+                <div>
+                  <h2>Idle history</h2>
+                  <p>Idle minutes per day in this period</p>
+                </div>
+                <span>{{ totalIdle() }} min</span>
+              </header>
+              <div class="idle-list">
+                @for (point of graphs().idle_history; track point.date) {
+                  <div>
+                    <span>{{ formatDay(point.date) }}</span
+                    ><i><b [style.width.%]="idleWidth(point)"></b></i
+                    ><strong>{{ point.value }} min</strong>
+                  </div>
+                } @empty {
+                  <p class="empty-state">No idle time recorded in this period.</p>
+                }
+              </div>
+            </article>
+          </div>
+        } @else {
+          <div class="alerts-body">
+            <shared-data-table
+              title="Driver alerts"
+              [columns]="alertColumns"
+              [rows]="alertRows()"
+              [showToolbar]="false"
+              [minTableWidth]="760"
+              [pagination]="{ totalItems: violationCount(), pageSize: limit, page: offset() / limit + 1, loading: dataLoading() }"
+              (pageChange)="goToAlertPage($event)"
+            />
+          </div>
+        }
       </section>
 
-      <section class="alerts-section">
-        <shared-data-table
-          title="Driver alerts"
-          [columns]="alertColumns"
-          [rows]="alertRows()"
-          [showToolbar]="false"
-          [minTableWidth]="760"
-          [pagination]="{ totalItems: violationCount(), pageSize: limit, page: offset() / limit + 1, loading: dataLoading() }"
-          (pageChange)="goToAlertPage($event)"
-        />
-      </section>
+      <app-driver-form
+        [open]="editOpen()"
+        [driver]="item"
+        [groups]="groups()"
+        (cancelled)="editOpen.set(false)"
+        (created)="driverSaved()"
+      />
+      <app-allocation-form
+        [open]="allocationOpen()"
+        [presetDriverId]="item.id"
+        [presetDriverLabel]="item.name"
+        (cancelled)="allocationOpen.set(false)"
+        (saved)="allocationOpen.set(false)"
+      />
     </div>
   }
 </main>

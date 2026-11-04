@@ -285,6 +285,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private readonly realtimeVehicles = new Set<number>();
   private selectionRequest = 0;
   private requestedVehicleId = '';
+  /** From a driver's page: focus the vehicle that driver is assigned to, once the fleets are known. */
+  private requestedDriverId = '';
 
   constructor(
     private readonly api: LiveTrackingApiService,
@@ -302,6 +304,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     this.requestedVehicleId = String(
       navigationState?.['vehicleId'] ?? route.snapshot.queryParamMap.get('vehicle_id') ?? '',
     );
+    this.requestedDriverId = route.snapshot.queryParamMap.get('driver_id') ?? '';
     this.selectedFleet.set(route.snapshot.queryParamMap.get('fleet_id') ?? 'all');
   }
 
@@ -333,6 +336,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
           next: (response) => {
             const records = response.data?.data ?? [];
             this.fleetRecords.set(records);
+            this.resolveRequestedDriver(records);
             if (
               this.selectedFleet() !== 'all' &&
               !records.some((fleet) => String(fleet.id) === this.selectedFleet())
@@ -472,6 +476,19 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       this.vehicles().find((item) => item.id === vehicle.id) ?? (vehicle as LiveVehicle);
     this.selectedVehicle.set(selected);
     this.resolveSelectedVehicleDevice(selected);
+  }
+
+  /** Turns a requested driver into their assigned vehicle, then selects it (now, or when vehicles load). */
+  private resolveRequestedDriver(fleets: FleetInventoryRecord[]): void {
+    if (!this.requestedDriverId) return;
+    const driverId = this.requestedDriverId;
+    this.requestedDriverId = '';
+    const vehicle = fleets
+      .flatMap((fleet) => fleet.assigned_vehicles ?? [])
+      .find((item) => item.associated_drivers_name?.some((driver) => String(driver.driver_id) === driverId));
+    if (vehicle?.id == null) return;
+    this.requestedVehicleId = String(vehicle.id);
+    if (this.vehicles().length) this.selectRequestedVehicle();
   }
 
   private selectRequestedVehicle(): void {

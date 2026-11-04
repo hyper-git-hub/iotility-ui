@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from './fleet-dashboard-api.service';
+import { ApiResponse, withoutEmptyCards } from './fleet-dashboard-api.service';
 
 export interface VehicleDetailRecord {
   [key: string]: unknown;
@@ -32,7 +32,9 @@ export class VehicleDetailApiService {
 
   getMetrics(id: string): Observable<ApiResponse<VehicleMetric[]>> {
     const params = new HttpParams().set('dashboard_id', 'VD').set('date', 'all').set('vehicle_id', id);
-    return this.http.get<ApiResponse<VehicleMetric[]>>(`${this.fleetApi}/dashboard/cards`, { params });
+    return this.http
+      .get<ApiResponse<(VehicleMetric | null)[]>>(`${this.fleetApi}/dashboard/cards`, { params })
+      .pipe(withoutEmptyCards<VehicleMetric>());
   }
 
   getViolations(id: string): Observable<ApiResponse<unknown>> {

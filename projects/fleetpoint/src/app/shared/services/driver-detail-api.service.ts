@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, DashboardCard } from './fleet-dashboard-api.service';
+import { ApiResponse, DashboardCard, withoutEmptyCards } from './fleet-dashboard-api.service';
 import { DriverRecord } from './driver-api.service';
 
 export interface DriverViolationMetric {
@@ -21,6 +21,13 @@ export interface DriverDetailGraphs {
 export interface DriverViolationRecord {
   [key: string]: unknown;
   id?: number;
+}
+/** One card the driver dashboard can show (the catalogue behind the cards' settings screen). */
+export interface DashboardCardSetting {
+  id: number;
+  analytics_id: string;
+  analytics_name: string;
+  switch?: boolean | number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -44,9 +51,18 @@ export class DriverDetailApiService {
       .set('dashboard_id', 'DLD')
       .set('driver_id', id)
       .set('date', date);
-    return this.http.get<ApiResponse<DashboardCard[]>>(`${this.fleetApi}/dashboard/cards`, {
-      params,
-    });
+    return this.http
+      .get<ApiResponse<(DashboardCard | null)[]>>(`${this.fleetApi}/dashboard/cards`, { params })
+      .pipe(withoutEmptyCards<DashboardCard>());
+  }
+
+  /** Every DLD card with its code and name, in display order; the cards endpoint only fills some of them. */
+  getCardCatalogue(): Observable<ApiResponse<DashboardCardSetting[]>> {
+    const params = new HttpParams().set('dashboard_id', 'DLD').set('type_id', 'C');
+    return this.http.get<ApiResponse<DashboardCardSetting[]>>(
+      `${this.fleetApi}/dashboard/user-dashboard-setting`,
+      { params },
+    );
   }
 
   getGraphs(id: number, start: string, end: string): Observable<ApiResponse<DriverDetailGraphs>> {

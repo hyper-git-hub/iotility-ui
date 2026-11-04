@@ -1,22 +1,25 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   DataTable,
-  DataTableSkeleton,
   DateTimePicker,
   Dropdown,
   DropdownOption,
   Skeleton,
   StatCardSkeleton,
+  TabIndicator,
   TableColumn,
   TableRow,
 } from '@iotility/shared-ui';
 import { catchError, finalize, forkJoin, Observable, of } from 'rxjs';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import { StatCard } from '../../../shared/stat-card/stat-card';
-import { DriverRecord } from '../../../shared/services/driver-api.service';
+import { DriverApiService, DriverGroup, DriverRecord } from '../../../shared/services/driver-api.service';
+import { AllocationForm } from '../allocation-form/allocation-form';
+import { DriverForm } from '../driver-form/driver-form';
 import { DashboardCard } from '../../../shared/services/fleet-dashboard-api.service';
 import {
+  DashboardCardSetting,
   DriverDetailApiService,
   DriverDetailGraphs,
   DriverIdlePoint,
@@ -25,17 +28,28 @@ import {
 } from '../../../shared/services/driver-detail-api.service';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 
+/** Shown on a card the API returned no value for. */
+const NOT_AVAILABLE = '—';
+
+interface DriverCardView {
+  code: string;
+  name: string;
+  value: string | number;
+}
+
 @Component({
   selector: 'app-driver-detail',
   imports: [
+    AllocationForm,
     DataTable,
-    DataTableSkeleton,
     DateTimePicker,
+    DriverForm,
     Dropdown,
     ProgressBar,
     Skeleton,
     StatCardSkeleton,
     StatCard,
+    TabIndicator,
   ],
   templateUrl: './driver-detail.html',
   styleUrl: './driver-detail.css',
@@ -46,8 +60,60 @@ export class DriverDetail implements OnInit {
   protected readonly dataLoading = signal(false);
   protected readonly error = signal('');
   protected readonly driver = signal<DriverRecord | null>(null);
+  /** Performance (violation breakdown, idle history) or the alerts table, under the shared period filter. */
+  protected readonly activeTab = signal<'performance' | 'alerts'>('performance');
+  protected readonly editOpen = signal(false);
+  protected readonly allocationOpen = signal(false);
+  protected readonly groups = signal<DriverGroup[]>([]);
+  /** "On shift · Morning", from the shift flag and the allocated shift. */
+  protected readonly shiftLabel = computed(() => {
+    const driver = this.driver();
+    if (!driver) return '';
+    const shift = driver.shift_allocated?.[0]?.shift__name;
+    const state = driver.driver_shift_status ? 'On shift' : 'Off shift';
+    return shift ? `${state} · ${shift}` : state;
+  });
+  private readonly driverApi = inject(DriverApiService);
   protected readonly cards = signal<DashboardCard[]>([]);
+  /** Every driver card, in display order. The cards endpoint returns only the ones it has values for. */
+  private readonly cardCatalogue = signal<DashboardCardSetting[]>([]);
+  /** Each catalogue card with its value, or "—" when the cards response has none. */
+  protected readonly displayCards = computed<DriverCardView[]>(() => {
+    const cards = this.cards();
+    const catalogue = this.cardCatalogue();
+    const view = (code: string, name: string, data: unknown): DriverCardView => ({
+      code,
+      name,
+      value: data === null || data === undefined || data === '' ? NOT_AVAILABLE : (data as string | number),
+    });
+    if (!catalogue.length) return cards.map((card) => view(card.code, card.name, card.data));
+    const byCode = new Map(cards.map((card) => [card.code, card]));
+    const listed = catalogue.map((setting) => {
+      const card = byCode.get(setting.analytics_id);
+      return view(setting.analytics_id, card?.name || setting.analytics_name, card?.data);
+    });
+    const known = new Set(catalogue.map((setting) => setting.analytics_id));
+    const extra = cards.filter((card) => !known.has(card.code)).map((card) => view(card.code, card.name, card.data));
+    return [...listed, ...extra];
+  });
   protected readonly cardPeriod = signal('all');
+  protected readonly periodPresets: { id: 'today' | 'yesterday' | 'week' | 'month'; label: string }[] = [
+    { id: 'today', label: 'Today' },
+    { id: 'yesterday', label: 'Yesterday' },
+    { id: 'week', label: 'This Week' },
+    { id: 'month', label: 'This Month' },
+  ];
+  protected readonly profileLabels = [
+    'Driver group',
+    'Shift',
+    'Licence number',
+    'Licence expiry',
+    'Date of birth',
+    'Date joined',
+    'Salary',
+    'Gender',
+    'Marital status',
+  ];
   protected readonly cardPeriodOptions: DropdownOption[] = [
     { id: 'all', label: 'Overall' },
     { id: 'today', label: 'Today' },
@@ -127,6 +193,8 @@ export class DriverDetail implements OnInit {
         this.api.getCards(this.driverId),
         'Driver cards could not be loaded.',
       ),
+      // Card names only; without them the page falls back to the cards that came back with values.
+      cardCatalogue: this.api.getCardCatalogue().pipe(catchError(() => of(null))),
       graphs: this.requestOrNull(
         this.api.getGraphs(
           this.driverId,
@@ -148,9 +216,14 @@ export class DriverDetail implements OnInit {
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: ({ driver, cards, graphs, violations }) => {
+        next: ({ driver, cards, cardCatalogue, graphs, violations }) => {
           this.driver.set(driver?.data?.data?.[0] ?? null);
           this.cards.set(cards?.data ?? []);
+          this.cardCatalogue.set(
+            (Array.isArray(cardCatalogue?.data) ? cardCatalogue.data : []).filter(
+              (setting) => setting?.analytics_id,
+            ),
+          );
           this.graphs.set(graphs?.data ?? this.graphs());
           this.setViolations(violations?.data);
           if (driver && !this.driver()) this.error.set('Driver details were not found.');
@@ -243,7 +316,29 @@ export class DriverDetail implements OnInit {
     this.loadViolationPage();
   }
   protected back(): void {
-    void this.router.navigateByUrl('/fleetpoint/drivers');
+    void this.router.navigateByUrl(`${this.basePath()}/drivers`);
+  }
+  protected openEdit(): void {
+    if (!this.groups().length)
+      this.driverApi.getGroups().subscribe({ next: (response) => this.groups.set(response.data?.data ?? []) });
+    this.editOpen.set(true);
+  }
+  protected driverSaved(): void {
+    this.editOpen.set(false);
+    this.api.getDriver(this.driverId).subscribe({
+      next: (response) => this.driver.set(response.data?.data?.[0] ?? this.driver()),
+    });
+  }
+  protected openAllocation(): void {
+    this.allocationOpen.set(true);
+  }
+  /** Live tracking finds the vehicle this driver is assigned to and focuses it. */
+  protected showOnMap(): void {
+    void this.router.navigate([`${this.basePath()}/live-tracking`], { queryParams: { driver_id: this.driverId } });
+  }
+  /** Inside IoTility FleetPoint lives under /fleetpoint; standalone it is at the root. */
+  private basePath(): string {
+    return this.router.url.startsWith('/fleetpoint') ? '/fleetpoint' : '';
   }
   protected image(): string {
     const value = this.driver()?.image?.trim();
@@ -255,7 +350,13 @@ export class DriverDetail implements OnInit {
     (event.target as HTMLImageElement).src = 'assets/fleetpoint/driver.svg';
   }
   protected text(value: unknown): string {
-    return value === null || value === undefined || value === '' ? 'Not available' : String(value);
+    return value === null || value === undefined || value === '' ? NOT_AVAILABLE : String(value);
+  }
+  protected licenceNumber(driver: DriverRecord): string {
+    return this.text(driver.licence_number || driver.license);
+  }
+  protected licenceExpiry(driver: DriverRecord): string {
+    return this.formatDay(driver.licence_expiry_date || driver.license_expire_date);
   }
   protected gender(value: string): string {
     return (
@@ -273,14 +374,14 @@ export class DriverDetail implements OnInit {
     return this.text(row['violation_name'] ?? row['violation_type'] ?? row['name'] ?? row['type']);
   }
   protected violationVehicle(row: DriverViolationRecord): string {
-    return this.text(row['vehicle_registration'] ?? row['vehicle'] ?? row['registration']);
+    return this.text(row['vehicle_name'] ?? row['vehicle_registration'] ?? row['registration'] ?? row['vehicle']);
   }
   protected violationLocation(row: DriverViolationRecord): string {
     return this.text(row['location'] ?? row['address'] ?? row['poi']);
   }
   protected violationTime(row: DriverViolationRecord): string {
     return this.formatDate(
-      row['created_at'] ?? row['timestamp'] ?? row['violation_time'] ?? row['date'],
+      row['event_generation_time'] ?? row['created_at'] ?? row['timestamp'] ?? row['violation_time'] ?? row['date'],
     );
   }
   protected barWidth(item: DriverViolationMetric): number {
@@ -290,11 +391,19 @@ export class DriverDetail implements OnInit {
     return Math.max(3, (Number(item.value || 0) / this.maxIdle()) * 100);
   }
   protected formatDate(value: unknown): string {
-    if (!value) return 'Not available';
+    if (!value) return NOT_AVAILABLE;
     const date = new Date(String(value));
     return Number.isNaN(date.getTime())
       ? String(value)
       : new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  }
+  /** Calendar dates (birth, joining, licence expiry): no time, and "2000-01-01" stays that day in every timezone. */
+  protected formatDay(value: unknown): string {
+    if (!value) return NOT_AVAILABLE;
+    const raw = String(value);
+    const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+    const date = day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(raw);
+    return Number.isNaN(date.getTime()) ? raw : new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(date);
   }
   private loadViolationPage(): void {
     this.dataLoading.set(true);

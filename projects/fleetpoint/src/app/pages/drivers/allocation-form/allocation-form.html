@@ -1,5 +1,5 @@
 <app-modal [open]="open()" size="lg" labelledBy="allocation-form-title" (closed)="cancel()">
-  <div modal-header><h2 id="allocation-form-title">{{ editing() ? 'Update Allocation' : lockVehicle() ? 'Assign Driver' : 'Create Allocation' }}</h2><p>{{ editing() ? 'Update driver assignment details' : 'Assign drivers to a vehicle' }}</p></div>
+  <div modal-header><h2 id="allocation-form-title">{{ editing() ? 'Update Allocation' : lockVehicle() ? 'Assign Driver' : presetDriverId() ? 'Assign Vehicle' : 'Create Allocation' }}</h2><p>{{ editing() ? 'Update driver assignment details' : presetDriverId() ? 'Choose the vehicle and dates for this driver' : 'Assign drivers to a vehicle' }}</p></div>
   <form id="allocation-form" class="allocation-form" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
       <div class="shared-form-alert wide">{{ error() }}</div>

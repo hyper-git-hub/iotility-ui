@@ -1,11 +1,11 @@
 @reference "../../../../styles.css";
-@import '../../../shared/styles/fields.css';
 
+/* Page frame matches vehicle detail: heading with actions, an overview row, then a tabbed workspace. */
 .driver-detail-page {
-  @apply relative grid min-w-0 gap-5 bg-canvas p-5 text-ink dark:bg-dark-canvas dark:text-white;
+  @apply relative mx-auto grid w-full max-w-[1920px] min-w-0 gap-4 bg-canvas p-5 pb-10 text-ink dark:bg-dark-canvas dark:text-white;
 }
 .driver-detail-content {
-  @apply grid min-w-0 gap-5;
+  @apply grid min-w-0 gap-4;
 }
 .driver-detail-content.refreshing {
   @apply pointer-events-none opacity-[0.65];
@@ -15,41 +15,51 @@
   @apply rounded-xl border border-danger/30 bg-danger/10 p-4 text-xs text-danger;
 }
 
-.summary-heading {
-  @apply flex flex-col justify-between gap-3 sm:flex-row sm:items-end;
+/* Heading: same scale and actions as vehicle detail. */
+.detail-heading {
+  @apply flex min-w-0 flex-wrap items-center justify-between gap-4;
 }
-.summary-copy {
-  @apply flex items-center gap-3;
+.heading-copy {
+  @apply flex min-w-0 items-center gap-3;
 }
-.summary-copy > button {
-  @apply grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-line bg-white text-lg text-muted transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface;
+.heading-copy > button {
+  @apply grid size-9 shrink-0 cursor-pointer place-items-center rounded-[10px] border border-line bg-white text-lg text-muted transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface;
 }
-.summary-heading h2 {
-  @apply text-xl font-bold;
+.heading-copy p {
+  @apply mb-0.5 text-[10px] font-semibold tracking-[0.11em] text-muted uppercase dark:text-brand-300;
 }
-.summary-copy p {
-  @apply text-[10px] text-muted dark:text-brand-300;
+.heading-copy h1 {
+  @apply truncate text-[26px] leading-[1.1] font-bold tracking-[-0.03em];
 }
-.summary-copy span {
-  @apply text-xs text-muted dark:text-brand-300;
+.heading-meta {
+  @apply mt-1.5 block truncate text-xs text-muted dark:text-brand-300;
 }
-.cards-column {
-  @apply grid h-full gap-3;
+.heading-actions {
+  @apply flex flex-wrap items-center gap-2;
 }
-.cards-filter {
-  @apply grid w-48 gap-1 text-[10px] text-muted dark:text-brand-300;
+.secondary-action {
+  @apply h-9 cursor-pointer rounded-[9px] border border-line bg-white px-3.5 text-xs font-semibold text-ink transition hover:border-brand-400 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-line dark:bg-dark-surface dark:text-white;
 }
-.card-period-dropdown {
-  @apply block;
+.primary-action {
+  @apply h-9 cursor-pointer rounded-[9px] border-0 bg-brand-600 px-3.5 text-xs font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--color-brand-600) 22%, transparent);
 }
-.driver-breadcrumb-skeleton {
-  @apply flex items-center gap-1.5;
+.shift-pill {
+  @apply inline-flex h-7 items-center gap-2 rounded-full border border-line px-3 text-[11px] font-semibold text-muted dark:border-dark-line dark:text-brand-300;
 }
+.shift-pill i {
+  @apply size-2 rounded-full bg-muted;
+}
+.shift-pill.on {
+  @apply border-success/40 bg-success/10 text-success;
+}
+.shift-pill.on i {
+  @apply bg-success;
+}
+
+/* Overview row: profile beside the summary cards. Both size to their content, nothing is clipped. */
 .driver-overview-grid {
-  @apply grid items-stretch gap-5 xl:h-[25rem] xl:grid-cols-[2fr_3fr];
-}
-.metric-grid {
-  @apply grid h-full content-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:grid-rows-4;
+  @apply grid items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)];
 }
 .detail-card {
   @apply min-w-0 overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
@@ -60,131 +70,138 @@
 .detail-card h2 {
   @apply text-sm font-bold;
 }
-.detail-card header p,
-.detail-card header span {
-  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+.detail-card header p {
+  @apply mt-1 text-[11px] text-muted dark:text-brand-300;
+}
+.status-chip {
+  @apply rounded-full bg-line/60 px-2.5 py-1 text-[10px] font-semibold text-muted dark:bg-dark-line dark:text-brand-300;
+}
+.status-chip.active {
+  @apply bg-success/10 text-success;
 }
 
+.profile-body {
+  @apply grid gap-2 sm:grid-cols-[9.5rem_1fr];
+}
 .driver-identity {
-  @apply flex flex-col items-center gap-2 p-5 text-center;
-}
-.profile-panel {
-  @apply h-full content-start md:grid md:grid-cols-[15rem_1fr] md:grid-rows-[auto_1fr];
-}
-.profile-panel > header {
-  @apply md:col-span-2;
-}
-.profile-panel .details-list {
-  @apply md:pt-5;
+  @apply flex justify-center p-5 sm:pr-0;
 }
 .driver-identity img {
-  @apply size-[150px] shrink-0 rounded-2xl object-cover;
-}
-.driver-identity h3 {
-  @apply text-lg font-bold;
-}
-.driver-identity p {
-  @apply mt-1 max-w-48 truncate text-xs text-muted dark:text-brand-300;
-}
-.driver-identity .email-badge {
-  @apply mt-1 inline-flex max-w-full rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-medium text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
-}
-.profile-panel-skeleton .driver-identity h3 {
-  @apply flex h-[1.75rem] items-center justify-center;
-}
-.email-badge-skeleton {
-  @apply mt-1 flex h-[1.5rem] items-center justify-center;
-}
-.profile-panel-skeleton .details-list dd {
-  @apply flex items-center justify-end;
+  @apply size-30 shrink-0 rounded-2xl bg-canvas object-cover dark:bg-dark-canvas;
 }
 .details-list {
-  @apply px-5 pb-5;
+  @apply px-5 pb-4 sm:pt-3;
 }
 .details-list > div {
-  @apply grid grid-cols-[1fr_1.4fr] gap-3 border-t border-line py-2.5 text-xs first:border-t-0 dark:border-dark-line;
+  @apply grid grid-cols-[minmax(7rem,auto)_1fr] gap-3 border-t border-line py-2 text-xs first:border-t-0 dark:border-dark-line;
 }
 .details-list dt {
-  @apply text-muted dark:text-brand-300;
+  @apply whitespace-nowrap text-muted dark:text-brand-300;
 }
 .details-list dd {
-  @apply truncate text-right font-medium;
+  @apply min-w-0 text-right font-medium break-words;
 }
 
-.period-controls {
-  @apply grid items-end gap-3 p-5 md:grid-cols-[1fr_1fr_auto];
+.cards-panel > header {
+  @apply items-center;
 }
-.period-controls label {
-  @apply grid gap-1 text-[10px] text-muted dark:text-brand-300;
+.card-period-dropdown {
+  @apply block w-44 shrink-0;
 }
-.period-controls input {
-  @apply h-10 text-xs;
+.metric-grid {
+  @apply grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3;
 }
-.period-controls button {
-  @apply h-10 cursor-pointer rounded-xl bg-brand-600 px-5 text-xs font-semibold text-white transition hover:bg-brand-700;
+
+/* Workspace: tabs like vehicle detail, then one period toolbar for both tabs. */
+.detail-tabs {
+  @apply flex min-w-0 gap-0.5 overflow-x-auto border-b border-line bg-canvas/70 px-4 pt-[7px] dark:border-dark-line dark:bg-dark-canvas/40;
+  scrollbar-width: none;
+}
+.detail-tabs::-webkit-scrollbar {
+  display: none;
+}
+.detail-tabs button {
+  @apply relative flex h-[43px] shrink-0 cursor-pointer items-center gap-[7px] border-0 bg-transparent px-3 text-[11px] font-semibold text-muted dark:text-brand-300;
+}
+.detail-tabs button.active {
+  @apply text-brand-600 dark:text-brand-300;
+}
+.detail-tabs img {
+  @apply size-4 opacity-75;
+}
+.detail-tabs em {
+  @apply rounded-full bg-danger/10 px-1.5 py-0.5 text-[10px] font-bold text-danger not-italic;
+}
+.workspace-toolbar {
+  @apply flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 py-4 dark:border-dark-line;
 }
 .report-presets {
-  @apply flex flex-wrap justify-end gap-1.5;
+  @apply flex flex-wrap gap-1.5;
 }
 .report-presets button {
-  @apply cursor-pointer rounded-lg border border-line bg-white px-3 py-2 text-[10px] font-semibold text-muted transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
+  @apply cursor-pointer rounded-lg border border-line bg-white px-3 py-2 text-[11px] font-semibold text-muted transition hover:border-brand-400 hover:text-brand-600 disabled:cursor-not-allowed dark:border-dark-line dark:bg-dark-surface dark:text-brand-300;
 }
 .report-presets button.active {
   @apply border-brand-600 bg-brand-600 text-white hover:text-white;
 }
-.performance-summary {
-  @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-4;
+.period-controls {
+  @apply grid flex-1 items-end gap-3 sm:grid-cols-[1fr_1fr_auto] lg:max-w-2xl;
 }
-.performance-summary div {
-  @apply rounded-xl bg-canvas p-4 dark:bg-dark-canvas;
+.period-controls label {
+  @apply grid gap-1 text-[11px] text-muted dark:text-brand-300;
 }
-.performance-summary div {
-  @apply border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
-}
-.performance-summary span {
-  @apply block text-[10px] text-muted dark:text-brand-300;
-}
-.performance-summary strong {
-  @apply mt-2 block text-lg font-bold;
-}
-.performance-summary strong ui-skeleton {
-  @apply block;
+.period-controls button {
+  @apply h-10 cursor-pointer rounded-xl bg-brand-600 px-5 text-xs font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60;
 }
 
 .analytics-grid {
-  @apply grid items-stretch gap-5 xl:grid-cols-2;
+  @apply grid items-start gap-0 xl:grid-cols-2;
 }
 .analytics-card {
-  @apply min-h-72;
+  @apply min-w-0 border-line dark:border-dark-line xl:even:border-l;
 }
-.bar-list,
+.analytics-card + .analytics-card {
+  @apply border-t xl:border-t-0;
+}
+.analytics-card > header {
+  @apply flex items-start justify-between gap-3 px-5 pt-4;
+}
+.analytics-card > header span {
+  @apply mt-0.5 shrink-0 text-[11px] font-semibold text-muted dark:text-brand-300;
+}
+.bar-list {
+  @apply grid max-h-80 gap-4 overflow-y-auto p-5;
+}
 .idle-list {
   @apply grid max-h-80 gap-4 overflow-y-auto p-5;
 }
-.bar-list > div,
+.bar-list > div {
+  @apply grid grid-cols-[8.5rem_1fr_3.5rem] items-center gap-3 text-xs;
+}
 .idle-list > div {
   @apply grid grid-cols-[8.5rem_1fr_3.5rem] items-center gap-3 text-xs;
 }
-.bar-list i,
+/* Bar tracks: one rule each, so the dark track applies (see the note in theme.css). */
+.bar-list i {
+  @apply h-2 overflow-hidden rounded-full bg-canvas dark:bg-dark-canvas;
+}
 .idle-list i {
   @apply h-2 overflow-hidden rounded-full bg-canvas dark:bg-dark-canvas;
 }
-.bar-list b,
-.idle-list b {
+.bar-list b {
   @apply block h-full rounded-full bg-brand-600;
 }
 .idle-list b {
-  @apply bg-info;
+  @apply block h-full rounded-full bg-info;
 }
-.bar-list strong,
+.bar-list strong {
+  @apply text-right text-xs;
+}
 .idle-list strong {
   @apply text-right text-xs;
 }
 .empty-state {
-  @apply m-auto p-8 text-center text-xs text-muted dark:text-brand-300;
-}
-.idle-list .chart-empty-state {
-  @apply grid min-h-44 w-full place-items-center p-0;
+  @apply rounded-xl border border-dashed border-line px-4 py-6 text-center text-xs text-muted dark:border-dark-line dark:text-brand-300;
 }
 .analytics-list-skeleton {
   @apply grid gap-4 p-5;
@@ -192,15 +209,20 @@
 .analytics-list-skeleton > div {
   @apply grid grid-cols-[8.5rem_1fr_3.5rem] items-center gap-3;
 }
-
-.alerts-section {
-  @apply grid min-w-0 gap-4;
+.alerts-body {
+  @apply grid min-w-0 p-4;
 }
+
 @media (max-width: 640px) {
   .driver-detail-page {
     @apply p-3;
   }
-  .bar-list > div,
+  .heading-copy h1 {
+    @apply text-xl;
+  }
+  .bar-list > div {
+    @apply grid-cols-[7rem_1fr_3rem] gap-2;
+  }
   .idle-list > div {
     @apply grid-cols-[7rem_1fr_3rem] gap-2;
   }

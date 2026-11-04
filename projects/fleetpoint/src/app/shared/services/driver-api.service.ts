@@ -22,6 +22,9 @@ export interface DriverRecord {
   image: string | null;
   licence_number?: string | null;
   licence_expiry_date?: string | null;
+  /** What GET /driver/ actually returns for the licence today. */
+  license?: string | null;
+  license_expire_date?: string | null;
   status: string | number;
   driver_shift_status: boolean | null;
   data_joined: string;

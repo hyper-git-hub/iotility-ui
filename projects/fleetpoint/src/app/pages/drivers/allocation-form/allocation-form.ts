@@ -21,6 +21,9 @@ export class AllocationForm implements OnChanges {
   readonly presetVehicleId = input<string | number | null>(null);
   readonly presetVehicleLabel = input('');
   readonly lockVehicle = input(false);
+  /** Opens with this driver already selected (e.g. "Assign Vehicle" from a driver's page). */
+  readonly presetDriverId = input<string | number | null>(null);
+  readonly presetDriverLabel = input('');
   readonly cancelled = output<void>();
   readonly saved = output<void>();
   protected readonly editing = computed(() => !!this.allocation());
@@ -139,24 +142,27 @@ export class AllocationForm implements OnChanges {
               description: `Vehicle ID ${preset}`,
             });
           this.vehicleOptions.set(options);
-          this.driverOptions.set(
-            (drivers.data?.data ?? [])
-              .filter((driver) => driver.status === 1 || driver.status === '1')
-              .map((driver) => ({
-                id: String(driver.id),
-                label: driver.name,
-                description: driver.employee_id,
-              })),
-          );
+          const driverOptions: DropdownOption[] = (drivers.data?.data ?? [])
+            .filter((driver) => driver.status === 1 || driver.status === '1')
+            .map((driver) => ({
+              id: String(driver.id),
+              label: driver.name,
+              description: driver.employee_id,
+            }));
+          const presetDriver = String(this.presetDriverId() ?? '');
+          if (presetDriver && !driverOptions.some((option) => option.id === presetDriver))
+            driverOptions.unshift({ id: presetDriver, label: this.presetDriverLabel() || `Driver ${presetDriver}` });
+          this.driverOptions.set(driverOptions);
         },
         error: (response) =>
           this.error.set(response.error?.message || 'Vehicles and drivers could not be loaded.'),
       });
   }
   private reset(): void {
+    const presetDriver = this.presetDriverId();
     this.form.reset({
       vehicle: String(this.presetVehicleId() ?? ''),
-      drivers: [],
+      drivers: presetDriver == null || presetDriver === '' ? [] : [String(presetDriver)],
       start_date: '',
       end_date: '',
     });

@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, OperatorFunction, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 const FLEET_API = `${environment.fleetBaseUrl}/api`;
@@ -19,6 +19,17 @@ export interface DashboardCard<TData = number | string | null> {
   data: TData;
   chart_type: string | null;
   filter_by?: string;
+}
+
+/**
+ * `/dashboard/cards` returns a fixed list of slots with `null` for each card it has no value for.
+ * Drops those, so pages can read `card.code` safely (a null there throws and stops the page rendering).
+ */
+export function withoutEmptyCards<T>(): OperatorFunction<ApiResponse<(T | null)[]>, ApiResponse<T[]>> {
+  return map((response) => ({
+    ...response,
+    data: (Array.isArray(response?.data) ? response.data : []).filter((card): card is T => card != null),
+  }));
 }
 
 export interface GraphSeries { name: string; data: number[]; }
