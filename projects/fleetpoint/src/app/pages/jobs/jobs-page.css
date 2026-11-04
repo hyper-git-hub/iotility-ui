@@ -65,7 +65,7 @@
 .job-locations strong,.job-locations small { @apply block; }.job-locations strong { @apply text-ink dark:text-white; }.job-locations small { @apply mt-1 text-[11px] text-muted dark:text-brand-300; }
 .job-tasks h4 { @apply mb-2 text-[11px] font-semibold uppercase text-muted dark:text-brand-300; }
 .job-tasks > div { @apply mb-2 flex items-center gap-2 rounded-lg bg-canvas px-2.5 py-2 text-[11px] text-muted dark:bg-dark-canvas dark:text-brand-300; }
-.job-tasks i { @apply grid size-5 shrink-0 place-items-center rounded-full border border-muted text-[9px] not-italic; }
+.job-tasks i { @apply grid size-5 shrink-0 place-items-center rounded-full border border-muted text-[10px] not-italic; }
 .job-tasks > div.complete { @apply bg-success/10 text-muted; }
 .job-tasks > div.complete > span { @apply line-through; }
 .job-tasks > div.complete i { @apply border-success bg-success text-white; }
@@ -77,7 +77,8 @@
 .dispatch-card > header { @apply flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 dark:border-dark-line; }
 .dispatch-card > header > div:first-child { @apply flex items-baseline gap-4; }
 .dispatch-card h2 { @apply text-sm font-bold text-ink dark:text-white; }
-.dispatch-card header span,.dispatch-card > footer { @apply text-[10px] text-muted dark:text-brand-300; }
+.dispatch-card header span { @apply text-[10px] text-muted dark:text-brand-300; }
+.dispatch-card > footer { @apply text-[10px] text-muted dark:text-brand-300; }
 .dispatch-legend { @apply flex flex-wrap gap-4; }.dispatch-legend span { @apply inline-flex items-center gap-1.5; }.dispatch-legend i { @apply size-2 rounded-full; }
 .dispatch-legend .pending i { @apply bg-warning; }.dispatch-legend .assigned i { @apply bg-info; }.dispatch-legend .progress i { @apply bg-brand-600; }.dispatch-legend .completed i { @apply bg-success; }
 .dispatch-scroll { @apply min-w-0 overflow-x-auto; }

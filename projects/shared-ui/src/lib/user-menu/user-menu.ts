@@ -2,7 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Inject, input, output } from '@angular/core';
 import { Dropdown, DropdownOption } from '../dropdown/dropdown';
 import { Tooltip } from '../tooltip/tooltip';
-const THEME_KEY = 'iotility-theme';
+import { applyTheme, prefersDarkTheme } from '../theme/theme';
 
 @Component({
   selector: 'shared-user-menu',
@@ -23,16 +23,14 @@ export class UserMenu {
   protected isDark = false;
   private themeTransitionTimer: number | undefined;
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
-    const saved = localStorage.getItem(THEME_KEY);
-    this.isDark = saved === null ? true : saved === 'dark';
-    this.document.documentElement.classList.toggle('dark', this.isDark);
+    // index.html already applied the theme before first paint; this only reads it back.
+    this.isDark = prefersDarkTheme();
   }
   protected toggleTheme(): void {
     const root = this.document.documentElement;
     root.classList.add('theme-transition');
     this.isDark = !this.isDark;
-    root.classList.toggle('dark', this.isDark);
-    localStorage.setItem(THEME_KEY, this.isDark ? 'dark' : 'light');
+    applyTheme(this.isDark, true, root);
     if (this.themeTransitionTimer) {
       window.clearTimeout(this.themeTransitionTimer);
     }

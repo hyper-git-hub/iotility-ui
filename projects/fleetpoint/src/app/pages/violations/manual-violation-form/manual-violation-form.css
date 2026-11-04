@@ -1,10 +1,13 @@
 @reference "../../../../styles.css";
-@import '../../../shared/styles/fields.css';
 .manual-violation-form { @apply grid gap-3 sm:grid-cols-2; }
 .manual-violation-form .full { @apply sm:col-span-2; }
 .shared-form-field b { @apply text-danger; }
 .form-dropdown { @apply block; }
 .manual-violation-form textarea { @apply resize-none; }
 
-:host ::ng-deep app-modal .modal-panel { max-width:34rem;overflow:visible; }
-:host ::ng-deep app-modal .modal-content { overflow:visible; }
+/* Tunes the shared modal through its --modal-* properties (see shared/modal/modal.css). */
+
+:host {
+ --modal-max-width: 34rem;
+ --modal-overflow: visible;
+ --modal-content-overflow: visible }

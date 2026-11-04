@@ -7,12 +7,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="assets/favicon.png" />
     <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Theme before first paint: the saved choice, otherwise the OS setting. Same rule as
+      // shared-ui lib/theme/theme.ts and fleetpoint's index.html; keep the three in step.
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem('iotility-theme'); } catch (e) {}
+        var dark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+      })();
+    </script>
     <style>
       /* Boot screen. Same design as src/app/shared/loading (app-loading); keep the two in step. */
       .bootstrap-loading {
         position: fixed;
         inset: 0;
-        z-index: 9999;
+        z-index: var(--z-boot, 9999);
         display: grid;
         place-items: center;
         min-height: 100vh;
@@ -191,18 +201,5 @@
       <p class="bootstrap-loading__powered">Powered by <img src="assets/hypernym-loader-full.svg" alt="Hypernym" /></p>
     </main>
     <app-root></app-root>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const saved = localStorage.getItem('iotility-theme');
-        const html = document.documentElement;
-        if (saved === 'dark') {
-          html.classList.add('dark');
-        } else if (saved === 'light') {
-          html.classList.remove('dark');
-        } else {
-          html.classList.add('dark');
-        }
-      });
-    </script>
   </body>
 </html>

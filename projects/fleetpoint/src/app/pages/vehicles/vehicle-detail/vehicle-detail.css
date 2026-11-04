@@ -124,7 +124,7 @@
     color: #fff;
     border: 0;
     background: var(--color-brand-600);
-    box-shadow: 0 5px 14px rgb(124 58 237/.22)
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--color-brand-600) 22%, transparent)
 }
 
 .primary-action:hover {
@@ -239,7 +239,7 @@ app-vehicle-hud ::ng-deep .vehicle-hud {
     border-radius: 999px;
     color: var(--color-danger);
     background: color-mix(in srgb, var(--color-danger) 11%, transparent);
-    font-size: 9px;
+    font-size: 10px;
     font-style: normal;
     font-weight: 700
 }

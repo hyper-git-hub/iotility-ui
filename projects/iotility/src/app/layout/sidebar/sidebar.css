@@ -32,12 +32,12 @@
 /* Use Cases window anchored next to the Use Cases button.
    Grows out of the button (origin left) and stays interruptible: transitions, with visibility delayed until the exit finishes. */
 .use-cases-backdrop {
-  @apply fixed inset-0 z-[1499];
+  @apply fixed inset-0 z-[calc(var(--z-flyout)_-_1)];
   visibility: hidden;
   transition: visibility 0s linear 150ms;
 }
 .use-cases-window {
-  @apply absolute left-[calc(100%+28px)] top-0 z-[1500] w-fit overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply absolute left-[calc(100%+28px)] top-0 z-(--z-flyout) w-fit overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
   box-shadow: var(--shadow-popover);
   visibility: hidden;
   opacity: 0;

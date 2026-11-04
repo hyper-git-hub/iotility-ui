@@ -19,7 +19,7 @@
   @apply text-sm font-bold;
 }
 .reports-panel header span {
-  @apply rounded-full bg-brand-50 px-2 py-1 text-[9px] font-bold text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
+  @apply rounded-full bg-brand-50 px-2 py-1 text-[10px] font-bold text-brand-700 dark:bg-brand-600/15 dark:text-brand-300;
 }
 .reports-panel header p {
   @apply mt-1 text-[10px] text-muted dark:text-brand-300;
@@ -27,7 +27,9 @@
 .interval-filter {
   @apply grid gap-3 border-b border-line p-4 dark:border-dark-line;
 }
-.interval-filter h2,
+.interval-filter h2 {
+  @apply text-[10px] font-semibold uppercase tracking-wider text-muted dark:text-brand-300;
+}
 .report-list > p {
   @apply text-[10px] font-semibold uppercase tracking-wider text-muted dark:text-brand-300;
 }
@@ -65,7 +67,7 @@
   @apply border-brand-600 bg-brand-50 dark:bg-brand-600/10;
 }
 .report-option > span:first-child {
-  @apply grid size-8 shrink-0 place-items-center rounded-lg bg-canvas text-[9px] font-bold text-brand-700 dark:bg-dark-canvas dark:text-brand-300;
+  @apply grid size-8 shrink-0 place-items-center rounded-lg bg-canvas text-[10px] font-bold text-brand-700 dark:bg-dark-canvas dark:text-brand-300;
 }
 .report-option.selected > span:first-child {
   @apply bg-brand-600 text-white;
@@ -77,7 +79,7 @@
   @apply block text-xs font-semibold;
 }
 .report-option small {
-  @apply mt-0.5 block truncate text-[9px] text-muted dark:text-brand-300;
+  @apply mt-0.5 block truncate text-[10px] text-muted dark:text-brand-300;
 }
 .report-option i {
   @apply text-lg not-italic text-muted;

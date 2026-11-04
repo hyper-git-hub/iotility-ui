@@ -64,7 +64,7 @@
   @apply text-white/75;
 }
 .vehicle-list em {
-  @apply text-[9px] not-italic text-muted;
+  @apply text-[10px] not-italic text-muted;
 }
 .vehicle-list em.online {
   @apply text-success;
@@ -133,7 +133,7 @@
   @apply flex items-center gap-3 border-b border-line/60 px-4 py-3 last:border-0 dark:border-dark-line;
 }
 .recent-events article > span {
-  @apply rounded-full bg-canvas px-2 py-1 text-[9px] font-semibold dark:bg-dark-canvas;
+  @apply rounded-full bg-canvas px-2 py-1 text-[10px] font-semibold dark:bg-dark-canvas;
 }
 .recent-events article > span[data-severity='Critical'] {
   @apply bg-danger/10 text-danger;
@@ -151,7 +151,9 @@
 .recent-events article strong {
   @apply text-xs;
 }
-.recent-events article small,
+.recent-events article small {
+  @apply mt-0.5 text-[10px] text-muted dark:text-brand-300;
+}
 .empty {
   @apply mt-0.5 text-[10px] text-muted dark:text-brand-300;
 }
@@ -199,9 +201,11 @@
 .live-alerts button strong {
   @apply text-[10px];
 }
-.live-alerts button small,
+.live-alerts button small {
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
+}
 .live-alerts button time {
-  @apply mt-1 text-[9px] text-muted dark:text-brand-300;
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
 }
 .live-alerts button b {
   @apply text-muted;

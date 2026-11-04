@@ -3,7 +3,7 @@
   top: 0;
   right: 0;
   left: 0;
-  z-index: 4000;
+  z-index: var(--z-route-progress);
   height: 2px;
   overflow: hidden;
   pointer-events: none;

@@ -55,7 +55,7 @@
 }
 
 .zone-copy small {
-  @apply mt-1 inline-flex rounded-md bg-canvas px-1.5 py-0.5 text-[9px] font-medium text-muted dark:bg-dark-canvas dark:text-brand-300;
+  @apply mt-1 inline-flex rounded-md bg-canvas px-1.5 py-0.5 text-[10px] font-medium text-muted dark:bg-dark-canvas dark:text-brand-300;
 }
 
 .zone-metrics {
@@ -101,7 +101,7 @@
 }
 
 .zone-legend span {
-  @apply flex items-center gap-1 whitespace-nowrap text-[9px] text-muted dark:text-brand-300;
+  @apply flex items-center gap-1 whitespace-nowrap text-[10px] text-muted dark:text-brand-300;
 }
 
 .zone-legend i {
@@ -116,7 +116,7 @@
 .zone-legend [data-type='corridor'] i { @apply bg-teal-500; }
 
 .draw-note {
-  @apply shrink-0 text-[9px] text-muted dark:text-brand-300;
+  @apply shrink-0 text-[10px] text-muted dark:text-brand-300;
 }
 
 .map-canvas {
@@ -193,8 +193,14 @@
   @apply mt-3 rounded-xl bg-canvas p-3 dark:bg-dark-canvas;
 }
 
-.zone-rules h3,
-.linked-zone h3,
+.zone-rules h3 {
+  @apply mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted dark:text-brand-300;
+}
+
+.linked-zone h3 {
+  @apply mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted dark:text-brand-300;
+}
+
 .recent-zone-activity h3 {
   @apply mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted dark:text-brand-300;
 }
@@ -238,7 +244,7 @@
 }
 
 .detail-metrics span {
-  @apply mt-1 text-[9px] text-muted dark:text-brand-300;
+  @apply mt-1 text-[10px] text-muted dark:text-brand-300;
 }
 
 .linked-zone a {

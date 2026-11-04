@@ -1,5 +1,4 @@
 @reference "../../../../styles.css";
-@import '../../../shared/styles/fields.css';
 
 .fleet-form {
   @apply flex flex-col gap-3;
@@ -11,7 +10,11 @@
   @apply block;
 }
 
-:host ::ng-deep app-modal .modal-panel,
-:host ::ng-deep app-modal .modal-content {
-  overflow: visible;
+/* Tunes the shared modal through its --modal-* properties (see shared/modal/modal.css). */
+
+:host {
+
+  --modal-overflow: visible;
+
+  --modal-content-overflow: visible
 }

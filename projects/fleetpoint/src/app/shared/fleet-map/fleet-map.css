@@ -13,7 +13,7 @@
   background: var(--color-brand-50);
 }
 .map-overlays {
-  @apply pointer-events-none absolute inset-0 z-[500];
+  @apply pointer-events-none absolute inset-0 z-(--z-map-controls);
 }
 .overlay-controls {
   @apply pointer-events-auto absolute right-4 top-4;
@@ -390,6 +390,6 @@
 }
 :host ::ng-deep .vp-foot {
   margin-top: 0.25rem;
-  font-size: 0.5625rem;
+  font-size: 0.625rem;
   color: #9ca3af;
 }

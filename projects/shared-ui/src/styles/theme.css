@@ -91,6 +91,12 @@
    into `.dark[_ngcontent-…]`, which never matches <html>. Any other pseudo in the compound makes Angular
    scope the subject element instead and leave `.dark` global, so dark styles on selector lists apply. */
 @custom-variant dark (&:where(.dark, .dark *):not(:not(*)));
+/* Dark mode in component styles: use `dark:` in @apply. Reach for :host-context(.dark) only where a
+   utility can't express it: pseudo-elements (`::after` can't take the variant) and raw values such as
+   color-mix(). Global stylesheets may use `.dark` directly.
+   Don't put `dark:` in a rule whose selector list has a descendant selector (`.a b, .c d { @apply …
+   dark:… }`): Tailwind folds the list into :is(), which ends up less specific than the light rule after
+   Angular scopes it, so the dark styles never apply. Write one rule per selector instead. */
 
 :root {
   /* Form controls: every input, select-style dropdown, date picker and search box sizes from these. */
@@ -129,11 +135,28 @@
   --shadow-popover: 0 2px 4px -1px rgb(30 27 75 / 0.05), 0 8px 16px -4px rgb(30 27 75 / 0.08),
     0 20px 40px -12px rgb(30 27 75 / 0.16);
   --shadow-modal: 0 8px 16px -8px rgb(30 27 75 / 0.12), 0 32px 64px -16px rgb(30 27 75 / 0.3);
-}
 
-/* FleetPoint fields are rounder than IoTility's; one token keeps the difference deliberate. */
-app-fleetpoint-layout {
-  --control-radius: 0.75rem;
+  /* Stacking: app-wide layers, lowest to highest. Stacking inside a single component uses small
+     literal values (0–50). Use with z-index: var(--z-…) or the z-(--z-…) utility. */
+  --z-sidebar: 30;
+  --z-map-controls: 500;
+  --z-map-progress: 550;
+  --z-map-panel: 600;
+  --z-map-panel-top: 650;
+  --z-dropdown: 900;
+  --z-fullscreen: 1200;
+  --z-flyout: 1500;
+  --z-modal: 1600;
+  --z-search: 1600;
+  --z-popover: 1700;
+  --z-drawer-backdrop: 1700;
+  --z-drawer: 1800;
+  --z-dialog: 2000;
+  --z-blocking: 2500;
+  --z-app-loader: 3000;
+  --z-route-progress: 4000;
+  --z-boot: 9999;
+  --z-tooltip: 2147483000;
 }
 
 .dark {
@@ -358,7 +381,7 @@ button:disabled {
   z-index: 0;
   border-radius: var(--tab-pill-radius, 0.5rem);
   background: var(--tab-pill-bg, var(--color-brand-600));
-  box-shadow: var(--tab-pill-shadow, 0 4px 12px -4px rgb(124 58 237 / 0.55));
+  box-shadow: var(--tab-pill-shadow, 0 4px 12px -4px color-mix(in srgb, var(--color-brand-600) 55%, transparent));
   transform-origin: 0 0;
 }
 .shared-tab-indicator.pill.ready {

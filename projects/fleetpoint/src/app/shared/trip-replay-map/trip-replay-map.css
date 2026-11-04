@@ -12,7 +12,7 @@
   position: relative;
 }
 .map-overlays {
-  @apply pointer-events-none absolute inset-0 z-[500];
+  @apply pointer-events-none absolute inset-0 z-(--z-map-controls);
 }
 .overlay-controls {
   @apply pointer-events-auto absolute right-4 top-4;
@@ -38,7 +38,7 @@
    lives inside .maplibregl-ctrl-top-right, which MapLibre paints at z-index 2.
    Without this lift the 3D vehicle model draws over the event cards and dots,
    and even hides the card text. 3 keeps the HTML UI above the overlay while
-   staying under the map-controls overlay (z-[500]) and the page HUD. */
+   staying under the map-controls overlay (z-(--z-map-controls)) and the page HUD. */
 :host ::ng-deep .maplibregl-popup,
 :host ::ng-deep .maplibregl-marker {
   z-index: 3;

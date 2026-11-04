@@ -1,5 +1,4 @@
 @reference "../../../../styles.css";
-@import '../../../shared/styles/fields.css';
 
 .driver-form {
   @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3;

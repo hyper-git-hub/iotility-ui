@@ -45,11 +45,11 @@ export interface ChartPalette {
 }
 
 const SERIES_TOKENS: [string, string][] = [
-  ['--color-brand-500', '#8b5cf6'],
+  ['--color-brand-500', '#ad46ff'],
   ['--color-info', '#3978d4'],
   ['--color-success', '#21a179'],
   ['--color-warning', '#e7a92d'],
-  ['--color-danger', '#e05252'],
+  ['--color-danger', '#d9435f'],
   ['--color-sky-500', '#0ea5e9'],
   ['--color-pink-600', '#db2777'],
   ['--color-lime-600', '#65a30d'],
@@ -62,7 +62,7 @@ const SERIES_TOKENS: [string, string][] = [
 let probe: CanvasRenderingContext2D | null = null;
 
 /** Normalises any CSS colour (including oklch) to rgb()/rgba() by painting one pixel. */
-export function toRgb(color: string, fallback = '#8b5cf6'): string {
+export function toRgb(color: string, fallback = '#ad46ff'): string {
   if (typeof document === 'undefined') return fallback;
   probe ??= Object.assign(document.createElement('canvas'), { width: 1, height: 1 }).getContext('2d', {
     willReadFrequently: true,
@@ -247,11 +247,11 @@ function resolvePalette(dark: boolean): ChartPalette {
   const token = (name: string, fallback: string) => toRgb(styles.getPropertyValue(name).trim() || fallback, fallback);
   return {
     dark,
-    brand: token('--color-brand-500', '#8b5cf6'),
+    brand: token('--color-brand-500', '#ad46ff'),
     info: token('--color-info', '#3978d4'),
     success: token('--color-success', '#21a179'),
     warning: token('--color-warning', '#e7a92d'),
-    danger: token('--color-danger', '#e05252'),
+    danger: token('--color-danger', '#d9435f'),
     text: dark ? token('--color-brand-300', '#c4b5fd') : token('--color-muted', '#6b7280'),
     grid: dark ? token('--color-dark-line', '#2b2e3b') : token('--color-line', '#e6e8ef'),
     surface: dark ? token('--color-dark-surface', '#14151c') : '#ffffff',

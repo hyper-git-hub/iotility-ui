@@ -38,5 +38,5 @@
   @apply hidden;
 }
 .compact .video-empty small {
-  @apply text-[9px];
+  @apply text-[10px];
 }

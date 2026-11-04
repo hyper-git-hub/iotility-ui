@@ -1,5 +1,4 @@
 @reference "../../../styles.css";
-@import '../../shared/styles/fields.css';
 
 :host {
   @apply block h-full;
@@ -166,7 +165,7 @@
   @apply mt-2 cursor-pointer rounded-lg bg-danger px-3 py-1.5 text-[10px] font-semibold text-white;
 }
 .tracking-map-error {
-  @apply absolute left-1/2 top-1/2 z-[650] m-0 w-[min(22rem,calc(100%_-_2rem))] -translate-x-1/2 -translate-y-1/2 bg-white/95 shadow-xl backdrop-blur dark:bg-dark-surface/95;
+  @apply absolute left-1/2 top-1/2 z-(--z-map-panel-top) m-0 w-[min(22rem,calc(100%_-_2rem))] -translate-x-1/2 -translate-y-1/2 bg-white/95 shadow-xl backdrop-blur dark:bg-dark-surface/95;
   transition: left 260ms var(--ease-out);
 }
 .tracking-map-error strong {
@@ -202,13 +201,13 @@
   opacity: 1;
 }
 .map-status {
-  @apply absolute z-[500] left-4 top-4 max-w-[calc(100%_-_5rem)] truncate;
+  @apply absolute z-(--z-map-controls) left-4 top-4 max-w-[calc(100%_-_5rem)] truncate;
 }
 .search-overlay-overlay {
-  @apply absolute z-[500] left-4 top-14;
+  @apply absolute z-(--z-map-controls) left-4 top-14;
 }
 .map-legend {
-  @apply absolute z-[500] bottom-4 left-1/2 -translate-x-1/2;
+  @apply absolute z-(--z-map-controls) bottom-4 left-1/2 -translate-x-1/2;
   transition: left 260ms var(--ease-out);
 }
 @media (min-width: 901px) {
@@ -224,13 +223,13 @@
   }
 }
 .map-controls-overlay {
-  @apply absolute z-[500] right-4 top-4;
+  @apply absolute z-(--z-map-controls) right-4 top-4;
 }
 .panel-hidden {
   display: none;
 }
 .details-panel {
-  @apply absolute bottom-0 right-0 top-0 z-[600] w-80 overflow-x-hidden overflow-y-auto border-l border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply absolute bottom-0 right-0 top-0 z-(--z-map-panel) w-80 overflow-x-hidden overflow-y-auto border-l border-line bg-white dark:border-dark-line dark:bg-dark-surface;
   box-shadow: var(--shadow-popover);
   animation: details-panel-in 260ms var(--ease-out) both;
 }
@@ -283,7 +282,7 @@
   color: var(--color-white);
 }
 .details-panel header > div > span {
-  @apply rounded-full bg-success/10 px-2 py-1 text-[9px];
+  @apply rounded-full bg-success/10 px-2 py-1 text-[10px];
 }
 .details-panel header small {
   margin-top: 0.25rem;
@@ -353,7 +352,7 @@
     @apply w-60;
   }
   .details-panel {
-    @apply absolute bottom-0 right-0 top-0 z-[600] w-72 shadow-2xl;
+    @apply absolute bottom-0 right-0 top-0 z-(--z-map-panel) w-72 shadow-2xl;
     animation: details-panel-overlay-in 300ms var(--ease-drawer) both;
   }
   .details-panel.details-panel-leave {

@@ -1,5 +1,4 @@
 @reference "../../../styles.css";
-@import "../../shared/styles/fields.css";
 :host {
   display: block;
 }

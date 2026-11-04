@@ -28,7 +28,9 @@
 .dashboard-tabs::-webkit-scrollbar {
   display: none;
 }
-.dashboard-tabs a,
+.dashboard-tabs a {
+  @apply -mb-px flex cursor-pointer items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent bg-transparent px-4 py-2.5 text-xs text-muted transition hover:text-brand-600 dark:text-brand-300;
+}
 .dashboard-tabs button {
   @apply -mb-px flex cursor-pointer items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent bg-transparent px-4 py-2.5 text-xs text-muted transition hover:text-brand-600 dark:text-brand-300;
 }

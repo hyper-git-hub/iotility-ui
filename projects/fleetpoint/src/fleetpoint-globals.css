@@ -1,0 +1,97 @@
+/*
+ * FleetPoint's global styles. Imported by FleetPoint's own styles.css and by the IoTility host's,
+ * because inside the host only the host's global stylesheet is loaded.
+ */
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+.fleet-surface {
+  @apply rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.fleet-heading {
+  @apply text-ink dark:text-white;
+}
+.fleet-muted {
+  @apply text-muted dark:text-brand-300;
+}
+.fleet-status-success {
+  @apply border-success/30 bg-success/5 dark:bg-success/10;
+}
+.fleet-status-warning {
+  @apply border-warning/40 bg-warning/5 dark:bg-warning/10;
+}
+.fleet-status-danger {
+  @apply border-danger/30 bg-danger/5 dark:bg-danger/10;
+}
+
+img[src$='assets/fleetpoint/def-car.svg'] {
+  padding: 0 !important;
+}
+
+.maplibregl-ctrl-attrib {
+  display: none !important;
+}
+
+/* Shared form fields, buttons and the modal footer (was shared/styles/fields.css, which every form
+   component imported and so carried its own copy of). In the components layer, so a component's own
+   rules still win. */
+@layer components {
+
+  .fleet-checkbox {
+    @apply relative size-5 shrink-0 cursor-pointer appearance-none rounded-full border border-line bg-white transition dark:border-dark-line dark:bg-dark-canvas;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .fleet-checkbox:checked {
+    @apply border-brand-600 bg-brand-600 shadow-[0_2px_6px_color-mix(in_srgb,var(--color-brand-600)_30%,transparent)];
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m5.5 10.2 2.8 2.8 6.2-6.2' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+  .fleet-checkbox:focus-visible { @apply outline-2 outline-offset-2 outline-brand-400; }
+
+  /* Search box: generic .ui-control .ui-control-group .ui-control-sm (controls.css); only placement here. */
+  .fleet-search-field {
+    @apply mx-3 mt-3 w-auto;
+  }
+
+  .shared-form-field {
+    @apply block;
+  }
+  .shared-form-field > span {
+    @apply mb-1.5 block text-xs font-medium text-ink dark:text-brand-300;
+  }
+  /* Required marker: "Name <b>*</b>". */
+  .shared-form-field > span b {
+    @apply font-medium text-danger;
+  }
+  /* Field-level validation message under a control. */
+  .shared-form-error {
+    @apply mt-1.5 block text-[10px] font-medium text-danger;
+  }
+  /* Form-level error from the API, shown above the fields. */
+  .shared-form-alert {
+    @apply rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger;
+  }
+  .shared-button-primary {
+    @apply inline-flex min-h-10 items-center justify-center rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50;
+  }
+  .shared-button-secondary {
+    @apply inline-flex min-h-10 items-center justify-center rounded-xl border border-line px-4 text-sm font-medium text-muted transition hover:border-brand-400 hover:text-brand-600 disabled:opacity-50 disabled:hover:border-line disabled:hover:text-muted dark:border-dark-line dark:text-brand-300;
+  }
+
+  /* Modal form footer: secondary action then primary, equal width across the footer. */
+  .form-actions {
+    @apply flex w-full gap-2;
+  }
+  .form-actions > button {
+    @apply flex-1;
+  }
+  /* With a step rail on the left, the buttons line up under the step content instead. */
+  @media (min-width: 1024px) {
+    .form-actions.with-stepper {
+      @apply ml-auto;
+      width: calc(100% - 14rem);
+    }
+  }
+}

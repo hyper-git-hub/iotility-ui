@@ -85,7 +85,7 @@
 }
 
 .zone-counts small {
-  @apply mt-0.5 text-[9px] text-muted dark:text-brand-300;
+  @apply mt-0.5 text-[10px] text-muted dark:text-brand-300;
 }
 
 .zone-counts .inside strong { @apply text-success; }
@@ -161,7 +161,10 @@
   @apply bg-success/10 text-success;
 }
 
-.recent-events p,
+.recent-events p {
+  @apply text-xs text-muted dark:text-brand-300;
+}
+
 .zone-empty {
   @apply text-xs text-muted dark:text-brand-300;
 }

@@ -26,7 +26,7 @@
 
 .picker-panel {
   position: fixed;
-  z-index: 2000;
+  z-index: var(--z-dialog);
   width: min(20.5rem, calc(100vw - 1.5rem));
   margin: 0;
   overflow: visible;
@@ -216,7 +216,7 @@
 }
 .time-controls label span {
   color: var(--color-muted);
-  font-size: 0.5625rem;
+  font-size: 0.625rem;
   font-weight: 500;
   letter-spacing: 0.025em;
   text-transform: uppercase;

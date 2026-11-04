@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="assets/favicon.png" />
     <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Theme before first paint: the saved choice, otherwise the OS setting. Same rule as
+      // shared-ui lib/theme/theme.ts and iotility's index.html; keep the three in step.
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem('iotility-theme'); } catch (e) {}
+        var dark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+      })();
+    </script>
   </head>
   <body>
     <app-root></app-root>

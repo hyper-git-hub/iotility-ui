@@ -1,8 +1,8 @@
 @reference "../../../../styles.css";
 :host { @apply block h-80 w-full overflow-hidden rounded-xl border border-line relative dark:border-dark-line; }
-:host(.is-fullscreen) { position: fixed; inset: 0; z-index: 1200; height: auto; border-radius: 0; }
+:host(.is-fullscreen) { position: fixed; inset: 0; z-index: var(--z-fullscreen); height: auto; border-radius: 0; }
 .location-map { @apply h-full w-full bg-brand-50; }
-.map-overlays { @apply pointer-events-none absolute inset-0 z-[500]; }
+.map-overlays { @apply pointer-events-none absolute inset-0 z-(--z-map-controls); }
 .overlay-controls { @apply pointer-events-auto absolute right-3 top-3; }
 :host ::ng-deep .poi-picker-marker { @apply block h-[46px] w-9; filter: drop-shadow(0 4px 5px rgb(15 23 42 / 28%)); }
 :host ::ng-deep .poi-picker-marker svg { @apply block h-full w-full; }

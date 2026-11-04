@@ -1,13 +1,12 @@
 @reference "../../../../styles.css";
-@import "../../../shared/styles/fields.css";
 
 .vehicle-form-layout { @apply flex flex-col gap-4 lg:flex-row; }
 .step-content { @apply min-w-0 flex-1; }
 .details-step { @apply grid gap-3 sm:grid-cols-2; }
 .wide { @apply sm:col-span-2; }
-.details-step > header h3,
+.details-step > header h3 { @apply text-base font-bold text-ink dark:text-white; }
 .monitoring-step > header h3 { @apply text-base font-bold text-ink dark:text-white; }
-.details-step > header p,
+.details-step > header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
 .monitoring-step > header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
 .violations { @apply border-0 p-0; }
 .violations legend { @apply mb-2 text-xs font-medium text-ink dark:text-brand-300; }
@@ -25,12 +24,12 @@
   stroke-width: 1.8;
 }
 .violations strong { @apply text-sm font-semibold; }
-.monitor-check { @apply absolute right-3 top-3 hidden size-5 place-items-center rounded-full border border-brand-600 bg-brand-600 text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(124,58,237,0.3)]; }
+.monitor-check { @apply absolute right-3 top-3 hidden size-5 place-items-center rounded-full border border-brand-600 bg-brand-600 text-[10px] font-bold text-white shadow-[0_2px_6px_color-mix(in_srgb,var(--color-brand-600)_30%,transparent)]; }
 .violations label:has(input:checked) { @apply border-brand-600 bg-brand-600 text-white shadow-md; }
 .violations label:has(input:checked) .monitor-check { @apply grid; }
 .violations label:has(input:checked) .selected-white-icon { filter: brightness(0) invert(1); }
 .device-fields { @apply grid gap-4 md:grid-cols-2; }
-.documents-heading { @apply mb-4 mt-7; }.documents-heading h3,.driver-step h3 { @apply text-base font-bold text-ink dark:text-white; }.documents-heading p,.driver-step header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
+.documents-heading { @apply mb-4 mt-7; }.documents-heading h3 { @apply text-base font-bold text-ink dark:text-white; }.driver-step h3 { @apply text-base font-bold text-ink dark:text-white; }.documents-heading p { @apply mt-1 text-xs text-muted dark:text-brand-300; }.driver-step header p { @apply mt-1 text-xs text-muted dark:text-brand-300; }
 .document-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5; }
 .driver-step > header { @apply mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center; }
 .driver-grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-3; }
@@ -49,11 +48,13 @@
 .edit-settings label { @apply flex cursor-pointer items-center gap-2 text-xs text-ink dark:text-white; }
 .edit-settings input { @apply sr-only; }
 .edit-settings label > span { @apply grid size-5 place-items-center rounded-full border border-line bg-white transition dark:border-dark-line dark:bg-dark-canvas; }
-.edit-settings label:has(input:checked) > span { @apply border-brand-600 bg-brand-600 shadow-[0_2px_6px_rgba(124,58,237,0.3)]; }
+.edit-settings label:has(input:checked) > span { @apply border-brand-600 bg-brand-600 shadow-[0_2px_6px_color-mix(in_srgb,var(--color-brand-600)_30%,transparent)]; }
 .edit-settings label:has(input:checked) > span::after { content:'✓'; @apply text-[10px] font-bold text-white; }
 
 .form-dropdown { @apply block; }
 :host ::ng-deep .step-content .height-frame { overflow: visible; }
-:host ::ng-deep app-modal .modal-panel,
-:host ::ng-deep app-modal .modal-content { overflow: visible; }
+/* Tunes the shared modal through its --modal-* properties (see shared/modal/modal.css). */
+:host {
+ --modal-overflow: visible;
+ --modal-content-overflow: visible; }
 

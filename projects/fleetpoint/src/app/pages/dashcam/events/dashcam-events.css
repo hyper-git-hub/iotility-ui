@@ -16,7 +16,7 @@
   @apply inline-flex items-center gap-2 whitespace-nowrap;
 }
 .driver-cell i {
-  @apply grid size-6 shrink-0 place-items-center rounded-full bg-brand-500 text-[9px] not-italic font-semibold text-white;
+  @apply grid size-6 shrink-0 place-items-center rounded-full bg-brand-500 text-[10px] not-italic font-semibold text-white;
 }
 .speed-cell,
 .score-cell {
@@ -72,7 +72,7 @@
 }
 .category-badge,
 .severity-badge {
-  @apply rounded-full border px-2 py-1 text-[9px] font-semibold;
+  @apply rounded-full border px-2 py-1 text-[10px] font-semibold;
 }
 .category-badge {
   @apply border-info/30 bg-info/10 text-info;
@@ -136,7 +136,7 @@
   @apply mt-2 text-[10px];
 }
 .review-note small {
-  @apply mt-1 block text-[9px] text-muted dark:text-brand-300;
+  @apply mt-1 block text-[10px] text-muted dark:text-brand-300;
 }
 .event-details > footer {
   @apply flex justify-end gap-2 border-t border-line p-3 dark:border-dark-line;

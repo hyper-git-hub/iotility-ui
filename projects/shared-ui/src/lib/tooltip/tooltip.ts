@@ -17,7 +17,7 @@ const TOOLTIP_STYLES = `
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 2147483000;
+    z-index: var(--z-tooltip);
     max-width: 240px;
     padding: 5px 9px;
     border-radius: 7px;

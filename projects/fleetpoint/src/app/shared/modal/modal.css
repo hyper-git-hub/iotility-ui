@@ -1,15 +1,22 @@
 @reference "../../../styles.css";
 
 .modal-backdrop {
-  @apply fixed inset-0 z-[1600] grid place-items-center overflow-y-auto bg-dark-canvas/65 p-4 backdrop-blur-sm;
+  @apply fixed inset-0 z-(--z-modal) grid place-items-center overflow-y-auto bg-dark-canvas/65 p-4 backdrop-blur-sm;
 }
+/*
+ * A form tunes its modal by setting these on its own :host (they inherit down), instead of reaching
+ * in with ::ng-deep: --modal-max-width, --modal-overflow (visible lets dropdowns escape the panel),
+ * --modal-content-overflow and --modal-content-max-height.
+ */
 .modal-panel {
-  @apply my-auto w-full max-w-md overflow-hidden rounded-3xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  @apply my-auto w-full rounded-3xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+  max-width: var(--modal-max-width, 28rem);
+  overflow: var(--modal-overflow, hidden);
   box-shadow: var(--shadow-modal);
 }
-.modal-panel.modal-large { @apply max-w-3xl; }
-.modal-panel.modal-extra-large { @apply max-w-6xl; }
-.modal-panel.modal-small { @apply max-w-sm; }
+.modal-panel.modal-large { max-width: var(--modal-max-width, 48rem); }
+.modal-panel.modal-extra-large { max-width: var(--modal-max-width, 72rem); }
+.modal-panel.modal-small { max-width: var(--modal-max-width, 24rem); }
 .modal-panel.modal-busy {
   border: 0 !important;
   outline: 0 !important;
@@ -33,7 +40,11 @@
 }
 /* No height cap: a tall form grows and the backdrop scrolls, so content never spills over the footer
    (most forms unclip the body for their dropdowns). Forms that want an inner scroll set their own max-height. */
-.modal-content { @apply overflow-y-auto px-6 py-3; }
+.modal-content {
+  @apply px-6 py-3;
+  overflow: var(--modal-content-overflow, auto);
+  max-height: var(--modal-content-max-height, none);
+}
 .modal-footer { @apply flex gap-2 px-6 pb-6 pt-3; }
 
 /* Open/close motion is choreographed in modal.ts (Web Animations). Folded away after collapse(): kept alive, unseen. */

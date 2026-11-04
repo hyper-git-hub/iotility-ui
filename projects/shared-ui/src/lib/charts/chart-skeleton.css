@@ -17,16 +17,32 @@
 }
 
 /* Shared tones (match ui-skeleton). */
-.y-axis span,
-.x-axis span,
-.bars span,
-.rows .label,
-.rows b,
-.legend i,
-.legend b,
-.total b,
+.y-axis span {
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
+}
+.x-axis span {
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
+}
+.bars span {
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
+}
+.rows .label {
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
+}
+.rows b {
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
+}
+.legend i {
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
+}
+.legend b {
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
+}
+.total b {
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
+}
 .total i {
-  @apply block rounded-full bg-slate-200/80 dark:bg-slate-700/55;
+  @apply block rounded-full bg-line/80 dark:bg-dark-line/70;
 }
 
 /* Line and vertical bar: axes around a plot. */
@@ -40,13 +56,13 @@
   @apply h-1.5;
 }
 .plot {
-  @apply relative min-w-0 border-b border-slate-200/80 dark:border-slate-700/55;
+  @apply relative min-w-0 border-b border-line/80 dark:border-dark-line/70;
 }
 .grid {
   @apply absolute inset-0 flex flex-col justify-between;
 }
 .grid i {
-  @apply block w-full border-t border-dashed border-slate-100 dark:border-slate-800/70;
+  @apply block w-full border-t border-dashed border-line/60 dark:border-dark-line/50;
 }
 .x-axis {
   @apply absolute inset-x-0 -bottom-5 flex justify-around;
@@ -78,7 +94,7 @@ svg {
   @apply absolute inset-0 flex items-end justify-around gap-[6%] px-[4%];
 }
 .bars span {
-  @apply w-full max-w-7 rounded-b-none rounded-t-md bg-slate-200/60 dark:bg-slate-700/40;
+  @apply w-full max-w-7 rounded-b-none rounded-t-md bg-line/60 dark:bg-dark-line/55;
 }
 
 /* Horizontal bars: a label stub and a track per row. */
@@ -92,10 +108,10 @@ svg {
   @apply h-2 w-full;
 }
 .rows .track {
-  @apply block h-3.5 overflow-hidden rounded-full bg-slate-100/80 dark:bg-slate-800/60;
+  @apply block h-3.5 overflow-hidden rounded-full bg-line/45 dark:bg-dark-line/40;
 }
 .rows b {
-  @apply h-full rounded-full bg-slate-200/70 dark:bg-slate-700/50;
+  @apply h-full rounded-full bg-line/70 dark:bg-dark-line/65;
 }
 
 /* Donut: segmented ring with the total placeholder in the middle. */

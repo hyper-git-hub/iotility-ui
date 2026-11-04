@@ -1,3 +1,5 @@
 @reference "../../../../styles.css";
-@import '../../../shared/styles/fields.css';
-.work-order-form{@apply grid gap-3 sm:grid-cols-2;}.work-order-form .full{@apply sm:col-span-2;}.form-dropdown{@apply block;}.work-order-form textarea{@apply resize-none;}:host ::ng-deep app-modal .modal-panel{max-width:34rem;overflow:visible;}:host ::ng-deep app-modal .modal-content{overflow:visible;}
+.work-order-form{@apply grid gap-3 sm:grid-cols-2;}.work-order-form .full{@apply sm:col-span-2;}.form-dropdown{@apply block;}.work-order-form textarea{@apply resize-none;}/* Tunes the shared modal through its --modal-* properties (see shared/modal/modal.css). */:host {
+--modal-max-width: 34rem;
+--modal-overflow: visible;
+--modal-content-overflow: visible}

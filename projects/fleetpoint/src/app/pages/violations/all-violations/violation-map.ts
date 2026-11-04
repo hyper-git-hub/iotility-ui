@@ -80,15 +80,15 @@ function storedMapMode(): ViolationMapMode {
   styles: `
     :host,.map{display:block;width:100%;height:100%;min-height:0}
     :host{position:relative}
-    :host(.is-fullscreen){position:fixed;inset:0;z-index:1200}
+    :host(.is-fullscreen){position:fixed;inset:0;z-index:var(--z-fullscreen)}
     .map{background:var(--color-brand-50)}
-    .map-overlays{pointer-events:none;position:absolute;inset:0;z-index:500}
+    .map-overlays{pointer-events:none;position:absolute;inset:0;z-index:var(--z-map-controls)}
     .overlay-controls{pointer-events:auto;position:absolute;right:1rem;top:1rem}
     .mode-switch{pointer-events:auto;position:absolute;left:.75rem;top:.75rem;display:flex;gap:2px;padding:3px;border:1px solid var(--color-line);border-radius:.625rem;background:color-mix(in srgb,#fff 92%,transparent);box-shadow:var(--shadow-popover);backdrop-filter:blur(8px)}
     .mode-switch button{height:1.625rem;padding:0 .625rem;border-radius:.5rem;color:var(--color-muted);font-size:10px;font-weight:600;cursor:pointer;transition:background-color 150ms ease,color 150ms ease}
     .mode-switch button:hover{color:var(--color-ink)}
     .mode-switch button.active{background:var(--color-brand-600);color:#fff}
-    .heat-legend{position:absolute;left:.75rem;bottom:.75rem;display:flex;align-items:center;gap:.375rem;padding:.25rem .5rem;border:1px solid var(--color-line);border-radius:.5rem;background:color-mix(in srgb,#fff 92%,transparent);color:var(--color-muted);font-size:9px;font-weight:600}
+    .heat-legend{position:absolute;left:.75rem;bottom:.75rem;display:flex;align-items:center;gap:.375rem;padding:.25rem .5rem;border:1px solid var(--color-line);border-radius:.5rem;background:color-mix(in srgb,#fff 92%,transparent);color:var(--color-muted);font-size:10px;font-weight:600}
     .heat-legend i{width:4.5rem;height:.375rem;border-radius:9999px;background:linear-gradient(90deg,var(--color-brand-300),var(--color-brand-500),var(--color-warning),var(--color-danger))}
     :host-context(.dark) .mode-switch,:host-context(.dark) .heat-legend{border-color:var(--color-dark-line);background:color-mix(in srgb,var(--color-dark-surface) 92%,transparent);color:var(--color-brand-300)}
     :host-context(.dark) .mode-switch button{color:var(--color-brand-300)}

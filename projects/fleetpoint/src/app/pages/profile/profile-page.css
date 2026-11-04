@@ -14,7 +14,7 @@
 .avatar img { @apply size-full object-cover; }
 .image-button { margin-top:.75rem;cursor:pointer;border:1px solid var(--color-line);border-radius:.5rem;padding:.375rem .75rem;font-size:10px;font-weight:600;color:var(--color-brand-600); }
 .image-button input { display:none; }
-.image-hint { margin-top:.25rem;font-size:9px;color:var(--color-muted); }
+.image-hint { margin-top:.25rem;font-size:10px;color:var(--color-muted); }
 .identity-card h2 { @apply mt-4 text-sm font-bold text-ink dark:text-white; }
 .identity-content > p { @apply mt-1 text-[11px] text-muted dark:text-brand-300; }
 .status { @apply mt-4 inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-semibold text-success; }
@@ -44,16 +44,18 @@
 .edit-form,.password-form { display:grid;gap:1rem;padding:1.25rem; }
 .edit-form label,.password-form label { font-size:10px;font-weight:500;color:var(--color-muted); }
 .edit-form label>span,.edit-form label>small,.password-form label>small { color:var(--color-danger); }
-.edit-form label>small,.password-form label>small { display:block;margin-top:.25rem;font-size:9px; }
+.edit-form label>small,.password-form label>small { display:block;margin-top:.25rem;font-size:10px; }
 .edit-form input,.password-form input { margin-top:.375rem; } /* box: generic .ui-control */
 .form-actions { display:flex;justify-content:flex-end;gap:.5rem; }
+/* The global .form-actions stretches modal buttons; this footer keeps them at their natural width. */
+.form-actions > button { flex: none; }
 .cancel-button,.save-button { height:2.25rem;border-radius:.5rem;padding:0 1rem;font-size:10px;font-weight:600; }
 .cancel-button { border:1px solid var(--color-line);color:var(--color-muted); }
 .save-button { background:var(--color-brand-600);color:#fff; }
 .cancel-button:disabled,.save-button:disabled { cursor:not-allowed;opacity:.5; }
 .password-control { position:relative; }
 .password-control input { padding-right:3.5rem; }
-.password-control button { position:absolute;right:.75rem;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;color:var(--color-brand-600); }
+.password-control button { position:absolute;right:.75rem;top:50%;transform:translateY(-50%);font-size:10px;font-weight:600;color:var(--color-brand-600); }
 .password-form>.save-button { margin-top:22px;white-space:nowrap; }
 :host-context(.dark) .image-button,:host-context(.dark) .edit-button,:host-context(.dark) .cancel-button { border-color:var(--color-dark-line);color:var(--color-brand-300); }
 :host-context(.dark) .image-hint,:host-context(.dark) .edit-form label,:host-context(.dark) .password-form label { color:var(--color-brand-300); }

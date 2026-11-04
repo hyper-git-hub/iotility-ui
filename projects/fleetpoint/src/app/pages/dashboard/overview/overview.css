@@ -68,11 +68,11 @@
 }
 
 .graph-skeleton-status-legend i{
-  @apply size-2 rounded-full bg-slate-200/65 dark:bg-slate-700/45;
+  @apply size-2 rounded-full bg-line/65 dark:bg-dark-line/60;
 }
 
 .graph-skeleton-status-legend b{
-  @apply h-2 w-10 rounded bg-slate-200/65 dark:bg-slate-700/45;
+  @apply h-2 w-10 rounded bg-line/65 dark:bg-dark-line/60;
 }
 
 .skeleton-report-count{

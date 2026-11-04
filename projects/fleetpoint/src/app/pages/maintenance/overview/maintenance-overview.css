@@ -1,8 +1,132 @@
 @reference "../../../../styles.css";
-:host-context(.dark) .health-panel,:host-context(.dark) .list-panel{background:var(--color-dark-surface);border-color:var(--color-dark-line);color:white;}
-:host-context(.dark) .health-panel>header>span,:host-context(.dark) .order-row small,:host-context(.dark) .prediction-row small{color:var(--color-brand-300);}
-:host-context(.dark) .list-panel>header,:host-context(.dark) .rows>div{border-color:var(--color-dark-line);}
-:host-context(.dark) .order-row strong,:host-context(.dark) .prediction-row strong{color:white;}
-.overview-grid{@apply grid gap-4;}.health-panel,.list-panel{@apply overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;}.health-panel{@apply p-5;}.health-panel>header,.list-panel>header{@apply flex items-center justify-between gap-3;}.health-panel h2,.list-panel h2{@apply text-sm font-bold;}.health-panel>header>span{@apply flex items-center gap-1.5 text-[10px] text-muted dark:text-brand-300;}.health-panel>header img,.ai-title img{@apply size-3.5;}.overview-lower{@apply grid items-stretch gap-4 xl:grid-cols-2;}.list-panel>header{@apply border-b border-line px-4 py-3 dark:border-dark-line;}.list-panel>header a{@apply text-[10px] text-brand-600 no-underline dark:text-brand-300;}.ai-title{@apply flex items-center gap-1.5;}.rows>div{@apply min-h-14 border-b border-line px-4 py-2.5 last:border-b-0 dark:border-dark-line;}.order-row{@apply grid grid-cols-[auto_1fr_auto] items-center gap-3;}.tool-icon{@apply grid size-8 place-items-center rounded-lg bg-danger/10 text-danger;}.tool-icon img{@apply size-4;}.order-row strong,.order-row small,.prediction-row strong,.prediction-row small{@apply block;}.order-row strong,.prediction-row strong{@apply text-[11px] font-semibold;}.order-row small,.prediction-row small{@apply mt-0.5 text-[10px] text-muted dark:text-brand-300;}.order-row>em{@apply rounded-full border px-2 py-0.5 text-[10px] not-italic;}.order-row>em.in-progress{@apply border-warning/50 bg-warning/5 text-warning;}.prediction-row{@apply flex items-center justify-between gap-3;}.prediction-row strong{@apply flex items-center gap-2;}@media(max-width:700px){.health-panel{@apply p-3;}.health-panel>header,.prediction-row{@apply items-start;}.health-panel>header{@apply flex-col;}}
-.order-row>em.pending{@apply border-line bg-canvas text-muted dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300;}.order-row>em.approved{@apply border-info/40 bg-info/5 text-info;}.health-panel>.empty,.rows>.empty{@apply text-[11px] text-muted dark:text-brand-300;}.health-panel>.empty{@apply mt-4 rounded-xl border border-dashed border-line p-6 text-center dark:border-dark-line;}.rows>.empty{@apply px-4 py-6 text-center;}
-:host-context(.dark) .order-row>em.pending{background:var(--color-dark-canvas);border-color:var(--color-dark-line);color:var(--color-brand-300);}
+:host-context(.dark) .health-panel,
+:host-context(.dark) .list-panel {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-line);
+  color: white;
+}
+:host-context(.dark) .health-panel > header > span,
+:host-context(.dark) .order-row small,
+:host-context(.dark) .prediction-row small {
+  color: var(--color-brand-300);
+}
+:host-context(.dark) .list-panel > header,
+:host-context(.dark) .rows > div {
+  border-color: var(--color-dark-line);
+}
+:host-context(.dark) .order-row strong,
+:host-context(.dark) .prediction-row strong {
+  color: white;
+}
+.overview-grid {
+  @apply grid gap-4;
+}
+.health-panel,
+.list-panel {
+  @apply overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}
+.health-panel {
+  @apply p-5;
+}
+.health-panel > header,
+.list-panel > header {
+  @apply flex items-center justify-between gap-3;
+}
+.health-panel h2,
+.list-panel h2 {
+  @apply text-sm font-bold;
+}
+.health-panel > header > span {
+  @apply flex items-center gap-1.5 text-[10px] text-muted dark:text-brand-300;
+}
+.health-panel > header img,
+.ai-title img {
+  @apply size-3.5;
+}
+.overview-lower {
+  @apply grid items-stretch gap-4 xl:grid-cols-2;
+}
+.list-panel > header {
+  @apply border-b border-line px-4 py-3 dark:border-dark-line;
+}
+.list-panel > header a {
+  @apply text-[10px] text-brand-600 no-underline dark:text-brand-300;
+}
+.ai-title {
+  @apply flex items-center gap-1.5;
+}
+.rows > div {
+  @apply min-h-14 border-b border-line px-4 py-2.5 last:border-b-0 dark:border-dark-line;
+}
+.order-row {
+  @apply grid grid-cols-[auto_1fr_auto] items-center gap-3;
+}
+.tool-icon {
+  @apply grid size-8 place-items-center rounded-lg bg-danger/10 text-danger;
+}
+.tool-icon img {
+  @apply size-4;
+}
+.order-row strong,
+.order-row small,
+.prediction-row strong,
+.prediction-row small {
+  @apply block;
+}
+.order-row strong,
+.prediction-row strong {
+  @apply text-[11px] font-semibold;
+}
+.order-row small {
+  @apply mt-0.5 text-[10px] text-muted dark:text-brand-300;
+}
+.prediction-row small {
+  @apply mt-0.5 text-[10px] text-muted dark:text-brand-300;
+}
+.order-row > em {
+  @apply rounded-full border px-2 py-0.5 text-[10px] not-italic;
+}
+.order-row > em.in-progress {
+  @apply border-warning/50 bg-warning/5 text-warning;
+}
+.prediction-row {
+  @apply flex items-center justify-between gap-3;
+}
+.prediction-row strong {
+  @apply flex items-center gap-2;
+}
+@media (max-width: 700px) {
+  .health-panel {
+    @apply p-3;
+  }
+  .health-panel > header,
+  .prediction-row {
+    @apply items-start;
+  }
+  .health-panel > header {
+    @apply flex-col;
+  }
+}
+.order-row > em.pending {
+  @apply border-line bg-canvas text-muted dark:border-dark-line dark:bg-dark-canvas dark:text-brand-300;
+}
+.order-row > em.approved {
+  @apply border-info/40 bg-info/5 text-info;
+}
+.health-panel > .empty {
+  @apply text-[11px] text-muted dark:text-brand-300;
+}
+.rows > .empty {
+  @apply text-[11px] text-muted dark:text-brand-300;
+}
+.health-panel > .empty {
+  @apply mt-4 rounded-xl border border-dashed border-line p-6 text-center dark:border-dark-line;
+}
+.rows > .empty {
+  @apply px-4 py-6 text-center;
+}
+:host-context(.dark) .order-row > em.pending {
+  background: var(--color-dark-canvas);
+  border-color: var(--color-dark-line);
+  color: var(--color-brand-300);
+}

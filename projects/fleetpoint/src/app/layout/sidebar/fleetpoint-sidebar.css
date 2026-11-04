@@ -231,7 +231,7 @@ nav .active:hover {
   @apply ring-brand-600;
 }
 nav em {
-  @apply ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[9px] not-italic text-white;
+  @apply ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] not-italic text-white;
   transition:
     width var(--sidebar-motion),
     margin var(--sidebar-motion),

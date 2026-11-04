@@ -1,3 +1,4 @@
 @reference "../../../../styles.css";
-@import "../../../shared/styles/fields.css";
-.allocation-form{@apply grid gap-3 sm:grid-cols-2;}.wide{@apply sm:col-span-2;}.form-dropdown{@apply block;}:host ::ng-deep app-modal .modal-panel,:host ::ng-deep app-modal .modal-content{overflow:visible;}
+.allocation-form{@apply grid gap-3 sm:grid-cols-2;}.wide{@apply sm:col-span-2;}.form-dropdown{@apply block;}/* Tunes the shared modal through its --modal-* properties (see shared/modal/modal.css). */:host {
+--modal-overflow: visible;
+--modal-content-overflow: visible}

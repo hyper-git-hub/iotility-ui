@@ -1,5 +1,4 @@
 @reference "../../../../styles.css";
-@import '../../../shared/styles/fields.css';
 
 .device-form {
   @apply grid gap-3;
@@ -11,10 +10,13 @@
   @apply block;
 }
 
-:host ::ng-deep app-modal .modal-panel {
-  max-width: 28rem;
-  overflow: visible;
-}
-:host ::ng-deep app-modal .modal-content {
-  overflow: visible;
+/* Tunes the shared modal through its --modal-* properties (see shared/modal/modal.css). */
+
+:host {
+
+  --modal-max-width: 28rem;
+
+  --modal-overflow: visible;
+
+  --modal-content-overflow: visible
 }

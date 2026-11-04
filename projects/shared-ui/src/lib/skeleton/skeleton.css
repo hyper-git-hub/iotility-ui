@@ -7,7 +7,7 @@
 }
 
 .skeleton {
-  @apply block size-full bg-slate-200/80 dark:bg-slate-700/55;
+  @apply block size-full bg-line/80 dark:bg-dark-line/70;
   border-radius: inherit;
 }
 

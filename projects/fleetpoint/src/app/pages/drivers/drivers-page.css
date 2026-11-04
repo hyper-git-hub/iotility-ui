@@ -121,7 +121,7 @@
   @apply grid;
 }
 .allocation-period small {
-  @apply text-[9px] uppercase tracking-wide text-muted dark:text-brand-300;
+  @apply text-[10px] uppercase tracking-wide text-muted dark:text-brand-300;
 }
 .allocation-period strong {
   @apply whitespace-nowrap text-[11px] font-semibold;
@@ -224,7 +224,7 @@
   @apply absolute inset-x-0 top-0 z-20 h-0 overflow-visible;
 }
 .driver-refresh-progress i {
-  @apply absolute inset-x-0 top-0 block h-[3px] origin-left rounded-t-2xl bg-brand-500 shadow-[0_1px_5px_rgba(124,58,237,0.35)];
+  @apply absolute inset-x-0 top-0 block h-[3px] origin-left rounded-t-2xl bg-brand-500 shadow-[0_1px_5px_color-mix(in_srgb,var(--color-brand-600)_35%,transparent)];
   animation: driver-refresh-progress 1.1s ease-in-out infinite;
 }
 .allocation-progress {

@@ -25,7 +25,9 @@
 .table-card h2 {
   @apply m-0 text-sm font-semibold text-ink dark:text-white;
 }
-.table-card p,
+.table-card p {
+  @apply mt-1 block text-[11px] text-muted dark:text-brand-300;
+}
 .table-card small {
   @apply mt-1 block text-[11px] text-muted dark:text-brand-300;
 }
@@ -330,7 +332,9 @@ strong {
 .clickable-cell.strong:hover {
   @apply underline underline-offset-2;
 }
-.conditionally-disabled-cell,
+.conditionally-disabled-cell {
+  @apply font-normal text-muted dark:text-brand-300;
+}
 .conditionally-disabled-cell strong {
   @apply font-normal text-muted dark:text-brand-300;
 }
@@ -394,7 +398,9 @@ strong {
 .violations-high { @apply text-danger; }
 .category-cell { @apply flex flex-wrap gap-1; }
 .category-cell i { @apply rounded bg-canvas px-1.5 py-0.5 text-[10px] not-italic text-muted dark:bg-dark-canvas dark:text-brand-300; }
-.icon-actions button,
+.icon-actions button {
+  @apply grid size-7 place-items-center rounded-lg border-0 bg-transparent p-0 text-muted transition hover:bg-brand-50 hover:text-brand-600 dark:text-brand-300 dark:hover:bg-dark-canvas;
+}
 .icon-actions button:first-child {
   @apply grid size-7 place-items-center rounded-lg border-0 bg-transparent p-0 text-muted transition hover:bg-brand-50 hover:text-brand-600 dark:text-brand-300 dark:hover:bg-dark-canvas;
 }
@@ -405,7 +411,9 @@ strong {
 .icon-actions button.delete-action {
   @apply hover:bg-danger/10 hover:text-danger;
 }
-.icon-actions button.dispatch-action,
+.icon-actions button.dispatch-action {
+  @apply inline-flex h-7 w-auto items-center gap-1.5 rounded-lg bg-brand-600 px-2.5 text-[10px] font-semibold text-white hover:bg-brand-500 hover:text-white dark:bg-brand-600 dark:text-white dark:hover:bg-brand-500;
+}
 .icon-actions button.dispatch-action:first-child {
   @apply inline-flex h-7 w-auto items-center gap-1.5 rounded-lg bg-brand-600 px-2.5 text-[10px] font-semibold text-white hover:bg-brand-500 hover:text-white dark:bg-brand-600 dark:text-white dark:hover:bg-brand-500;
 }

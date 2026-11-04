@@ -51,7 +51,9 @@
 .device-cell {
   @apply flex items-center gap-2;
 }
-.device-cell > span,
+.device-cell > span {
+  @apply grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-600/15;
+}
 .device-icon {
   @apply grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-600/15;
 }
@@ -81,11 +83,11 @@
 }
 .device-cell small,
 .vehicle-cell small {
-  @apply mt-0.5 text-[9px] text-muted;
+  @apply mt-0.5 text-[10px] text-muted;
 }
 .identifier-cell strong,.identifier-cell small { @apply block font-mono; }
 .identifier-cell strong { @apply text-[10px] font-medium text-ink dark:text-white; }
-.identifier-cell small { @apply mt-1 text-[9px] text-muted dark:text-brand-300; }
+.identifier-cell small { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }
 .firmware-cell { @apply font-mono text-[10px] text-ink dark:text-white; }
 .unavailable-value { @apply text-xs font-normal text-muted dark:text-brand-300; }
 .ping-value,.warranty-value { @apply text-[10px]; }
@@ -178,7 +180,7 @@
   @apply ml-1 font-normal text-muted;
 }
 .bundle-summary h2 b {
-  @apply ml-2 rounded-full border border-danger/30 bg-danger/10 px-2 py-0.5 text-[9px] font-medium text-danger;
+  @apply ml-2 rounded-full border border-danger/30 bg-danger/10 px-2 py-0.5 text-[10px] font-medium text-danger;
 }
 .bundle-summary p {
   @apply mt-1 flex flex-wrap gap-3 text-[10px] text-muted;
@@ -233,7 +235,7 @@
   @apply font-medium text-ink dark:text-white;
 }
 .bundle-metric.imei > b {
-  @apply font-mono text-[9px];
+  @apply font-mono text-[10px];
 }
 .bundle-metric.signal > span {
   @apply inline-flex items-end gap-1.5 text-ink dark:text-white;
