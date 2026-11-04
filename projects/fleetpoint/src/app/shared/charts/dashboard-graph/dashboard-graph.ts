@@ -41,8 +41,12 @@ const JOB_CALENDER: DropdownOption[] = [
  * second `order` param, so they are left out until a page needs them.
  */
 export const DASHBOARD_GRAPH_FILTERS: Record<string, DashboardGraphFilter> = {
-  // Aggressively Driven Fleets — Month / Week / Today
-  ADF: { ariaLabel: 'Filter aggressively driven fleets by period', options: CALENDER },
+  // Aggressively Driven Fleets — Month / Week / Today / Last 6 Months. `six_m` is the six-month value
+  // the fleet API uses for its other period filters (dashboard cards); the legacy app had no 6-month option here.
+  ADF: {
+    ariaLabel: 'Filter aggressively driven fleets by period',
+    options: [...CALENDER, { id: 'six_m', label: 'Last 6 Months' }],
+  },
   // Driver Safety Scorecard — Month / Week / Today
   DSS: { ariaLabel: 'Filter driver safety scorecard by period', options: CALENDER },
   // Driver Violations — group by Fleet or Type
