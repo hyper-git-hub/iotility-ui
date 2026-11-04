@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { secureStorage } from '@iotility/shared-ui';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from './fleet-dashboard-api.service';
 
@@ -27,22 +28,22 @@ export class DeviceHardwareApiService {
   constructor(private readonly http: HttpClient) {}
 
   getHardware(limit: number, offset: number): Observable<ApiResponse<{ total: number; data: CustomerHardwareRecord[] }>> {
-    const params = new HttpParams()
-      .set('limit', limit)
-      .set('offset', offset)
-      .set('customer', this.customerId())
-      .set('usecase', '1');
+    let params = new HttpParams().set('limit', limit).set('offset', offset).set('usecase', '1');
+    const customer = this.customerId();
+    if (customer) params = params.set('customer', customer);
     return this.http.get<ApiResponse<{ total: number; data: CustomerHardwareRecord[] }>>(this.url, { params });
   }
 
-  private customerId(): string {
+  /** The signed-in user's customer. 'user' is encrypted, so it must be read through secureStorage. */
+  private customerId(): string | null {
     try {
-      const user = JSON.parse(localStorage.getItem('user') ?? '{}') as {
+      const user = JSON.parse(secureStorage.get('user') ?? '{}') as {
         customer?: { customer_id?: number; id?: number };
       };
-      return String(user.customer?.customer_id ?? user.customer?.id ?? 27);
+      const id = user.customer?.customer_id ?? user.customer?.id;
+      return id == null ? null : String(id);
     } catch {
-      return '27';
+      return null;
     }
   }
 }
