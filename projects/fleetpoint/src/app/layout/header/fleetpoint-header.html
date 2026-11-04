@@ -52,7 +52,7 @@
     <button type="button" class="notification-trigger" aria-label="Notifications" [attr.aria-expanded]="notificationsOpen()" (click)="toggleNotifications($event)">
       <!-- Keyed on bellRing: a new alert recreates the bell and badge, replaying their one-shot motion. -->
       @for (ring of [bellRing()]; track ring) {
-        <svg viewBox="0 0 24 24" aria-hidden="true" [class.ring]="ring > 0"><path d="M10.27 21a2 2 0 0 0 3.46 0M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33Z" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" [class.ringing]="ring > 0"><path d="M10.27 21a2 2 0 0 0 3.46 0M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33Z" /></svg>
         @if (notificationService.unreadCount()) {
           <span [class.bump]="ring > 0">{{ notificationCount() }}</span>
         }

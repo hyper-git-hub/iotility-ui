@@ -6,7 +6,8 @@
 .notification-control { @apply relative; }
 .notification-trigger { @apply relative grid size-9 cursor-pointer place-items-center rounded-full border border-line bg-white transition hover:border-brand-400 hover:bg-brand-50 dark:border-dark-line dark:bg-dark-canvas dark:hover:border-brand-500 dark:hover:bg-brand-600/15; }
 .notification-trigger svg { @apply size-[1.15rem] text-muted dark:text-brand-300; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.7; }
-.notification-trigger>span { @apply absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full border-2 border-white bg-danger px-1 text-[8px] font-bold leading-3 text-white dark:border-dark-surface; }
+/* Centred on the bell's top-right and above the glyph, so a wider count ("99+") grows both ways instead of over the bell. */
+.notification-trigger>span { @apply absolute -top-1.5 left-[calc(100%-0.4375rem)] grid h-4 min-w-4 -translate-x-1/2 place-items-center whitespace-nowrap rounded-full border-2 border-white bg-danger px-[3px] text-[9px] font-bold leading-none text-white dark:border-dark-surface; }
 .notification-panel { @apply absolute right-0 top-[calc(100%+0.65rem)] z-[1700] w-[22rem] overflow-hidden rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface; box-shadow:var(--shadow-popover); transform-origin:top right; transition:opacity var(--duration-popover) var(--ease-out), transform var(--duration-popover) var(--ease-out); }
 @starting-style { .notification-panel { opacity:0; transform:scale(0.96); } }
 .notification-panel.notification-leave { animation:notification-leave 120ms var(--ease-out) both; pointer-events:none; }
@@ -97,14 +98,15 @@
   .notification-panel { @apply fixed left-3 right-3 top-[4.5rem] w-auto; }
 }
 
-/* New alert: the bell swings once from its top and the count pops. */
-.notification-trigger svg.ring { transform-origin: 50% 8%; animation: motion-shake 700ms ease-in-out; }
+/* New alert: the bell swings once from its top and the count pops. Not `.ring`: that is a global
+   Tailwind utility and would draw a box-shadow ring around the icon. */
+.notification-trigger svg.ringing { transform-origin: 50% 8%; animation: motion-shake 700ms ease-in-out; }
 .notification-trigger > span.bump { animation: motion-bump 420ms var(--ease-out); }
 /* Notifications slide into the list as they arrive. */
 .notification-item.notification-item-enter { animation: notification-item-in 280ms var(--ease-out) both; }
 @keyframes notification-item-in { from { opacity: 0; transform: translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) {
-  .notification-trigger svg.ring,
+  .notification-trigger svg.ringing,
   .notification-trigger > span.bump,
   .notification-item.notification-item-enter { animation: none; }
 }
