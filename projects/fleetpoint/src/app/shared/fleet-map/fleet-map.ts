@@ -5,15 +5,15 @@ import {
 import maplibregl, { LngLatBounds, Map as MapLibreMap } from 'maplibre-gl';
 import {
   LatLng, LayerWithoutSource, circlePolygon, createIotMap, escapeHtml, fitLatLngs, lineFeature,
-  markerElement, overlaySafePadding, polygonFeature, popupHtml, removeGeoJson, timezoneCountryCenter,
-  upsertGeoJson,
+  markerElement, overlaySafePadding, polygonFeature, popupHtml, removeGeoJson, routeCasingColor,
+  timezoneCountryCenter, upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
 import { FullscreenUiService } from '../services/fullscreen-ui.service';
 import { SmoothTrack, TrackPoint } from '../maps/smooth-track';
 import { environment } from '../../../environments/environment';
 
-/** Road-snapped trail: a soft casing under a crisp core line. */
+/** Road-snapped trail: a crisp core line on an edge that lifts it off the road. */
 const TRAIL_LAYER_IDS = ['fleet-trail-casing', 'fleet-trail-core'];
 function TRAIL_LAYERS(color: string): LayerWithoutSource[] {
   return [
@@ -21,7 +21,7 @@ function TRAIL_LAYERS(color: string): LayerWithoutSource[] {
       id: 'fleet-trail-casing',
       type: 'line',
       layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': color, 'line-width': 9, 'line-opacity': 0.2 },
+      paint: { 'line-color': routeCasingColor(), 'line-width': 6.5, 'line-opacity': 0.9 },
     },
     {
       id: 'fleet-trail-core',
@@ -295,6 +295,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     this.map.on('style.load', () => {
       this.renderMarkers(this.vehicles(), false, this.showMarkers(), this.clusterMarkers());
       this.renderZones(this.zones());
+      if (this.map?.getLayer('fleet-trail-casing'))
+        this.map.setPaintProperty('fleet-trail-casing', 'line-color', routeCasingColor());
     });
     this.map.once('load', () => {
       this.renderMarkers(this.vehicles(), true, this.showMarkers(), this.clusterMarkers());

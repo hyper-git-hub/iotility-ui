@@ -27,8 +27,58 @@ img[src$='assets/fleetpoint/def-car.svg'] {
   padding: 0 !important;
 }
 
-.maplibregl-ctrl-attrib {
-  display: none !important;
+/* OpenStreetMap's licence needs this credit on screen, so it stays, kept small and quiet. */
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
+  margin: 0 6px 6px 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, white 72%, transparent);
+  color: var(--color-muted);
+  font: 500 9px/1.6 var(--font-sans);
+}
+.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--color-dark-canvas) 72%, transparent);
+  color: var(--color-brand-300);
+}
+.maplibregl-ctrl-attrib a {
+  color: inherit;
+}
+
+/* One popup across every map, following the theme. The surface lives on .maplibregl-popup because
+   the tip is a sibling of the content; components only set their own size and spacing. */
+.maplibregl-popup {
+  --map-popup-surface: #fff;
+}
+.dark .maplibregl-popup {
+  --map-popup-surface: var(--color-dark-surface);
+}
+.maplibregl-popup-content {
+  min-width: 9rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  font-family: var(--font-sans);
+  background: var(--map-popup-surface);
+  color: var(--color-ink);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+}
+.dark .maplibregl-popup-content {
+  color: #fff;
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--map-popup-surface);
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--map-popup-surface);
+}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--map-popup-surface);
+}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--map-popup-surface);
 }
 
 /* Shared form fields, buttons and the modal footer (was shared/styles/fields.css, which every form

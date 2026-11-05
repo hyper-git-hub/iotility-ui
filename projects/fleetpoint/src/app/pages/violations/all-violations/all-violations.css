@@ -306,24 +306,14 @@ tbody tr.critical td:first-child {
   background: color-mix(in srgb, var(--color-brand-600) 15%, var(--color-dark-surface));
 }
 :host ::ng-deep app-violation-map .maplibregl-popup-content {
-  --vio-popup-surface: #fff;
   min-width: 14rem;
   max-width: 18rem;
-  border-radius: 0.75rem;
   padding: 0.75rem;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  background: var(--vio-popup-surface);
-  color: var(--color-ink);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
   margin-bottom: 8px;
 }
 /* Circle markers need no pointer arrow — hide the popup tip entirely */
 :host ::ng-deep app-violation-map .maplibregl-popup-tip {
   display: none;
-}
-:host-context(.dark) ::ng-deep app-violation-map .maplibregl-popup-content {
-  --vio-popup-surface: var(--color-dark-surface);
-  color: #fff;
 }
 :host ::ng-deep app-violation-map .maplibregl-popup-close-button {
   color: var(--color-brand-300);

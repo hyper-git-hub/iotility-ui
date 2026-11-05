@@ -10,6 +10,7 @@ import {
   popup,
   removeGeoJson,
   upsertGeoJson,
+  routeCasingColor,
 } from '../../../shared/maps/maplibre';
 import { MapControls } from '../../../shared/map-overlays/map-controls';
 import { environment } from '../../../../environments/environment';
@@ -169,7 +170,7 @@ export class RouteBuilderMap implements AfterViewInit, OnDestroy {
     upsertGeoJson(this.map, 'builder-route', lineFeature(path), [
       {
         id: 'builder-outline', type: 'line',
-        paint: { 'line-color': '#fff', 'line-width': dashed ? 0 : 9, 'line-opacity': .9 },
+        paint: { 'line-color': routeCasingColor(), 'line-width': dashed ? 0 : 8, 'line-opacity': .9 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
       {

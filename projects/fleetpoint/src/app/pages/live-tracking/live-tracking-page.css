@@ -176,22 +176,22 @@
 }
 .map-area {
   @apply relative min-w-0 flex-1;
-  background: #f8fafc;
+  background: var(--color-map-land);
 }
 :host-context(.dark) .map-area {
-  background: #0b0f19;
+  background: var(--color-map-land-dark);
 }
 .map-area app-fleet-map,
 .map-area app-fleet-map ::ng-deep .map-container,
 .map-area app-fleet-map ::ng-deep .maplibregl-canvas-container,
 .map-area app-fleet-map ::ng-deep .maplibregl-canvas {
-  background-color: #f8fafc;
+  background-color: var(--color-map-land);
 }
 :host-context(.dark) .map-area app-fleet-map,
 :host-context(.dark) .map-area app-fleet-map ::ng-deep .map-container,
 :host-context(.dark) .map-area app-fleet-map ::ng-deep .maplibregl-canvas-container,
 :host-context(.dark) .map-area app-fleet-map ::ng-deep .maplibregl-canvas {
-  background-color: #0b0f19;
+  background-color: var(--color-map-land-dark);
 }
 .map-area app-fleet-map {
   opacity: 0;

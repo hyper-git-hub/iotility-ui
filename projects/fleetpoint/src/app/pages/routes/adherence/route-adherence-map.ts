@@ -10,6 +10,7 @@ import {
   markerElement,
   popup,
   upsertGeoJson,
+  routeCasingColor,
 } from '../../../shared/maps/maplibre';
 import { MapControls } from '../../../shared/map-overlays/map-controls';
 
@@ -87,10 +88,15 @@ export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
       deviated.length > 1 ? lineFeature(deviated, { kind: 'deviation' }) : null,
     ].filter((feature) => !!feature);
     if (!lines.length) {
-      removeGeoJson(this.map, 'adherence-routes', ['adherence-planned', 'adherence-actual', 'adherence-deviation']);
+      removeGeoJson(this.map, 'adherence-routes', ['adherence-outline', 'adherence-planned', 'adherence-actual', 'adherence-deviation']);
       return;
     }
     upsertGeoJson(this.map, 'adherence-routes', { type: 'FeatureCollection', features: lines }, [
+      {
+        id: 'adherence-outline', type: 'line',
+        paint: { 'line-color': routeCasingColor(), 'line-width': 8, 'line-opacity': 0.9 },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
       {
         id: 'adherence-planned', type: 'line', filter: ['==', ['get', 'kind'], 'planned'],
         paint: { 'line-color': '#3b82f6', 'line-width': 5, 'line-dasharray': [2, 1.5] },

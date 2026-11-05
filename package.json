@@ -10,6 +10,7 @@
     "build": "npm run build:remote && npm run build:host",
     "build:host": "ng build iotility",
     "build:remote": "ng build fleetpoint",
+    "build:map-styles": "node scripts/map-styles/build.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

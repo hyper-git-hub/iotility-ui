@@ -15,6 +15,7 @@ import {
 import maplibregl, { GeoJSONSource } from 'maplibre-gl';
 import {
   LatLng, LayerWithoutSource, createIotMap, lineFeature, timezoneCenter, upsertGeoJson,
+  routeCasingColor,
 } from '../../../../shared/maps/maplibre';
 import { SmoothTrack, TrackPoint, metresBetween } from '../../../../shared/maps/smooth-track';
 import { Skeleton } from '@iotility/shared-ui';
@@ -138,20 +139,22 @@ const MOVE_BEARING_MIN_M = 4;
 const TRAIL_SOURCE = 'hud-live-trail';
 const TRAIL_SPACING_M = 4;
 const TRAIL_MAX_POINTS = 5_000;
-const TRAIL_LAYERS: LayerWithoutSource[] = [
-  {
-    id: 'hud-live-trail-casing',
-    type: 'line',
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#8b5cf6', 'line-width': 10, 'line-opacity': 0.18 },
-  },
-  {
-    id: 'hud-live-trail-core',
-    type: 'line',
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#8b5cf6', 'line-width': 4, 'line-opacity': 0.95 },
-  },
-];
+function trailLayers(): LayerWithoutSource[] {
+  return [
+    {
+      id: 'hud-live-trail-casing',
+      type: 'line',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': routeCasingColor(), 'line-width': 7, 'line-opacity': 0.9 },
+    },
+    {
+      id: 'hud-live-trail-core',
+      type: 'line',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#8b5cf6', 'line-width': 4, 'line-opacity': 0.95 },
+    },
+  ];
+}
 
 /* ── Speed-adaptive zoom ─────────────────────────────────────
    Zoom per speed (km/h → zoom), interpolated linearly between stops. */
@@ -488,8 +491,8 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     const points = this.trailHead ? [...this.trail, this.trailHead] : this.trail;
     const data = lineFeature(points.length > 1 ? points : []);
     const source = map.getSource(TRAIL_SOURCE) as GeoJSONSource | undefined;
-    if (source && TRAIL_LAYERS.every((layer) => map.getLayer(layer.id))) source.setData(data);
-    else upsertGeoJson(map, TRAIL_SOURCE, data, TRAIL_LAYERS);
+    if (source && map.getLayer('hud-live-trail-core')) source.setData(data);
+    else upsertGeoJson(map, TRAIL_SOURCE, data, trailLayers());
   }
 
   private resetTrail(): void {
@@ -581,7 +584,11 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
        syncCamera once the container has a real width. */
     this.syncCamera(anchor.lat, anchor.lng);
     /* A style (re)load drops custom layers; redraw the trail onto it. */
-    this.map.on('style.load', () => this.paintTrail());
+    this.map.on('style.load', () => {
+      if (this.map?.getLayer('hud-live-trail-casing'))
+        this.map.setPaintProperty('hud-live-trail-casing', 'line-color', routeCasingColor());
+      this.paintTrail();
+    });
     /* Anything that arrived before the map existed (or while it was being
        created) is applied here, so the marker is always in sync with the
        latest live record. */
