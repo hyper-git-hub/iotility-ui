@@ -43,6 +43,7 @@ const palettes = {
     cemetery: '#d9e7d6',
     hospital: '#f7e4e6',
     school: '#ecebf3',
+    commercial: '#f7f0dd',
     aeroway: '#e3e4ea',
     runway: '#d2d3dc',
     building: '#dcdde6',
@@ -95,6 +96,7 @@ const palettes = {
     cemetery: '#15221b',
     hospital: '#251719',
     school: '#1c1a26',
+    commercial: '#262019',
     aeroway: '#1c1b23',
     runway: '#2a2933',
     building: '#26252e',
@@ -268,6 +270,22 @@ function buildStyle(name, palette) {
 
   // Terrain sits over the land colours and under everything drawn on them, and
   // fades away before the zooms where a fleet map is read street by street.
+  // Commercial and retail districts get a soft warm ground, so shopping areas read at a
+  // glance. Whole areas, not single buildings: the tiles can't say what a building is used for.
+  const commercialAt = style.layers.findIndex((layer) => layer.id === 'waterway_tunnel');
+  style.layers.splice(commercialAt, 0, {
+    id: 'landuse_commercial',
+    type: 'fill',
+    source: 'openmaptiles',
+    'source-layer': 'landuse',
+    minzoom: 11.5,
+    filter: ['match', ['get', 'class'], ['commercial', 'retail'], true, false],
+    paint: {
+      'fill-color': palette.commercial,
+      'fill-opacity': byZoom([11.5, 0, 12.5, 0.9]),
+    },
+  });
+
   const firstWater = style.layers.findIndex((layer) => layer.id === 'waterway_tunnel');
   style.layers.splice(firstWater, 0, {
     id: 'terrain-shade',
