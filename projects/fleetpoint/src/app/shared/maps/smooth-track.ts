@@ -125,7 +125,7 @@ export function bearingBetween(a: TrackPoint, b: TrackPoint): number {
   return normalizeDegrees((Math.atan2(y, x) * 180) / Math.PI);
 }
 
-function prefersReducedMotion(): boolean {
+export function prefersReducedMotion(): boolean {
   return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 

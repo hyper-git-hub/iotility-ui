@@ -1,7 +1,18 @@
 import { ExportFormat, ExportMenu, TabIndicator } from '@iotility/shared-ui';
 import { DecimalPipe } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Component, NgZone, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  NgZone,
+  OnDestroy,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { ProgressBar } from '../../shared/progress-bar/progress-bar';
@@ -23,6 +34,9 @@ import {
   TripReplayEvent,
   TripReplayMap,
 } from '../../shared/trip-replay-map/trip-replay-map';
+import { REPLAY_SPEEDS, ReplayClock } from '../../shared/trip-replay-map/replay-clock';
+import { buildReplayOffsets, stationaryRuns } from '../../shared/trip-replay-map/replay-motion';
+import { ReplayScrub } from '../../shared/trip-replay-map/replay-scrub';
 import { VIOLATION_ICON } from '../violations/all-violations/all-violations';
 
 interface ReplayStop {
@@ -68,36 +82,49 @@ const EMPTY_TRIP: ReplayTrip = {
   stops: [],
   statistics: [],
 };
-const PLAYBACK_RATE_MULTIPLIERS: Record<number, number> = {
-  1: 2,
-  2: 5,
-  3: 9,
-  4: 16,
-  5: 25,
-};
-// Real-time gaps between trail samples (tracking blackouts, parked periods)
-// are replayed at most this long, so playback slows across a data hole but
-// never appears to freeze for minutes.
-const MAX_PLAYBACK_GAP_MS = 5_000;
+// Trip reports don't say how long each sample covers, so idle time assumes this.
+const ASSUMED_SAMPLE_MS = 600;
+
+interface TimelineHover {
+  /** Where the pointer is along the timeline, as a percentage. */
+  left: number;
+  time: string;
+  speed: number;
+  location: string;
+}
 
 @Component({
   selector: 'app-trip-replay-page',
-  imports: [TabIndicator, DateTimePicker, ExportMenu, DecimalPipe, ProgressBar, Skeleton, Tooltip, TripReplayMap],
+  imports: [
+    TabIndicator,
+    DateTimePicker,
+    ExportMenu,
+    DecimalPipe,
+    ProgressBar,
+    ReplayScrub,
+    Skeleton,
+    Tooltip,
+    TripReplayMap,
+  ],
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TripReplayPage implements OnInit, OnDestroy {
-  protected readonly playbackStepDuration = 600;
-  protected readonly stepDurationMs = signal(this.playbackStepDuration);
+  protected readonly clock = new ReplayClock(inject(NgZone));
+  protected readonly positionIndex = this.clock.index;
+  protected readonly playing = this.clock.playing;
+  protected readonly speedOptions = REPLAY_SPEEDS;
+  protected readonly speed = signal(this.clock.speedSetting);
+  protected readonly speedIndex = computed(() => REPLAY_SPEEDS.indexOf(this.speed()));
+  protected readonly skipStops = signal(true);
+  protected readonly timelineHover = signal<TimelineHover | null>(null);
   protected readonly search = signal('');
   protected readonly vehicles = signal<RealtimeVehicleRecord[]>([]);
   protected readonly vehicleImages = signal<Record<number, string>>({});
   protected readonly selectedVehicleId = signal(0);
   protected readonly trip = signal<ReplayTrip>(EMPTY_TRIP);
-  protected readonly positionIndex = signal(0);
   protected readonly selectedEventId = signal<string | null>(null);
-  protected readonly playing = signal(false);
-  protected readonly speed = signal(1);
   protected readonly activeTab = signal<'events' | 'stops' | 'statistics'>('events');
   protected readonly loading = signal(true);
   protected readonly trailLoading = signal(false);
@@ -118,20 +145,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
   ];
   protected readonly startDate = signal('');
   protected readonly endDate = signal('');
-  private playbackFrame?: number;
-  // Cleared by play() so the clock waits for the map's playbackEngaged notice;
-  // set again once that notice (or the fallback frame) has started the clock.
-  private playbackArmed = false;
-  private pendingEngageFrame?: number;
-  // Playback timeline origin. Kept as instance state (not closure locals) so a
-  // mid-playback seek can re-anchor the wall clock and offset table to the new
-  // position, letting the marker keep advancing from where the user dropped it
-  // (like scrubbing a video player) instead of snapping back.
-  private playbackWallStart = 0;
-  private playbackStartIndex = 0;
-  private playbackOffsets: number[] = [];
-  private playbackTotalMs = 0;
-  private playbackSpeed = 1;
   private readonly requestedVehicleId: string;
   protected readonly filteredVehicles = computed(() => {
     const query = this.search().trim().toLowerCase();
@@ -159,11 +172,9 @@ export class TripReplayPage implements OnInit, OnDestroy {
         time: '—',
       },
   );
-  protected readonly maxPosition = computed(() => Math.max(this.trip().positions.length - 1, 0));
-  protected readonly progress = computed(() => {
-    const last = this.trip().positions.length - 1;
-    return last > 0 ? (this.positionIndex() / last) * 100 : 0;
-  });
+  protected readonly progress = computed(
+    () => this.clock.fractionAtIndex(this.positionIndex()) * 100,
+  );
   protected readonly pointNumber = computed(() =>
     this.trip().positions.length ? this.positionIndex() + 1 : 0,
   );
@@ -186,7 +197,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     const maxSpeed = Math.max(...speeds);
     const avgSpeed = Math.round(speeds.reduce((sum, s) => sum + s, 0) / speeds.length);
     const idlePositions = positions.filter((p) => p.speed === 0).length;
-    const idleMinutes = Math.round((idlePositions * this.playbackStepDuration) / 60_000);
+    const idleMinutes = Math.round((idlePositions * ASSUMED_SAMPLE_MS) / 60_000);
     return {
       distance: trip.distance,
       duration: trip.duration,
@@ -206,7 +217,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
     private readonly api: TripReplayApiService,
     private readonly feedback: FeedbackDialogBridgeService,
     private readonly sanitizer: DomSanitizer,
-    private readonly zone: NgZone,
     router: Router,
   ) {
     const navigationState = router.getCurrentNavigation()?.extras.state ?? history.state;
@@ -225,6 +235,17 @@ export class TripReplayPage implements OnInit, OnDestroy {
       } else if (playing && !playback && selected) {
         this.selectedEventId.set(null);
       }
+    });
+    // A new trip starts from the top; toggling stops only retimes the same one.
+    let loaded: TripPosition[] | undefined;
+    effect(() => {
+      const positions = this.trip().positions;
+      const offsets = buildReplayOffsets(positions, stationaryRuns(positions), this.skipStops());
+      untracked(() => {
+        if (positions === loaded) this.clock.retime(offsets);
+        else this.clock.load(offsets);
+      });
+      loaded = positions;
     });
   }
   ngOnInit(): void {
@@ -354,116 +375,37 @@ export class TripReplayPage implements OnInit, OnDestroy {
       });
   }
   protected togglePlayback(): void {
-    this.playing() ? this.pause() : this.play();
-  }
-  protected play(): void {
-    if (this.trip().positions.length < 2) return;
-    if (this.positionIndex() >= this.trip().positions.length - 1) this.positionIndex.set(0);
-    this.clearPlaybackFrame();
-    this.playing.set(true);
-    const positions = this.trip().positions;
-    this.playbackSpeed = PLAYBACK_RATE_MULTIPLIERS[this.speed()] ?? 2;
-    this.playbackStartIndex = this.positionIndex();
-    this.playbackOffsets = this.buildTimeOffsets(positions, this.playbackStartIndex);
-    this.playbackTotalMs = this.playbackOffsets[this.playbackOffsets.length - 1] || 1;
-    // The map drives the marker toward the sample *after* the reported index,
-    // so the step duration handed over here is the segment that starts at the
-    // current index — that is what starts the vehicle and the timeline bar on
-    // the same frame.
-    this.stepDurationMs.set(this.stepSegmentDuration(this.playbackOffsets, 0, this.playbackSpeed));
-    // The clock stays parked until the map reports the marker leaving its
-    // sample (see engagePlaybackClock). Starting it here advances the timeline
-    // bar and the point counter while the 3D marker still sits on the old
-    // sample, which is what makes the player look a step ahead of the vehicle.
-    this.playbackArmed = false;
-    this.armEngageFallback();
-  }
-  // Marker-synchronised start: pressing play only arms the map's engagement
-  // notice, and the clock starts when the vehicle actually begins travelling,
-  // so the timeline bar and the marker leave the start sample on the same
-  // frame. The single-frame fallback keeps playback alive when the map cannot
-  // engage (route not rendered yet), where waiting for the notice would stall.
-  protected engagePlaybackClock(): void {
-    if (!this.playing() || this.playbackArmed) return;
-    this.playbackArmed = true;
-    this.cancelEngageFallback();
-    this.playbackWallStart = performance.now();
-    this.runPlaybackClock();
-  }
-  private armEngageFallback(): void {
-    this.cancelEngageFallback();
-    this.pendingEngageFrame = requestAnimationFrame(() => this.engagePlaybackClock());
-  }
-  private cancelEngageFallback(): void {
-    if (this.pendingEngageFrame !== undefined) cancelAnimationFrame(this.pendingEngageFrame);
-    this.pendingEngageFrame = undefined;
-  }
-  private runPlaybackClock(): void {
-    const lastIndex = Math.max(this.trip().positions.length - 1, 0);
-    const wallStart = this.playbackWallStart;
-    const startIdx = this.playbackStartIndex;
-    const speed = this.playbackSpeed;
-    const offsets = this.playbackOffsets;
-    const totalTripMs = this.playbackTotalMs;
-    this.zone.runOutsideAngular(() => {
-      const advance = (now: number) => {
-        if (!this.playing()) return;
-        // If the user sought during playback, the timeline was re-anchored;
-        // retarget this frame's origin so it continues from the new position.
-        if (this.playbackWallStart !== wallStart || this.playbackStartIndex !== startIdx) {
-          this.playbackFrame = requestAnimationFrame(advance);
-          return;
-        }
-        const elapsedTripMs = (now - wallStart) * speed;
-        let idx = 0;
-        for (let i = offsets.length - 1; i >= 0; i--) {
-          if (offsets[i] <= elapsedTripMs) { idx = i; break; }
-        }
-        const nextIndex = Math.min(startIdx + idx, lastIndex);
-        if (nextIndex !== this.positionIndex()) {
-          this.stepDurationMs.set(this.stepSegmentDuration(offsets, idx, speed));
-          this.positionIndex.set(nextIndex);
-        }
-        if (elapsedTripMs >= totalTripMs) { this.pause(); return; }
-        this.playbackFrame = requestAnimationFrame(advance);
-      };
-      this.playbackFrame = requestAnimationFrame(advance);
-    });
-  }
-  protected pause(): void {
-    this.clearPlaybackFrame();
-    this.playing.set(false);
+    if (this.playing()) this.clock.pause();
+    else this.clock.play();
   }
   protected stop(): void {
-    this.pause();
-    this.positionIndex.set(0);
+    this.clock.stop();
   }
-  protected setSpeed(value: number): void {
+  protected setSpeed(value: (typeof REPLAY_SPEEDS)[number]): void {
     this.speed.set(value);
-    if (this.playing()) this.play();
+    this.clock.setSpeed(value);
   }
-  protected scrub(event: Event): void {
-    const nextIndex = Number((event.target as HTMLInputElement).value);
-    this.seekTo(nextIndex);
+  protected toggleSkipStops(): void {
+    this.skipStops.update((skip) => !skip);
   }
-
-  // Moves playback to an arbitrary index. While playing, the timeline is
-  // re-anchored to that index so the marker continues from where the user
-  // dropped it (VLC-style scrubbing) instead of jumping back to the old spot.
-  private seekTo(index: number): void {
-    const last = this.maxPosition();
-    const clamped = Math.max(0, Math.min(index, last));
-    if (clamped === last && this.playing()) {
-      this.positionIndex.set(clamped);
-      this.pause();
-      return;
-    }
-    this.positionIndex.set(clamped);
-    if (this.playing()) this.play();
+  // Shows when and where the trip is at any point along the timeline.
+  protected previewTimeline(event: PointerEvent): void {
+    const { left, width } = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const fraction = width ? Math.max(0, Math.min((event.clientX - left) / width, 1)) : 0;
+    const position = this.trip().positions[this.clock.indexAtFraction(fraction)];
+    this.timelineHover.set(
+      position
+        ? {
+            left: fraction * 100,
+            time: this.clockTime(position.time),
+            speed: position.speed,
+            location: position.location ?? '',
+          }
+        : null,
+    );
   }
   protected markerPosition(event: TripReplayEvent): number {
-    const last = this.maxPosition();
-    return last > 0 ? (event.positionIndex / last) * 100 : 0;
+    return this.clock.fractionAtIndex(event.positionIndex) * 100;
   }
   // Violation icon markup from the Violations page icon set (colour stays red
   // via the existing text-danger / stroke styles).
@@ -490,13 +432,13 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.activeTab.set('events');
   }
   protected jumpToEvent(event: TripReplayEvent): void {
-    this.pause();
-    this.positionIndex.set(event.positionIndex);
+    this.clock.halt();
+    this.clock.seekToIndex(event.positionIndex);
     this.selectedEventId.set(event.id);
   }
   protected jumpToStop(stop: ReplayStop): void {
-    this.pause();
-    this.positionIndex.set(stop.positionIndex);
+    this.clock.halt();
+    this.clock.seekToIndex(stop.positionIndex);
   }
   protected updateRouteLoading(loading: boolean): void {
     this.routeLoading.set(loading);
@@ -545,8 +487,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
           confirmText: 'Close',
           showCancel: false,
         });
-        this.positionIndex.set(0);
-        this.mapFallbackToRaw.set(false);
+          this.mapFallbackToRaw.set(false);
         return;
       }
       let driver = rawPositions[0].driver_name || this.vehicle()?.vehicle_driver_name || 'Unassigned';
@@ -633,7 +574,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
         stops: replayStops,
         statistics,
       });
-      this.positionIndex.set(0);
       this.mapFallbackToRaw.set(false);
       return;
     }
@@ -673,7 +613,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
         confirmText: 'Close',
         showCancel: false,
       });
-      this.positionIndex.set(0);
       this.mapFallbackToRaw.set(false);
       return;
     }
@@ -774,7 +713,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
       stops: replayStops,
       statistics,
     });
-    this.positionIndex.set(0);
   }
 
   // Stable sort key for trail rows: unparseable timestamps keep API order
@@ -969,39 +907,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
     const pad = (part: number) => String(part).padStart(2, '0');
     return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
   }
-  private clearPlaybackFrame(): void {
-    if (this.playbackFrame !== undefined) cancelAnimationFrame(this.playbackFrame);
-    this.playbackFrame = undefined;
-    this.cancelEngageFallback();
-  }
-  private buildTimeOffsets(positions: TripPosition[], startIdx: number): number[] {
-    const offsets = [0];
-    for (let i = startIdx + 1; i < positions.length; i++) {
-      const prev = this.parseTimestamp(positions[i - 1]?.timestamp);
-      const curr = this.parseTimestamp(positions[i]?.timestamp);
-      const gap =
-        Number.isFinite(prev) && Number.isFinite(curr) && curr > prev
-          ? Math.min(curr - prev, MAX_PLAYBACK_GAP_MS)
-          : this.playbackStepDuration;
-      offsets.push(offsets[offsets.length - 1] + gap);
-    }
-    return offsets;
-  }
-  // Wall-clock time the marker needs to travel the segment that starts at
-  // `offsets[index]`, i.e. the gap between that sample and the following one.
-  // The last sample has no segment after it, so its preceding gap is reused.
-  private stepSegmentDuration(offsets: number[], index: number, speed: number): number {
-    const next = offsets[index + 1];
-    const previousGap = offsets[index] - offsets[Math.max(0, index - 1)];
-    const tripMs = next === undefined ? previousGap : next - offsets[index];
-    return Math.max(40, tripMs / speed);
-  }
-  private parseTimestamp(value?: string): number {
-    if (!value) return NaN;
-    const ms = new Date(value).getTime();
-    return Number.isFinite(ms) ? ms : NaN;
-  }
   ngOnDestroy(): void {
-    this.clearPlaybackFrame();
+    this.clock.destroy();
   }
 }

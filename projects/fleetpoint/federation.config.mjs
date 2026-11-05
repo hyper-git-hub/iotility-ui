@@ -40,6 +40,7 @@ export default withNativeFederation({
     'echarts/renderers',
     'zrender',
     '@deck.gl/core',
+    '@deck.gl/geo-layers',
     '@deck.gl/layers',
     '@deck.gl/mapbox',
     '@deck.gl/mesh-layers',

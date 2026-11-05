@@ -1,5 +1,6 @@
 import {
   AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
   NgZone,
@@ -7,10 +8,10 @@ import {
   effect,
   input,
   output,
-  untracked,
   viewChild,
 } from '@angular/core';
-import { AmbientLight, DirectionalLight, LightingEffect } from '@deck.gl/core';
+import { AmbientLight, DirectionalLight, LayersList, LightingEffect } from '@deck.gl/core';
+import { TripsLayer } from '@deck.gl/geo-layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { ScenegraphLayer } from '@deck.gl/mesh-layers';
@@ -23,12 +24,25 @@ import {
   markerElement,
   popup,
   removeGeoJson,
+  routeCasingColor,
   timezoneCenter,
   upsertGeoJson,
 } from '../maps/maplibre';
+import { prefersReducedMotion } from '../maps/smooth-track';
 import { attachTooltip } from '@iotility/shared-ui';
 import { MapControls } from '../map-overlays/map-controls';
 import { environment } from '../../../environments/environment';
+import { REPLAY_SPEEDS, ReplayClock } from './replay-clock';
+import {
+  MonotoneCurve,
+  StopRun,
+  buildMotionCurve,
+  formatStopDuration,
+  roundCorners,
+  sampleRoadDistances,
+  stationaryRuns,
+  stopRunAt,
+} from './replay-motion';
 
 const VEHICLE_MODEL_PATHS = [
   '/assets/fleetpoint/models-trip-vehicle.glb',
@@ -41,20 +55,40 @@ const NAVIGATION_PITCH = 52;
 const NAVIGATION_ZOOM = 16.5;
 const CAMERA_BEARING_DAMPING = 4.2;
 const CAMERA_FRAMING_DAMPING = 2.4;
-const SPEED_DAMPING = 2.5;
+// Speed readings are blended between samples first, so this only rounds them off.
+const SPEED_DAMPING = 8;
 const VEHICLE_HEADING_DAMPING = 10;
 const CAMERA_BEARING_DEAD_ZONE = 1.2;
 const CAMERA_MAX_ROTATION_SPEED = 100;
 const CAMERA_SETTLE_SECONDS = 1.25;
-// Duration of the overview → nav-mode hand-off that runs when playback starts:
-// the centre glides from the framed trail onto the vehicle instead of jumping.
-const CAMERA_ENGAGE_SECONDS = 1.2;
-const CAMERA_ENGAGE_DAMPING = 4.5;
+const CAMERA_CENTER_DAMPING = 5;
+// Roughly a metre: closer than this the camera centre has arrived.
+const CAMERA_CENTER_EPSILON_DEGREES = 0.00001;
 const CAMERA_ZOOM_EPSILON = 0.008;
 const CAMERA_PITCH_EPSILON = 0.08;
 const OSRM_REQUEST_TIMEOUT_MS = 10000;
-const STOP_SPEED_KPH = 3;
-const STOP_MIN_SAMPLES = 4;
+const OVERVIEW_CAMERA = { pitch: 42, bearing: -20 };
+// The camera stays closest at the slowest speed.
+const SLOWEST_PLAYBACK_SPEED = REPLAY_SPEEDS[0];
+const MAX_PLAYBACK_PULL_BACK = 2.5;
+const SEEK_GLIDE_MAX_M = 300;
+const SEEK_GLIDE_DAMPING = 12;
+const SEEK_GLIDE_END_M = 0.05;
+const ROUTE_LAYER_OPACITY: Record<string, number> = {
+  'trip-route-bg': 0.85,
+  'trip-route-line': 0.5,
+  'trip-route-estimated': 0.8,
+};
+const ROUTE_LAYER_IDS = Object.keys(ROUTE_LAYER_OPACITY);
+const TRAIL_WIDTH_PX = 5;
+const TRAIL_CASING_WIDTH_PX = 8;
+const TRAIL_GLOW_WIDTH_PX = 15;
+const TRAIL_COLOR_LIGHT: [number, number, number, number] = [139, 25, 245, 255];
+const TRAIL_COLOR_DARK: [number, number, number, number] = [196, 181, 253, 255];
+const TRAIL_CASING_LIGHT: [number, number, number, number] = [255, 255, 255, 240];
+const TRAIL_CASING_DARK: [number, number, number, number] = [14, 12, 20, 240];
+const TRAIL_GLOW_LIGHT: [number, number, number, number] = [139, 25, 245, 56];
+const TRAIL_GLOW_DARK: [number, number, number, number] = [196, 181, 253, 64];
 
 // Trail-drawing tunables — ported from hypernym-fms-fe QE-demo-fixes
 // google-map.component.ts + OsrmTrailUtils.ts (side-by-side verified trail).
@@ -107,6 +141,13 @@ const VEHICLE_LIGHTING = new LightingEffect({
 // every ScatterplotLayer/ScenegraphLayer prop on every single frame.
 const VEHICLE_SHADOW_FILL_COLOR: [number, number, number, number] = [12, 14, 22, 90];
 const VEHICLE_MODEL_SCALE: [number, number, number] = [0.335, 0.335, 0.335];
+interface TrailPath {
+  path: Array<[longitude: number, latitude: number]>;
+  /** Metres along the road at each point: the trail's clock. */
+  distances: number[];
+}
+const getTrailPath = (trail: TrailPath) => trail.path;
+const getTrailDistances = (trail: TrailPath) => trail.distances;
 interface VehicleModelState {
   position: [longitude: number, latitude: number, altitude: number];
   heading: number;
@@ -142,30 +183,23 @@ interface EventMarkerRecord {
   templateUrl: './trip-replay-map.html',
   styleUrl: './trip-replay-map.css',
   imports: [MapControls],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly positions = input.required<TripPosition[]>();
   readonly events = input<TripReplayEvent[]>([]);
   readonly selectedEventId = input<string | null>(null);
-  readonly positionIndex = input(0);
-  readonly playbackActive = input(false);
-  readonly playbackSpeed = input(1);
-  readonly playbackStepDuration = input(260);
+  /** Drives the vehicle along the trail. Without one the map is a static view of the trip. */
+  readonly clock = input<ReplayClock>();
   readonly eventSelected = output<TripReplayEvent>();
   readonly routeLoadingChange = output<boolean>();
   readonly displayedSpeedChange = output<number>();
-  // Fires once per play run, the moment the marker actually starts travelling.
-  // Pages hold their playback clock until then so the timeline bar and the
-  // vehicle leave the start sample on the same frame instead of the bar
-  // running ahead of a parked marker.
-  readonly playbackEngaged = output<void>();
   readonly ready = output<void>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
   private vehicleOverlay?: MapboxOverlay;
   private vehicleModelUrl?: string;
   private vehicleModelRequest?: Promise<void>;
-  private pendingVehicle?: { position: LatLng; heading: number };
   private vehicleVisible = false;
   private endpointMarkers: maplibregl.Marker[] = [];
   private eventMarkers: EventMarkerRecord[] = [];
@@ -177,20 +211,26 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     offset: 16,
   });
   private eventCardHideTimer?: number;
+  // The trail the road below was matched for: new events on the same trail
+  // (stops load separately on vehicle detail) don't need a second match.
+  private renderedPositions?: TripPosition[];
   private roadCoordinates: LatLng[] = [];
   private roadSegments: LatLng[][] = [];
   private legEnds: Array<[OsrmTrailPoint, OsrmTrailPoint]> = [];
-  // Chronological leg records [startTs, endTs, startIndex, endIndex] — used to
-  // align raw GPS positions to their own leg's segment of the merged road
-  // coordinates (which now interleaves the estimated gap trails between legs).
+  // Chronological leg records [startTs, endTs, startIndex, endIndex] into the
+  // merged road coordinates (which interleave the estimated gap trails).
   private legTimeRanges: Array<[number, number, number, number]> = [];
   // OSRM /route bridges across leg gaps — drawn dashed, and interleaved into
   // the marker's coordinate stream so playback drives over the gaps too.
   private estimatedGapSegments: LatLng[][] = [];
   private roadSegmentRanges: Array<[number, number]> = [];
   private roadDistances: number[] = [];
-  private lastVehicleIndex = -1;
-  private positionRoadIndexes: number[] = [];
+  // Metres along the road where each GPS sample really was.
+  private sampleDistances: number[] = [];
+  private stopRuns: StopRun[] = [];
+  // Replay time to metres along the road: the vehicle's whole motion.
+  private motion?: MonotoneCurve;
+  private trailPaths: TrailPath[] = [];
   private routeRequest?: AbortController;
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
@@ -203,12 +243,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   // frames the whole trail so the route is readable before the zoom onto the
   // 3D marker, which happens on the first play.
   private navCameraEngaged = false;
-  // Damped overview → vehicle centre, seeded from the map at engagement so the
-  // first play eases across instead of snapping sideways.
+  // Always damped, so nav mode takes over and seeks arrive with a glide.
   private displayedCameraCenter?: [number, number];
-  private cameraEngageElapsed = 0;
-  private movementFinished = true;
-  private lastRenderedRouteIndex = -1;
   private readonly vehicleModelData: VehicleModelState[] = [
     {
       position: [0, 0, 0.4],
@@ -221,22 +257,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       heading: 0,
     },
   ];
-  private movementStartedAt = 0;
-  private movementDuration = 1;
-  // Guards the one-shot playbackEngaged notice so the page is told exactly
-  // once per play run that the marker has left its sample.
-  private playbackEngagedNotified = false;
-  private movementStartDistance = 0;
-  private targetRoadDistance = 0;
-  private movementStartPosition: LatLng = [0, 0];
-  private targetPosition: LatLng = [0, 0];
-  private displayedPosition: LatLng = [0, 0];
+  private seenSeeks = 0;
+  // Metres the vehicle is still gliding from a short seek; decays to nothing.
+  private seekOffset = 0;
+  private readonly displayedPosition: LatLng = [0, 0];
   private displayedRoadDistance = 0;
   private displayedHeading?: number;
   private displayedCameraBearing?: number;
   private displayedCameraZoom?: number;
   private displayedCameraPitch?: number;
-  private displayedRoadProgress = 0;
   private displayedSpeedKph = 0;
   private targetSpeedKph = 0;
   private lastEmittedSpeedKph = -1;
@@ -253,7 +282,10 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return this.vehicleOrientationScratch;
   };
 
+  private stopChip?: { marker: maplibregl.Marker; element: HTMLElement; label: Element };
+  private activeStop?: StopRun;
   private themeObserver?: MutationObserver;
+  private readonly reducedMotion = prefersReducedMotion();
 
   constructor(private readonly zone: NgZone) {
     effect(() => {
@@ -262,20 +294,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       if (this.map) void this.renderRoute(positions, events);
     });
     effect(() => {
-      const index = this.positionIndex();
-      if (this.map) this.updateVehicle(index);
+      const offsets = this.clock()?.timeline();
+      if (offsets) this.rebuildMotion(offsets);
     });
+    // Pressing play, seeking while paused and retiming all need frames again.
     effect(() => {
-      const active = this.playbackActive();
-      // Every play run starts with the marker parked on a sample, so the
-      // engagement notice has to be re-armed while the replay is idle.
-      if (!active) this.playbackEngagedNotified = false;
-      if (!this.map || !active) return;
-      // Playback engagement: the reported index only changes once a whole step
-      // has elapsed, so the marker has to be pushed toward the following sample
-      // the moment play starts — otherwise the vehicle would sit still while
-      // the timeline bar already advances, and stay a step behind afterwards.
-      this.updateVehicle(untracked(() => this.positionIndex()));
+      const clock = this.clock();
+      clock?.playing();
+      clock?.seeks();
+      this.startCameraLoop();
     });
     effect(() => {
       if (!this.map) return;
@@ -283,13 +310,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.applyEventSelection();
     });
     effect(() => {
-      if (!this.map || !this.playbackActive()) return;
-      // Pressing play hands the camera to nav mode right away — the framing
-      // seeds itself from whatever the map currently shows (the fitted trail
-      // overview) and eases onto the vehicle marker.
-      this.navCameraEngaged = true;
-      this.cameraEngageElapsed = 0;
-      this.startCameraLoop();
+      if (this.clock()?.atRest()) this.showOverview();
     });
   }
 
@@ -331,34 +352,25 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   private async renderRoute(positions: TripPosition[], events: TripReplayEvent[]): Promise<void> {
     if (!this.map) return;
+    if (positions.length && positions === this.renderedPositions) {
+      if (this.roadCoordinates.length) this.renderEventMarkers(events);
+      return;
+    }
+    this.renderedPositions = positions;
+    const version = ++this.routeVersion;
+    this.clearMarkers();
+    this.clearRoute();
     if (!positions.length) {
-      this.routeVersion++;
       this.routeRequest?.abort();
       this.routeLoadingChange.emit(false);
-      this.clearMarkers();
-      this.roadCoordinates = [];
-      this.roadSegments = [];
-      this.estimatedGapSegments = [];
-      this.legTimeRanges = [];
-      this.roadSegmentRanges = [];
-      this.roadDistances = [];
-      this.positionRoadIndexes = [];
-      if (this.map.isStyleLoaded())
-        removeGeoJson(this.map, 'trip-route', [
-          'trip-route-bg',
-          'trip-route-line',
-          'trip-route-completed',
-          'trip-route-estimated',
-        ]);
       this.map.jumpTo({
         center: [DEFAULT_MAP_CENTER[1], DEFAULT_MAP_CENTER[0]],
         zoom: DEFAULT_MAP_ZOOM,
       });
       return;
     }
-    const version = ++this.routeVersion;
-    this.roadSegments = [];
     this.routeLoadingChange.emit(true);
+    this.showRawPreview(positions);
     let coordinates: LatLng[];
     try {
       coordinates = await this.getRoadCoordinates(positions);
@@ -366,7 +378,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       if (version === this.routeVersion) this.routeLoadingChange.emit(false);
     }
     if (!this.map || version !== this.routeVersion) return;
-    this.clearMarkers();
     this.roadCoordinates = coordinates;
     if (!this.roadSegments.length) this.roadSegments = [coordinates];
     // Solid trail segments are the matched legs; the interleaved gap bridges
@@ -379,21 +390,26 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     ] as [number, number]);
     if (!this.roadSegmentRanges.length) this.roadSegmentRanges = [[0, coordinates.length - 1]];
     this.roadDistances = this.buildRoadDistances(coordinates);
-    this.positionRoadIndexes = this.mapPositionsToRoad(positions, coordinates);
-    this.displayedHeading = undefined;
-    this.displayedRoadDistance = 0;
-    this.targetRoadDistance = 0;
-    this.displayedRoadProgress = 0;
-    this.lastRenderedRouteIndex = -1;
-    this.lastVehicleIndex = -1;
+    this.stopRuns = stationaryRuns(positions);
+    this.sampleDistances = sampleRoadDistances(
+      positions,
+      coordinates,
+      this.roadDistances,
+      this.stopRuns,
+    );
+    this.trailPaths = this.roadSegmentRanges.map(([start, end]) => ({
+      path: coordinates.slice(start, end + 1).map(([lat, lng]) => [lng, lat] as [number, number]),
+      distances: this.roadDistances.slice(start, end + 1),
+    }));
+    const offsets = this.clock()?.timeline();
+    if (offsets) this.rebuildMotion(offsets);
     this.renderRouteLayers();
+    this.fadeOutRawPreview();
     const colors = getComputedStyle(document.documentElement);
-    const css = (name: string, fallback: string) =>
-      colors.getPropertyValue(name).trim() || fallback;
     this.endpointMarkers = [
       this.circleMarker(
         this.roadSegments[0]?.[0] ?? coordinates[0],
-        css('--color-success', '#20a77d'),
+        colors.getPropertyValue('--color-success').trim() || '#20a77d',
         'Trip start',
       ),
       this.circleMarker(
@@ -403,15 +419,71 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         'Trip end',
       ),
     ];
+    this.renderEventMarkers(this.events());
+    fitLatLngs(this.map, coordinates, 40, 14, OVERVIEW_CAMERA);
+    this.placeVehicle();
+  }
+
+  private clearRoute(): void {
+    this.roadCoordinates = [];
+    this.roadSegments = [];
+    this.estimatedGapSegments = [];
+    this.legTimeRanges = [];
+    this.roadSegmentRanges = [];
+    this.roadDistances = [];
+    this.sampleDistances = [];
+    this.stopRuns = [];
+    this.trailPaths = [];
+    this.motion = undefined;
+    if (!this.map || !this.styleReady()) return;
+    removeGeoJson(this.map, 'trip-route', ROUTE_LAYER_IDS);
+    removeGeoJson(this.map, 'trip-route-raw', ['trip-route-raw-line']);
+  }
+
+  // Not map.isStyleLoaded(): that is also false whenever tiles are loading, and
+  // a route skipped for that reason would never be drawn.
+  private styleReady(): boolean {
+    return !!this.map?.getStyle();
+  }
+
+  private routeColor(): string {
+    return document.documentElement.classList.contains('dark') ? '#c4b5fd' : '#8b19f5';
+  }
+
+  // The recorded points draw straight away, so the trip is on screen while OSRM
+  // matches it to the road; the matched route then fades in over them.
+  private showRawPreview(positions: TripPosition[]): void {
+    if (!this.map || !this.styleReady()) return;
+    const points = positions
+      .map(({ lat, lng }) => [Number(lat), Number(lng)] as LatLng)
+      .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0));
+    if (points.length < 2) return;
+    upsertGeoJson(this.map, 'trip-route-raw', lineFeature(points), [
+      {
+        id: 'trip-route-raw-line',
+        type: 'line',
+        paint: { 'line-color': this.routeColor(), 'line-width': 3, 'line-opacity': 0.35 },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+    ]);
+    fitLatLngs(this.map, points, 40, 14, OVERVIEW_CAMERA);
+  }
+
+  private fadeOutRawPreview(): void {
+    if (this.map?.getLayer('trip-route-raw-line'))
+      this.map.setPaintProperty('trip-route-raw-line', 'line-opacity', 0);
+  }
+
+  private renderEventMarkers(events: TripReplayEvent[]): void {
+    if (!this.map) return;
+    this.clearEventMarkers();
+    const colors = getComputedStyle(document.documentElement);
+    const css = (name: string, fallback: string) =>
+      colors.getPropertyValue(name).trim() || fallback;
     for (const event of events) {
-      // Distance-based placement (not the nearest-road-vertex lookup): the
-      // timeline dot and the vehicle marker both use index-proportional
-      // distance, so the map dot must use the same mapping or the three
-      // markers land at different spots along the trail.
-      const point = this.coordinateAtDistance(
-        this.targetDistanceForIndex(event.positionIndex, positions.length),
-      );
-      if (!point) continue;
+      // Placed where the sample really was on the road, the same place the
+      // vehicle passes through at that moment of the replay.
+      const point = this.coordinateAtDistance(this.sampleDistances[event.positionIndex] ?? 0);
       const color =
         event.type === 'violation'
           ? css('--color-danger', '#df405e')
@@ -458,70 +530,44 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.eventMarkers.push(record);
     }
     this.applyEventSelection();
-    // Ease into the cinematic pitch/bearing rather than snapping to it, so the
-    // very first frame of a trip doesn't feel like a hard cut.
-    this.map.easeTo({ pitch: 42, bearing: -20, duration: 700 });
-    fitLatLngs(this.map, coordinates, 40, 14);
-    this.updateVehicle(this.positionIndex());
   }
 
+  private clearEventMarkers(): void {
+    this.eventMarkers.forEach((record) => record.marker.remove());
+    this.eventMarkers = [];
+    this.hideEventCard();
+  }
+
+  // The road the vehicle has yet to drive, plus the dashed gap estimates. The
+  // travelled part is drawn on top by the deck overlay (see trailLayers).
   private renderRouteLayers(): void {
-    if (!this.map?.isStyleLoaded() || this.roadCoordinates.length < 2) return;
-    const completedIndex = Math.max(0, Math.round(this.displayedRoadProgress));
+    if (!this.map || !this.styleReady() || this.roadCoordinates.length < 2) return;
     const features: GeoJSON.Feature[] = [];
     for (const [segmentStart, segmentEnd] of this.roadSegmentRanges) {
       const points = this.roadCoordinates.slice(segmentStart, segmentEnd + 1);
       if (points.length >= 2) features.push(lineFeature(points, { kind: 'route' }));
-    }
-    if (completedIndex > 0) {
-      for (const [segmentStart, segmentEnd] of this.roadSegmentRanges) {
-        const from = Math.max(segmentStart, 0);
-        const to = Math.min(segmentEnd, completedIndex);
-        if (to <= from) continue;
-        const points = this.roadCoordinates.slice(from, to + 1);
-        if (points.length >= 2) features.push(lineFeature(points, { kind: 'completed' }));
-      }
     }
     // Estimated gap bridges (OSRM /route across leg silences) — dashed, never
     // solid, so a user can tell recorded movement from an estimate at a glance.
     for (const segment of this.estimatedGapSegments) {
       if (segment.length >= 2) features.push(lineFeature(segment, { kind: 'estimated' }));
     }
-    const routeColor = document.documentElement.classList.contains('dark')
-      ? '#c4b5fd'
-      : '#8b19f5';
+    const routeColor = this.routeColor();
     const data: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features };
-    const source = this.map.getSource('trip-route') as maplibregl.GeoJSONSource | undefined;
-    const layerIds = [
-      'trip-route-bg',
-      'trip-route-line',
-      'trip-route-completed',
-      'trip-route-estimated',
-    ];
-    if (source && layerIds.every((id) => this.map?.getLayer(id))) {
-      source.setData(data);
-      return;
-    }
+    // Layers start invisible; MapLibre's paint transition fades them to full.
     upsertGeoJson(this.map, 'trip-route', data, [
       {
         id: 'trip-route-bg',
         type: 'line',
         filter: ['==', ['get', 'kind'], 'route'],
-        paint: { 'line-color': routeColor, 'line-width': 9, 'line-opacity': 0.18 },
+        paint: { 'line-color': routeCasingColor(), 'line-width': 6, 'line-opacity': 0 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
       {
         id: 'trip-route-line',
         type: 'line',
         filter: ['==', ['get', 'kind'], 'route'],
-        paint: { 'line-color': routeColor, 'line-width': 4, 'line-opacity': 0.82 },
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-      },
-      {
-        id: 'trip-route-completed',
-        type: 'line',
-        filter: ['==', ['get', 'kind'], 'completed'],
-        paint: { 'line-color': routeColor, 'line-width': 4.5, 'line-opacity': 0.9 },
+        paint: { 'line-color': routeColor, 'line-width': 3.5, 'line-opacity': 0 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
       {
@@ -533,12 +579,18 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           // estimated from recorded segments.
           'line-color': routeColor,
           'line-width': 3,
-          'line-opacity': 0.9,
+          'line-opacity': 0,
           'line-dasharray': [1.2, 1.6],
         },
         layout: { 'line-cap': 'butt', 'line-join': 'round' },
       },
     ]);
+    this.zone.runOutsideAngular(() =>
+      requestAnimationFrame(() => {
+        for (const [id, opacity] of Object.entries(ROUTE_LAYER_OPACITY))
+          if (this.map?.getLayer(id)) this.map.setPaintProperty(id, 'line-opacity', opacity);
+      }),
+    );
   }
 
   private circleMarker(point: LatLng, color: string, label: string): maplibregl.Marker {
@@ -557,7 +609,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.vehicleVisible = false;
     this.navCameraEngaged = false;
     this.displayedCameraCenter = undefined;
-    this.cameraEngageElapsed = 0;
     this.stopCameraLoop();
     this.displayedCameraBearing = undefined;
     this.displayedCameraZoom = undefined;
@@ -565,15 +616,14 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.displayedSpeedKph = 0;
     this.targetSpeedKph = 0;
     this.emitDisplayedSpeed();
-    this.movementFinished = true;
+    this.seekOffset = 0;
     this.cameraSettledFor = 0;
-    this.lastRenderedRouteIndex = -1;
+    this.activeStop = undefined;
+    this.stopChip?.marker.remove();
     this.vehicleOverlay?.setProps({ layers: [] });
     this.endpointMarkers.forEach((item) => item.remove());
-    this.eventMarkers.forEach((record) => record.marker.remove());
-    this.hideEventCard();
     this.endpointMarkers = [];
-    this.eventMarkers = [];
+    this.clearEventMarkers();
   }
 
   // Keeps the map in sync with whichever event is selected anywhere in the UI:
@@ -651,9 +701,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private async getRoadCoordinates(positions: TripPosition[]): Promise<LatLng[]> {
     // Raw fallback never includes (0,0) device defaults or unparseable coords —
     // it must match what the OSRM path is allowed to draw (B4).
-    const fallback = positions
-      .map(({ lat, lng }) => [Number(lat), Number(lng)] as LatLng)
-      .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0));
+    const fallback = roundCorners(
+      positions
+        .map(({ lat, lng }) => [Number(lat), Number(lng)] as LatLng)
+        .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0)),
+    );
     this.routeRequest?.abort();
     // Capture the run's controller: batches attach to THIS signal so a
     // superseding render's controller can never strand an old-run batch (B9).
@@ -667,17 +719,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       this.legTimeRanges = [];
       const merged: LatLng[] = [];
       for (const leg of legs) {
-        const segment = await this.matchLegToRoad(leg, run.signal);
+        const segment = roundCorners(await this.matchLegToRoad(leg, run.signal));
         if (!segment.length) continue;
         if (this.legEnds.length) {
           // Gap estimation between legs: EVERY gap is bridged with the OSRM
           // /route road path, rendered as a DASHED estimate. The bridge is
           // also spliced into the marker coordinate stream between the two
           // legs so playback drives over the gap instead of teleporting.
-          const estimated = await this.estimateGap(
-            this.legEnds.at(-1)![1],
-            leg[0],
-            run.signal,
+          const estimated = roundCorners(
+            await this.estimateGap(this.legEnds.at(-1)![1], leg[0], run.signal),
           );
           if (estimated.length >= 2) {
             this.estimatedGapSegments.push(estimated);
@@ -1106,195 +1156,36 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return distances;
   }
 
-  private routeIndex(positionIndex: number, count: number): number {
-    const mapped = this.positionRoadIndexes[Math.max(0, Math.min(positionIndex, count - 1))];
-    if (mapped !== undefined) return mapped;
-    return count <= 1 || this.roadCoordinates.length <= 1
-      ? 0
-      : Math.round((positionIndex / (count - 1)) * (this.roadCoordinates.length - 1));
+  private rebuildMotion(offsets: readonly number[]): void {
+    this.motion =
+      offsets.length && offsets.length === this.sampleDistances.length
+        ? buildMotionCurve(offsets, this.sampleDistances, this.stopRuns)
+        : undefined;
   }
 
-  private mapPositionsToRoad(positions: TripPosition[], road: LatLng[]): number[] {
-    if (!positions.length || !road.length) return [];
-    let previousIndex = 0;
-    return positions.map((position, positionIndex) => {
-      const expected =
-        positions.length <= 1
-          ? 0
-          : Math.round((positionIndex / (positions.length - 1)) * (road.length - 1));
-      // Search near both the previous match and the expected trip progress. This
-      // prevents an overlapping road later in the trip from stealing the match.
-      const radius = Math.max(80, Math.ceil((road.length / positions.length) * 8));
-      const start = Math.max(previousIndex, Math.min(expected - radius, road.length - 1));
-      const end = Math.min(road.length - 1, Math.max(previousIndex + radius, expected + radius));
-      let bestIndex = previousIndex;
-      let bestDistance = Number.POSITIVE_INFINITY;
-      for (let index = start; index <= end; index++) {
-        const latScale = road[index][0] - position.lat;
-        const lngScale = (road[index][1] - position.lng) * Math.cos((position.lat * Math.PI) / 180);
-        const distance = latScale * latScale + lngScale * lngScale;
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestIndex = index;
-        }
-      }
-      previousIndex = Math.max(previousIndex, bestIndex);
-      return previousIndex;
-    });
-  }
-
-  private updateVehicle(index: number): void {
-    if (
-      !this.map ||
-      !this.vehicleOverlay ||
-      !this.roadCoordinates.length ||
-      !this.positions().length
-    )
-      return;
-    const positions = this.positions();
-    // Distance along the matched road trail, proportional to playback progress.
-    // Sparse GPS spanning a long road segment still moves the marker steadily
-    // because interpolation happens along the drawn geometry, not raw samples.
-    const clampedIndex = Math.max(0, Math.min(index, positions.length - 1));
-    // Forward playback must never walk the marker backwards: residual
-    // geometry back-steps hold the marker in place instead of retracing.
-    // Backward steps only occur on an explicit seek, which teleports straight
-    // to the target.
-    const forwardStep = index >= this.lastVehicleIndex;
-    this.lastVehicleIndex = index;
-    const forwardPlayback = this.playbackActive() && forwardStep;
-    const currentDistance = this.targetDistanceForIndex(clampedIndex, positions.length);
-    // While playing, the marker aims one sample past the reported index: the
-    // vehicle leaves the sample it has just reached immediately, so it covers
-    // that step in the same wall-clock window as the timeline bar. Aiming at
-    // the current sample instead parks the marker for a whole step while the
-    // bar and the point counter have already advanced.
-    const targetDistance = forwardPlayback
-      ? this.targetDistanceForIndex(
-          Math.min(clampedIndex + 1, positions.length - 1),
-          positions.length,
-        )
-      : currentDistance;
-    const targetPosition = this.coordinateAtDistance(targetDistance);
-    const targetHeading = this.rawHeadingAtDistance(targetDistance);
-    this.targetSpeedKph = positions[clampedIndex]?.speed ?? this.targetSpeedKph;
-    if (this.vehicleVisible) {
-      if (forwardPlayback)
-        this.animateVehicleTo(
-          targetPosition,
-          Math.max(targetDistance, this.displayedRoadDistance),
-        );
-      else
-        // Backward playback never happens during normal playback, so a step
-        // backwards is always an explicit seek (scrub to an earlier point,
-        // event jump, restart). Teleport straight there instead of retracing
-        // the drawn trail in reverse at the forward step rate.
-        this.teleportVehicle(targetPosition, targetHeading, targetDistance);
-    } else {
-      // First appearance: sit exactly on the reported sample so the marker is
-      // never placed ahead of the timeline position it was asked for.
-      const startPosition = this.coordinateAtDistance(currentDistance);
-      const startHeading = this.rawHeadingAtDistance(currentDistance);
-      // A play run that starts before the marker was ever on screen puts it on
-      // screen here, so the player may start together with this appearance.
-      if (this.playbackActive()) this.notifyPlaybackEngaged();
-      this.vehicleVisible = true;
-      this.targetRoadDistance = currentDistance;
-      this.displayedRoadDistance = currentDistance;
-      this.movementStartDistance = currentDistance;
-      this.movementStartPosition[0] = startPosition[0];
-      this.movementStartPosition[1] = startPosition[1];
-      this.targetPosition[0] = startPosition[0];
-      this.targetPosition[1] = startPosition[1];
-      this.movementStartedAt = performance.now();
-      this.displayedRoadProgress = this.progressAtDistance(currentDistance);
-      this.displayedHeading = startHeading;
-      this.displayedSpeedKph = this.targetSpeedKph;
-      this.displayedPosition[0] = startPosition[0];
-      this.displayedPosition[1] = startPosition[1];
-      this.renderVehicleModel(startPosition, startHeading);
-      this.renderRouteLayersIfNeeded(true);
-      this.startCameraLoop();
-    }
-  }
-
-  // Maps a raw position index to metres travelled along the road trail,
-  // in proportion to playback progress (index / total). During a genuine
-  // stationary run the marker is held at the run's starting distance instead
-  // of gliding forward, matching real-world behaviour.
-  private targetDistanceForIndex(index: number, count: number): number {
-    const last = count - 1;
-    const lastDistance = this.roadDistances.at(-1) ?? 0;
-    if (last <= 0 || lastDistance <= 0) return 0;
-    const clamped = Math.max(0, Math.min(index, last));
-    const stopStart = this.stationaryRunStart(count, clamped);
-    const effectiveIndex = stopStart >= 0 ? Math.max(0, stopStart - 1) : clamped;
-    return (Math.max(0, Math.min(effectiveIndex, last)) / last) * lastDistance;
-  }
-
-  // Returns the index of the first sample of a genuine stationary run that
-  // contains `index`, or -1 when the vehicle was moving at that sample.
-  private stationaryRunStart(count: number, index: number): number {
-    const positions = this.positions();
-    if (count < STOP_MIN_SAMPLES || index >= count) return -1;
-    let runStart = index;
-    while (runStart > 0 && (positions[runStart - 1]?.speed ?? 0) <= STOP_SPEED_KPH)
-      runStart--;
-    let runEnd = index;
-    while (runEnd + 1 < count && (positions[runEnd + 1]?.speed ?? 0) <= STOP_SPEED_KPH)
-      runEnd++;
-    if (runEnd - runStart + 1 < STOP_MIN_SAMPLES) return -1;
-    return (positions[index]?.speed ?? 0) <= STOP_SPEED_KPH ? runStart : -1;
-  }
-
-  private animateVehicleTo(targetPosition: LatLng, targetDistance: number): void {
-    if (!this.map || !this.vehicleOverlay || !this.vehicleVisible) return;
-    // Real travel (target ahead of where the marker sits) means the vehicle is
-    // about to move: the page may start its timeline clock now. A stationary
-    // run keeps the notice back, so the player stays parked with the marker.
-    if (this.playbackActive() && targetDistance !== this.displayedRoadDistance)
-      this.notifyPlaybackEngaged();
-    this.movementStartDistance = this.displayedRoadDistance;
-    this.targetRoadDistance = targetDistance;
-    this.movementStartPosition[0] = this.displayedPosition[0];
-    this.movementStartPosition[1] = this.displayedPosition[1];
-    this.targetPosition[0] = targetPosition[0];
-    this.targetPosition[1] = targetPosition[1];
-    this.movementStartedAt = performance.now();
-    this.movementDuration = Math.max(40, this.playbackStepDuration());
-    this.movementFinished = false;
-    this.cameraSettledFor = 0;
-    this.startCameraLoop();
-  }
-
-  // Instantly places the marker at a target without animating along the trail.
-  // Used for paused scrubs and any seek/jump to an earlier point, where an
-  // animated move would visibly retrace the drawn route backwards.
-  private teleportVehicle(position: LatLng, heading: number, targetDistance: number): void {
-    this.cancelMovement();
-    this.targetRoadDistance = targetDistance;
-    this.displayedRoadDistance = targetDistance;
-    this.movementStartDistance = targetDistance;
-    this.movementStartPosition[0] = position[0];
-    this.movementStartPosition[1] = position[1];
-    this.targetPosition[0] = position[0];
-    this.targetPosition[1] = position[1];
-    this.movementStartedAt = performance.now();
-    this.displayedRoadProgress = this.progressAtDistance(targetDistance);
+  // Puts the vehicle on the trail where the playhead already is, so a trail that
+  // finishes matching mid-play joins the replay in the right place.
+  private placeVehicle(): void {
+    if (!this.roadCoordinates.length) return;
+    const clock = this.clock();
+    const distance = this.motion?.at(clock?.playheadMs ?? 0) ?? 0;
+    this.seenSeeks = clock?.seeks() ?? 0;
+    this.seekOffset = 0;
+    this.displayedRoadDistance = distance;
+    this.displayedHeading = undefined;
+    const heading = this.rawHeadingAtDistance(distance);
     this.displayedHeading = heading;
+    this.targetSpeedKph = this.speedAtPlayhead();
+    this.displayedSpeedKph = this.targetSpeedKph;
+    this.vehicleVisible = true;
+    const position = this.coordinateAtDistance(distance);
     this.displayedPosition[0] = position[0];
     this.displayedPosition[1] = position[1];
-    this.renderVehicleModel(position, heading);
-    this.renderRouteLayersIfNeeded(true);
+    this.positionVehicle(position, heading);
     this.startCameraLoop();
   }
 
-  private renderVehicleModel(position: LatLng, heading: number): void {
-    if (!this.vehicleModelUrl) {
-      this.pendingVehicle = { position, heading };
-      void this.loadVehicleModel();
-      return;
-    }
+  private positionVehicle(position: LatLng, heading: number): void {
     const model = this.vehicleModelData[0];
     const shadow = this.vehicleShadowData[0];
     model.position[0] = position[1];
@@ -1305,8 +1196,16 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     shadow.position[1] = position[0];
     shadow.position[2] = 0;
     shadow.heading = heading;
-    this.vehicleOverlay?.setProps({
-      layers: [
+    this.renderOverlay();
+  }
+
+  private renderOverlay(): void {
+    if (!this.vehicleVisible) return;
+    const [lng, lat] = this.vehicleModelData[0].position;
+    const heading = this.vehicleModelData[0].heading;
+    const layers: LayersList = this.trailLayers();
+    if (this.vehicleModelUrl) {
+      layers.push(
         // A soft ground contact shadow keeps the model from reading as a
         // floating cut-out icon, the same trick used by Google/Uber-style maps.
         new ScatterplotLayer<VehicleModelState>({
@@ -1318,7 +1217,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           getFillColor: VEHICLE_SHADOW_FILL_COLOR,
           stroked: false,
           pickable: false,
-          updateTriggers: { getPosition: [position[0], position[1]] },
+          updateTriggers: { getPosition: [lng, lat] },
         }),
         new ScenegraphLayer<VehicleModelState>({
           id: 'trip-vehicle-model',
@@ -1334,12 +1233,53 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           pickable: false,
           _lighting: 'pbr',
           updateTriggers: {
-            getPosition: [position[0], position[1]],
+            getPosition: [lng, lat],
             getOrientation: [heading],
           },
         }),
-      ],
-    });
+      );
+    } else {
+      void this.loadVehicleModel();
+    }
+    this.vehicleOverlay?.setProps({ layers });
+  }
+
+  // The travelled trail. The path sits on the GPU once and only `currentTime`
+  // changes per frame, so it grows smoothly under the vehicle at any trip length.
+  private trailLayers(): LayersList {
+    if (!this.trailPaths.length) return [];
+    const dark = document.documentElement.classList.contains('dark');
+    const shared = {
+      data: this.trailPaths,
+      getPath: getTrailPath,
+      getTimestamps: getTrailDistances,
+      currentTime: this.displayedRoadDistance,
+      fadeTrail: false,
+      capRounded: true,
+      jointRounded: true,
+      widthUnits: 'pixels' as const,
+      pickable: false,
+    };
+    return [
+      new TripsLayer<TrailPath>({
+        ...shared,
+        id: 'trip-trail-glow',
+        getWidth: TRAIL_GLOW_WIDTH_PX,
+        getColor: dark ? TRAIL_GLOW_DARK : TRAIL_GLOW_LIGHT,
+      }),
+      new TripsLayer<TrailPath>({
+        ...shared,
+        id: 'trip-trail-casing',
+        getWidth: TRAIL_CASING_WIDTH_PX,
+        getColor: dark ? TRAIL_CASING_DARK : TRAIL_CASING_LIGHT,
+      }),
+      new TripsLayer<TrailPath>({
+        ...shared,
+        id: 'trip-trail',
+        getWidth: TRAIL_WIDTH_PX,
+        getColor: dark ? TRAIL_COLOR_DARK : TRAIL_COLOR_LIGHT,
+      }),
+    ];
   }
 
   private loadVehicleModel(): Promise<void> {
@@ -1359,9 +1299,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           this.vehicleModelUrl = URL.createObjectURL(
             new Blob([bytes], { type: 'model/gltf-binary' }),
           );
-          const pending = this.pendingVehicle;
-          this.pendingVehicle = undefined;
-          if (pending) this.renderVehicleModel(pending.position, pending.heading);
+          this.renderOverlay();
           return;
         } catch (error) {
           lastError = error;
@@ -1417,8 +1355,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   private cameraHeadingAtDistance(distance: number, speedKph: number): number {
     const speedFactor = Math.max(0, Math.min(speedKph / 100, 1));
-    const tangentHalfLength = 10 + speedFactor * 12;
-    const lookAhead = 35 + speedFactor * 75;
+    const reach = 1 + this.playbackPullBack();
+    const tangentHalfLength = (10 + speedFactor * 12) * reach;
+    const lookAhead = (35 + speedFactor * 75) * reach;
     const samples = 6;
     let vectorX = 0;
     let vectorY = 0;
@@ -1471,6 +1410,16 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return (this.displayedHeading += delta * blend);
   }
 
+  // Faster playback pulls the camera back: the road stays readable at speed and
+  // the map's tiles can keep up with the vehicle. Zoom levels, so 1 is half the scale.
+  private playbackPullBack(): number {
+    const speed = this.clock()?.speedSetting ?? SLOWEST_PLAYBACK_SPEED;
+    return Math.max(
+      0,
+      Math.min(Math.log2(speed / SLOWEST_PLAYBACK_SPEED) * 0.7, MAX_PLAYBACK_PULL_BACK),
+    );
+  }
+
   private cameraParamsForSpeed(speedKph: number): {
     zoom: number;
     pitch: number;
@@ -1479,10 +1428,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     // Nav apps zoom out slightly and look further down the road at higher
     // speed, and sit closer/steeper when crawling or stopped.
     const t = Math.max(0, Math.min(speedKph / 100, 1));
+    const pullBack = this.playbackPullBack();
     return {
-      zoom: NAVIGATION_ZOOM - t * 1.2,
-      pitch: NAVIGATION_PITCH - t * 6,
-      lookAhead: 28 + t * 90,
+      zoom: NAVIGATION_ZOOM - t * 1.2 - pullBack,
+      pitch: NAVIGATION_PITCH - t * 6 - pullBack * 5,
+      lookAhead: (28 + t * 90) * 2 ** pullBack,
     };
   }
 
@@ -1496,22 +1446,26 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     return this.cameraCenterScratch;
   }
 
-  // Camera centre for this frame: the marker-following point once nav mode has
-  // settled, damped across during the short overview hand-off after play starts
-  // (a hard cut there would read as a sideways jump of the whole map).
-  private blendedCameraCenter(lookAheadMetres: number, dt: number): [number, number] {
+  // The camera centre chases its target rather than sitting on it, which covers
+  // nav mode taking over from the overview and seeks with the same glide.
+  private dampedCameraCenter(lookAheadMetres: number, dt: number): [number, number] {
     const target = this.cameraCenterAhead(lookAheadMetres);
-    const center = this.displayedCameraCenter;
-    if (!center) return target;
-    if (this.cameraEngageElapsed >= CAMERA_ENGAGE_SECONDS) {
-      center[0] = target[0];
-      center[1] = target[1];
-      return center;
-    }
-    const t = 1 - Math.exp(-CAMERA_ENGAGE_DAMPING * dt);
+    const center = this.displayedCameraCenter!;
+    const t = 1 - Math.exp(-CAMERA_CENTER_DAMPING * dt);
     center[0] += (target[0] - center[0]) * t;
     center[1] += (target[1] - center[1]) * t;
     return center;
+  }
+
+  // Back out to the whole trip once a replay ends or is stopped.
+  private showOverview(): void {
+    if (!this.map || !this.navCameraEngaged) return;
+    this.navCameraEngaged = false;
+    this.displayedCameraCenter = undefined;
+    this.displayedCameraBearing = undefined;
+    this.displayedCameraZoom = undefined;
+    this.displayedCameraPitch = undefined;
+    fitLatLngs(this.map, this.roadCoordinates, 40, 14, { ...OVERVIEW_CAMERA, duration: 1400 });
   }
 
   private startCameraLoop(): void {
@@ -1549,17 +1503,17 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private applyCameraFrame(dt: number): void {
     if (!this.map) return;
     this.displayedSpeedKph +=
-      (this.targetSpeedKph - this.displayedSpeedKph) * Math.min(1, dt * SPEED_DAMPING);
+      (this.targetSpeedKph - this.displayedSpeedKph) * (1 - Math.exp(-SPEED_DAMPING * dt));
     this.emitDisplayedSpeed();
     // Until the replay is played, keep the camera on the trail overview the
     // route render fitted. This stops the very first vehicle frame from
     // yanking the view onto the marker before the user starts the playback.
-    if (this.playbackActive()) this.navCameraEngaged = true;
+    // With reduced motion the overview stays put and only the vehicle moves.
+    if (this.clock()?.playing() && !this.reducedMotion) this.navCameraEngaged = true;
     if (!this.navCameraEngaged) {
       this.cameraSettledFor = CAMERA_SETTLE_SECONDS;
       return;
     }
-    this.cameraEngageElapsed += dt;
     if (this.displayedCameraCenter === undefined) {
       const center = this.map.getCenter();
       this.displayedCameraCenter = [center.lng, center.lat];
@@ -1594,9 +1548,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         : delta - Math.sign(delta) * deadZone;
     const desiredRotation = bearingCorrection * bearingT;
     // Faster replay needs more angular headroom or the camera can fall behind
-    // the vehicle. Square-root scaling keeps 1x gentle without making 5x snap.
+    // the vehicle. Square-root scaling keeps slow speeds gentle without making
+    // the fastest one snap.
+    const playbackSpeed = this.clock()?.speedSetting ?? SLOWEST_PLAYBACK_SPEED;
     const maximumRotation =
-      CAMERA_MAX_ROTATION_SPEED * Math.sqrt(this.playbackSpeed()) * dt;
+      CAMERA_MAX_ROTATION_SPEED * Math.sqrt(playbackSpeed / SLOWEST_PLAYBACK_SPEED) * dt;
     const appliedRotation = Math.max(
       -maximumRotation,
       Math.min(desiredRotation, maximumRotation),
@@ -1607,14 +1563,17 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.displayedCameraZoom += (targetZoom - this.displayedCameraZoom) * framingT;
     this.displayedCameraPitch += (targetPitch - this.displayedCameraPitch) * framingT;
 
+    const center = this.dampedCameraCenter(lookAhead, dt);
     const zoomChanged = Math.abs(targetZoom - this.displayedCameraZoom) > CAMERA_ZOOM_EPSILON;
     const pitchChanged = Math.abs(targetPitch - this.displayedCameraPitch) > CAMERA_PITCH_EPSILON;
-    const cameraIsSettled = Math.abs(bearingCorrection) < 0.15 && !zoomChanged && !pitchChanged;
+    const centerMoving =
+      Math.hypot(center[0] - this.cameraCenterScratch[0], center[1] - this.cameraCenterScratch[1]) >
+      CAMERA_CENTER_EPSILON_DEGREES;
+    const cameraIsSettled =
+      Math.abs(bearingCorrection) < 0.15 && !zoomChanged && !pitchChanged && !centerMoving;
     this.cameraSettledFor = cameraIsSettled ? this.cameraSettledFor + dt : 0;
 
-    const camera: maplibregl.JumpToOptions = {
-      center: this.blendedCameraCenter(lookAhead, dt),
-    };
+    const camera: maplibregl.JumpToOptions = { center };
     // MapLibre treats every supplied camera property as an update. Leave
     // settled values out so high-refresh displays do less transform/event work
     // while the centre continues to move on every animation frame.
@@ -1628,74 +1587,88 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.map.jumpTo(camera);
   }
 
-  private notifyPlaybackEngaged(): void {
-    if (this.playbackEngagedNotified) return;
-    this.playbackEngagedNotified = true;
-    this.zone.run(() => this.playbackEngaged.emit());
-  }
-
+  // Runs outside Angular on purpose: the reading changes many times a second,
+  // and only the view showing it needs refreshing, not the whole app.
   private emitDisplayedSpeed(): void {
     const speed = Math.max(0, Math.round(this.displayedSpeedKph));
     if (speed === this.lastEmittedSpeedKph) return;
     this.lastEmittedSpeedKph = speed;
-    this.zone.run(() => this.displayedSpeedChange.emit(speed));
+    this.displayedSpeedChange.emit(speed);
+  }
+
+  private speedAtPlayhead(): number {
+    const positions = this.positions();
+    const clock = this.clock();
+    if (!clock) return positions[0]?.speed ?? 0;
+    const place = clock.fractionalIndex;
+    const index = Math.floor(place);
+    const from = positions[index]?.speed ?? 0;
+    const to = positions[index + 1]?.speed ?? from;
+    return from + (to - from) * (place - index);
   }
 
   private applyMovementFrame(now: number, dt: number): void {
     if (!this.vehicleVisible) return;
-    const progress = Math.max(
-      0,
-      Math.min((now - this.movementStartedAt) / this.movementDuration, 1),
-    );
-    // Linear interpolation in metres gives genuinely constant motion between
-    // samples. It does not restart an acceleration curve at every GPS point.
-    this.displayedRoadDistance =
-      this.movementStartDistance +
-      (this.targetRoadDistance - this.movementStartDistance) * progress;
-    this.displayedRoadProgress = this.progressAtDistance(this.displayedRoadDistance);
-    this.renderRouteLayersIfNeeded();
+    const clock = this.clock();
+    const target = this.motion?.at(clock ? clock.sample(now) : 0) ?? 0;
+    if (clock && clock.seeks() !== this.seenSeeks) {
+      this.seenSeeks = clock.seeks();
+      // A short seek glides there. A long one cuts: sliding the vehicle down
+      // kilometres of road would only look like it was driving there.
+      const jump = this.displayedRoadDistance - target;
+      this.seekOffset = Math.abs(jump) <= SEEK_GLIDE_MAX_M ? jump : 0;
+      if (!this.seekOffset) this.displayedHeading = undefined;
+    }
+    this.seekOffset *= Math.exp(-SEEK_GLIDE_DAMPING * dt);
+    if (Math.abs(this.seekOffset) < SEEK_GLIDE_END_M) this.seekOffset = 0;
+    this.displayedRoadDistance = target + this.seekOffset;
+    this.targetSpeedKph = this.speedAtPlayhead();
     const position = this.coordinateAtDistance(this.displayedRoadDistance, this.cameraPointScratch);
     const heading = this.smoothVehicleHeading(
       this.rawHeadingAtDistance(this.displayedRoadDistance),
       dt,
     );
-    this.renderVehicleModel(position, heading);
     this.displayedPosition[0] = position[0];
     this.displayedPosition[1] = position[1];
-    if (progress >= 1 && !this.movementFinished) {
-      this.movementFinished = true;
-      this.renderRouteLayersIfNeeded();
-    }
+    this.positionVehicle(position, heading);
+    this.updateStopChip();
   }
 
-  private renderRouteLayersIfNeeded(force = false): void {
-    const routeIndex = Math.max(0, Math.round(this.displayedRoadProgress));
-    if (!force && routeIndex === this.lastRenderedRouteIndex) return;
-    this.lastRenderedRouteIndex = routeIndex;
-    this.renderRouteLayers();
+  // Shows how long the vehicle was really parked while the replay moves past it.
+  private updateStopChip(): void {
+    const clock = this.clock();
+    const run = clock && !clock.atRest() ? stopRunAt(this.stopRuns, clock.index()) : undefined;
+    if (run === this.activeStop) return;
+    this.activeStop = run;
+    if (!this.map) return;
+    this.stopChip ??= this.createStopChip();
+    this.stopChip.element.classList.toggle('visible', !!run);
+    if (!run) return;
+    this.stopChip.label.textContent = formatStopDuration(run.durationMs);
+    this.stopChip.marker
+      .setLngLat([this.displayedPosition[1], this.displayedPosition[0]])
+      .addTo(this.map);
+  }
+
+  private createStopChip(): NonNullable<TripReplayMap['stopChip']> {
+    const element = markerElement('<span class="trip-stop-chip" role="status"></span>');
+    element.classList.add('stop-chip-marker');
+    const marker = new maplibregl.Marker({ element, anchor: 'bottom', offset: [0, -28] });
+    return { marker, element, label: element.firstElementChild! };
   }
 
   private shouldContinueAnimation(): boolean {
     return (
-      !this.movementFinished ||
-      this.playbackActive() ||
-      // Finish the overview → nav hand-off even if the user pauses mid-way.
-      (this.navCameraEngaged && this.cameraEngageElapsed < CAMERA_ENGAGE_SECONDS) ||
+      !!this.clock()?.moving ||
+      this.seekOffset !== 0 ||
+      Math.abs(this.targetSpeedKph - this.displayedSpeedKph) > 0.5 ||
       this.cameraSettledFor < CAMERA_SETTLE_SECONDS
     );
-  }
-
-  private cancelMovement(): void {
-    this.movementStartDistance = this.displayedRoadDistance;
-    this.targetRoadDistance = this.displayedRoadDistance;
-    this.movementStartedAt = performance.now();
-    this.movementFinished = true;
   }
 
   ngOnDestroy(): void {
     clearTimeout(this.readyFallback);
     clearTimeout(this.eventCardHideTimer);
-    this.cancelMovement();
     this.stopCameraLoop();
     this.routeRequest?.abort();
     this.vehicleOverlay?.finalize();
@@ -1707,10 +1680,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private watchTheme(): void {
     this.themeObserver = new MutationObserver(() => {
       if (!this.map) return;
-      // After setStyle({ diff: false }) the new style may not be fully settled
-      // when 'style.load' fires, so use 'idle' which guarantees the map has
-      // finished painting the new style and all sources are ready.
-      this.map.once('idle', () => this.renderRouteLayers());
+      this.renderOverlay();
     });
     this.themeObserver.observe(document.documentElement, {
       attributes: true,

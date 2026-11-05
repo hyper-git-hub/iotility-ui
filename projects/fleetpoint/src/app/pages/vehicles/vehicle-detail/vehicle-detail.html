@@ -152,7 +152,7 @@
           </article>
           <article class="workspace-group map-panel">
             <div class="trail-wrap">
-              <app-trip-replay-map class="trail-map" [positions]="tripPositions()" [events]="replayEvents()" [positionIndex]="replayPositionIndex()" [playbackActive]="playing()" [playbackSpeed]="replaySpeed()" [playbackStepDuration]="stepDurationMs()" (playbackEngaged)="engagePlaybackClock()" (routeLoadingChange)="routeLoading.set($event)" />
+              <app-trip-replay-map class="trail-map" [positions]="tripPositions()" [events]="replayEvents()" [clock]="replayClock" (routeLoadingChange)="routeLoading.set($event)" />
               @if (!tripPositions().length) {
                 <p class="map-empty">{{ trailLoading() ? 'Loading trail…' : 'No trail points for this range' }}</p>
               }
@@ -161,8 +161,8 @@
               <div class="replay-controls">
                 <button type="button" class="secondary-action" (click)="togglePlayback()">{{ playing() ? 'Pause' : 'Play' }}</button>
                 <button type="button" class="secondary-action" (click)="stopPlayback()">Stop</button>
-                @for (rate of [1, 2, 3, 4, 5]; track rate) { <button type="button" class="speed-chip" [class.active]="replaySpeed() === rate" (click)="setReplaySpeed(rate)">{{ rate }}×</button> }
-                <input class="scrub" type="range" min="0" [max]="maxPosition()" [value]="replayPositionIndex()" (input)="scrub($event)" aria-label="Playback timeline" />
+                @for (rate of replaySpeedOptions; track rate) { <button type="button" class="speed-chip" [class.active]="replaySpeed() === rate" (click)="setReplaySpeed(rate)">{{ rate }}×</button> }
+                <input class="scrub" [appReplayScrub]="replayClock" aria-label="Playback timeline" />
                 <span class="replay-point">{{ replayPointNumber() }}/{{ tripPositions().length }}</span>
               </div>
             }

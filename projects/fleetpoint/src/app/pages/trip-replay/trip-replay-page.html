@@ -99,11 +99,7 @@
           [class.map-loaded]="mapLoaded()"
           [positions]="selectedTrip().positions"
           [events]="selectedTrip().events"
-          [positionIndex]="positionIndex()"
-          [playbackActive]="playing()"
-          [playbackSpeed]="speed()"
-          [playbackStepDuration]="stepDurationMs()"
-          (playbackEngaged)="engagePlaybackClock()"
+          [clock]="clock"
           [selectedEventId]="selectedEventId()"
           (ready)="mapLoaded.set(true)"
           (eventSelected)="jumpToEventFromMap($event)"
@@ -175,18 +171,23 @@
               <time>{{ clockTime(currentPosition().time) }}</time>
               <time>{{ clockTime(selectedTrip().positions.at(-1)?.time) }}</time>
             </div>
-            <div class="timeline-track">
-              <input
-                tooltip="Drag to move through the trip"
-                class="timeline"
-                type="range"
-                min="0"
-                [max]="maxPosition()"
-                [value]="positionIndex()"
-                [style.--trip-progress.%]="progress()"
-                aria-label="Trip playback position"
-                (input)="scrub($event)"
-              />
+            <div
+              class="timeline-track"
+              (pointermove)="previewTimeline($event)"
+              (pointerleave)="timelineHover.set(null)"
+            >
+              <input class="timeline" [appReplayScrub]="clock" aria-label="Trip playback position" />
+              @if (timelineHover(); as hover) {
+                <div
+                  class="timeline-preview"
+                  [style.left]="'clamp(6rem, ' + hover.left + '%, calc(100% - 6rem))'"
+                >
+                  <strong>{{ hover.time }} · {{ hover.speed }} km/h</strong>
+                  @if (hover.location) {
+                    <small>{{ hover.location }}</small>
+                  }
+                </div>
+              }
               <div class="event-markers" aria-label="Trip events">
                 @for (event of selectedTrip().events; track event.id) {
                   <button
@@ -246,19 +247,29 @@
             </button>
           </div>
           <div class="speed-controls" aria-label="Playback speed">
-            <span class="speed-indicator" [style.left.%]="(speed() - 1) * 20"></span>
-            @for (value of [1, 2, 3, 4, 5]; track value) {
+            <span class="speed-indicator" [style.left.%]="speedIndex() * 20"></span>
+            @for (value of speedOptions; track value) {
               <button
                 type="button"
                 [class.active]="speed() === value"
                 [attr.aria-pressed]="speed() === value"
-                tooltip="{{ value }}x speed"
+                tooltip="{{ value }}× real time"
                 (click)="setSpeed(value)"
               >
-                {{ value }}x
+                {{ value }}×
               </button>
             }
           </div>
+          <button
+            type="button"
+            class="skip-stops"
+            [class.active]="skipStops()"
+            [attr.aria-pressed]="skipStops()"
+            tooltip="Move quickly through stops"
+            (click)="toggleSkipStops()"
+          >
+            Skip stops
+          </button>
           <p class="playback-progress">
             <strong>{{ pointNumber() }}</strong> / {{ selectedTrip().positions.length }} points ·
             {{ progress() | number: '1.0-0' }}%

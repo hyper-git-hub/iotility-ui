@@ -44,29 +44,8 @@
   z-index: 3;
 }
 
-/* Custom props must live on .maplibregl-popup (tip's ancestor), not only on
-   the content box — the tip is a sibling of the content, so a var declared
-   only on content leaves the tip's border-color invalid (renders black). */
-:host ::ng-deep .maplibregl-popup {
-  --event-popup-surface: #fff;
-}
-:host-context(.dark) ::ng-deep .maplibregl-popup {
-  --event-popup-surface: var(--color-dark-surface);
-}
 :host ::ng-deep .maplibregl-popup-tip {
   display: none;
-}
-:host ::ng-deep .maplibregl-popup-content {
-  min-width: 9rem;
-  border-radius: 0.75rem;
-  padding: 0.625rem 0.75rem;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  background: var(--event-popup-surface);
-  color: var(--color-ink);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
-}
-:host-context(.dark) ::ng-deep .maplibregl-popup-content {
-  color: #fff;
 }
 :host ::ng-deep .trip-event-popup {
   display: grid;
@@ -114,4 +93,34 @@
 :host-context(.dark) ::ng-deep .trip-event-popup .meta,
 :host-context(.dark) ::ng-deep .trip-event-popup .detail {
   color: var(--color-brand-300);
+}
+
+/* Sits over the vehicle while the replay passes a stop. */
+:host ::ng-deep .stop-chip-marker {
+  pointer-events: none;
+}
+:host ::ng-deep .trip-stop-chip {
+  display: block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-info);
+  color: #fff;
+  font: 600 11px/1.2 Inter, ui-sans-serif, system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.22);
+  opacity: 0;
+  translate: 0 4px;
+  transition:
+    opacity 160ms var(--ease-out),
+    translate 160ms var(--ease-out);
+}
+:host ::ng-deep .stop-chip-marker.visible .trip-stop-chip {
+  opacity: 1;
+  translate: 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  :host ::ng-deep .trip-stop-chip {
+    translate: 0 0;
+    transition: none;
+  }
 }
