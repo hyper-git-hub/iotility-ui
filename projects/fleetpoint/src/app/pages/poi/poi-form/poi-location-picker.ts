@@ -22,7 +22,7 @@ export interface PoiCoordinates {
         (zoomOut)="zoomOut()"
         (toggle3D)="onToggle3D()"
         (resetNorth)="onResetNorth()"
-        (rotate)="onRotate()"
+        [map]="mapRef()"
         (fullscreenToggle)="onFullscreenToggle()"
       />
     </div>
@@ -33,12 +33,14 @@ export class PoiLocationPicker implements AfterViewInit, OnDestroy {
   readonly locationSelected = output<PoiCoordinates>();
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: Map;
+  protected readonly mapRef = signal<Map | undefined>(undefined);
   private marker?: maplibregl.Marker;
   private resizeObserver?: ResizeObserver;
 
   ngAfterViewInit(): void {
     // Default map center to Pakistan; will override if geolocation succeeds
     this.map = createIotMap(this.mapElement().nativeElement, timezoneCenter(), 6);
+    this.mapRef.set(this.map);
     // Attempt live geolocation, overriding the default on success
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -76,10 +78,6 @@ export class PoiLocationPicker implements AfterViewInit, OnDestroy {
     this.map?.easeTo({ bearing: 0, duration: 500 });
   }
 
-  protected onRotate(): void {
-    if (!this.map) return;
-    this.map.easeTo({ bearing: this.map.getBearing() + 90, duration: 500 });
-  }
 
   protected onFullscreenToggle(): void {
     this.isFullscreen.update((value) => !value);

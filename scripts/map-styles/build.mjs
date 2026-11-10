@@ -94,7 +94,7 @@ const palettes = {
     ice: '#1a1c24',
     pitch: '#14291f',
     cemetery: '#15221b',
-    hospital: '#251719',
+    hospital: '#1e181b',
     school: '#1c1a26',
     commercial: '#262019',
     aeroway: '#1c1b23',
@@ -136,17 +136,29 @@ const palettes = {
 /** Parked here rather than per layer: only POIs a driver or dispatcher acts on. */
 const FLEET_POI_CLASSES = ['fuel', 'parking', 'car', 'hospital', 'police'];
 
-// [kind, fill, edge, width by zoom, edge width by zoom, first zoom, fades in]
+// [kind, fill, edge, width by zoom up to 18, edge width beyond the fill at 18, first zoom, fades in]
 const ROADS = [
-  ['motorway', 'motorway', 'motorwayCase', [6.5, 0.6, 9, 1.4, 12, 3, 14, 6, 18, 18], [6.5, 1, 9, 2.2, 12, 4.2, 14, 7.8, 18, 21], 6.5],
-  ['motorway_link', 'motorway', 'motorwayCase', [9, 0.8, 12, 1.6, 14, 3.6, 18, 11], [9, 1.4, 12, 2.5, 14, 5, 18, 13.5], 9],
-  ['trunk_primary', 'primary', 'primaryCase', [8, 0.7, 10, 1.5, 12, 3.2, 14, 5.6, 18, 16], [8, 1.2, 10, 2.3, 12, 4.4, 14, 7.2, 18, 19], 8],
-  ['link', 'primary', 'primaryCase', [10, 0.6, 12, 1.4, 14, 3.2, 18, 10], [10, 1, 12, 2.2, 14, 4.4, 18, 12.5], 10],
-  ['secondary_tertiary', 'secondary', 'secondaryCase', [10.5, 0.8, 12, 1.9, 14, 3.4, 15, 4.6, 18, 13], [10.5, 1.3, 12, 2.9, 14, 4.7, 15, 6, 18, 15.5], 10.5, true],
-  ['minor', 'local', 'localCase', [13, 0.8, 14, 1.8, 15, 3, 16, 4.6, 18, 10], [13, 1.2, 14, 2.8, 15, 4.2, 16, 6, 18, 12], 13, true],
-  ['street', 'local', 'localCase', [13, 0.8, 14, 1.8, 15, 3, 16, 4.6, 18, 10], [13, 1.2, 14, 2.8, 15, 4.2, 16, 6, 18, 12], 13, true],
-  ['service_track', 'local', 'localCase', [14.5, 0.8, 16, 2, 19, 6], [14.5, 1.3, 16, 3, 19, 7.8], 14.5, true],
+  ['motorway', 'motorway', 'motorwayCase', [6.5, 0.6, 9, 1.4, 12, 3, 14, 6, 18, 18], [6.5, 1, 9, 2.2, 12, 4.2, 14, 7.8], 3, 6.5],
+  ['motorway_link', 'motorway', 'motorwayCase', [9, 0.8, 12, 1.6, 14, 3.6, 18, 11], [9, 1.4, 12, 2.5, 14, 5], 2.5, 9],
+  ['trunk_primary', 'primary', 'primaryCase', [8, 0.7, 10, 1.5, 12, 3.2, 14, 5.6, 18, 16], [8, 1.2, 10, 2.3, 12, 4.4, 14, 7.2], 3, 8],
+  ['link', 'primary', 'primaryCase', [10, 0.6, 12, 1.4, 14, 3.2, 18, 10], [10, 1, 12, 2.2, 14, 4.4], 2.5, 10],
+  ['secondary_tertiary', 'secondary', 'secondaryCase', [10.5, 0.8, 12, 1.9, 14, 3.4, 15, 4.6, 18, 13], [10.5, 1.3, 12, 2.9, 14, 4.7, 15, 6], 2.5, 10.5, true],
+  ['minor', 'local', 'localCase', [13, 0.8, 14, 1.8, 15, 3, 16, 4.6, 18, 10], [13, 1.2, 14, 2.8, 15, 4.2, 16, 6], 2, 13, true],
+  ['street', 'local', 'localCase', [13, 0.8, 14, 1.8, 15, 3, 16, 4.6, 18, 10], [13, 1.2, 14, 2.8, 15, 4.2, 16, 6], 2, 13, true],
+  ['service_track', 'local', 'localCase', [14.5, 0.8, 16, 2, 18, 5], [14.5, 1.3, 16, 3], 2, 14.5, true],
 ];
+
+/**
+ * Past zoom 18 a road keeps its width on the ground: twice the pixels per zoom step, as the
+ * ground does, up to the closest zoom (20). Without this, roads stopped widening at 18 and
+ * thinned to ribbons next to the vehicles driving on them. The edge stays a fixed hairline.
+ */
+function roadWidths(fill, edgeLow, edge) {
+  const at18 = fill[fill.length - 1];
+  const fillStops = [...fill, 19, at18 * 2, 20, at18 * 4];
+  const edgeStops = [...edgeLow, 18, at18 + edge, 19, at18 * 2 + edge, 20, at18 * 4 + edge];
+  return [fillStops, edgeStops];
+}
 
 const PREFIXES = ['road', 'bridge', 'tunnel'];
 
@@ -239,7 +251,8 @@ function buildStyle(name, palette) {
   });
 
   for (const prefix of PREFIXES) {
-    for (const [kind, color, casing, width, casingWidth, minZoom, fades] of ROADS) {
+    for (const [kind, color, casing, fillLow, edgeLow, edge, minZoom, fades] of ROADS) {
+      const [width, casingWidth] = roadWidths(fillLow, edgeLow, edge);
       for (const [id, lineColor, lineWidth] of [
         [`${prefix}_${kind}`, color, width],
         [`${prefix}_${kind}_casing`, casing, casingWidth],
@@ -262,11 +275,17 @@ function buildStyle(name, palette) {
     paint(`${prefix}_trunk_primary`, 'line-color', highway('highwayFar', 'trunk', 'primary'));
     paint(`${prefix}_trunk_primary_casing`, 'line-color', highway('highwayFarCase', 'trunkCase', 'primaryCase'));
     paint(`${prefix}_path_pedestrian`, 'line-color', palette.path);
-    edit(`${prefix}_path_pedestrian`, (layer) => (layer.minzoom = 15));
+    // Footpaths stay a light dotted thread at every zoom. Grown like roads, they turned into
+    // heavy ladders across the street view.
+    edit(`${prefix}_path_pedestrian`, (layer) => {
+      layer.minzoom = 15;
+      layer.paint['line-width'] = byZoom([15, 1, 17, 1.6, 18, 2.2, 20, 3.4]);
+    });
     for (const rail of ['major_rail', 'major_rail_hatching', 'transit_rail', 'transit_rail_hatching'])
       paint(`${prefix}_${rail}`, 'line-color', palette.rail);
   }
   paint('bridge_path_pedestrian_casing', 'line-color', palette.localCase);
+  paint('bridge_path_pedestrian_casing', 'line-width', byZoom([15, 2.2, 17, 3, 18, 3.8, 20, 5.2]));
 
   // Terrain sits over the land colours and under everything drawn on them, and
   // fades away before the zooms where a fleet map is read street by street.
@@ -282,7 +301,9 @@ function buildStyle(name, palette) {
     filter: ['match', ['get', 'class'], ['commercial', 'retail'], true, false],
     paint: {
       'fill-color': palette.commercial,
-      'fill-opacity': byZoom([11.5, 0, 12.5, 0.9]),
+      // Strong enough to find a market from across the city, then quieter at street zoom,
+      // where the amber highways running past it must keep their edge.
+      'fill-opacity': byZoom([11.5, 0, 12.5, 0.9, 15, 0.9, 17, 0.5]),
     },
   });
 
@@ -320,7 +341,8 @@ function buildStyle(name, palette) {
     const isBold = JSON.stringify(layout['text-font'] ?? '').includes('Bold');
     if (layout['text-font']) layout['text-font'] = [isBold ? 'Inter SemiBold' : 'Inter'];
     if (JSON.stringify(layout['text-field'] ?? '').includes('name'))
-      layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name_en'], ['get', 'name:latin'], ''];
+      // English, then a Latin spelling, then the local name (name_en quietly falls back to it).
+      layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name_en'], ''];
     if (!layout['text-field']) continue;
     layer.paint ??= {};
     layer.paint['text-halo-color'] = palette.halo;
@@ -350,6 +372,18 @@ function buildStyle(name, palette) {
     ['highway-name-minor', 13],
   ])
     edit(id, (layer) => (layer.minzoom = minZoom));
+  // A place name belongs to the zoom where the place fits on screen. Without an end, the
+  // city label sat on the Zero Point interchange at a 20 m scale. Each fades out first.
+  for (const [id, maxZoom] of [
+    ['label_city_capital', 14.5],
+    ['label_city', 14.5],
+    ['label_town', 15.5],
+    ['label_village', 16.5],
+  ])
+    edit(id, (layer) => {
+      layer.maxzoom = maxZoom;
+      layer.paint['text-opacity'] = byZoom([maxZoom - 0.8, 1, maxZoom, 0]);
+    });
   edit('label_other', (layer) => {
     layer.layout['text-transform'] = 'none';
     layer.layout['text-letter-spacing'] = 0;
@@ -366,6 +400,9 @@ function buildStyle(name, palette) {
     edit(id, (layer) => {
       layer.paint['icon-opacity'] = palette.shieldOpacity;
       layer.paint['text-color'] = palette.shieldText;
+      // Route numbers further apart as roads lengthen on screen. At a fixed 200 px a divided
+      // highway carried a dozen "E-75" boxes at street zoom, one row per carriageway.
+      layer.layout['symbol-spacing'] = byZoom([8, 200, 13, 280, 16, 460, 18, 700]);
     });
   for (const id of ['road_one_way_arrow', 'road_one_way_arrow_opposite'])
     paint(id, 'icon-opacity', 0.5);

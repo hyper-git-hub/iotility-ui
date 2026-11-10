@@ -1,41 +1,38 @@
 <div class="map-controls" role="group" aria-label="Map controls">
   <button type="button" class="map-btn" (click)="onZoomIn()" aria-label="Zoom in" tooltip="Zoom in" position="left">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <circle cx="11" cy="11" r="8"></circle>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      <line x1="11" y1="8" x2="11" y2="14"></line>
-      <line x1="8" y1="11" x2="14" y2="11"></line>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+      <path d="M12 5v14M5 12h14"></path>
     </svg>
   </button>
   <button type="button" class="map-btn" (click)="onZoomOut()" aria-label="Zoom out" tooltip="Zoom out" position="left">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <circle cx="11" cy="11" r="8"></circle>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      <line x1="8" y1="11" x2="14" y2="11"></line>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+      <path d="M5 12h14"></path>
     </svg>
   </button>
   @if (!zoomOnly()) {
     <div class="map-btn-divider" aria-hidden="true"></div>
+    @if (showFitAll()) {
+      <button type="button" class="map-btn" (click)="onFitAll()" aria-label="Show all vehicles" tooltip="Show all vehicles" position="left">
+        <!-- Lucide "car-front" (ISC licence), matching the line style of the other controls. -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8"></path>
+          <path d="M7 14h.01"></path>
+          <path d="M17 14h.01"></path>
+          <rect width="18" height="8" x="3" y="10" rx="2"></rect>
+          <path d="M5 18v2"></path>
+          <path d="M19 18v2"></path>
+        </svg>
+      </button>
+    }
     <button type="button" class="map-btn" (click)="onToggle3D()" [class.active]="is3D()" aria-label="Toggle 3D view" tooltip="Toggle 3D view" position="left">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
-      <line x1="12" y1="22" x2="12" y2="15.5"></line>
-      <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
-    </svg>
-  </button>
-  <button type="button" class="map-btn" (click)="onResetNorth()" aria-label="Reset bearing to north" tooltip="Reset bearing" position="left">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="m12 2.5-6 17 6-3 6 3-6-17Z"></path>
-    </svg>
-  </button>
-  <button type="button" class="map-btn" (click)="onRotate()" aria-label="Rotate map" tooltip="Rotate map" position="left">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M21 2v6h-6"></path>
-      <path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path>
-    </svg>
-  </button>
-<button type="button" class="map-btn" (click)="onFullscreen()" [class.active]="fullscreen()" aria-label="Toggle fullscreen" tooltip="Toggle fullscreen" position="left">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+        <line x1="12" y1="22" x2="12" y2="15.5"></line>
+        <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
+      </svg>
+    </button>
+    <button type="button" class="map-btn" (click)="onFullscreen()" [class.active]="fullscreen()" aria-label="Toggle fullscreen" tooltip="Toggle fullscreen" position="left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
         @if (fullscreen()) {
           <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
         } @else {
@@ -43,5 +40,25 @@
         }
       </svg>
     </button>
+    <!-- Appears only once the map is rotated, like Google and Apple maps, and turns with it. -->
+    <div class="compass-slot" [class.visible]="rotated()">
+      <div>
+        <button
+          type="button"
+          class="map-btn compass"
+          (click)="onResetNorth()"
+          aria-label="Point the map north"
+          tooltip="Point north"
+          position="left"
+          [attr.tabindex]="rotated() ? null : -1"
+          [attr.aria-hidden]="rotated() ? null : true"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" [style.rotate.deg]="-bearing()">
+            <path class="needle-north" d="M12 3l4 9H8z"></path>
+            <path class="needle-south" d="M12 21l-4-9h8z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
   }
 </div>

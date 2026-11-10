@@ -28,7 +28,7 @@ import { MapControls } from '../../../shared/map-overlays/map-controls';
         (zoomOut)="zoomOut()"
         (toggle3D)="onToggle3D()"
         (resetNorth)="onResetNorth()"
-        (rotate)="onRotate()"
+        [map]="mapRef()"
         (fullscreenToggle)="onFullscreenToggle()"
       />
     </div>
@@ -46,6 +46,7 @@ export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
   readonly deviated = input<LatLng[]>([]);
   private readonly element = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: Map;
+  protected readonly mapRef = signal<Map | undefined>(undefined);
   private markers: maplibregl.Marker[] = [];
   private ready = false;
 
@@ -59,6 +60,7 @@ export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     // Default map center to Pakistan; will override if geolocation succeeds
     this.map = createIotMap(this.element().nativeElement, timezoneCenter(), 7);
+    this.mapRef.set(this.map);
     this.map.on('click', () => {});
     // Attempt live geolocation when there is no route to show
     if (!this.planned().length && navigator.geolocation) {
@@ -136,10 +138,6 @@ export class RouteAdherenceMap implements AfterViewInit, OnDestroy {
     this.map?.easeTo({ bearing: 0, duration: 500 });
   }
 
-  protected onRotate(): void {
-    if (!this.map) return;
-    this.map.easeTo({ bearing: this.map.getBearing() + 90, duration: 500 });
-  }
 
   protected onFullscreenToggle(): void {
     this.isFullscreen.update((value) => !value);

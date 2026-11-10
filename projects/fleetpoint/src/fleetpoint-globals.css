@@ -43,6 +43,20 @@ img[src$='assets/fleetpoint/def-car.svg'] {
 .maplibregl-ctrl-attrib a {
   color: inherit;
 }
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale {
+  margin: 0 6px 4px 0;
+  padding: 0 5px;
+  border: 1.5px solid var(--color-muted);
+  border-top: 0;
+  background: color-mix(in srgb, white 72%, transparent);
+  color: var(--color-muted);
+  font: 600 9px/1.6 var(--font-sans);
+}
+.dark .maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale {
+  border-color: var(--color-brand-300);
+  background: color-mix(in srgb, var(--color-dark-canvas) 72%, transparent);
+  color: var(--color-brand-300);
+}
 
 /* One popup across every map, following the theme. The surface lives on .maplibregl-popup because
    the tip is a sibling of the content; components only set their own size and spacing. */

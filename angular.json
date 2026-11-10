@@ -83,6 +83,11 @@
                 "glob": "**/*",
                 "input": "projects/fleetpoint/public/assets",
                 "output": "assets/fleetpoint"
+              },
+              {
+                "glob": "mapbox-gl-rtl-text.js",
+                "input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
+                "output": "assets/fleetpoint/vendor"
               }
             ],
             "styles": ["projects/iotility/src/styles.css"]
@@ -103,6 +108,11 @@
                 "glob": "**/*",
                 "input": "projects/fleetpoint/public/assets",
                 "output": "assets/fleetpoint"
+              },
+              {
+                "glob": "mapbox-gl-rtl-text.js",
+                "input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
+                "output": "assets/fleetpoint/vendor"
               }
             ],
             "styles": ["projects/iotility/src/styles.css"]
@@ -230,6 +240,11 @@
                 "glob": "**/*",
                 "input": "projects/fleetpoint/public/assets",
                 "output": "assets/fleetpoint"
+              },
+              {
+                "glob": "mapbox-gl-rtl-text.js",
+                "input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
+                "output": "assets/fleetpoint/vendor"
               }
             ],
             "styles": ["projects/fleetpoint/src/styles.css"]
@@ -250,6 +265,11 @@
                 "glob": "**/*",
                 "input": "projects/fleetpoint/public/assets",
                 "output": "assets/fleetpoint"
+              },
+              {
+                "glob": "mapbox-gl-rtl-text.js",
+                "input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
+                "output": "assets/fleetpoint/vendor"
               }
             ],
             "styles": ["projects/fleetpoint/src/styles.css"]

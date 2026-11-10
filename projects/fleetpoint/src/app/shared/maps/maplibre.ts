@@ -106,9 +106,50 @@ export type LayerWithoutSource<T = maplibregl.LayerSpecification> = T extends { 
 
 /** Highest pixel ratio the map renders at: sharp on retina, without paying for 3x on every frame. */
 const MAX_PIXEL_RATIO = 2;
+/** Closest zoom on every map: a 5 m scale bar. Roads are drawn to scale up to here. */
+export const MAX_ZOOM = 20;
 
 /** The app's --ease-out curve, so the map moves like everything around it. */
 export const mapEase = (t: number): number => 1 - (1 - t) ** 5;
+
+/** A CSS-style cubic-bézier timing function (x1, y1, x2, y2), solved for any t in 0..1. */
+export function cubicBezier(x1: number, y1: number, x2: number, y2: number): (t: number) => number {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const curveX = (s: number) => ((ax * s + bx) * s + cx) * s;
+  const curveY = (s: number) => ((ay * s + by) * s + cy) * s;
+  const slopeX = (s: number) => (3 * ax * s + 2 * bx) * s + cx;
+  return (t) => {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    // Newton's method converges in a few steps; bisection covers the flat spots it can't.
+    let s = t;
+    for (let step = 0; step < 6; step++) {
+      const error = curveX(s) - t;
+      const slope = slopeX(s);
+      if (Math.abs(error) < 1e-6 || Math.abs(slope) < 1e-6) break;
+      s -= error / slope;
+    }
+    if (s < 0 || s > 1 || Math.abs(curveX(s) - t) > 1e-4) {
+      let low = 0, high = 1;
+      s = t;
+      for (let step = 0; step < 24 && Math.abs(curveX(s) - t) > 1e-6; step++) {
+        if (curveX(s) < t) low = s; else high = s;
+        s = (low + high) / 2;
+      }
+    }
+    return curveY(s);
+  };
+}
+
+/**
+ * Camera travel to a vehicle. Mapped user actions (zoom buttons, panning) keep the snappy
+ * ease-out above; a trip across the map instead starts softly, cruises, and settles in slowly,
+ * which is how Google and Apple Maps fly: an ease-out start reads as a jump.
+ */
+export const flightEase = cubicBezier(0.42, 0, 0.18, 1);
+/** A short glide between nearby vehicles: moving at once, then a long gentle landing. */
+export const glideEase = cubicBezier(0.25, 0.1, 0.2, 1);
 
 // Every camera move in the app goes through these, so they all share one curve.
 class IotMap extends maplibregl.Map {
@@ -127,6 +168,13 @@ class IotMap extends maplibregl.Map {
 // text covers both) well ahead of the first map's tiles.
 for (const font of ['400 16px Inter', "600 16px 'Inter SemiBold'"])
   document.fonts.load(font, 'a\u0100').catch(() => undefined);
+
+// Urdu and Arabic names need shaping and right-to-left order, or they draw as disconnected,
+// reversed letters. MapLibre's workers fetch the plugin only once such a label first appears.
+if (maplibregl.getRTLTextPluginStatus() === 'unavailable')
+  void maplibregl
+    .setRTLTextPlugin(new URL('/assets/fleetpoint/vendor/mapbox-gl-rtl-text.js', location.origin).href, true)
+    .catch(() => undefined);
 
 function styleUrl(dark: boolean): string {
   return dark ? environment.mapDarkStyleUrl : environment.mapLightStyleUrl;
@@ -165,11 +213,16 @@ export function createIotMap(
     canvasContextAttributes: { antialias: true },
     pixelRatio: Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO),
     fadeDuration: 150,
+    // The tiles carry no detail past street level, so closer than a 5 m scale bar is an empty
+    // canvas, and a moving vehicle crosses the whole screen in a second.
+    maxZoom: MAX_ZOOM,
     maxTileCacheZoomLevels: 7,
     refreshExpiredTiles: false,
     ...options,
   });
   map.addControl(new maplibregl.AttributionControl({ compact: false }), 'bottom-right');
+  // Added after the credit, so it sits just above it.
+  map.addControl(new maplibregl.ScaleControl({ maxWidth: 88, unit: 'metric' }), 'bottom-right');
   replaceNativeTitles(map.getContainer());
   let darkTheme = isDark();
 

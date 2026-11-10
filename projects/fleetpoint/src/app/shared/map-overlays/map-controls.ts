@@ -1,4 +1,15 @@
-import { Component, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  NgZone,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { Map as MapLibreMap } from 'maplibre-gl';
 import { Tooltip } from '@iotility/shared-ui';
 
 @Component({
@@ -6,19 +17,40 @@ import { Tooltip } from '@iotility/shared-ui';
   imports: [Tooltip],
   templateUrl: './map-controls.html',
   styleUrl: './map-controls.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MapControls {
   readonly fullscreen = input(false);
   readonly zoomOnly = input(false);
+  /** The map these controls drive. Given, the compass turns with it and appears once it is rotated. */
+  readonly map = input<MapLibreMap | undefined>();
+  /** Adds a button that frames every vehicle on the map. */
+  readonly showFitAll = input(false);
   readonly zoomIn = output<void>();
   readonly zoomOut = output<void>();
   readonly toggle3D = output<void>();
   readonly resetNorth = output<void>();
-  readonly rotate = output<void>();
   readonly geolocate = output<void>();
   readonly fullscreenToggle = output<void>();
+  readonly fitAll = output<void>();
   protected readonly is3D = signal(false);
   protected readonly isLocating = signal(false);
+  protected readonly bearing = signal(0);
+  protected readonly rotated = computed(() => Math.abs(this.bearing()) > 0.5);
+
+  constructor() {
+    const zone = inject(NgZone);
+    // Listening here rather than in each map keeps the per-frame rotate events to
+    // this small view instead of re-rendering the page around the map.
+    effect((onCleanup) => {
+      const map = this.map();
+      if (!map) return;
+      const update = () => this.bearing.set(map.getBearing());
+      update();
+      zone.runOutsideAngular(() => map.on('rotate', update));
+      onCleanup(() => map.off('rotate', update));
+    });
+  }
 
   protected onZoomIn(): void {
     this.zoomIn.emit();
@@ -37,8 +69,8 @@ export class MapControls {
     this.resetNorth.emit();
   }
 
-  protected onRotate(): void {
-    this.rotate.emit();
+  protected onFitAll(): void {
+    this.fitAll.emit();
   }
 
   protected onGeolocate(): void {
@@ -54,6 +86,4 @@ export class MapControls {
   protected onFullscreen(): void {
     this.fullscreenToggle.emit();
   }
-
 }
-

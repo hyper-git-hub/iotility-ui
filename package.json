@@ -39,6 +39,7 @@
     "@deck.gl/layers": "^9.3.7",
     "@deck.gl/mapbox": "^9.3.7",
     "@deck.gl/mesh-layers": "^9.3.7",
+    "@mapbox/mapbox-gl-rtl-text": "^0.3.0",
     "@microsoft/signalr": "^10.0.0",
     "echarts": "^6.1.0",
     "es-module-shims": "^2.8.0",

@@ -4,9 +4,10 @@
   @apply block;
 }
 .map-controls {
+  /* Solid, not blurred: a blur over a map that repaints every frame is costly. */
   @apply flex flex-col gap-1 rounded-xl shadow-lg
-         bg-white/95 border border-line backdrop-blur
-         dark:bg-dark-surface/95 dark:border-dark-line;
+         bg-white border border-line
+         dark:bg-dark-surface dark:border-dark-line;
   padding: 0.375rem;
 }
 .map-btn {
@@ -24,7 +25,44 @@
 }
 .map-btn svg {
   @apply size-4;
-  stroke-width: 1.6;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* The compass slot folds away while the map points north. The negative margin
+   cancels the stack's gap so nothing is left behind when it is hidden. */
+.compass-slot {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: -0.25rem;
+  opacity: 0;
+  transition:
+    grid-template-rows 200ms var(--ease-out),
+    margin-top 200ms var(--ease-out),
+    opacity 150ms ease;
+}
+.compass-slot > div {
+  min-height: 0;
+  overflow: hidden;
+}
+.compass-slot.visible {
+  grid-template-rows: 1fr;
+  margin-top: 0;
+  opacity: 1;
+}
+.map-btn.compass svg {
+  @apply size-5;
+}
+.needle-north {
+  fill: var(--color-danger);
+}
+.needle-south {
+  fill: currentColor;
+  opacity: 0.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .compass-slot {
+    transition: none;
+  }
 }

@@ -65,7 +65,7 @@ function storedMapMode(): ViolationMapMode {
         (zoomOut)="zoomOut()"
         (toggle3D)="onToggle3D()"
         (resetNorth)="onResetNorth()"
-        (rotate)="onRotate()"
+        [map]="mapRef()"
         (fullscreenToggle)="onFullscreenToggle()"
       />
       <div class="mode-switch" role="group" aria-label="Map view">
@@ -113,6 +113,7 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
   private readonly zone = inject(NgZone);
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private instance?: MapLibreMap;
+  protected readonly mapRef = signal<MapLibreMap | undefined>(undefined);
   private resizeObserver?: ResizeObserver;
   private byId = new Map<string, ViolationDisplay>();
   private highlighted: string | null = null;
@@ -168,6 +169,7 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
       // frames them). The timezone centre is only the placeholder before that first fit.
       const map = createIotMap(element, timezoneCenter(), 6);
       this.instance = map;
+      this.mapRef.set(map);
       this.resizeObserver = new ResizeObserver(() => map.resize());
       this.resizeObserver.observe(element);
       // style.load also fires after a light/dark theme switch, which replaces the style and its layers.
@@ -220,10 +222,6 @@ export class ViolationMap implements AfterViewInit, OnDestroy {
     this.instance?.easeTo({ bearing: 0, duration: 500 });
   }
 
-  protected onRotate(): void {
-    if (!this.instance) return;
-    this.instance.easeTo({ bearing: this.instance.getBearing() + 90, duration: 500 });
-  }
 
   protected onFullscreenToggle(): void {
     this.isFullscreen.update((value) => !value);
