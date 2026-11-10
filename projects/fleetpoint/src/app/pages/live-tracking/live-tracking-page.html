@@ -112,9 +112,9 @@
             ><span class="vehicle-state" [class]="row.stateClass"
               >@if (row.alert) {<i
                   class="vehicle-alert-badge"
-                  [attr.aria-label]="row.vehicle.alertCount + ' unread ' + (row.vehicle.alertCount === 1 ? 'alert' : 'alerts')"
+                  [attr.aria-label]="row.vehicle.alertCount === null ? 'Has alerts' : row.vehicle.alertCount + ' unread ' + (row.vehicle.alertCount === 1 ? 'alert' : 'alerts')"
                   >!</i
-                >}{{ row.state }}</span
+                >}<span class="vehicle-state-text">{{ row.state }}</span></span
             >
           </button>
         } @empty {
@@ -275,7 +275,7 @@
             <strong
               >{{ vehicle.hasLiveStatus ? vehicle.status : '—' }}@if (vehicle.alert) {<span
                   class="detail-alerts"
-                  > · {{ vehicle.alertCount }} {{ vehicle.alertCount === 1 ? 'alert' : 'alerts' }}</span
+                  > · {{ vehicle.alertCount === null ? 'Alert' : vehicle.alertCount + (vehicle.alertCount === 1 ? ' alert' : ' alerts') }}</span
                 >}</strong
             >
           </article>

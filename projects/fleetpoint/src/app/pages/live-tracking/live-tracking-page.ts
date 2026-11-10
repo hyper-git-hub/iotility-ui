@@ -51,8 +51,10 @@ interface LiveVehicle extends TrackedVehicle {
   battery: number | null;
   /** Fuel left (0–100), or null without a reading. */
   fuelLevel: number | null;
-  /** Whether the API sent a movement state; without one the status shows as '—'. */
+  /** Whether the movement state is known (from the API or the device); without it, '—'. */
   hasLiveStatus: boolean;
+  /** True when `live_status` carried the movement state; false when read from the device. */
+  movementFromApi: boolean;
   /** Unread violations today (`active_alert_count`), or null when not sent. */
   alertCount: number | null;
   lastSignalAt: number | null;
@@ -304,6 +306,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       : base;
   });
   private static readonly LIVE_FRESH_MS = 60_000;
+  /** Above this speed (km/h) a device-read vehicle counts as moving, as the app always has. */
+  private static readonly MOVING_KPH = 8;
   /** Realtime packets are applied in batches this often (one list/map update per batch). */
   private static readonly REALTIME_FLUSH_MS = 100;
   private pendingUpdates: VehicleRealtimeUpdate[] = [];
@@ -627,14 +631,19 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Status, alerts, battery and fuel come only from the API, as the backend defines them:
-   * `live_status` is the movement state (moving, idling, stopped, offline; null without a
-   * device), and `active_alert_count` above 0 puts an alert badge on top of it. Anything not
-   * sent shows as '—'.
+   * Status, alerts, battery and fuel as the API sends them. It currently sends one of two shapes:
+   * - New: `live_status` is the movement state (moving, idling, stopped, offline) and
+   *   `active_alert_count` above 0 adds an alert badge on top of it.
+   * - Current (still deployed): `live_status` is "Alert" when the vehicle has alerts and carries
+   *   no movement state, so the badge comes from that and the movement from the device's own
+   *   online, ignition and speed readings.
+   * Battery and fuel show '—' until they are sent.
    */
   private toTrackedVehicle(vehicle: RealtimeVehicleRecord): LiveVehicle {
     const speed = Math.max(0, this.numberValue(vehicle.speed));
-    const liveStatus = LIVE_STATUS[String(vehicle.live_status ?? '').toLowerCase()];
+    const reportedStatus = String(vehicle.live_status ?? '').trim().toLowerCase();
+    const apiMovement = LIVE_STATUS[reportedStatus];
+    const ignition = Boolean(vehicle.ignition_status);
     const alertCount = this.optionalNumber(vehicle.active_alert_count);
     const fuelLevel = this.optionalPercent(vehicle.fuel_level);
     return {
@@ -643,10 +652,11 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       id: vehicle.registration || vehicle.name || String(vehicle.id),
       model: vehicle.vehicle_device_type || vehicle.vehicle_type || 'Vehicle',
       driver: vehicle.vehicle_driver_name || 'Unassigned',
-      // No device means nothing to track: drawn as offline, labelled '—'.
-      status: liveStatus ?? 'Offline',
-      hasLiveStatus: liveStatus !== undefined,
-      alert: (alertCount ?? 0) > 0,
+      status: apiMovement ?? this.movementFromDevice(vehicle.online_status, ignition, speed),
+      movementFromApi: apiMovement !== undefined,
+      // Unknown only when neither shape says anything (no device): drawn offline, labelled '—'.
+      hasLiveStatus: apiMovement !== undefined || vehicle.online_status !== undefined,
+      alert: alertCount !== null ? alertCount > 0 : reportedStatus === 'alert',
       alertCount,
       speed,
       fuel: fuelLevel ?? 0,
@@ -657,12 +667,23 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       lng: this.coordinate(vehicle.longitude),
       image: vehicle.image || vehicle.vehicle_type_image,
       seatBelt: Boolean(vehicle.seat_belt),
-      ignition: Boolean(vehicle.ignition_status),
+      ignition,
       battery: this.optionalPercent(vehicle.battery_level),
       lastSignalAt: null,
       kmPerDay: vehicle.km_per_day || 0,
       variant: 'vehicle',
     };
+  }
+
+  /**
+   * Movement from the device's own readings, for responses without a movement `live_status`,
+   * using the backend's states: offline when not reporting, moving above walking pace, idling
+   * with the engine on, stopped with it off.
+   */
+  private movementFromDevice(online: boolean | undefined, ignition: boolean, speed: number): VehicleStatus {
+    if (!online) return 'Offline';
+    if (speed > LiveTrackingPage.MOVING_KPH) return 'Moving';
+    return ignition ? 'Idling' : 'Stopped';
   }
 
   private optionalNumber(value: unknown): number | null {
@@ -795,9 +816,11 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private withPacket(vehicle: LiveVehicle, update: VehicleRealtimeUpdate): LiveVehicle {
     // Some devices report a negative speed when they have no GPS speed fix.
     const speed = Math.max(0, this.numberValue(update.speed ?? update.spd ?? vehicle.speed));
-    // The stream moves the vehicle. Status, alerts, battery and fuel stay as the API last sent
-    // them, unless a frame carries them itself.
+    // The stream moves the vehicle. A movement state the API sent stays until the next poll (or a
+    // frame that carries one); one read from the device follows each frame's speed and ignition.
+    // Alerts, battery and fuel stay as the API last sent them unless a frame carries them.
     const liveStatus = LIVE_STATUS[String(update['live_status'] ?? '').toLowerCase()];
+    const ignition = this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition);
     const alertCount = 'active_alert_count' in update
       ? this.optionalNumber(update['active_alert_count'])
       : vehicle.alertCount;
@@ -807,14 +830,16 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       speed,
       lat: this.numberValue(update.latitude ?? update.lat, vehicle.lat),
       lng: this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng),
-      status: liveStatus ?? vehicle.status,
-      hasLiveStatus: liveStatus !== undefined || vehicle.hasLiveStatus,
+      status:
+        liveStatus ?? (vehicle.movementFromApi ? vehicle.status : this.movementFromDevice(true, ignition, speed)),
+      movementFromApi: liveStatus !== undefined || vehicle.movementFromApi,
+      hasLiveStatus: true,
       alertCount,
-      alert: (alertCount ?? 0) > 0,
+      alert: alertCount !== null ? alertCount > 0 : vehicle.alert,
       battery: 'battery_level' in update ? this.optionalPercent(update['battery_level']) : vehicle.battery,
       fuelLevel,
       fuel: fuelLevel ?? 0,
-      ignition: this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition),
+      ignition,
       updated: this.updateTime(update.updated_time ?? update.t),
       fixTime: this.epoch(update.t),
       lastSignalAt: Date.now(),
