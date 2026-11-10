@@ -5,18 +5,15 @@ import {
   ElementRef,
   NgZone,
   OnDestroy,
-  computed,
   effect,
   input,
   output,
   untracked,
   viewChild,
 } from '@angular/core';
-import { AmbientLight, DirectionalLight, LayersList, LightingEffect } from '@deck.gl/core';
+import { LayersList } from '@deck.gl/core';
 import { TripsLayer } from '@deck.gl/geo-layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { SolidPolygonLayer } from '@deck.gl/layers';
-import { ScenegraphLayer } from '@deck.gl/mesh-layers';
 import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
 import {
   LatLng,
@@ -31,6 +28,12 @@ import {
   upsertGeoJson,
 } from '../maps/maplibre';
 import { prefersReducedMotion } from '../maps/smooth-track';
+import {
+  GROUND_LAYER_PARAMETERS,
+  Rgba,
+  VehicleRenderer,
+  vehicleLighting,
+} from '../maps/vehicle-model';
 import { attachTooltip } from '@iotility/shared-ui';
 import { MapControls } from '../map-overlays/map-controls';
 import { environment } from '../../../environments/environment';
@@ -46,45 +49,6 @@ import {
   stopRunAt,
 } from './replay-motion';
 
-/**
- * The replay vehicle's body type. The models are Kenney's Car Kit (CC0), recoloured pearl white
- * with tinted glass (assets/trip-vehicles/README.txt): white is what most fleet vehicles are, and
- * it reads on amber highways, the purple trail and the dark map alike.
- */
-export type TripVehicleKind = 'sedan' | 'suv' | 'van' | 'pickup' | 'truck';
-const VEHICLE_MODEL_FOLDERS = ['/assets/fleetpoint/trip-vehicles/', '/assets/trip-vehicles/'];
-// The models face +Z and stand on Y-up; this turns them to face the heading on the map.
-const VEHICLE_MODEL_YAW_OFFSET = 180;
-/** Model units to metres: a sedan comes out 4.5 m long, the box truck 5.7 m. */
-const VEHICLE_MODEL_SCALE: [number, number, number] = [1.75, 1.75, 1.75];
-/** Body footprint in model units, [length, width], for the ground shadow. */
-const VEHICLE_FOOTPRINT: Record<TripVehicleKind, [number, number]> = {
-  sedan: [2.55, 1.5],
-  suv: [2.7, 1.5],
-  van: [2.75, 1.5],
-  pickup: [2.95, 1.5],
-  truck: [3.25, 1.5],
-};
-/**
- * The vehicle never draws smaller than this many pixels per metre (about 50 px for a sedan), so it
- * stays a clear marker at route zoom. The ground shadow is scaled by the same factor to match.
- */
-const VEHICLE_MIN_PIXELS_PER_METRE = 11;
-// Body motion, so the vehicle reads as driven rather than slid along the road: it leans out of
-// turns by sideways acceleration and dips its nose under braking (lifts it pulling away).
-const VEHICLE_LEAN_DEG_PER_MS2 = 0.6;
-const VEHICLE_MAX_LEAN_DEG = 4;
-const VEHICLE_DIP_DEG_PER_MS2 = 0.6;
-const VEHICLE_MAX_DIP_DEG = 3;
-const VEHICLE_BODY_DAMPING = 5;
-const SHADOW_CORE_COLOR: [number, number, number, number] = [10, 12, 20, 70];
-const SHADOW_SOFT_COLOR: [number, number, number, number] = [10, 12, 20, 28];
-/** Rounded-rectangle outline of the shadow, as unit cosines and sines (a superellipse, n = 4). */
-const SHADOW_OUTLINE = Array.from({ length: 28 }, (_, index) => {
-  const angle = (index / 28) * Math.PI * 2;
-  const round = (value: number) => Math.sign(value) * Math.sqrt(Math.abs(value));
-  return [round(Math.cos(angle)), round(Math.sin(angle))] as const;
-});
 /** Trail colours by speed (km/h): green while slow, through amber, to red from 120. */
 const SPEED_COLOR_STOPS: Array<[number, [number, number, number]]> = [
   [0, [16, 185, 129]],
@@ -93,20 +57,6 @@ const SPEED_COLOR_STOPS: Array<[number, [number, number, number]]> = [
   [100, [249, 115, 22]],
   [120, [239, 68, 68]],
 ];
-
-/** Picks the body type from whatever describes the vehicle: its type, make and model. */
-export function tripVehicleKind(description: string): TripVehicleKind {
-  const text = description.toLowerCase();
-  if (/pick ?-?up|hilux|revo|vigo|l-?200|triton|navara|d-?max|ranger|bt-?50|tacoma|tundra/.test(text))
-    return 'pickup';
-  if (/truck|lorry|trailer|tanker|dumper|\bbus\b|coaster|n-?series|\bnqr\b|\bnpr\b|canter|hino|forward|mazda t/.test(text))
-    return 'truck';
-  if (/\bvan\b|hiace|urvan|\bh-?1\b|starex|staria|bolan|\bcarry\b|\bevery\b|mini ?bus|sprinter|transit|caravan/.test(text))
-    return 'van';
-  if (/\bsuv\b|jeep|fortuner|prado|land ?cruiser|pajero|sportage|tucson|cr-?v|rav ?4|santa fe|x-?trail|patrol|\brush\b/.test(text))
-    return 'suv';
-  return 'sedan';
-}
 
 function speedColor(kph: number, alpha: number): [number, number, number, number] {
   const stops = SPEED_COLOR_STOPS;
@@ -200,17 +150,6 @@ interface OsrmTrailPoint {
   /** The point right after a preserved moderate jump — always starts a new leg. */
   _afterDrop?: boolean;
 }
-// Tuned for the white bodies: luma's PBR divides diffuse light by π, so these keep every face
-// below clipping (shadow side about 76% bright, sunlit side about 96%) and the shape readable.
-const VEHICLE_LIGHTING = new LightingEffect({
-  ambientLight: new AmbientLight({ color: [255, 255, 255], intensity: 1.8 }),
-  directionalLight: new DirectionalLight({
-    color: [255, 255, 255],
-    intensity: 1.5,
-    direction: [-3, -8, -5],
-  }),
-});
-type Rgba = [number, number, number, number];
 interface TrailPath {
   path: Array<[longitude: number, latitude: number]>;
   /** Metres along the road at each point: the trail's clock. */
@@ -223,24 +162,6 @@ const getTrailPath = (trail: TrailPath) => trail.path;
 const getTrailDistances = (trail: TrailPath) => trail.distances;
 const getTrailSpeedColors = (trail: TrailPath) => trail.speedColors;
 const getTrailSpeedGlowColors = (trail: TrailPath) => trail.speedGlowColors;
-/** The vehicle's ground shadow: a soft outer edge and a darker core, in [lng, lat]. */
-interface VehicleShadow {
-  polygon: Array<[number, number]>;
-  color: Rgba;
-}
-const getShadowPolygon = (shadow: VehicleShadow) => shadow.polygon;
-const getShadowColor = (shadow: VehicleShadow) => shadow.color;
-/**
- * For everything painted flat on the ground (trail, shadow). The vehicle's wheels sit at ground
- * height too, so with depth testing the two fought over the same depth every frame and the
- * underside flickered. Ground layers neither test nor write depth; drawn first, they always end
- * up beneath the vehicle.
- */
-const GROUND_LAYER_PARAMETERS = { depthWriteEnabled: false, depthCompare: 'always' } as const;
-interface VehicleModelState {
-  position: [longitude: number, latitude: number, altitude: number];
-  heading: number;
-}
 export interface TripPosition {
   lat: number;
   lng: number;
@@ -280,11 +201,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   readonly selectedEventId = input<string | null>(null);
   /** Drives the vehicle along the trail. Without one the map is a static view of the trip. */
   readonly clock = input<ReplayClock>();
-  /** Anything describing the vehicle (type, make, model): picks a sedan, SUV, van, pickup or truck. */
-  readonly vehicleType = input('');
   /** Colours the travelled trail by speed instead of the brand colour. */
   readonly speedTrail = input(false);
-  private readonly vehicleKind = computed(() => tripVehicleKind(this.vehicleType()));
   readonly eventSelected = output<TripReplayEvent>();
   readonly routeLoadingChange = output<boolean>();
   readonly displayedSpeedChange = output<number>();
@@ -292,16 +210,10 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private map?: MapLibreMap;
   private vehicleOverlay?: MapboxOverlay;
-  private readonly vehicleModelUrls = new Map<TripVehicleKind, string>();
-  private readonly vehicleModelRequests = new Map<TripVehicleKind, Promise<void>>();
-  // Body motion state: the lean and nose dip drawn, and the last frame they were measured from.
-  private bodyLean = 0;
-  private bodyDip = 0;
-  private bodyFrom?: { distance: number; heading: number; speed: number };
-  private readonly vehicleShadows: VehicleShadow[] = [
-    { polygon: SHADOW_OUTLINE.map(() => [0, 0] as [number, number]), color: SHADOW_SOFT_COLOR },
-    { polygon: SHADOW_OUTLINE.map(() => [0, 0] as [number, number]), color: SHADOW_CORE_COLOR },
-  ];
+  /** The 3D vehicle (model, shadow, body motion), shared with the vehicle detail live map. */
+  private readonly vehicle = new VehicleRenderer('trip-vehicle', () => this.renderOverlay());
+  /** Road distance the body motion last measured from. */
+  private bodyDistance?: number;
   private vehicleVisible = false;
   private endpointMarkers: maplibregl.Marker[] = [];
   private eventMarkers: EventMarkerRecord[] = [];
@@ -347,12 +259,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private navCameraEngaged = false;
   // Always damped, so nav mode takes over and seeks arrive with a glide.
   private displayedCameraCenter?: [number, number];
-  private readonly vehicleModelData: VehicleModelState[] = [
-    {
-      position: [0, 0, 0],
-      heading: 0,
-    },
-  ];
+  /** Where the vehicle is drawn: [lng, lat] and compass heading. */
+  private readonly vehicleAt = { lng: 0, lat: 0, heading: 0 };
   private seenSeeks = 0;
   // Metres the vehicle is still gliding from a short seek; decays to nothing.
   private seekOffset = 0;
@@ -371,16 +279,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private readonly bearingToScratch: LatLng = [0, 0];
   private readonly cameraPointScratch: LatLng = [0, 0];
   private readonly cameraCenterScratch: [number, number] = [0, 0];
-  private readonly vehicleOrientationScratch: [number, number, number] = [0, 0, 90];
-  private readonly getVehiclePosition = (vehicle: VehicleModelState) => vehicle.position;
-  // [pitch, yaw, roll]: deck.gl's pitch tilts the model about its length (the lean) and the roll of
-  // 90 stands the Y-up model upright, so the nose dip is added to it.
-  private readonly getVehicleOrientation = (vehicle: VehicleModelState) => {
-    this.vehicleOrientationScratch[0] = this.bodyLean;
-    this.vehicleOrientationScratch[1] = -vehicle.heading + VEHICLE_MODEL_YAW_OFFSET;
-    this.vehicleOrientationScratch[2] = 90 + this.bodyDip;
-    return this.vehicleOrientationScratch;
-  };
 
   private stopChip?: { marker: maplibregl.Marker; element: HTMLElement; label: Element };
   private activeStop?: StopRun;
@@ -412,11 +310,10 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     effect(() => {
       if (this.clock()?.atRest()) this.showOverview();
     });
-    // Fetch the body type as soon as it is known, so it is ready before Play.
-    effect(() => void this.loadVehicleModel(this.vehicleKind()));
-    // A new body type or trail colouring shows at once, even while paused.
+    // Fetch the model straight away, so it is ready before Play.
+    this.vehicle.preload();
+    // A new trail colouring shows at once, even while paused.
     effect(() => {
-      this.vehicleKind();
       this.speedTrail();
       untracked(() => this.renderOverlay());
     });
@@ -429,7 +326,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       // when this component is loaded through native module federation.
       interleaved: false,
       layers: [],
-      effects: [VEHICLE_LIGHTING],
+      effects: [vehicleLighting()],
       onError: (error) => console.error('Trip vehicle model could not be rendered.', error),
     });
     this.map.addControl(this.vehicleOverlay as unknown as maplibregl.IControl);
@@ -1315,9 +1212,8 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.displayedHeading = heading;
     this.targetSpeedKph = this.speedAtPlayhead();
     this.displayedSpeedKph = this.targetSpeedKph;
-    this.bodyLean = 0;
-    this.bodyDip = 0;
-    this.bodyFrom = undefined;
+    this.vehicle.body.reset();
+    this.bodyDistance = undefined;
     this.vehicleVisible = true;
     const position = this.coordinateAtDistance(distance);
     this.displayedPosition[0] = position[0];
@@ -1327,113 +1223,30 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   }
 
   private positionVehicle(position: LatLng, heading: number): void {
-    const model = this.vehicleModelData[0];
-    model.position[0] = position[1];
-    model.position[1] = position[0];
-    model.heading = heading;
+    this.vehicleAt.lat = position[0];
+    this.vehicleAt.lng = position[1];
+    this.vehicleAt.heading = heading;
     this.renderOverlay();
   }
 
   private renderOverlay(): void {
     if (!this.vehicleVisible || !this.map) return;
-    const [lng, lat] = this.vehicleModelData[0].position;
-    const heading = this.vehicleModelData[0].heading;
-    const kind = this.vehicleKind();
-    const scenegraph = this.vehicleModelUrls.get(kind);
-    const layers: LayersList = this.trailLayers();
-    if (scenegraph) {
-      const zoom = this.map.getZoom();
-      this.placeShadow(kind, lng, lat, heading, zoom);
-      layers.push(
-        // A contact shadow the size of the body keeps the vehicle on the road
-        // instead of floating over it, as Google and Uber draw theirs.
-        new SolidPolygonLayer<VehicleShadow>({
-          id: 'trip-vehicle-shadow',
-          data: this.vehicleShadows,
-          getPolygon: getShadowPolygon,
-          getFillColor: getShadowColor,
-          pickable: false,
-          parameters: GROUND_LAYER_PARAMETERS,
-          updateTriggers: { getPolygon: [lng, lat, heading, zoom] },
-        }),
-        new ScenegraphLayer<VehicleModelState>({
-          id: 'trip-vehicle-model',
-          data: this.vehicleModelData,
-          scenegraph,
-          getPosition: this.getVehiclePosition,
-          getOrientation: this.getVehicleOrientation,
-          getScale: VEHICLE_MODEL_SCALE,
-          sizeScale: 1,
-          // Pixels per metre, not per model: the vehicle keeps a readable size when zoomed out.
-          sizeMinPixels: VEHICLE_MIN_PIXELS_PER_METRE,
-          pickable: false,
-          _lighting: 'pbr',
-          updateTriggers: {
-            getPosition: [lng, lat],
-            getOrientation: [heading, this.bodyLean, this.bodyDip],
-          },
-        }),
-      );
-    }
+    const layers: LayersList = [
+      ...this.trailLayers(),
+      ...this.vehicle.layers({ ...this.vehicleAt, zoom: this.map.getZoom() }),
+    ];
     this.vehicleOverlay?.setProps({ layers });
   }
 
   /**
-   * Lays the shadow under the body: a rounded rectangle a little larger than its footprint,
-   * scaled up exactly as far as the model is (see VEHICLE_MIN_PIXELS_PER_METRE).
-   */
-  private placeShadow(kind: TripVehicleKind, lng: number, lat: number, heading: number, zoom: number): void {
-    const cosLat = Math.cos((lat * Math.PI) / 180);
-    const pixelsPerMetre = (512 * 2 ** zoom) / (40_075_016.686 * Math.max(cosLat, 1e-6));
-    const enlarge = Math.max(1, VEHICLE_MIN_PIXELS_PER_METRE / pixelsPerMetre);
-    const [length, width] = VEHICLE_FOOTPRINT[kind];
-    const halfLength = (length / 2) * VEHICLE_MODEL_SCALE[2] * enlarge;
-    const halfWidth = (width / 2) * VEHICLE_MODEL_SCALE[0] * enlarge;
-    const radians = (heading * Math.PI) / 180;
-    const forward = [Math.sin(radians), Math.cos(radians)];
-    const right = [Math.cos(radians), -Math.sin(radians)];
-    const metresPerDegree = 111_320;
-    for (const [shadow, grow] of [[this.vehicleShadows[0], 1.28], [this.vehicleShadows[1], 1.06]] as const) {
-      SHADOW_OUTLINE.forEach(([along, across], index) => {
-        const ahead = along * halfLength * grow;
-        const aside = across * halfWidth * grow;
-        const east = ahead * forward[0] + aside * right[0];
-        const north = ahead * forward[1] + aside * right[1];
-        const point = shadow.polygon[index];
-        point[0] = lng + east / (metresPerDegree * Math.max(cosLat, 1e-6));
-        point[1] = lat + north / metresPerDegree;
-      });
-    }
-  }
-
-  /**
-   * Leans the body out of turns and dips the nose under braking, from the real trip (speed and
-   * the road's curvature), so it looks the same at every playback speed. Settles level at rest.
+   * Body lean and nose dip from the real trip (its speed and the road's curvature), so they look
+   * the same at every playback speed and settle level at rest.
    */
   private updateBodyMotion(heading: number, dt: number): void {
     const distance = this.displayedRoadDistance;
-    const speed = Math.max(0, this.displayedSpeedKph) / 3.6;
-    let leanTarget = 0;
-    let dipTarget = 0;
-    const from = this.bodyFrom;
-    if (from && !this.reducedMotion) {
-      const travelled = distance - from.distance;
-      if (travelled > 0.05 && travelled < 200) {
-        const turn = ((heading - from.heading + 540) % 360) - 180;
-        const curvature = ((turn * Math.PI) / 180) / travelled;
-        const sideways = speed * speed * curvature;
-        const forwards = (speed * (speed - from.speed)) / travelled;
-        const clamp = (value: number, limit: number) => Math.max(-limit, Math.min(limit, value));
-        leanTarget = clamp(sideways * VEHICLE_LEAN_DEG_PER_MS2, VEHICLE_MAX_LEAN_DEG);
-        dipTarget = clamp(-forwards * VEHICLE_DIP_DEG_PER_MS2, VEHICLE_MAX_DIP_DEG);
-      }
-    }
-    this.bodyFrom = { distance, heading, speed };
-    const blend = 1 - Math.exp(-VEHICLE_BODY_DAMPING * dt);
-    this.bodyLean += (leanTarget - this.bodyLean) * blend;
-    this.bodyDip += (dipTarget - this.bodyDip) * blend;
-    if (Math.abs(this.bodyLean) < 0.01) this.bodyLean = 0;
-    if (Math.abs(this.bodyDip) < 0.01) this.bodyDip = 0;
+    const travelled = this.bodyDistance === undefined ? 0 : distance - this.bodyDistance;
+    this.bodyDistance = distance;
+    this.vehicle.body.update(heading, this.displayedSpeedKph, travelled, dt, this.reducedMotion);
   }
 
   // The travelled trail. The path sits on the GPU once and only `currentTime`
@@ -1478,37 +1291,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
         updateTriggers: { getColor: [bySpeed, dark] },
       }),
     ];
-  }
-
-  private loadVehicleModel(kind: TripVehicleKind): Promise<void> {
-    const pending = this.vehicleModelRequests.get(kind);
-    if (pending) return pending;
-    const request = (async () => {
-      let lastError: unknown;
-      for (const folder of VEHICLE_MODEL_FOLDERS) {
-        try {
-          const response = await fetch(new URL(`${folder}${kind}.glb`, window.location.origin));
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const bytes = await response.arrayBuffer();
-          const magic = new TextDecoder('ascii').decode(bytes.slice(0, 4));
-          if (magic !== 'glTF')
-            throw new Error(`Expected GLB data but received ${magic || 'an empty response'}`);
-          this.vehicleModelUrls.set(
-            kind,
-            URL.createObjectURL(new Blob([bytes], { type: 'model/gltf-binary' })),
-          );
-          this.renderOverlay();
-          return;
-        } catch (error) {
-          lastError = error;
-        }
-      }
-      // Let a later render try again rather than caching the failure.
-      this.vehicleModelRequests.delete(kind);
-      console.error(`Trip vehicle model "${kind}" could not be downloaded.`, lastError);
-    })();
-    this.vehicleModelRequests.set(kind, request);
-    return request;
   }
 
   private coordinateAt(progress: number, out?: LatLng): LatLng {
@@ -1864,8 +1646,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       !!this.clock()?.moving ||
       this.seekOffset !== 0 ||
       // Let the body settle level after a pause instead of freezing mid-lean.
-      this.bodyLean !== 0 ||
-      this.bodyDip !== 0 ||
+      this.vehicle.body.settling ||
       Math.abs(this.targetSpeedKph - this.displayedSpeedKph) > 0.5 ||
       this.cameraSettledFor < CAMERA_SETTLE_SECONDS
     );
@@ -1878,7 +1659,6 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.routeRequest?.abort();
     this.vehicleOverlay?.finalize();
     this.themeObserver?.disconnect();
-    this.vehicleModelUrls.forEach((url) => URL.revokeObjectURL(url));
     this.map?.remove();
   }
 

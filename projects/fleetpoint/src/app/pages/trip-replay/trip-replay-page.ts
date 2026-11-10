@@ -168,10 +168,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
   });
   protected readonly selectedTrip = computed(() => this.trip());
   /** What the replay map picks its 3D body type from. */
-  protected readonly vehicleDescription = computed(() => {
-    const vehicle = this.vehicle();
-    return [vehicle?.vehicle_type, vehicle?.name, vehicle?.vehicle_device_type].filter(Boolean).join(' ');
-  });
   protected readonly stopEvents = computed(() => this.trip().events.filter((e) => e.type === 'stop'));
   // Tab counts: violations/dashcam alerts live under Events (stops have their
   // own tab), so the badge must mirror exactly what each list renders.

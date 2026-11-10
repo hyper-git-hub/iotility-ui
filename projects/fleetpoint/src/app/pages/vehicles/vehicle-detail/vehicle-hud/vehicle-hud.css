@@ -48,58 +48,14 @@
 .hud-maplibre { @apply absolute inset-0; }
 :host ::ng-deep .hud-maplibre .maplibregl-canvas { filter: saturate(0.96) contrast(1.01); }
 :host-context(.dark) ::ng-deep .hud-maplibre .maplibregl-canvas { filter: brightness(0.8) saturate(0.85); }
-/* Keep the marker above the scrim so it stays crisp even where the map beneath
-   it is dimmed — the scrim is a ::after INSIDE the map container, and the
-   marker's z-index paints above it. */
+/* Keep the vehicle above the scrim so it stays crisp even where the map beneath it is dimmed: the
+   scrim is a ::after INSIDE the map container. The 3D vehicle draws on deck.gl's overlay, the one
+   unclassed div in the container; the alert badge is a MapLibre marker. */
 :host ::ng-deep .hud-maplibre .maplibregl-marker { z-index: 2; }
-/* Live marker blink: a soft brand halo under the arrow that pulses only while
-   the vehicle reports online (the coordinates effect toggles .hud-live). */
-:host ::ng-deep .hud-nav-marker { position: relative; }
-:host ::ng-deep .hud-nav-marker .hud-nav-marker-pulse {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 46px;
-  height: 46px;
-  margin: -23px 0 0 -23px;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 40%, transparent);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 50%, transparent);
-  opacity: 0;
-  transform: scale(0.35);
-  pointer-events: none;
-}
-/* Soft status-tinted halo under the chevron: separates the marker from the
-   tiles without boxing it in a hard ring. */
-:host ::ng-deep .hud-nav-marker .hud-nav-marker-halo {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 46px;
-  height: 46px;
-  margin: -23px 0 0 -23px;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--hud-nav-marker-color, #525df7) 30%, transparent);
-  pointer-events: none;
-}
-:host ::ng-deep .hud-nav-marker.hud-live .hud-nav-marker-pulse { animation: hud-marker-pulse 1.6s ease-out infinite; }
-@keyframes hud-marker-pulse {
-  0% { opacity: 0.6; transform: scale(0.35); }
-  70% { opacity: 0; transform: scale(1.7); }
-  100% { opacity: 0; transform: scale(1.7); }
-}
-/* MapLibre marker: white-outlined chevron with a tight shadow so it lifts off
-   both light and dark tiles. */
-:host ::ng-deep .hud-nav-marker svg {
-  @apply block overflow-visible;
-  position: relative;
-  width: 48px;
-  height: 48px;
-  color: var(--hud-nav-marker-color, #525df7);
-  fill: currentColor;
-  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.25));
-}
+:host ::ng-deep .hud-maplibre > div:not([class]) { z-index: 1; }
+/* No scale bar here: the footer chips sit over the corner it lives in, and with the zoom
+   following speed and the camera tilted it would not read as a true distance anyway. */
+:host ::ng-deep .hud-maplibre .maplibregl-ctrl-scale { display: none; }
 /* Dark scrim + progressive blur over the map band — clear on the far left,
    ramping in from ~35% so the entire speedometer side is darker AND blurrier.
    Applied inside the map container (::after) so the nav marker stays above it.

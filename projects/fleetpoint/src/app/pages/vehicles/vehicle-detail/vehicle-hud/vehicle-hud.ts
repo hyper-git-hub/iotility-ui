@@ -13,11 +13,13 @@ import {
   viewChild,
 } from '@angular/core';
 import maplibregl, { GeoJSONSource } from 'maplibre-gl';
+import { MapboxOverlay } from '@deck.gl/mapbox';
 import {
   LatLng, LayerWithoutSource, createIotMap, lineFeature, timezoneCenter, upsertGeoJson,
   routeCasingColor,
 } from '../../../../shared/maps/maplibre';
 import { SmoothTrack, TrackPoint, metresBetween } from '../../../../shared/maps/smooth-track';
+import { VehicleRenderer, vehicleLighting } from '../../../../shared/maps/vehicle-model';
 import { Skeleton } from '@iotility/shared-ui';
 import { environment } from '../../../../../environments/environment';
 import { VehicleDetailRecord, VehicleMetric } from '../../../../shared/services/vehicle-detail-api.service';
@@ -102,13 +104,16 @@ const LABELS: GaugeLabel[] = MAJOR_TICK_AT.map(([value]) => {
    camera is offset east so the marker sits left-of-center, keeping the visible
    roads on the left half clear while the right half dissolves under the gauge. */
 
-/* FleetMap (the "Current Location" card) centers a selected vehicle with
-   flyTo({ zoom: 16 }) — the HUD mirrors that zoom so both maps read at the
-   same street scale. */
-const HUD_ZOOM = 14.5;
-/* 3D camera: pitched down toward the horizon with a slight bearing so the
-   dark style's 3D buildings read as depth behind the route. */
-const HUD_PITCH = 0;
+/* Close street level, so the 3D car reads near its real size on the road; the
+   speed-adaptive zoom below pulls back from here as the vehicle speeds up. */
+const HUD_ZOOM = 18.5;
+/* 3D camera, tilted toward the horizon so the car and the 3D buildings read with depth,
+   following the vehicle from behind and a little to its right: the camera turns with the
+   heading but stays HUD_VIEW_ANGLE off it, so the car shows its back and side and drives
+   up-right, towards the open middle of the map rather than the left edge. HUD_BEARING is
+   only the start, before a heading is known. */
+const HUD_PITCH = 50;
+const HUD_VIEW_ANGLE = 30;
 const HUD_BEARING = 0;
 /* Horizontal placement of the vehicle on the HUD band: 18% from the left
    border (well clear of the speedometer). Implemented as a screen-space
@@ -116,9 +121,6 @@ const HUD_BEARING = 0;
 const HUD_MARKER_X = 0.32;
 /* Fallback camera until live coordinates arrive (marker hidden meanwhile). */
 const HUD_FALLBACK = { lat: timezoneCenter()[0], lng: timezoneCenter()[1] } as const;
-/* Slight visual correction so the arrow reads more upward while preserving
-   the live road/GPS bearing as its source of truth. */
-const ARROW_BEARING_OFFSET = 0;
 
 /* ── Smooth live marker ───────────────────────────────────────
    Each fix is handed to SmoothTrack (shared/maps/smooth-track.ts), which drives
@@ -157,14 +159,16 @@ function trailLayers(): LayerWithoutSource[] {
 }
 
 /* ── Speed-adaptive zoom ─────────────────────────────────────
-   Zoom per speed (km/h → zoom), interpolated linearly between stops. */
+   Zoom per speed (km/h → zoom), interpolated linearly between stops. It pulls
+   back only a little, so even at highway speed the car stays close to its real
+   size on the road rather than shrinking to a marker on a web of streets. */
 const ZOOM_BY_SPEED: Array<[number, number]> = [
-  [0, 16],
-  [30, 15.5],
-  [60, 15],
-  [90, 14.5],
-  [120, 14],
-  [150, 13.5],
+  [0, 19],
+  [30, 18.75],
+  [60, 18.5],
+  [90, 18.25],
+  [120, 18],
+  [150, 17.75],
 ];
 /* Weight of each new packet in the smoothed speed that drives the zoom. */
 const ZOOM_SPEED_SMOOTHING = 0.35;
@@ -340,7 +344,16 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   private readonly mapHost = viewChild.required<ElementRef<HTMLDivElement>>('mapHost');
   private readonly zone = inject(NgZone);
   private map?: maplibregl.Map;
-  private marker?: maplibregl.Marker;
+  /* The vehicle is drawn in 3D (the same car, shadow and body motion as trip replay) on a
+     deck.gl overlay. `vehicleAt` is where it is drawn; undefined until live coordinates arrive. */
+  private overlay?: MapboxOverlay;
+  // 30% larger than in trip replay: here the one vehicle is the point of the map.
+  private readonly vehicle3d = new VehicleRenderer('hud-vehicle', () => this.drawVehicle(), 1.3);
+  private vehicleAt?: { lat: number; lng: number };
+  private lastMoveAt = 0;
+  private settleRaf = 0;
+  /* Unread violations: a red "!" badge that rides above the vehicle. */
+  private alertBadge?: maplibregl.Marker;
   private roadBearing: number | null = null;
   private bearingToken = 0;
 
@@ -502,7 +515,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   }
 
   private recenterCamera(): void {
-    const pos = this.marker?.getLngLat();
+    const pos = this.vehicleAt;
     if (pos) this.syncCamera(pos.lat, pos.lng);
   }
 
@@ -535,23 +548,25 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
       if (!this.map) return;
       if (!coords) {
         this.stopMarkerGlide();
-        this.marker?.remove();
-        this.marker = undefined;
+        this.vehicleAt = undefined;
+        this.vehicle3d.body.reset();
+        this.drawVehicle();
         this.roadBearing = null;
         this.prevFix = undefined;
         this.resetTrail();
         this.syncCamera(HUD_FALLBACK.lat, HUD_FALLBACK.lng);
         return;
       }
-      // First fix drops the marker in place; every later fix glides to it.
-      if (!this.marker) this.placeMarkerNow(coords);
+      // First fix drops the vehicle in place; every later fix glides to it.
+      if (!this.vehicleAt) this.placeMarkerNow(coords);
       else this.glideMarkerTo(coords);
     });
+    // Fetch the model ahead of the first fix, so the vehicle appears with it.
+    this.vehicle3d.preload();
   }
 
-  /* Camera locked to the vehicle, matching the FleetMap "Current Location"
-     card (zoom 16) but with a screen-space offset that parks the marker
-     HUD_MARKER_X of the way from the left border — same trick FleetMap uses
+  /* Camera locked to the vehicle, with a screen-space offset that parks the
+     marker HUD_MARKER_X of the way from the left border — same trick FleetMap uses
      with panel padding, expressed as a pixel offset so pitch/bearing keep it
      exact regardless of latitude. */
   private syncCamera(lat: number, lng: number): void {
@@ -566,7 +581,8 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
       center: [lng, lat],
       zoom: this.hudZoom,
       pitch: HUD_PITCH,
-      bearing: HUD_BEARING,
+      // The map turns with the vehicle (its heading already eases round smoothly), a little to its side.
+      bearing: this.vehicleAt ? normalizeDegrees(this.displayedBearing - HUD_VIEW_ANGLE) : HUD_BEARING,
       padding: { right: rightPadding },
     });
   }
@@ -580,6 +596,17 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
       HUD_ZOOM,
       { interactive: true, pitch: HUD_PITCH, bearing: HUD_BEARING },
     );
+    /* The 3D vehicle draws on its own deck.gl canvas above the map (the same set-up as trip
+       replay), so the trail and roads always sit beneath it. */
+    this.overlay = new MapboxOverlay({
+      interleaved: false,
+      layers: [],
+      effects: [vehicleLighting()],
+      onError: (error) => console.error('HUD vehicle model could not be rendered.', error),
+    });
+    this.map.addControl(this.overlay as unknown as maplibregl.IControl);
+    // The shadow is sized to the vehicle's on-screen size, so a zoom redraws it.
+    this.zone.runOutsideAngular(() => this.map?.on('zoom', () => this.drawVehicle()));
     /* Off-center framing needs the pixel offset, which is applied via
        syncCamera once the container has a real width. */
     this.syncCamera(anchor.lat, anchor.lng);
@@ -595,40 +622,78 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     if (coords) this.placeMarkerNow(coords);
   }
 
-  /* Blink the marker only while the vehicle reports online — toggles the
-     hud-live class that drives the CSS pulse halo. */
+  /* Unread violations: the new `active_alert_count`, or today's `live_status` "Alert". */
+  private readonly hasAlert = computed(() => {
+    const vehicle = this.vehicle();
+    const count = Number(vehicle?.['active_alert_count']);
+    if (Number.isFinite(count)) return count > 0;
+    return String(vehicle?.['live_status'] ?? '').toLowerCase() === 'alert';
+  });
+
+  /* Kept for the existing call sites: a new live record can raise or clear the alert badge. */
   private syncMarkerLive(): void {
-    const element = this.marker?.getElement();
-    if (!element) return;
-    element.classList.toggle('hud-live', this.online());
-    const status = this.vehicle()?.online_status;
-    // Darker green than the status chip so the arrow holds contrast on parks.
-    const color = status === true
-      ? '#16a34a'
-      : status === false
-        ? '#9ca3af'
-        : '#525DF7';
-    element.style.setProperty('--hud-nav-marker-color', color);
+    this.drawVehicle();
   }
 
-  /* Navigation marker: a symmetric chevron pointing north (so the bearing
-     rotation needs no art offset), outlined in white with a drop shadow over a
-     soft status-tinted halo — legible on any tile colour without a hard ring.
-     Anchored center on the vehicle's exact coordinates. */
-  private buildMarker(coords: { lat: number; lng: number }): maplibregl.Marker {
-    const element = document.createElement('div');
-    element.className = 'hud-nav-marker';
-    /* MapLibre generates this DOM imperatively, so it never carries the
-       component's _ngcontent attribute — size it with inline styles and SVG
-       width/height attributes (component CSS cannot reach it). */
-    element.style.cssText = 'width:48px;height:48px;';
-    element.innerHTML =
-      `<div class="hud-nav-marker-pulse"></div><div class="hud-nav-marker-halo"></div><svg width="48" height="48" viewBox="0 0 48 48" style="display:block;overflow:visible" aria-hidden="true">
-        <path d="M24 6 L38 40 L24 31.5 L10 40 Z" fill="currentColor" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" paint-order="stroke"></path>
-      </svg>`;
-    return new maplibregl.Marker({ element, anchor: 'center', rotationAlignment: 'map' })
-      .setLngLat([coords.lng, coords.lat])
-      .addTo(this.map!);
+  /* Draws the vehicle where it is, facing `displayedBearing`. Runs per frame while it moves. */
+  private drawVehicle(): void {
+    const map = this.map;
+    if (!map || !this.overlay) return;
+    const at = this.vehicleAt;
+    if (!at) {
+      this.overlay.setProps({ layers: [] });
+      this.alertBadge?.remove();
+      this.alertBadge = undefined;
+      return;
+    }
+    this.overlay.setProps({
+      layers: this.vehicle3d.layers({
+        lng: at.lng,
+        lat: at.lat,
+        heading: this.displayedBearing,
+        zoom: map.getZoom(),
+      }),
+    });
+    this.syncAlertBadge(at);
+  }
+
+  private syncAlertBadge(at: { lat: number; lng: number }): void {
+    if (!this.hasAlert()) {
+      this.alertBadge?.remove();
+      this.alertBadge = undefined;
+      return;
+    }
+    if (!this.alertBadge && this.map) {
+      const element = document.createElement('div');
+      element.setAttribute('aria-label', 'Vehicle has unread alerts');
+      /* Imperative DOM never carries the component's style scope, so it is styled inline. */
+      element.style.cssText =
+        'display:grid;place-items:center;width:18px;height:18px;border-radius:50%;'
+        + 'background:var(--color-danger,#ef4444);color:#fff;border:2px solid #fff;'
+        + 'font:800 11px/1 Inter,system-ui,sans-serif;box-shadow:0 2px 6px rgb(15 23 42 / .35);pointer-events:none;';
+      element.textContent = '!';
+      this.alertBadge = new maplibregl.Marker({ element, anchor: 'bottom', offset: [16, -18] })
+        .setLngLat([at.lng, at.lat])
+        .addTo(this.map);
+      return;
+    }
+    this.alertBadge?.setLngLat([at.lng, at.lat]);
+  }
+
+  /* Once the vehicle stops gliding, let any lean or nose dip ease back to level. */
+  private settleBody(): void {
+    if (this.settleRaf || !this.vehicle3d.body.settling) return;
+    let last = performance.now();
+    const step = (now: number) => {
+      this.settleRaf = 0;
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      if (now - this.lastMoveAt < 150) return; // still gliding: the move hook drives the body
+      this.vehicle3d.body.update(this.displayedBearing, 0, 0, dt, true);
+      this.drawVehicle();
+      if (this.vehicle3d.body.settling) this.settleRaf = requestAnimationFrame(step);
+    };
+    this.zone.runOutsideAngular(() => (this.settleRaf = requestAnimationFrame(step)));
   }
 
   private isMoving(): boolean {
@@ -640,9 +705,8 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   private placeMarkerNow(coords: TrackPoint): void {
     if (!this.map) return;
     this.stopMarkerGlide();
-    if (!this.marker) this.marker = this.buildMarker(coords);
-    this.marker.setLngLat([coords.lng, coords.lat]);
-    this.syncMarkerLive();
+    this.vehicleAt = { lat: coords.lat, lng: coords.lng };
+    this.vehicle3d.body.reset();
     this.syncCamera(coords.lat, coords.lng);
     this.displayedBearing = this.initialBearing();
     this.targetBearing = this.displayedBearing;
@@ -656,10 +720,10 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
      (and the camera that follows it) along the road at the vehicle's real
      pace, and turn the arrow toward the new heading. */
   private glideMarkerTo(coords: TrackPoint): void {
-    if (!this.map || !this.marker) return;
-    // The first live packet starts the trail where the marker stands now.
+    if (!this.map || !this.vehicleAt) return;
+    // The first live packet starts the trail where the vehicle stands now.
     if (!this.trail.length) {
-      const start = this.marker.getLngLat();
+      const start = this.vehicleAt;
       this.trail = [[start.lat, start.lng]];
       this.trailHead = undefined;
       this.paintTrail();
@@ -676,10 +740,18 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   /* Per-frame position from the tracker (outside Angular). While it drives a
      road edge, the arrow faces along that edge rather than the raw packet. */
   private moveMarker(pos: TrackPoint, heading: number | null): void {
-    if (!this.map || !this.marker) return;
-    this.marker.setLngLat([pos.lng, pos.lat]);
+    if (!this.map || !this.vehicleAt) return;
+    const now = performance.now();
+    const dt = this.lastMoveAt ? Math.min(0.1, (now - this.lastMoveAt) / 1000) : 1 / 60;
+    const travelled = metresBetween(this.vehicleAt, pos);
+    this.lastMoveAt = now;
+    this.vehicleAt = { lat: pos.lat, lng: pos.lng };
+    // Lean into turns and dip under braking, from the real speed and the road's curvature.
+    this.vehicle3d.body.update(this.displayedBearing, this.displayedSpeed(), travelled, dt, prefersReducedMotion());
     this.syncCamera(pos.lat, pos.lng);
     this.extendTrail(pos);
+    this.drawVehicle();
+    this.settleBody();
     if (heading === null) return;
     this.targetBearing = heading;
     this.turnArrow();
@@ -708,8 +780,10 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     return 0;
   }
 
+  /* The vehicle faces `displayedBearing`: turn the camera with it and redraw it there. */
   private applyRotation(): void {
-    this.marker?.setRotation(normalizeDegrees(this.displayedBearing + ARROW_BEARING_OFFSET));
+    this.recenterCamera();
+    this.drawVehicle();
   }
   /* Ease the arrow toward `targetBearing` on its own rAF, outside Angular so
      the rotation never triggers change detection. */
@@ -776,7 +850,10 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     cancelAnimationFrame(this.speedRaf);
     cancelAnimationFrame(this.zoomRaf);
     this.stopMarkerGlide();
-    this.marker = undefined;
+    cancelAnimationFrame(this.settleRaf);
+    this.alertBadge?.remove();
+    this.vehicleAt = undefined;
+    this.overlay?.finalize();
     this.map?.remove();
     this.map = undefined;
   }
