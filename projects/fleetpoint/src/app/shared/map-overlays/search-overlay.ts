@@ -22,7 +22,7 @@ export class SearchOverlay {
   readonly filterChange = output<VehicleFilter>();
   readonly selectVehicle = output<VehicleSearchResult>();
 
-  protected readonly filters: VehicleFilter[] = ['All', 'Moving', 'Idling', 'Alert', 'Offline'];
+  protected readonly filters: VehicleFilter[] = ['All', 'Moving', 'Idling', 'Stopped', 'Alert', 'Offline'];
   protected readonly showResults = computed(() => this.search().trim().length > 0);
   protected readonly results = computed(() => this.vehicles().slice(0, 6));
   protected readonly hasResults = computed(() => this.vehicles().length > 0);
@@ -48,6 +48,7 @@ export class SearchOverlay {
     switch (status) {
       case 'Moving': return 'var(--color-success)';
       case 'Idling': return 'var(--color-warning)';
+      case 'Stopped': return 'var(--color-stopped, #94a3b8)';
       case 'Alert': return 'var(--color-danger)';
       case 'Offline': return 'var(--color-muted)';
       default: return 'var(--color-muted)';

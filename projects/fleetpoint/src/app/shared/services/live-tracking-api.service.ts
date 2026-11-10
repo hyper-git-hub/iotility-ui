@@ -29,6 +29,14 @@ export interface RealtimeVehicleRecord {
   ignition_status: boolean;
   vehicle_type_image: string | null;
   vehicle_driver_name: string | null;
+  /** Movement state; null when the vehicle has no device. Never "alert": see active_alert_count. */
+  live_status?: 'moving' | 'idling' | 'stopped' | 'offline' | null;
+  /** Unread violations today; an alert badge shows while above 0. Reset by reading notifications. */
+  active_alert_count?: number | null;
+  /** 0–100, or null without a reading. */
+  battery_level?: number | null;
+  /** 0–100, or null without a reading. */
+  fuel_level?: number | null;
 }
 
 export interface DetailReportRecord {

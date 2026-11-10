@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Dropdown, DropdownOption, Skeleton, StatusBadge } from '@iotility/shared-ui';
-import { EMPTY, Subscription, catchError, filter, finalize, interval, switchMap, timer } from 'rxjs';
+import { EMPTY, Subscription, catchError, finalize, interval, switchMap, timer } from 'rxjs';
 import {
   FleetMap,
   MapZoneOverlay,
@@ -49,9 +49,22 @@ interface LiveVehicle extends TrackedVehicle {
   seatBelt: boolean;
   ignition: boolean;
   battery: number | null;
+  /** Fuel left (0–100), or null without a reading. */
+  fuelLevel: number | null;
+  /** Whether the API sent a movement state; without one the status shows as '—'. */
+  hasLiveStatus: boolean;
+  /** Unread violations today (`active_alert_count`), or null when not sent. */
+  alertCount: number | null;
   lastSignalAt: number | null;
   kmPerDay: number;
 }
+
+const LIVE_STATUS: Record<string, VehicleStatus> = {
+  moving: 'Moving',
+  idling: 'Idling',
+  stopped: 'Stopped',
+  offline: 'Offline',
+};
 
 type InventoryVehicle = NonNullable<FleetInventoryRecord['assigned_vehicles']>[number];
 
@@ -62,6 +75,7 @@ interface VehicleRow {
   details: string;
   state: string;
   stateClass: string;
+  alert: boolean;
 }
 
 /** Positions in the vehicle array per packet key, so a packet finds its vehicle without a scan. */
@@ -118,10 +132,12 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly vehicles = signal<LiveVehicle[]>([]);
   protected readonly zones = signal<MapZoneOverlay[]>([]);
   protected readonly isFullscreen = computed(() => this.fullscreenUi.isFullscreen());
+  /** The backend's movement states, plus Alert, which overlaps them (vehicles with unread violations). */
   protected readonly filters: Array<VehicleStatus | 'All'> = [
     'All',
     'Moving',
     'Idling',
+    'Stopped',
     'Alert',
     'Offline',
   ];
@@ -170,9 +186,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     );
     return drivers;
   });
-  /** Live status per vehicle id, so driver filtering is a lookup instead of a scan per driver. */
-  private readonly vehicleStatusById = computed(
-    () => new Map(this.vehicles().map((vehicle) => [vehicle.numericId, vehicle.status])),
+  /** Vehicles by id, so driver filtering is a lookup instead of a scan per driver. */
+  private readonly vehicleById = computed(
+    () => new Map(this.vehicles().map((vehicle) => [vehicle.numericId, vehicle])),
   );
   /** Fleet inventory records by vehicle id and by registration (first record wins, as a scan would). */
   private readonly inventoryIndex = computed(() => {
@@ -186,14 +202,20 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   });
   /** Status chips filter drivers by the live status of their assigned vehicle. */
   protected driverVehicleStatus(driver: TrackingDriver): VehicleStatus {
-    return (driver.vehicleId !== null && this.vehicleStatusById().get(driver.vehicleId)) || 'Offline';
+    return (driver.vehicleId !== null && this.vehicleById().get(driver.vehicleId)?.status) || 'Offline';
+  }
+  private driverMatchesStatus(driver: TrackingDriver, status: VehicleStatus | 'All'): boolean {
+    if (status === 'All') return true;
+    if (status === 'Alert')
+      return driver.vehicleId !== null && !!this.vehicleById().get(driver.vehicleId)?.alert;
+    return this.driverVehicleStatus(driver) === status;
   }
   protected readonly filteredDrivers = computed(() => {
     const query = this.driverSearch().trim().toLowerCase();
     const status = this.driverStatusFilter();
     return this.drivers().filter(
       (driver) =>
-        (status === 'All' || this.driverVehicleStatus(driver) === status) &&
+        this.driverMatchesStatus(driver, status) &&
         (!query ||
           `${driver.name} ${driver.role} ${driver.vehicle}`.toLowerCase().includes(query)),
     );
@@ -217,7 +239,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     return this.vehicles().filter(
       (vehicle) =>
         (allFleets || fleetVehicleIds.has(vehicle.numericId)) &&
-        (status === 'All' || vehicle.status === status) &&
+        // Alert overlaps the movement states: a moving vehicle with alerts is in both.
+        (status === 'All' || (status === 'Alert' ? !!vehicle.alert : vehicle.status === status)) &&
         (!query || this.vehicleSearchText(vehicle).includes(query)),
     );
   });
@@ -240,8 +263,13 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
           vehicle,
           image: this.vehicleImage(vehicle.image),
           details: this.vehicleDetails(vehicle),
-          state: vehicle.status === 'Moving' ? `${vehicle.speed} km/h` : vehicle.status,
+          state: !vehicle.hasLiveStatus
+            ? '—'
+            : vehicle.status === 'Moving'
+              ? `${vehicle.speed} km/h`
+              : vehicle.status,
           stateClass: `state-${vehicle.status.toLowerCase()}`,
+          alert: !!vehicle.alert,
         };
         this.rowCache.set(vehicle, row);
       }
@@ -386,16 +414,13 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       });
   }
 
-  /* REST fallback only: while the fleet stream is connected it is the live
-     source and the vehicle list is not re-fetched. Polls only while the stream
-     is down (e.g. the gateway rejects this origin) or SignalR is in use. */
+  /* The fleet stream moves the vehicles; this poll keeps what only the API knows
+     (live_status, active_alert_count, battery and fuel) current, stream or not.
+     The backend caches the list for 3 seconds, so every 30 seconds is cheap. */
   private startVehiclePolling(): void {
     this.subscription.add(
       timer(30_000, 30_000)
-        .pipe(
-          filter(() => !(environment.sseTelemetryEnabled && this.telemetryStream.connected())),
-          switchMap(() => this.api.getVehicles().pipe(catchError(() => EMPTY))),
-        )
+        .pipe(switchMap(() => this.api.getVehicles().pipe(catchError(() => EMPTY))))
         .subscribe((response) => this.updateVehicleSnapshot(response.data?.data ?? [])),
     );
   }
@@ -408,6 +433,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       const current = currentVehicles.get(record.id);
       // The fleet stream moves every vehicle, so a fresh live fix outranks the
       // poll's REST position, which would otherwise drag the marker backwards.
+      // Status, alerts, battery and fuel always come from this poll.
       const freshLive = Date.now() - (current?.lastSignalAt ?? 0) < LiveTrackingPage.LIVE_FRESH_MS;
       return current && this.realtimeVehicles.has(record.id) && freshLive
         ? {
@@ -415,9 +441,7 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
             lat: current.lat,
             lng: current.lng,
             speed: current.speed,
-            status: current.status,
             ignition: current.ignition,
-            battery: current.battery,
             seatBelt: current.seatBelt,
             lastSignalAt: current.lastSignalAt,
             fixTime: current.fixTime,
@@ -580,6 +604,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
         return 'var(--color-success)';
       case 'Idling':
         return 'var(--color-warning)';
+      case 'Stopped':
+        return 'var(--color-stopped, #94a3b8)';
       case 'Alert':
         return 'var(--color-danger)';
       default:
@@ -600,18 +626,31 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
     image.src = 'assets/fleetpoint/def-car.svg';
   }
 
+  /**
+   * Status, alerts, battery and fuel come only from the API, as the backend defines them:
+   * `live_status` is the movement state (moving, idling, stopped, offline; null without a
+   * device), and `active_alert_count` above 0 puts an alert badge on top of it. Anything not
+   * sent shows as '—'.
+   */
   private toTrackedVehicle(vehicle: RealtimeVehicleRecord): LiveVehicle {
     const speed = Math.max(0, this.numberValue(vehicle.speed));
-    const online = Boolean(vehicle.online_status);
+    const liveStatus = LIVE_STATUS[String(vehicle.live_status ?? '').toLowerCase()];
+    const alertCount = this.optionalNumber(vehicle.active_alert_count);
+    const fuelLevel = this.optionalPercent(vehicle.fuel_level);
     return {
       numericId: vehicle.id,
       deviceId: String(vehicle.device_id ?? '').trim(),
       id: vehicle.registration || vehicle.name || String(vehicle.id),
       model: vehicle.vehicle_device_type || vehicle.vehicle_type || 'Vehicle',
       driver: vehicle.vehicle_driver_name || 'Unassigned',
-      status: online ? (speed > 8 ? 'Moving' : 'Idling') : 'Offline',
+      // No device means nothing to track: drawn as offline, labelled '—'.
+      status: liveStatus ?? 'Offline',
+      hasLiveStatus: liveStatus !== undefined,
+      alert: (alertCount ?? 0) > 0,
+      alertCount,
       speed,
-      fuel: 0,
+      fuel: fuelLevel ?? 0,
+      fuelLevel,
       location: vehicle.location || 'Location unavailable',
       updated: vehicle.updated_time || 'No recent update',
       lat: this.coordinate(vehicle.latitude),
@@ -619,10 +658,22 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       image: vehicle.image || vehicle.vehicle_type_image,
       seatBelt: Boolean(vehicle.seat_belt),
       ignition: Boolean(vehicle.ignition_status),
-      battery: null,
+      battery: this.optionalPercent(vehicle.battery_level),
       lastSignalAt: null,
       kmPerDay: vehicle.km_per_day || 0,
+      variant: 'vehicle',
     };
+  }
+
+  private optionalNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  }
+
+  private optionalPercent(value: unknown): number | null {
+    const number = this.optionalNumber(value);
+    return number === null ? null : Math.round(Math.min(100, Math.max(0, number)));
   }
 
   private toMapZone(zone: GeoZoneRecord): MapZoneOverlay[] {
@@ -744,12 +795,25 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   private withPacket(vehicle: LiveVehicle, update: VehicleRealtimeUpdate): LiveVehicle {
     // Some devices report a negative speed when they have no GPS speed fix.
     const speed = Math.max(0, this.numberValue(update.speed ?? update.spd ?? vehicle.speed));
+    // The stream moves the vehicle. Status, alerts, battery and fuel stay as the API last sent
+    // them, unless a frame carries them itself.
+    const liveStatus = LIVE_STATUS[String(update['live_status'] ?? '').toLowerCase()];
+    const alertCount = 'active_alert_count' in update
+      ? this.optionalNumber(update['active_alert_count'])
+      : vehicle.alertCount;
+    const fuelLevel = 'fuel_level' in update ? this.optionalPercent(update['fuel_level']) : vehicle.fuelLevel;
     return {
       ...vehicle,
       speed,
       lat: this.numberValue(update.latitude ?? update.lat, vehicle.lat),
       lng: this.numberValue(update.longitude ?? update.lng ?? update.lon, vehicle.lng),
-      status: speed > 8 ? 'Moving' : 'Idling',
+      status: liveStatus ?? vehicle.status,
+      hasLiveStatus: liveStatus !== undefined || vehicle.hasLiveStatus,
+      alertCount,
+      alert: (alertCount ?? 0) > 0,
+      battery: 'battery_level' in update ? this.optionalPercent(update['battery_level']) : vehicle.battery,
+      fuelLevel,
+      fuel: fuelLevel ?? 0,
       ignition: this.booleanValue(update.ignition_status ?? update.ign, vehicle.ignition),
       updated: this.updateTime(update.updated_time ?? update.t),
       fixTime: this.epoch(update.t),

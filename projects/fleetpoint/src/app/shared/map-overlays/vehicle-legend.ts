@@ -15,6 +15,7 @@ export class VehicleLegend {
   protected readonly statuses: StatusItem[] = [
     { key: 'moving', label: 'Moving', color: 'var(--color-success)' },
     { key: 'idling', label: 'Idling', color: 'var(--color-warning)' },
+    { key: 'stopped', label: 'Stopped', color: 'var(--color-stopped, #94a3b8)' },
     { key: 'alert', label: 'Alert', color: 'var(--color-danger)' },
     { key: 'offline', label: 'Offline', color: 'var(--color-muted)' },
   ];

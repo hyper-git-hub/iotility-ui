@@ -8,7 +8,9 @@
       (zoomOut)="zoomOut()"
       (toggle3D)="onToggle3D()"
       (resetNorth)="onResetNorth()"
-      (rotate)="onRotate()"
+      [map]="mapRef()"
+      [showFitAll]="true"
+      (fitAll)="fitAllVehicles()"
       (geolocate)="onGeolocate()"
       (fullscreenToggle)="onFullscreenToggle()"
     />

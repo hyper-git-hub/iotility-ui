@@ -109,7 +109,13 @@
               ><strong>{{ row.vehicle.id }}</strong
               ><small>{{ row.details }}</small
               ><small>{{ row.vehicle.location }}</small></span
-            ><span class="vehicle-state" [class]="row.stateClass">{{ row.state }}</span>
+            ><span class="vehicle-state" [class]="row.stateClass"
+              >@if (row.alert) {<i
+                  class="vehicle-alert-badge"
+                  [attr.aria-label]="row.vehicle.alertCount + ' unread ' + (row.vehicle.alertCount === 1 ? 'alert' : 'alerts')"
+                  >!</i
+                >}{{ row.state }}</span
+            >
           </button>
         } @empty {
           <p class="empty-list">No vehicles match your search.</p>
@@ -266,7 +272,12 @@
                 aria-hidden="true"
               /><span>Status</span>
             </div>
-            <strong>{{ vehicle.status }}</strong>
+            <strong
+              >{{ vehicle.hasLiveStatus ? vehicle.status : '—' }}@if (vehicle.alert) {<span
+                  class="detail-alerts"
+                  > · {{ vehicle.alertCount }} {{ vehicle.alertCount === 1 ? 'alert' : 'alerts' }}</span
+                >}</strong
+            >
           </article>
           <article>
             <div class="detail-label">

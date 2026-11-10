@@ -149,11 +149,21 @@
 .state-idling {
   @apply text-warning;
 }
+.state-stopped {
+  color: var(--color-stopped, #94a3b8);
+}
 .state-alert {
   @apply text-danger;
 }
 .state-offline {
   @apply text-muted;
+}
+/* Unread violations: a small red "!" before the state, on top of the movement status. */
+.vehicle-alert-badge {
+  @apply mr-1 inline-grid size-3.5 place-items-center rounded-full bg-danger align-[-2px] text-[9px] font-extrabold not-italic leading-none text-white;
+}
+.detail-alerts {
+  @apply font-semibold text-danger;
 }
 .empty-list {
   @apply p-6 text-center text-xs text-muted;

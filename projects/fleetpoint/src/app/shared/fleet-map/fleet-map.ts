@@ -1,16 +1,16 @@
 import {
-  AfterViewInit, Component, ElementRef, NgZone, OnDestroy, effect, inject, input, output, signal,
-  untracked, viewChild,
+  AfterViewInit, Component, ElementRef, Injector, NgZone, OnDestroy, afterNextRender, effect, inject,
+  input, output, signal, untracked, viewChild,
 } from '@angular/core';
 import maplibregl, { LngLatBounds, Map as MapLibreMap } from 'maplibre-gl';
 import {
-  LatLng, LayerWithoutSource, circlePolygon, createIotMap, escapeHtml, fitLatLngs, lineFeature,
-  markerElement, overlaySafePadding, polygonFeature, popupHtml, removeGeoJson, routeCasingColor,
-  timezoneCountryCenter, upsertGeoJson,
+  LatLng, LayerWithoutSource, circlePolygon, createIotMap, escapeHtml, fitLatLngs, flightEase,
+  glideEase, lineFeature, markerElement, overlaySafePadding, polygonFeature, popupHtml, removeGeoJson,
+  routeCasingColor, timezoneCountryCenter, upsertGeoJson,
 } from '../maps/maplibre';
 import { MapControls } from '../map-overlays/map-controls';
 import { FullscreenUiService } from '../services/fullscreen-ui.service';
-import { SmoothTrack, TrackPoint } from '../maps/smooth-track';
+import { SmoothTrack, TrackPoint, bearingBetween, metresBetween } from '../maps/smooth-track';
 import { environment } from '../../../environments/environment';
 
 /** Road-snapped trail: a crisp core line on an edge that lifts it off the road. */
@@ -32,16 +32,49 @@ function TRAIL_LAYERS(color: string): LayerWithoutSource[] {
   ];
 }
 
-export type VehicleStatus = 'Moving' | 'Idling' | 'Alert' | 'Offline';
+export type VehicleStatus = 'Moving' | 'Idling' | 'Stopped' | 'Alert' | 'Offline';
 /** Ring order for cluster donuts (matches the map legend). */
-const CLUSTER_STATUSES: VehicleStatus[] = ['Moving', 'Idling', 'Alert', 'Offline'];
+const CLUSTER_STATUSES: VehicleStatus[] = ['Moving', 'Idling', 'Stopped', 'Alert', 'Offline'];
 /**
  * Marker shape.
- * - `chip` (default): circular status-coloured chip with the vehicle image inside.
+ * - `chip` (default): circular status-coloured chip with an image inside, for
+ *   places and events (POIs, fill-ups, violations).
  * - `arrow`: plain directional glyph shown at full size, for navigation-style
  *   cursors that must not be clipped by the chip's circular mask.
+ * - `vehicle`: a live vehicle. The status is the fill colour and the glyph says
+ *   what it is doing: an arrow pointing the way it drives, a pause mark while
+ *   idling, "!" on an alert. The plate shows underneath at street zoom. The
+ *   photo lives in the popup, where it is big enough to recognise.
  */
-export type VehicleMarkerVariant = 'chip' | 'arrow';
+export type VehicleMarkerVariant = 'chip' | 'arrow' | 'vehicle';
+
+/** The parts of a `vehicle` marker that change after it is built. */
+interface VehicleMarkerParts {
+  root: HTMLElement;
+  arrow: SVGElement;
+  plate: HTMLElement;
+  speed: HTMLElement;
+}
+
+/** Heading of a `vehicle` marker: where it is turning to, where it points now, and when that was drawn. */
+interface MarkerHeading {
+  target: number;
+  shown: number;
+  at: number;
+}
+
+const VEHICLE_MARKER_HTML = `
+  <div class="vm" role="button" tabindex="0">
+    <span class="vm-disc">
+      <svg class="vm-glyph vm-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6 18.6 19.4 12 15.7 5.4 19.4Z"/></svg>
+      <svg class="vm-glyph vm-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="7.2" y="6.5" width="3.4" height="11" rx="1.2"/><rect x="13.4" y="6.5" width="3.4" height="11" rx="1.2"/></svg>
+      <svg class="vm-glyph vm-alert" viewBox="0 0 24 24" aria-hidden="true"><rect x="10.4" y="5" width="3.2" height="9.6" rx="1.6"/><circle cx="12" cy="18.2" r="1.9"/></svg>
+      <svg class="vm-glyph vm-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="7.3" y="7.3" width="9.4" height="9.4" rx="2.2"/></svg>
+      <span class="vm-glyph vm-dot" aria-hidden="true"></span>
+    </span>
+    <span class="vm-badge" aria-hidden="true">!</span>
+    <span class="vm-label" aria-hidden="true"><span class="vm-plate"></span><span class="vm-speed"></span></span>
+  </div>`;
 export interface TrackedVehicle {
   id: string; model: string; driver: string; status: VehicleStatus; speed: number;
   fuel: number; location: string; updated: string; lat: number; lng: number;
@@ -54,6 +87,11 @@ export interface TrackedVehicle {
   heading?: number | null;
   /** Pulses the marker halo while the record is live. */
   live?: boolean;
+  /**
+   * Unread violations. Alert sits on top of the movement status rather than replacing it, so a
+   * `vehicle` marker keeps its status colour and gains a red "!" badge.
+   */
+  alert?: boolean;
   /** Marker shape; defaults to the circular `chip`. */
   variant?: VehicleMarkerVariant;
   /** Device clock (ms) of the latest fix; paces `smoothTracking` playback. */
@@ -129,7 +167,11 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private readonly mapElement = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly fullscreenUi = inject(FullscreenUiService);
   private readonly zone = inject(NgZone);
+  private readonly injector = inject(Injector);
+  /** The selection the centring effect last saw, to tell a new selection from a panel resize. */
+  private lastCenterSelection: string | null = null;
   private map?: MapLibreMap;
+  protected readonly mapRef = signal<MapLibreMap | undefined>(undefined);
   private readonly markers = new Map<string, maplibregl.Marker>();
   private readonly markerVehicles = new Map<string, TrackedVehicle>();
   private readonly markerPopupContent = new Map<string, string>();
@@ -169,6 +211,21 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private routingFrame?: number;
   /** Theme status colours for the current render pass; cleared at the start of each pass. */
   private statusColorCache?: Record<VehicleStatus, string>;
+  // `vehicle` markers: their live parts, their headings, and the once-per-frame
+  // redraw of every arrow when the map turns or tilts under them.
+  private readonly vehicleParts = new Map<string, VehicleMarkerParts>();
+  private readonly headings = new Map<string, MarkerHeading>();
+  private headingFrame?: number;
+  private viewBearing = 0;
+  private plateLabelsShown = false;
+  /** Plates appear under every vehicle from here in; the selected one always shows its plate. */
+  private static readonly PLATE_MIN_ZOOM = 15;
+  /** How quickly an arrow swings round to a new heading (ms to cover about 63% of the turn). */
+  private static readonly HEADING_EASE_MS = 160;
+  /** A non-smooth marker only takes a heading from its own movement once it has moved this far. */
+  private static readonly HEADING_MIN_METRES = 4;
+  /** Selecting a vehicle keeps a closer zoom the user chose, up to this street-level one. */
+  private static readonly FOCUS_MAX_ZOOM = 17;
   /** Selection/fullscreen/popup-builder state the markers were last rendered with. */
   private renderedContext: string | null = null;
   private renderedPopupTemplate: ((vehicle: TrackedVehicle) => string) | null = null;
@@ -213,13 +270,18 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       // while the map was still null, so that centre-on-select never ran.
       if (!this.map || key === this.lastCenterKey) return;
       this.lastCenterKey = key;
+      const selectionChanged = selectedId !== this.lastCenterSelection;
+      this.lastCenterSelection = selectedId;
+      // A new selection is flown to by the follow effect below, panel inset included. Moving
+      // here as well started a second camera move that cut the flight off mid-way.
+      if (selectionChanged && selectedId) return;
       const selected = untracked(() => this.vehicles()).find(({ id }) => id === selectedId);
       this.map.easeTo({
         ...(selected ? { center: [selected.lng, selected.lat] as [number, number] } : {}),
         // Same inset as the follow camera, so both agree on where the marker sits.
         padding: selected ? this.followPadding() : { top: 0, bottom: 0, left: 0, right: padding },
-        duration: 400,
-        easing: (t) => 1 - Math.pow(1 - t, 3),
+        duration: 650,
+        easing: glideEase,
       });
     });
     // Locks the camera onto the selected vehicle (zoom 14, panel-padded) and
@@ -247,7 +309,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       // Smooth markers trail the newest fix by about one packet; the tracker's
       // move hook follows the drawn marker instead (see followMarker).
       if (this.smoothTracking()) return;
-      this.focusVehicle(vehicle);
+      this.followVehicle(vehicle);
     });
     effect(() => {
       const selectedId = this.selectedVehicleId();
@@ -277,15 +339,20 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       if (!marker || !vehicle) return;
       const bearing = this.trailBearing() ?? Number(vehicle.heading);
       if (!Number.isFinite(bearing)) return;
+      if (vehicle.variant === 'vehicle') {
+        // A gliding marker is already steered every frame by the road it is on.
+        if (!this.trackers.has(selectedId)) this.steerHeading(selectedId, bearing, performance.now(), true);
+        return;
+      }
       marker.setRotationAlignment('map');
       marker.setRotation((bearing + 360) % 360);
     });
   }
 
   ngAfterViewInit(): void {
-    this.map = createIotMap(this.mapElement().nativeElement, timezoneCountryCenter(), 4, {
-      maxZoom: 24,
-    });
+    this.map = createIotMap(this.mapElement().nativeElement, timezoneCountryCenter(), 4);
+    this.mapRef.set(this.map);
+    this.bindVehicleView(this.map);
     this.resizeObserver = new ResizeObserver(() => {
       this.map?.resize();
       if (this.initialFitPending && this.vehicles().length)
@@ -333,11 +400,6 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     this.map?.easeTo({ bearing: 0, duration: 500 });
   }
 
-  onRotate(): void {
-    if (!this.map) return;
-    const bearing = this.map.getBearing();
-    this.map.easeTo({ bearing: bearing + 90, duration: 500 });
-  }
 
   onGeolocate(): void {
     if (!this.map || !navigator.geolocation) return;
@@ -396,6 +458,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.trackers.get(id)?.destroy();
       this.trackers.delete(id);
       this.trackedFixKeys.delete(id);
+      this.vehicleParts.delete(id);
+      this.headings.delete(id);
     });
 
     for (const vehicle of visibleVehicles) {
@@ -408,17 +472,35 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         element.addEventListener('click', () => {
           const current = this.markerVehicles.get(vehicle.id);
           if (!current) return;
-          this.focusVehicle(current);
+          const wasSelected = this.selectedVehicleId() === current.id;
           if (this.isFullscreen()) {
             this.fullscreenVehicleClick.emit(current);
           } else {
             this.vehicleSelected.emit(current);
           }
+          // The camera moves once the page has applied the click. A new selection is flown to by
+          // the selection effect, with the details panel already counted; flying from here as well
+          // started two moves that cut each other off. A page that doesn't select vehicles, or a
+          // second click in fullscreen, still brings the vehicle into view.
+          afterNextRender(() => {
+            if (this.selectedVehicleId() === current.id && !wasSelected) return;
+            if (wasSelected && !this.isFullscreen()) return;
+            this.focusVehicle(this.markerVehicles.get(current.id) ?? current);
+          }, { injector: this.injector });
         });
         item = new maplibregl.Marker({ element })
           .setLngLat([vehicle.lng, vehicle.lat])
           .setPopup(popupHtml(this.vehiclePopupHtml(vehicle)))
           .addTo(this.map);
+        if (vehicle.variant === 'vehicle') {
+          this.registerVehicleParts(vehicle.id, element);
+          element.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            element.click();
+          });
+          this.updateVehicleMarker(item, vehicle, selectedId);
+        }
         element.addEventListener('mouseenter', () => {
           if (!item) return;
           // Only one card may be open: a pinned selection popup is closed when
@@ -440,7 +522,15 @@ export class FleetMap implements AfterViewInit, OnDestroy {
         } else {
           const position = item.getLngLat();
           if (position.lng !== vehicle.lng || position.lat !== vehicle.lat) {
+            // Without a glide to steer it, a vehicle marker points along its own last move.
+            if (vehicle.variant === 'vehicle' && !Number.isFinite(Number(vehicle.heading))) {
+              const from = { lat: position.lat, lng: position.lng };
+              const to = { lat: vehicle.lat, lng: vehicle.lng };
+              if (metresBetween(from, to) >= FleetMap.HEADING_MIN_METRES)
+                this.steerHeading(vehicle.id, bearingBetween(from, to), performance.now(), true);
+            }
             item.setLngLat([vehicle.lng, vehicle.lat]);
+            this.drawHeading(vehicle.id);
           }
         }
         const popupContent = this.vehiclePopupHtml(vehicle);
@@ -482,7 +572,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     let track = this.trackers.get(vehicle.id);
     if (!track) {
       const id = vehicle.id;
-      track = new SmoothTrack(this.zone, { move: (pos) => this.placeTrackedMarker(id, pos) });
+      track = new SmoothTrack(this.zone, { move: (pos, heading) => this.placeTrackedMarker(id, pos, heading) });
       const start = marker.getLngLat();
       track.seed({ lat: start.lat, lng: start.lng });
       this.trackers.set(id, track);
@@ -490,11 +580,17 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     track.push({ lat: vehicle.lat, lng: vehicle.lng, t: vehicle.fixTime ?? Number.NaN });
   }
 
-  /** Per-frame marker update from a tracker. Runs outside Angular. */
-  private placeTrackedMarker(id: string, pos: TrackPoint): void {
+  /**
+   * Per-frame marker update from a tracker. Runs outside Angular. The heading is
+   * the road edge being driven (null while standing still, when the arrow keeps
+   * pointing the way it last went).
+   */
+  private placeTrackedMarker(id: string, pos: TrackPoint, heading: number | null): void {
     const marker = this.markers.get(id);
     if (!marker || !this.map) return;
     marker.setLngLat([pos.lng, pos.lat]);
+    if (heading !== null && this.vehicleParts.has(id)) this.steerHeading(id, heading);
+    else if (this.pitched()) this.drawHeading(id);
     if (id === this.selectedVehicleId() && !this.followSuspended) this.followMarker(pos);
   }
 
@@ -511,12 +607,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const padding = this.followPadding();
     const targetX = (padding.left! + container.clientWidth - padding.right!) / 2;
     const targetY = container.clientHeight / 2;
+    // Never cut into a selection flight or the user's own drag; follow on once it settles.
+    if (map.isMoving()) return;
     const point = map.project([pos.lng, pos.lat]);
     const driftX = Math.abs(point.x - targetX) / Math.max(1, container.clientWidth);
     const driftY = Math.abs(point.y - targetY) / Math.max(1, container.clientHeight);
     if (driftX < 0.2 && driftY < 0.2) return;
     this.lastFollowPanAt = now;
-    map.easeTo({ center: [pos.lng, pos.lat], padding, duration: 800 });
+    map.easeTo({ center: [pos.lng, pos.lat], padding, duration: 1000, easing: glideEase });
   }
 
   /**
@@ -543,6 +641,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   // Frames the given markers, reserving room for the details panel so a re-fit
   // never parks markers underneath it. Shared by the initial load/resize fit and
   // the filter-driven re-fit in the constructor effect.
+  protected fitAllVehicles(): void {
+    this.fitVehicles(this.vehicles());
+  }
+
   private fitVehicles(vehicles: TrackedVehicle[]): void {
     if (!this.map || !vehicles.length) return;
     const container = this.map.getContainer();
@@ -574,6 +676,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   private createVehicleMarker(vehicle: TrackedVehicle, selectedId: string | null): HTMLElement {
+    // State is written by updateVehicleMarker once the marker exists.
+    if (vehicle.variant === 'vehicle') return markerElement(VEHICLE_MARKER_HTML);
     const selected = vehicle.id === selectedId;
     const color = this.statusColor(vehicle.status);
     const image = this.vehicleImageUrl(vehicle.image);
@@ -603,6 +707,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     vehicle: TrackedVehicle,
     selectedId: string | null,
   ): void {
+    if (vehicle.variant === 'vehicle') {
+      this.updateVehicleBadge(marker, vehicle, vehicle.id === selectedId);
+      return;
+    }
     const element = marker.getElement().querySelector<HTMLElement>('.vehicle-marker');
     if (!element) return;
     const selected = vehicle.id === selectedId;
@@ -635,6 +743,121 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     } else {
       marker.setRotation(0);
     }
+  }
+
+  // ── Vehicle markers ──────────────────────────────────────────
+  // A status-coloured disc. Only the arrow inside turns, so the plate label and
+  // the pause and alert marks always read upright. The arrow is drawn in screen
+  // space: its angle is the heading as it appears on screen, which is the
+  // heading minus the map bearing when flat, and is projected when tilted.
+
+  private registerVehicleParts(id: string, element: HTMLElement): void {
+    const root = element.querySelector<HTMLElement>('.vm');
+    const arrow = element.querySelector<SVGElement>('.vm-arrow');
+    const plate = element.querySelector<HTMLElement>('.vm-plate');
+    const speed = element.querySelector<HTMLElement>('.vm-speed');
+    if (root && arrow && plate && speed) this.vehicleParts.set(id, { root, arrow, plate, speed });
+  }
+
+  private updateVehicleBadge(marker: maplibregl.Marker, vehicle: TrackedVehicle, selected: boolean): void {
+    const parts = this.vehicleParts.get(vehicle.id);
+    if (!parts) return;
+    const heading = Number(vehicle.heading);
+    // A heading from the feed counts only while no glide is steering the marker.
+    if (Number.isFinite(heading) && !this.trackers.has(vehicle.id))
+      this.steerHeading(vehicle.id, heading, performance.now(), !this.headings.has(vehicle.id));
+    const className = `vm vm--${vehicle.status.toLowerCase()}${selected ? ' is-selected' : ''}`
+      + `${this.headings.has(vehicle.id) ? ' has-heading' : ''}${vehicle.alert ? ' has-alert' : ''}`;
+    if (parts.root.className !== className) parts.root.className = className;
+    const color = this.statusColor(vehicle.status);
+    if (parts.root.style.getPropertyValue('--vm-color') !== color) parts.root.style.setProperty('--vm-color', color);
+    if (parts.plate.textContent !== vehicle.id) parts.plate.textContent = vehicle.id;
+    const speed = selected && vehicle.status === 'Moving' && vehicle.speed > 0 ? ` · ${Math.round(vehicle.speed)} km/h` : '';
+    if (parts.speed.textContent !== speed) parts.speed.textContent = speed;
+    const label = `${vehicle.id}, ${vehicle.status.toLowerCase()}${vehicle.alert ? ', has alerts' : ''}`
+      + `${vehicle.speed > 0 ? `, ${Math.round(vehicle.speed)} km/h` : ''}`;
+    if (parts.root.getAttribute('aria-label') !== label) parts.root.setAttribute('aria-label', label);
+    // The selected vehicle and alerts sit above their neighbours.
+    const layer = selected ? '3' : vehicle.alert || vehicle.status === 'Alert' ? '2' : '';
+    const wrapper = marker.getElement();
+    if (wrapper.style.zIndex !== layer) wrapper.style.zIndex = layer;
+  }
+
+  /**
+   * Turn a vehicle's arrow towards `bearing`. Per-frame callers (the glide) ease
+   * it round so a corner reads as a turn, not a snap; `immediate` sets it outright.
+   */
+  private steerHeading(id: string, bearing: number, now = performance.now(), immediate = false): void {
+    const current = this.headings.get(id);
+    if (!current || immediate) {
+      this.headings.set(id, { target: bearing, shown: bearing, at: now });
+      this.vehicleParts.get(id)?.root.classList.add('has-heading');
+    } else {
+      const elapsed = Math.min(100, Math.max(0, now - current.at));
+      const turn = ((bearing - current.shown + 540) % 360) - 180;
+      current.target = bearing;
+      current.shown += turn * (1 - Math.exp(-elapsed / FleetMap.HEADING_EASE_MS));
+      current.at = now;
+    }
+    this.drawHeading(id);
+  }
+
+  private drawHeading(id: string): void {
+    const heading = this.headings.get(id);
+    const parts = this.vehicleParts.get(id);
+    const marker = this.markers.get(id);
+    if (!heading || !parts || !marker || !this.map) return;
+    const angle = this.screenAngle(marker.getLngLat(), heading.shown);
+    parts.arrow.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+  }
+
+  /** On-screen angle of a compass bearing at a point: exact under any rotation and tilt. */
+  private screenAngle(at: maplibregl.LngLat, bearing: number): number {
+    const map = this.map!;
+    if (!this.pitched()) return bearing - map.getBearing();
+    const radians = (bearing * Math.PI) / 180;
+    const step = 1e-4;
+    const from = map.project(at);
+    const to = map.project([
+      at.lng + (Math.sin(radians) * step) / Math.cos((at.lat * Math.PI) / 180),
+      at.lat + Math.cos(radians) * step,
+    ]);
+    return (Math.atan2(to.x - from.x, from.y - to.y) * 180) / Math.PI;
+  }
+
+  private pitched(): boolean {
+    return (this.map?.getPitch() ?? 0) >= 1;
+  }
+
+  /** Redraws every arrow once a frame while the map turns or tilts, and shows plates from street zoom. */
+  private bindVehicleView(map: MapLibreMap): void {
+    this.zone.runOutsideAngular(() => {
+      map.on('move', () => {
+        const bearing = map.getBearing();
+        // Flat and unrotated, a pan or zoom leaves every arrow's screen angle unchanged.
+        if (bearing !== this.viewBearing || this.pitched()) {
+          this.viewBearing = bearing;
+          this.queueHeadingRedraw();
+        }
+      });
+      map.on('zoom', () => this.syncPlateLabels());
+      map.once('load', () => this.syncPlateLabels());
+    });
+  }
+
+  private queueHeadingRedraw(): void {
+    if (this.headingFrame !== undefined || !this.headings.size) return;
+    this.headingFrame = requestAnimationFrame(() => {
+      this.headingFrame = undefined;
+      this.headings.forEach((_, id) => this.drawHeading(id));
+    });
+  }
+
+  private syncPlateLabels(): void {
+    const show = (this.map?.getZoom() ?? 0) >= FleetMap.PLATE_MIN_ZOOM;
+    if (show === this.plateLabelsShown) return;
+    this.plateLabelsShown = show;
+    this.mapElement().nativeElement.classList.toggle('vm-plates', show);
   }
 
   private vehiclePopupHtml(vehicle: TrackedVehicle): string {
@@ -734,7 +957,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   private recomputeClusters(): void {
-    if (!this.map?.isStyleLoaded() || !this.clusterEnabled) return;
+    // Grouping only needs screen positions, which the camera gives at any time. Waiting for
+    // isStyleLoaded() skipped every pass made while tiles were loading, so a jump or zoom that
+    // ended mid-load left the old clusters on screen until the map was moved again.
+    if (!this.map || !this.clusterEnabled) return;
     if (this.map.getZoom() >= this.map.getMaxZoom() - 0.01) {
       this.clusteredPairs.clear();
       this.clearClusterBadges();
@@ -809,7 +1035,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       members.push(vehicle);
       membersByRoot.set(root, members);
     });
-    const statusById = new Map(visibleVehicles.map(({ id, status }) => [id, status]));
+    // An alert badge outranks every status, so a group holding one shows the alert colour.
+    const statusById = new Map(
+      visibleVehicles.map(({ id, status, alert }) => [id, alert ? 'Alert' as const : status]),
+    );
     const groups: ClusterGroup[] = [...membersByRoot.values()].map((members) => {
       const ids = members.map(({ id }) => id).sort();
       const lng = members.reduce((sum, vehicle) => sum + vehicle.lng, 0) / members.length;
@@ -918,7 +1147,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   private statusCounts(ids: string[], statusById: ReadonlyMap<string, VehicleStatus>): Record<VehicleStatus, number> {
-    const counts: Record<VehicleStatus, number> = { Moving: 0, Idling: 0, Alert: 0, Offline: 0 };
+    const counts: Record<VehicleStatus, number> = { Moving: 0, Idling: 0, Stopped: 0, Alert: 0, Offline: 0 };
     for (const id of ids) counts[statusById.get(id) ?? 'Offline'] += 1;
     return counts;
   }
@@ -949,7 +1178,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   // Highest-severity status among the grouped vehicles → badge halo color:
   // Alert > Moving (online) > Idling > Offline.
   private badgeColor(ids: string[], statusById: ReadonlyMap<string, VehicleStatus>): string {
-    const rank: Record<string, number> = { Alert: 3, Moving: 2, Idling: 1, Offline: 0 };
+    const rank: Record<string, number> = { Alert: 4, Moving: 3, Idling: 2, Stopped: 1, Offline: 0 };
     let best = 'Offline';
     for (const id of ids) {
       const status = statusById.get(id) ?? 'Offline';
@@ -1242,15 +1471,64 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     });
   }
 
+  /** Brings a vehicle into view and opens its card. */
   private focusVehicle(vehicle: TrackedVehicle): void {
     if (!this.map) return;
-    this.map.flyTo({
-      center: [vehicle.lng, vehicle.lat],
-      zoom: this.followZoom(),
-      duration: 1200,
-      essential: true,
-      padding: this.followPadding(),
-    });
+    this.moveCameraTo(vehicle);
+    this.openVehicleCard(vehicle);
+  }
+
+  /** Keeps the selected vehicle centred as new positions arrive (maps without gliding markers). */
+  private followVehicle(vehicle: TrackedVehicle): void {
+    if (!this.map) return;
+    // A flight still landing, or the user dragging, wins; the next position catches up.
+    if (!this.map.isMoving()) {
+      this.map.easeTo({
+        center: [vehicle.lng, vehicle.lat],
+        padding: this.followPadding(),
+        duration: 900,
+        easing: glideEase,
+      });
+    }
+    this.openVehicleCard(vehicle);
+  }
+
+  /**
+   * One camera move to a vehicle, sized to the trip:
+   * - Already on screen and about the right zoom: a glide of 0.8–1.15 s, longer the further it
+   *   travels, with no zooming out and back in.
+   * - Anywhere else: an arc out and back in over 1.4–2.2 s, longer for longer trips but never
+   *   dragging.
+   * A closer zoom the user chose is kept (up to street level); otherwise the camera comes in to
+   * `followZoom`. Not marked essential, so with the OS set to reduce motion it jumps instead.
+   * Any drag or scroll stops it at once.
+   */
+  private moveCameraTo(vehicle: TrackedVehicle): void {
+    const map = this.map!;
+    const center: [number, number] = [vehicle.lng, vehicle.lat];
+    const padding = this.followPadding();
+    const currentZoom = map.getZoom();
+    const zoom = currentZoom > this.followZoom()
+      ? Math.min(currentZoom, FleetMap.FOCUS_MAX_ZOOM)
+      : this.followZoom();
+    const zoomChange = Math.abs(zoom - currentZoom);
+    const container = map.getContainer();
+    const width = Math.max(1, container.clientWidth);
+    const height = Math.max(1, container.clientHeight);
+    const point = map.project(center);
+    const landingX = (padding.left! + width - padding.right!) / 2;
+    const travel = Math.hypot(point.x - landingX, point.y - height / 2);
+    const onScreen = point.x >= 0 && point.x <= width && point.y >= 0 && point.y <= height;
+    if (onScreen && zoomChange < 1.5) {
+      map.easeTo({ center, zoom, padding, duration: Math.round(Math.min(1150, 800 + travel * 0.45)), easing: glideEase });
+      return;
+    }
+    const screens = travel / width;
+    const duration = Math.round(Math.min(2200, 1400 + 280 * Math.log2(1 + screens) + 90 * zoomChange));
+    map.flyTo({ center, zoom, padding, duration, curve: 1.5, easing: flightEase });
+  }
+
+  private openVehicleCard(vehicle: TrackedVehicle): void {
     const marker = this.markers.get(vehicle.id);
     if (this.selectedVehicleId() === vehicle.id) {
       // Selection-driven opens are exclusive; follow ticks never dismiss a
@@ -1286,6 +1564,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.statusColorCache = {
         Moving: css('--color-success', '#10b981'),
         Idling: css('--color-warning', '#f59e0b'),
+        // Engine off and parked: the same slate as Stopped on the dashboard status bar.
+        Stopped: css('--color-stopped', '#94a3b8'),
         Alert: css('--color-danger', '#ef4444'),
         Offline: css('--color-muted', '#64748b'),
       };
@@ -1298,6 +1578,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     this.trackers.clear();
     if (this.clusterSyncFrame !== undefined) cancelAnimationFrame(this.clusterSyncFrame);
     if (this.routingFrame !== undefined) cancelAnimationFrame(this.routingFrame);
+    if (this.headingFrame !== undefined) cancelAnimationFrame(this.headingFrame);
     cancelAnimationFrame(this.trailFrame as number);
     clearTimeout(this.readyFallback);
     this.resizeObserver?.disconnect();
