@@ -43,11 +43,13 @@ img[src$='assets/fleetpoint/def-car.svg'] {
 .maplibregl-ctrl-attrib a {
   color: inherit;
 }
+/* Scale bar: a full outlined chip (MapLibre draws it open at the top, ruler-style). Its width is
+   still the measured distance. */
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl-scale {
   margin: 0 6px 4px 0;
   padding: 0 5px;
   border: 1.5px solid var(--color-muted);
-  border-top: 0;
+  border-radius: 4px;
   background: color-mix(in srgb, white 72%, transparent);
   color: var(--color-muted);
   font: 600 9px/1.6 var(--font-sans);
