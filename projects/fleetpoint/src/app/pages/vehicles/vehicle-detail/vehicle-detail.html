@@ -113,7 +113,7 @@
             </article>
             @if (jobRoutePositions().length) {
               <article class="workspace-group map-panel">
-                <app-trip-replay-map class="job-map" [positions]="jobRoutePositions()" [events]="jobTrailEvents()" />
+                <app-trip-replay-map class="job-map" [vehicleType]="replayVehicleType()" [positions]="jobRoutePositions()" [events]="jobTrailEvents()" />
               </article>
             }
           } @else {
@@ -152,7 +152,7 @@
           </article>
           <article class="workspace-group map-panel">
             <div class="trail-wrap">
-              <app-trip-replay-map class="trail-map" [positions]="tripPositions()" [events]="replayEvents()" [clock]="replayClock" (routeLoadingChange)="routeLoading.set($event)" />
+              <app-trip-replay-map class="trail-map" [vehicleType]="replayVehicleType()" [positions]="tripPositions()" [events]="replayEvents()" [clock]="replayClock" (routeLoadingChange)="routeLoading.set($event)" />
               @if (!tripPositions().length) {
                 <p class="map-empty">{{ trailLoading() ? 'Loading trail…' : 'No trail points for this range' }}</p>
               }

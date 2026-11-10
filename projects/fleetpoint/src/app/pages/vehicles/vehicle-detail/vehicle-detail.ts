@@ -29,6 +29,11 @@ export class VehicleDetail implements OnInit, OnDestroy {
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly record = signal<VehicleDetailRecord | null>(null);
+  /** Type, make and model, for the replay map to pick its 3D body type. */
+  protected readonly replayVehicleType = computed(() => {
+    const record = this.record();
+    return ['vehicle_type', 'make', 'model', 'name'].map((key) => record?.[key]).filter(Boolean).join(' ');
+  });
   protected readonly metrics = signal<VehicleMetric[]>([]);
   protected readonly violations = signal<unknown>(null);
   protected readonly maintenance = signal<unknown>(null);
@@ -361,6 +366,7 @@ export class VehicleDetail implements OnInit, OnDestroy {
       updated: snap.timestamp ? this.formatDateShort(snap.timestamp) : '',
       lat,
       lng,
+      variant: 'vehicle',
     }];
   });
 

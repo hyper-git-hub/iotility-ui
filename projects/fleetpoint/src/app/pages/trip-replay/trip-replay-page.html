@@ -100,6 +100,8 @@
           [positions]="selectedTrip().positions"
           [events]="selectedTrip().events"
           [clock]="clock"
+          [vehicleType]="vehicleDescription()"
+          [speedTrail]="speedTrail()"
           [selectedEventId]="selectedEventId()"
           (ready)="mapLoaded.set(true)"
           (eventSelected)="jumpToEventFromMap($event)"
@@ -145,10 +147,18 @@
           </div>
           <div class="map-legend" aria-hidden="true">
             @for (item of legendItems; track item.label) {
-              <span class="legend-item">
-                <i [style.background]="item.color"></i
-                >{{ item.label }}
-              </span>
+              @if (item.label === 'Travelled' && speedTrail()) {
+                <span class="legend-item legend-speed">
+                  <i class="speed-scale"></i>
+                  <span class="speed-ticks"><b>0</b><b>60</b><b>80</b><b>100</b><b>120+</b></span>
+                  km/h
+                </span>
+              } @else {
+                <span class="legend-item">
+                  <i [style.background]="item.color"></i
+                  >{{ item.label }}
+                </span>
+              }
             }
           </div>
         }
@@ -214,7 +224,7 @@
               type="button"
               class="icon-button"
               aria-label="Restart trip"
-              tooltip="Restart"
+              tooltip="Restart (Home)"
               (click)="stop()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -225,7 +235,7 @@
               type="button"
               class="play-button"
               [attr.aria-label]="playing() ? 'Pause trip' : 'Play trip'"
-              tooltip="{{ playing() ? 'Pause' : 'Play' }}"
+              tooltip="{{ playing() ? 'Pause' : 'Play' }} (Space)"
               (click)="togglePlayback()"
             >
               @if (playing()) {
@@ -248,12 +258,12 @@
           </div>
           <div class="speed-controls" aria-label="Playback speed">
             <span class="speed-indicator" [style.left.%]="speedIndex() * 20"></span>
-            @for (value of speedOptions; track value) {
+            @for (value of speedOptions; track value; let index = $index) {
               <button
                 type="button"
                 [class.active]="speed() === value"
                 [attr.aria-pressed]="speed() === value"
-                tooltip="{{ value }}× real time"
+                tooltip="{{ value }}× real time ({{ index + 1 }})"
                 (click)="setSpeed(value)"
               >
                 {{ value }}×
@@ -270,6 +280,16 @@
           >
             Skip stops
           </button>
+          <button
+            type="button"
+            class="skip-stops"
+            [class.active]="speedTrail()"
+            [attr.aria-pressed]="speedTrail()"
+            tooltip="Colour the route by speed (C)"
+            (click)="toggleSpeedTrail()"
+          >
+            Speed colours
+          </button>
           <p class="playback-progress">
             <strong>{{ pointNumber() }}</strong> / {{ selectedTrip().positions.length }} points ·
             {{ progress() | number: '1.0-0' }}%
@@ -285,7 +305,7 @@
                 </svg>
                 {{ selectedTrip().events.length }}
                 {{ selectedTrip().events.length === 1 ? 'event' : 'events' }}
-                <small>— click markers to jump</small>
+                <small>— click markers or press ← → to jump</small>
               </button>
             }
             @if (selectedTrip().score) {

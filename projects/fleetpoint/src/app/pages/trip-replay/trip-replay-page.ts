@@ -84,6 +84,15 @@ const EMPTY_TRIP: ReplayTrip = {
 };
 // Trip reports don't say how long each sample covers, so idle time assumes this.
 const ASSUMED_SAMPLE_MS = 600;
+const SPEED_TRAIL_KEY = 'fleetpoint.tripReplay.speedTrail';
+
+function readSpeedTrailPreference(): boolean {
+  try {
+    return localStorage.getItem(SPEED_TRAIL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 interface TimelineHover {
   /** Where the pointer is along the timeline, as a percentage. */
@@ -109,6 +118,7 @@ interface TimelineHover {
   templateUrl: './trip-replay-page.html',
   styleUrl: './trip-replay-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown)': 'onKeydown($event)' },
 })
 export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly clock = new ReplayClock(inject(NgZone));
@@ -118,6 +128,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly speed = signal(this.clock.speedSetting);
   protected readonly speedIndex = computed(() => REPLAY_SPEEDS.indexOf(this.speed()));
   protected readonly skipStops = signal(true);
+  /** Route coloured by speed instead of the brand colour; remembered between visits. */
+  protected readonly speedTrail = signal(readSpeedTrailPreference());
   protected readonly timelineHover = signal<TimelineHover | null>(null);
   protected readonly search = signal('');
   protected readonly vehicles = signal<RealtimeVehicleRecord[]>([]);
@@ -155,6 +167,11 @@ export class TripReplayPage implements OnInit, OnDestroy {
     );
   });
   protected readonly selectedTrip = computed(() => this.trip());
+  /** What the replay map picks its 3D body type from. */
+  protected readonly vehicleDescription = computed(() => {
+    const vehicle = this.vehicle();
+    return [vehicle?.vehicle_type, vehicle?.name, vehicle?.vehicle_device_type].filter(Boolean).join(' ');
+  });
   protected readonly stopEvents = computed(() => this.trip().events.filter((e) => e.type === 'stop'));
   // Tab counts: violations/dashcam alerts live under Events (stops have their
   // own tab), so the badge must mirror exactly what each list renders.
@@ -387,6 +404,68 @@ export class TripReplayPage implements OnInit, OnDestroy {
   }
   protected toggleSkipStops(): void {
     this.skipStops.update((skip) => !skip);
+  }
+  protected toggleSpeedTrail(): void {
+    const next = !this.speedTrail();
+    this.speedTrail.set(next);
+    try {
+      localStorage.setItem(SPEED_TRAIL_KEY, next ? '1' : '0');
+    } catch {
+      // Private browsing or blocked storage: the choice lasts for this visit only.
+    }
+  }
+
+  /**
+   * Keyboard control, as video players do: Space plays and pauses, ← → jump between events
+   * (or 5% of the trip when it has none), 1–5 pick the speed, Home restarts, C toggles speed
+   * colours. Ignored while typing or when a modifier is held, and Space is left to buttons.
+   */
+  protected onKeydown(event: KeyboardEvent): void {
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+    if (!this.trip().positions.length || this.loading() || this.trailLoading()) return;
+    const onControl = !!target?.closest('button, a, [role="button"]');
+    switch (event.key) {
+      case ' ':
+        if (onControl) return;
+        this.togglePlayback();
+        break;
+      case 'ArrowRight':
+      case 'ArrowLeft':
+        this.stepThroughTrip(event.key === 'ArrowRight' ? 1 : -1);
+        break;
+      case 'Home':
+        this.stop();
+        break;
+      case 'c':
+      case 'C':
+        this.toggleSpeedTrail();
+        break;
+      default: {
+        const speed = REPLAY_SPEEDS[Number(event.key) - 1];
+        if (!/^[1-5]$/.test(event.key) || speed === undefined) return;
+        this.setSpeed(speed);
+      }
+    }
+    event.preventDefault();
+  }
+
+  /** The next or previous event from the playhead; a 5% step through the trip when it has none. */
+  private stepThroughTrip(direction: 1 | -1): void {
+    const index = this.positionIndex();
+    const events = [...this.trip().events].sort((a, b) => a.positionIndex - b.positionIndex);
+    const next = direction > 0
+      ? events.find((event) => event.positionIndex > index)
+      : events.reverse().find((event) => event.positionIndex < index);
+    if (next) {
+      this.jumpToEvent(next);
+      return;
+    }
+    if (events.length) return;
+    const fraction = this.clock.fractionAtIndex(index) + direction * 0.05;
+    this.clock.halt();
+    this.clock.seekToFraction(Math.max(0, Math.min(1, fraction)));
   }
   // Shows when and where the trip is at any point along the timeline.
   protected previewTimeline(event: PointerEvent): void {

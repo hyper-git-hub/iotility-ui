@@ -305,6 +305,35 @@
   height: 10px;
   border-radius: 999px;
 }
+/* Speed colours: the same ramp the route is painted with, labelled at its stops. */
+.legend-speed {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  row-gap: 1px;
+  align-items: center;
+}
+.legend-item .speed-scale {
+  grid-row: 1;
+  width: 104px;
+  height: 6px;
+  border-radius: 999px;
+  /* Matches SPEED_COLOR_STOPS in trip-replay-map.ts, laid out evenly by stop. */
+  background: linear-gradient(90deg, rgb(16 185 129) 0%, rgb(34 197 94) 25%, rgb(245 158 11) 50%, rgb(249 115 22) 75%, rgb(239 68 68) 100%);
+}
+.speed-ticks {
+  grid-row: 2;
+  display: flex;
+  justify-content: space-between;
+  width: 112px;
+  margin-left: -4px;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.speed-ticks b {
+  font-weight: 500;
+}
 :host-context(.dark) .map-legend {
   border-color: var(--color-dark-line);
   background: color-mix(in srgb, var(--color-dark-surface) 95%, transparent);
