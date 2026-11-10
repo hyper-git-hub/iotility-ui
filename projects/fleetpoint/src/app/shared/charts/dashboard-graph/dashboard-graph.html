@@ -99,6 +99,8 @@
     subtitle="Live dashboard analytics"
     [legend]="headerLegend()"
     [height]="380"
+    [loading]="filtering()"
+    [skeleton]="isLine() ? 'line' : 'bar'"
     [empty]="!hasChartData()"
     [emptyMessage]="emptyMessage()"
   >

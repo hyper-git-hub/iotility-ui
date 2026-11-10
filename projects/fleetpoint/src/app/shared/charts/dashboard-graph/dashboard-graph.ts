@@ -17,6 +17,8 @@ import { GraphFilter } from '../graph-filter/graph-filter';
 export interface DashboardGraphFilter {
   ariaLabel: string;
   options: DropdownOption[];
+  /** Option shown as selected before the user picks one (the backend's own default). */
+  defaultId?: string;
 }
 
 const CALENDER: DropdownOption[] = [
@@ -41,11 +43,17 @@ const JOB_CALENDER: DropdownOption[] = [
  * second `order` param, so they are left out until a page needs them.
  */
 export const DASHBOARD_GRAPH_FILTERS: Record<string, DashboardGraphFilter> = {
-  // Aggressively Driven Fleets — Month / Week / Today / Last 6 Months. `six_m` is the six-month value
-  // the fleet API uses for its other period filters (dashboard cards); the legacy app had no 6-month option here.
+  // Aggressively Driven Fleets — drawn from the AGDF graph (one line per fleet over time):
+  // today = hourly, week = Mon–Sun, month = weekly, six_weeks = Wk 1–6. The backend defaults to today.
   ADF: {
     ariaLabel: 'Filter aggressively driven fleets by period',
-    options: [...CALENDER, { id: 'six_m', label: 'Last 6 Months' }],
+    options: [
+      { id: 'today', label: 'Today' },
+      { id: 'week', label: 'Week' },
+      { id: 'month', label: 'Month' },
+      { id: 'six_weeks', label: 'Last 6 Weeks' },
+    ],
+    defaultId: 'today',
   },
   // Driver Safety Scorecard — Month / Week / Today
   DSS: { ariaLabel: 'Filter driver safety scorecard by period', options: CALENDER },
@@ -95,8 +103,12 @@ export class DashboardGraphComponent {
 
   protected readonly graphFilter = computed(() => DASHBOARD_GRAPH_FILTERS[this.graph().code] ?? null);
   protected readonly filterOptions = computed<DropdownOption[]>(() => this.graphFilter()?.options ?? []);
-  protected readonly selectedFilterId = computed(() => this.selections()[this.graph().code] ?? '');
+  protected readonly selectedFilterId = computed(
+    () => this.selections()[this.graph().code] ?? this.graphFilter()?.defaultId ?? '',
+  );
   protected readonly filterAriaLabel = computed(() => this.graphFilter()?.ariaLabel ?? 'Filter');
+  /** True while this graph's filtered data is loading. */
+  protected readonly filtering = computed(() => !!this.api.filteringGraphs()[this.graph().code]);
 
   protected onFilterSelected(option: DropdownOption): void {
     const code = this.graph().code;

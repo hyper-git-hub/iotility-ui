@@ -6,7 +6,10 @@
         @if (initialLoading()) {
           <span class="fleet-heading-skeleton"><ui-skeleton width="11rem" height="0.75rem" radius="0.3rem" /></span>
         } @else {
-          <span>{{ total() | plural: 'fleet' }} · {{ totalVehicles() | plural: 'vehicle' }} on this page</span>
+          <span
+            >{{ total() === null ? '— fleets' : (total()! | plural: 'fleet') }} ·
+            {{ totalVehicles() === null ? '— vehicles' : (totalVehicles()! | plural: 'vehicle') }} on this page</span
+          >
         }
       </p>
     </div>
@@ -17,7 +20,7 @@
 
   <div class="fleet-kpis" [attr.aria-busy]="initialLoading()">
     <!-- Real cards from the start: label and icon stay put, only the value shimmers until it pops in. -->
-    <app-stat-card label="Total Fleets" [value]="total()" tone="neutral" [loading]="initialLoading()"
+    <app-stat-card label="Total Fleets" [value]="total() ?? '—'" tone="neutral" [loading]="initialLoading()"
       ><span
         stat-card-icon
         class="color-icon size-[18px]"
@@ -25,7 +28,7 @@
         aria-hidden="true"
       ></span
     ></app-stat-card>
-    <app-stat-card label="Total Vehicles" [value]="totalVehicles()" tone="neutral" [loading]="initialLoading()"
+    <app-stat-card label="Total Vehicles" [value]="totalVehicles() ?? '—'" tone="neutral" [loading]="initialLoading()"
       ><span
         stat-card-icon
         class="color-icon size-[18px]"
@@ -33,7 +36,7 @@
         aria-hidden="true"
       ></span
     ></app-stat-card>
-    <app-stat-card label="Total Drivers" [value]="totalDrivers()" tone="neutral" [loading]="initialLoading()"
+    <app-stat-card label="Total Drivers" [value]="totalDrivers() ?? '—'" tone="neutral" [loading]="initialLoading()"
       ><span
         stat-card-icon
         class="color-icon size-[18px]"
@@ -145,15 +148,15 @@
         <section class="fleet-card-content">
           <div class="fleet-stats">
             <div>
-              <img src="assets/fleetpoint/sidebar-icons/vehicles.svg" alt="" aria-hidden="true" /><strong>{{ fleet.vehicles }}</strong
+              <img src="assets/fleetpoint/sidebar-icons/vehicles.svg" alt="" aria-hidden="true" /><strong>{{ fleet.vehicles ?? '—' }}</strong
               ><small>Vehicles</small>
             </div>
             <div>
-              <img src="assets/fleetpoint/sidebar-icons/drivers.svg" alt="" aria-hidden="true" /><strong>{{ fleet.drivers }}</strong
+              <img src="assets/fleetpoint/sidebar-icons/drivers.svg" alt="" aria-hidden="true" /><strong>{{ fleet.drivers ?? '—' }}</strong
               ><small>Drivers</small>
             </div>
             <div>
-              <img src="assets/fleetpoint/sidebar-icons/live-tracking.svg" alt="" aria-hidden="true" /><strong>{{ fleet.activeVehicles }}</strong
+              <img src="assets/fleetpoint/sidebar-icons/live-tracking.svg" alt="" aria-hidden="true" /><strong>{{ fleet.activeVehicles ?? '—' }}</strong
               ><small>Active</small>
             </div>
             <div>
@@ -162,9 +165,9 @@
             </div>
           </div>
           <div class="score-list">
-            <div><span>Safety Score</span><i><b [class]="fleet.safetyScore >= 85 ? 'score-high' : fleet.safetyScore >= 70 ? 'score-medium' : 'score-low'" [style.width.%]="fleet.safetyScore"></b></i><strong>{{ fleet.safetyScore }}%</strong></div>
-            <div><span>Fuel Efficiency</span><i><b [class]="fleet.fuelEfficiency >= 85 ? 'score-high' : fleet.fuelEfficiency >= 70 ? 'score-medium' : 'score-low'" [style.width.%]="fleet.fuelEfficiency"></b></i><strong>{{ fleet.fuelEfficiency }}%</strong></div>
-            <div><span>Utilisation</span><i><b [class]="fleet.utilisation >= 85 ? 'score-high' : fleet.utilisation >= 70 ? 'score-medium' : 'score-low'" [style.width.%]="fleet.utilisation"></b></i><strong>{{ fleet.utilisation }}%</strong></div>
+            <div><span>Safety Score</span><i><b [class]="scoreClass(fleet.safetyScore)" [style.width.%]="fleet.safetyScore ?? 0"></b></i><strong>{{ fleet.safetyScore === null ? '—' : fleet.safetyScore + '%' }}</strong></div>
+            <div><span>Fuel Efficiency</span><i><b [class]="scoreClass(fleet.fuelEfficiency)" [style.width.%]="fleet.fuelEfficiency ?? 0"></b></i><strong>{{ fleet.fuelEfficiency === null ? '—' : fleet.fuelEfficiency + '%' }}</strong></div>
+            <div><span>Utilisation</span><i><b [class]="scoreClass(fleet.utilisation)" [style.width.%]="fleet.utilisation ?? 0"></b></i><strong>{{ fleet.utilisation === null ? '—' : fleet.utilisation + '%' }}</strong></div>
           </div>
           <div class="fleet-location">
             <span

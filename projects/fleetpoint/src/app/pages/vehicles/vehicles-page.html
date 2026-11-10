@@ -43,29 +43,28 @@
         ><small>{{ total() | plural: 'vehicle' }}</small>
       </div>
       <div class="status-bar">
-        @if (moving() > 0) {
+        @if ((moving() ?? 0) > 0) {
           <i class="moving" [style.flex-grow]="moving()"></i>
         }
-        @if (idling() > 0) {
+        @if ((idling() ?? 0) > 0) {
           <i class="idling" [style.flex-grow]="idling()"></i>
         }
-        @if (stopped() > 0) {
+        @if ((stopped() ?? 0) > 0) {
           <i class="stopped" [style.flex-grow]="stopped()"></i>
         }
-        @if (alerts() > 0) {
-          <i class="alert" [style.flex-grow]="alerts()"></i>
-        }
-        @if (offline() > 0) {
+        <!-- No Alert segment: an alert vehicle is also moving, idling, stopped or offline, so
+             it is already in the bar. The four states add up to the total. -->
+        @if ((offline() ?? 0) > 0) {
           <i class="offline" [style.flex-grow]="offline()"></i>
         }
       </div>
       <div class="status-filter-row">
         <div class="status-pills">
-          <span class="moving"><i></i>Moving {{ moving() }}</span>
-          <span class="idling"><i></i>Idling {{ idling() }}</span>
-          <span class="stopped"><i></i>Stopped {{ stopped() }}</span>
-          <span class="alert"><i></i>Alert {{ alerts() }}</span>
-          <span class="offline"><i></i>Offline {{ offline() }}</span>
+          <span class="moving"><i></i>Moving {{ moving() ?? '—' }}</span>
+          <span class="idling"><i></i>Idling {{ idling() ?? '—' }}</span>
+          <span class="stopped"><i></i>Stopped {{ stopped() ?? '—' }}</span>
+          <span class="alert"><i></i>Alert {{ alerts() ?? '—' }}</span>
+          <span class="offline"><i></i>Offline {{ offline() ?? '—' }}</span>
         </div>
         <span class="vehicle-filter-separator" aria-hidden="true"></span>
         <div class="fleet-filter-chips" aria-label="Filter vehicles by fleet">

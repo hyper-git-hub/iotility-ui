@@ -5,6 +5,8 @@ import { environment } from '../../../environments/environment';
 
 const FLEET_API = `${environment.fleetBaseUrl}/api`;
 const DASHBOARD_ID = 'MD';
+/** The Safety tab widget that shows the AGDF graph (it keeps its ADF code for layout and settings). */
+export const AGGRESSIVE_FLEETS_WIDGET = 'ADF';
 
 export interface ApiResponse<T> {
   status: number;
@@ -30,6 +32,24 @@ export function withoutEmptyCards<T>(): OperatorFunction<ApiResponse<(T | null)[
     ...response,
     data: (Array.isArray(response?.data) ? response.data : []).filter((card): card is T => card != null),
   }));
+}
+
+/**
+ * The LFS payload, whether `data` is the card itself or a list of cards holding it.
+ * Null when there is nothing usable, so the card shows dashes.
+ */
+function liveFleetStatusFrom(data: unknown): LiveFleetStatus | null {
+  const asStatus = (value: unknown): LiveFleetStatus | null => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const candidate = value as Partial<LiveFleetStatus> & { data?: unknown };
+    if (Array.isArray(candidate.categories) && Array.isArray(candidate.values)) return candidate as LiveFleetStatus;
+    return candidate.data !== undefined ? asStatus(candidate.data) : null;
+  };
+  if (Array.isArray(data)) {
+    const card = data.find((item) => item?.code === 'LFS') ?? data[0];
+    return asStatus(card);
+  }
+  return asStatus(data);
 }
 
 export interface GraphSeries { name: string; data: number[]; }
@@ -69,6 +89,19 @@ export interface DashboardAnalytics {
   graphs: DashboardGraph[];
   cards: DashboardCard<number | string | DashboardGraphData | null>[];
 }
+
+/**
+ * Live Fleet Status (LFS). `categories` is ["Total Vehicles", "Moving", "Idling", "Stopped",
+ * "Alert", "Offline"] with `values` in the same order. Moving + Idling + Stopped + Offline make
+ * up `total`; Alert overlaps them (a moving vehicle with an unread violation is in both).
+ */
+export interface LiveFleetStatus {
+  categories: string[];
+  values: Array<number | string | null>;
+  total?: number | null;
+}
+
+const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 export interface Vehicle {
   id: number;
@@ -112,13 +145,17 @@ export class FleetDashboardApiService {
   private readonly graphFilterOverrides = signal<Record<string, DashboardGraphData | DashboardGraphRow[]>>({});
   /** Graph codes with an in-flight filter request, so cards can show a loader. */
   private readonly graphFilterLoading = signal<Record<string, boolean>>({});
-  readonly graphs = computed(() => {
+  readonly graphs = computed(() => this.withFilters(this.graphCache()));
+
+  /** Puts each graph's filtered data in place (also used for placeholder graphs before a load). */
+  withFilters(graphs: DashboardGraph[]): DashboardGraph[] {
     const overrides = this.graphFilterOverrides();
-    if (!Object.keys(overrides).length) return this.graphCache();
-    return this.graphCache().map((graph) =>
-      overrides[graph.code] === undefined ? graph : { ...graph, data: overrides[graph.code] },
-    );
-  });
+    return graphs.map((graph) => {
+      if (overrides[graph.code] !== undefined) return { ...graph, data: overrides[graph.code] };
+      // This widget only ever shows the AGDF data, never the older per-fleet totals.
+      return graph.code === AGGRESSIVE_FLEETS_WIDGET ? { ...graph, data: null } : graph;
+    });
+  }
   readonly filteringGraphs = this.graphFilterLoading.asReadonly();
 
   constructor(private readonly http: HttpClient) {}
@@ -149,6 +186,19 @@ export class FleetDashboardApiService {
     });
   }
 
+  /** Today's Live Fleet Status card, in the user's time zone. */
+  getLiveFleetStatus(): Observable<LiveFleetStatus | null> {
+    return this.http
+      .get<ApiResponse<unknown>>(`${FLEET_API}/dashboard/cards`, {
+        params: new HttpParams()
+          .set('dashboard_id', DASHBOARD_ID)
+          .set('analytics_id', 'LFS')
+          .set('filter', 'today')
+          .set('time_zone', timeZone()),
+      })
+      .pipe(map((response) => (response?.status === 1000 ? liveFleetStatusFrom(response.data) : null)));
+  }
+
   getGraphs(): Observable<ApiResponse<DashboardAnalytics>> {
     return this.http.get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
       params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
@@ -176,6 +226,10 @@ export class FleetDashboardApiService {
    */
   applyGraphFilter(code: string, filterBy: string | null): void {
     this.graphFilterLoading.update((state) => ({ ...state, [code]: true }));
+    if (code === AGGRESSIVE_FLEETS_WIDGET) {
+      this.loadAggressiveFleets(filterBy || 'today');
+      return;
+    }
     if (!filterBy) {
       this.patchFilter(code, null);
       return;
@@ -189,6 +243,33 @@ export class FleetDashboardApiService {
       },
       error: () => this.patchFilter(code, null),
     });
+  }
+
+  /**
+   * The Aggressively Driven Fleets widget shows the AGDF graph: time points along the x-axis and
+   * one line per fleet. Only this data is shown; when it is missing or fails the widget shows its
+   * empty state instead of the older per-fleet ADF totals.
+   */
+  private loadAggressiveFleets(filterBy: string): void {
+    const empty: DashboardGraphData = { categories: [], series: [] };
+    this.http
+      .get<ApiResponse<DashboardGraph[] | DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs`, {
+        params: new HttpParams()
+          .set('dashboard_id', DASHBOARD_ID)
+          .set('analytics_id', 'AGDF')
+          .set('filter_by', filterBy)
+          .set('time_zone', timeZone()),
+      })
+      .subscribe({
+        next: (response) => {
+          const payload = response?.data;
+          const graphs = Array.isArray(payload) ? payload : (payload?.graphs ?? []);
+          const graph = graphs.find((item) => item?.code === 'AGDF') ?? graphs[0];
+          const data = graph?.data && !Array.isArray(graph.data) ? graph.data : empty;
+          this.patchFilter(AGGRESSIVE_FLEETS_WIDGET, data);
+        },
+        error: () => this.patchFilter(AGGRESSIVE_FLEETS_WIDGET, empty),
+      });
   }
 
   private patchFilter(code: string, data: DashboardGraphData | DashboardGraphRow[] | null): void {

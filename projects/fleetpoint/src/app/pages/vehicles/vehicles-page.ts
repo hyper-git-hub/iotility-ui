@@ -1,5 +1,5 @@
 import { PluralPipe } from '@iotility/shared-ui';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { BlockingLoader, DataTable, DataTableSkeleton, DropdownOption, FilterBar, FilterChangeEvent, FilterDropdown, Skeleton, SmoothHeight, StatusBadge, TableAction, TableColumn, TableRow } from '@iotility/shared-ui';
 import { finalize, forkJoin } from 'rxjs';
@@ -9,11 +9,17 @@ import {
   VehicleInventoryApiService,
   VehicleInventoryFilters,
   VehicleInventoryRecord,
+  VehicleReference,
+  VehicleStatusCounts,
 } from '../../shared/services/vehicle-inventory-api.service';
+
+/** Registrations listed in full on an attention chip before the rest collapse into "+N more". */
+const ATTENTION_REGISTRATIONS_SHOWN = 8;
 import { FleetInventoryApiService, FleetInventoryRecord } from '../../shared/services/fleet-inventory-api.service';
 import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { VehicleForm, VehicleFormValue } from './vehicle-form/vehicle-form';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
+import { NotificationService } from '../../shared/services/notification.service';
 
 @Component({
   selector: 'app-vehicles-page',
@@ -34,6 +40,14 @@ export class VehiclesPage implements OnInit {
   protected readonly selectedVehicle = signal<VehicleInventoryRecord | null>(null);
   protected readonly total = signal(0);
   protected readonly records = signal<VehicleInventoryRecord[]>([]);
+  // Fleet-wide figures from the API, covering every vehicle the filters match rather than
+  // only the page on screen. Null until a response carries them.
+  private readonly statusCounts = signal<VehicleStatusCounts | null>(null);
+  private readonly alertVehicles = signal<VehicleReference[] | null>(null);
+  private readonly offlineVehicles = signal<VehicleReference[] | null>(null);
+  private readonly alertVehicleIds = computed(
+    () => new Set((this.alertVehicles() ?? []).map((vehicle) => vehicle.id)),
+  );
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
   protected readonly fleetChips = computed(() =>
     this.fleetRecords()
@@ -122,32 +136,29 @@ export class VehiclesPage implements OnInit {
     driver: vehicle.vehicle_driver_name || '—',
     location: vehicle.location || '—',
     speed: vehicle.speed == null ? '—' : `${Number(vehicle.speed).toFixed(1)} km/h`,
-    fuel: '—',
+    fuel: this.fuelPercent(vehicle.fuel_level),
     odometer: vehicle.odo_reading == null ? '—' : `${Number(vehicle.odo_reading).toLocaleString()} km`,
     mot: vehicle.expiry_date || '—',
-    alerts:
-      vehicle.live_status?.toLowerCase() === 'alert' || (vehicle.total_violations ?? 0) > 0,
+    // '—' when the API sent no alert list, so an unknown isn't shown as all clear.
+    alerts: this.alertVehicles() === null ? '—' : this.alertVehicleIds().has(vehicle.id),
     actions: '',
   })));
-  protected readonly moving = computed(() => this.statusCount('Moving'));
-  protected readonly idling = computed(() => this.statusCount('Idling'));
-  protected readonly stopped = computed(() => this.statusCount('Stopped'));
-  protected readonly alerts = computed(() => this.statusCount('Alert'));
-  protected readonly offline = computed(() => this.statusCount('Offline'));
+  // Straight from `status_counts`; null (shown as '—') when the API leaves it out.
+  protected readonly moving = computed(() => this.statusTotal('moving'));
+  protected readonly idling = computed(() => this.statusTotal('idling'));
+  protected readonly stopped = computed(() => this.statusTotal('stopped'));
+  protected readonly alerts = computed(() => this.statusTotal('alert'));
+  protected readonly offline = computed(() => this.statusTotal('offline'));
   protected readonly attentionItems = computed(() => {
-    const activeAlerts = this.records().filter(
-      (vehicle) => vehicle.live_status?.toLowerCase() === 'alert',
-    );
-    const offline = this.records().filter((vehicle) => !vehicle.online_status);
+    // Only the API's lists; a list it leaves out is simply not shown.
+    const activeAlerts = this.alertVehicles() ?? [];
+    const offline = this.offlineVehicles() ?? [];
     return [
       { label: 'active alerts', vehicles: activeAlerts, tone: 'danger', icon: '/assets/fleetpoint/sidebar-icons/violations.svg' },
       { label: 'offline', vehicles: offline, tone: 'neutral', icon: '/assets/fleetpoint/sidebar-icons/devices.svg' },
     ]
       .filter((item) => item.vehicles.length > 0)
-      .map((item) => ({
-        ...item,
-        registrations: item.vehicles.map((vehicle) => vehicle.registration || vehicle.name).join(', '),
-      }));
+      .map((item) => ({ ...item, registrations: this.registrationList(item.vehicles) }));
   });
 
   constructor(
@@ -156,7 +167,17 @@ export class VehiclesPage implements OnInit {
     private readonly router: Router,
     private readonly feedback: FeedbackDialogBridgeService,
     protected readonly fleetStatus: FleetStatusService,
-  ) {}
+  ) {
+    // Reading notifications clears every alert on the backend; refresh the counts and lists.
+    const notifications = inject(NotificationService);
+    let seen = notifications.alertsCleared();
+    effect(() => {
+      const cleared = notifications.alertsCleared();
+      if (cleared === seen) return;
+      seen = cleared;
+      untracked(() => this.loadVehicles(false));
+    });
+  }
 
   ngOnInit(): void {
     this.fleetApi.getFleets({ limit: 100, offset: 0, id: '', search: '' }).subscribe({
@@ -185,6 +206,9 @@ export class VehiclesPage implements OnInit {
       next: (response) => {
         this.records.set(response.data?.data ?? []);
         this.total.set(response.data?.count ?? 0);
+        this.statusCounts.set(response.data?.status_counts ?? null);
+        this.alertVehicles.set(Array.isArray(response.data?.alert_vehicles) ? response.data.alert_vehicles : null);
+        this.offlineVehicles.set(Array.isArray(response.data?.offline_vehicles) ? response.data.offline_vehicles : null);
       },
       error: (response) => {
         const message = response.error?.message || 'Vehicle inventory could not be loaded.';
@@ -306,12 +330,30 @@ export class VehiclesPage implements OnInit {
       : 'assets/fleetpoint/def-car.svg';
   }
 
+  /** The API sends `moving`, `idling`…; the table shows `Moving`, `Idling`… as the design does. */
   private vehicleStatus(vehicle: VehicleInventoryRecord): string {
-    return vehicle.live_status?.trim() || '—';
+    const status = vehicle.live_status?.trim();
+    return status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : '—';
   }
 
-  private statusCount(status: string): number {
-    return this.records().filter((vehicle) => this.vehicleStatus(vehicle) === status).length;
+  /** Fleet-wide count from `status_counts`, or null when the API didn't send it. */
+  private statusTotal(status: keyof Omit<VehicleStatusCounts, 'total'>): number | null {
+    const value = this.statusCounts()?.[status];
+    return value === null || value === undefined || !Number.isFinite(Number(value)) ? null : Number(value);
+  }
+
+  /** Fuel left as a whole percentage for the fuel bar, or '—' without a reading. */
+  private fuelPercent(level: VehicleInventoryRecord['fuel_level']): number | string {
+    if (level === null || level === undefined || level === '') return '—';
+    const value = Number(level);
+    return Number.isFinite(value) ? Math.round(Math.min(100, Math.max(0, value))) : '—';
+  }
+
+  private registrationList(vehicles: VehicleReference[]): string {
+    const names = vehicles.map((vehicle) => vehicle.registration || '—');
+    const shown = names.slice(0, ATTENTION_REGISTRATIONS_SHOWN).join(', ');
+    const hidden = names.length - ATTENTION_REGISTRATIONS_SHOWN;
+    return hidden > 0 ? `${shown} +${hidden} more` : shown;
   }
 
 }

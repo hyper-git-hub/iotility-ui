@@ -17,6 +17,18 @@ import {
 } from './chart-theme';
 
 /**
+ * Default bar thickness: the fewer categories on screen, the more of each slot a bar fills, so
+ * four bars read as solid columns rather than thin sticks in a wide card. Bars grouped side by
+ * side share their category's width.
+ */
+function autoBarWidth(visibleCategories: number, barsPerCategory: number): number {
+  const perCategory =
+    visibleCategories <= 2 ? 84 : visibleCategories <= 4 ? 68 : visibleCategories <= 6 ? 52 : visibleCategories <= 8 ? 38 : 26;
+  if (barsPerCategory <= 1) return perCategory;
+  return Math.max(14, Math.round((perCategory * 1.3) / barsPerCategory));
+}
+
+/**
  * Rounded gradient bars: vertical or horizontal, grouped or stacked, with a staggered grow-in.
  * Past `maxVisible` categories the chart shows a window of them with a slim scrollbar
  * (arrows, draggable thumb, "1–12 of N"), so large datasets stay readable.
@@ -137,7 +149,7 @@ export class BarChart {
             name: item.name,
             type: 'bar',
             stack: stacked ? 'total' : undefined,
-            barMaxWidth: this.barMaxWidth() ?? (visible <= 4 ? 44 : visible <= 8 ? 32 : 24),
+            barMaxWidth: this.barMaxWidth() ?? autoBarWidth(visible, stacked ? 1 : series.length),
             barGap: '18%',
             barCategoryGap: '36%',
             showBackground: this.track() && !stacked && series.length === 1,

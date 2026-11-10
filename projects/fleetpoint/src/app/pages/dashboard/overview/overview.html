@@ -12,8 +12,8 @@
     }
   </svg>
 </ng-template>
-<section class="fleet-status-card" aria-label="Live fleet status" [attr.aria-busy]="graphsLoading()">
-  @if (graphsLoading()) {
+<section class="fleet-status-card" aria-label="Live fleet status" [attr.aria-busy]="fleetStatusLoading()">
+  @if (fleetStatusLoading()) {
     <div class="fleet-status-skeleton" aria-hidden="true">
       <header>
         <ui-skeleton variant="text" width="8.5rem" height="0.875rem" radius="0.3rem" />
@@ -31,22 +31,20 @@
   <header class="fleet-status-heading">
     <h2>Live Fleet Status</h2>
   </header>
-  <div class="fleet-status-bar" role="img" [attr.aria-label]="fleetStatusTotal() + ' vehicles by live status'">
-    @for (item of fleetStatusItems(); track item.key) {
-      @if (item.value > 0) {
-        <span [class]="'status-segment ' + item.tone" [style.flex-grow]="item.value"></span>
-      }
+  <div class="fleet-status-bar" role="img" [attr.aria-label]="(fleetStatusTotal() ?? '—') + ' vehicles by live status'">
+    @for (item of fleetStatusSegments(); track item.key) {
+      <span [class]="'status-segment ' + item.tone" [style.flex-grow]="item.value"></span>
     }
   </div>
   <div class="fleet-status-grid">
     @for (item of fleetStatusTiles(); track item.key) {
       <app-stat-card
         [label]="item.label"
-        [value]="item.value"
+        [value]="item.value ?? '—'"
         [tone]="statusCardTone(item.key)"
-        [class.clickable]="item.key === 'alert' && item.value > 0"
-        [attr.role]="item.key === 'alert' && item.value > 0 ? 'link' : null"
-        [attr.tabindex]="item.key === 'alert' && item.value > 0 ? 0 : null"
+        [class.clickable]="item.key === 'alert' && (item.value ?? 0) > 0"
+        [attr.role]="item.key === 'alert' && (item.value ?? 0) > 0 ? 'link' : null"
+        [attr.tabindex]="item.key === 'alert' && (item.value ?? 0) > 0 ? 0 : null"
         (click)="openTodaysViolations(item)"
         (keydown.enter)="openTodaysViolations(item)"
       >

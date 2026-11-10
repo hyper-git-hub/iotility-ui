@@ -143,9 +143,13 @@
                   } @else if (c.type === 'mot') {
                     <strong class="mot" [class]="motClass(r[c.key])">{{ r[c.key] }}</strong>
                   } @else if (c.type === 'alert') {
-                    <span class="alert-cell" [class.clear]="!r[c.key]">{{
-                      r[c.key] ? '!' : '✓'
-                    }}</span>
+                    @if (r[c.key] === '—') {
+                      <span>—</span>
+                    } @else {
+                      <span class="alert-cell" [class.clear]="!r[c.key]">{{
+                        r[c.key] ? '!' : '✓'
+                      }}</span>
+                    }
                   } @else if (c.type === 'score') {
                     <span [class]="'score-cell ' + scoreClass(r[c.key])"
                       ><i><b [style.width.%]="r[c.key]"></b></i><strong>{{ r[c.key] }}</strong></span

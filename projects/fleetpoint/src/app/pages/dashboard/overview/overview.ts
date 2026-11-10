@@ -1,5 +1,5 @@
 import { PluralPipe } from '@iotility/shared-ui';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { ChartSkeleton, Skeleton } from '@iotility/shared-ui';
@@ -12,7 +12,9 @@ import {
   DashboardGraph,
   DashcamDevice,
   FleetDashboardApiService,
+  LiveFleetStatus,
 } from '../../../shared/services/fleet-dashboard-api.service';
+import { NotificationService } from '../../../shared/services/notification.service';
 import { emptyDashboardGraphs, mergeDashboardGraphs } from '../../../shared/services/dashboard-graphs';
 import { DashboardWidgetsService } from '../../../shared/services/dashboard-widgets.service';
 
@@ -128,30 +130,28 @@ export class Overview implements OnInit {
       });
   });
   protected readonly dashcams = signal<DashcamDevice[]>([]);
-  /* Live fleet status comes straight from the LFS entry of the graphs API
-     response (categories/values/total) — no per-vehicle re-derivation. */
-  private readonly fleetStatusData = computed<(DashboardGraphData & { total?: number }) | null>(() => {
-    const lfs = this.cards().find((card) => card?.code === 'LFS');
-    const data = lfs?.data;
-    return data && typeof data === 'object' && !Array.isArray(data)
-      ? (data as DashboardGraphData & { total?: number })
-      : null;
-  });
+  /* Live fleet status comes from its own LFS card call (categories/values/total), with no
+     per-vehicle re-derivation. A value the API doesn't send stays null and shows as '—'. */
+  private readonly liveFleetStatus = signal<LiveFleetStatus | null>(null);
+  protected readonly fleetStatusLoading = signal(true);
   protected readonly fleetStatus = computed(() => {
-    const status = { total_vehicles: 0, moving: 0, idling: 0, stopped: 0, alert: 0, offline: 0 };
-    const data = this.fleetStatusData();
+    const status: Record<'total_vehicles' | 'moving' | 'idling' | 'stopped' | 'alert' | 'offline', number | null> = {
+      total_vehicles: null, moving: null, idling: null, stopped: null, alert: null, offline: null,
+    };
+    const data = this.liveFleetStatus();
     if (!data) return status;
-    const values = data.values ?? [];
-    (data.categories ?? []).forEach((category, index) => {
+    data.categories.forEach((category, index) => {
       const key = category.trim().toLowerCase().replace(/\s+/g, '_');
-      if (key in status) status[key as keyof typeof status] = Number(values[index]) || 0;
+      const value = data.values[index];
+      if (key in status && value !== null && value !== undefined && Number.isFinite(Number(value)))
+        status[key as keyof typeof status] = Number(value);
     });
     return status;
   });
-  protected readonly fleetStatusTotal = computed<number>(() => {
-    const data = this.fleetStatusData();
-    if (typeof data?.total === 'number') return data.total;
-    return this.fleetStatus().total_vehicles;
+  /** Total from the API's `total`; never the sum of the states, since Alert overlaps them. */
+  protected readonly fleetStatusTotal = computed<number | null>(() => {
+    const total = this.liveFleetStatus()?.total;
+    return typeof total === 'number' ? total : this.fleetStatus().total_vehicles;
   });
   protected readonly fleetStatusItems = computed(() => {
     const status = this.fleetStatus();
@@ -163,6 +163,10 @@ export class Overview implements OnInit {
       { key: 'offline', label: 'Offline', value: status.offline, tone: 'offline' },
     ];
   });
+  /** The bar shows the four movement states, which add up to the total; Alert sits on top of them. */
+  protected readonly fleetStatusSegments = computed(() =>
+    this.fleetStatusItems().filter((item) => item.key !== 'alert' && (item.value ?? 0) > 0),
+  );
   /* Tiles lead with the total-vehicles card from the same LFS payload. */
   protected readonly fleetStatusTiles = computed(() => [
     {
@@ -176,7 +180,17 @@ export class Overview implements OnInit {
   constructor(
     private readonly api: FleetDashboardApiService,
     private readonly router: Router,
-  ) {}
+  ) {
+    // Reading notifications resets Alert to 0 on the backend; show it without a reload.
+    const notifications = inject(NotificationService);
+    let seen = notifications.alertsCleared();
+    effect(() => {
+      const cleared = notifications.alertsCleared();
+      if (cleared === seen) return;
+      seen = cleared;
+      untracked(() => this.loadLiveFleetStatus(false));
+    });
+  }
 
   ngOnInit(): void {
     // One load per visit; graphs are not polled.
@@ -185,8 +199,20 @@ export class Overview implements OnInit {
 
   protected loadDashboard(): void {
     // this.loadCards();
+    this.loadLiveFleetStatus();
     this.loadGraphs();
     this.dashcams.set([]);
+  }
+
+  private loadLiveFleetStatus(showSkeleton = true): void {
+    if (showSkeleton) this.fleetStatusLoading.set(true);
+    this.api
+      .getLiveFleetStatus()
+      .pipe(finalize(() => this.fleetStatusLoading.set(false)))
+      .subscribe({
+        next: (status) => this.liveFleetStatus.set(status),
+        error: () => this.liveFleetStatus.set(null),
+      });
   }
 
   // protected loadCards(): void {
@@ -260,8 +286,8 @@ export class Overview implements OnInit {
     return this.statusCardTones[key] ?? 'brand';
   }
 
-  protected openTodaysViolations(item: { key: string; value: number }): void {
-    if (item.key !== 'alert' || item.value <= 0) return;
+  protected openTodaysViolations(item: { key: string; value: number | null }): void {
+    if (item.key !== 'alert' || (item.value ?? 0) <= 0) return;
     void this.router.navigate(['/fleetpoint/violations/all'], { queryParams: { range: 'today' } });
   }
 }

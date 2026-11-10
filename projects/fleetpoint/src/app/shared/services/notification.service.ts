@@ -39,6 +39,11 @@ export class NotificationService {
   readonly unreadCount = signal(0);
   readonly loading = signal(false);
   readonly error = signal(false);
+  /**
+   * Bumped each time notifications are marked read. The backend also marks the related
+   * violations read then, which resets every Alert count, so pages showing one reload it.
+   */
+  readonly alertsCleared = signal(0);
 
   constructor() {
     // One load for the history; new alerts then arrive over Firebase, so there
@@ -73,10 +78,12 @@ export class NotificationService {
 
   private markAllViewed(): void {
     if (!this.hasSession()) return;
-    this.http.patch(environment.notificationsUrl, {}).subscribe({
+    // PATCH /notification/ (trailing slash, as the backend documents it).
+    this.http.patch(`${environment.notificationsUrl}/`, {}).subscribe({
       next: () => {
         this.unreadCount.set(0);
         this.notifications.update((items) => items.map((item) => ({ ...item, is_viewed: true })));
+        this.alertsCleared.update((count) => count + 1);
       },
     });
   }

@@ -12,21 +12,29 @@ import { StatCard } from '../../shared/stat-card/stat-card';
 import { FleetForm } from './fleet-form/fleet-form';
 import { FeedbackDialogBridgeService } from '../../shared/services/feedback-dialog-bridge.service';
 
+/** A fleet card, straight from the API. A value it doesn't send is null and shows as '—'. */
 interface FleetSummary {
   id: number;
   name: string;
   color: string;
-  vehicles: number;
-  drivers: number;
-  activeVehicles: number;
+  vehicles: number | null;
+  drivers: number | null;
+  activeVehicles: number | null;
   alertVehicles: number;
   avgFuel: string;
   description: string;
-  safetyScore: number;
-  fuelEfficiency: number;
-  utilisation: number;
+  safetyScore: number | null;
+  fuelEfficiency: number | null;
+  utilisation: number | null;
   location: string;
   vehicleIds: Array<{ id?: number; label: string; state: 'alert' | 'online' | 'offline' }>;
+}
+
+/** A whole-number count or percentage from the API, or null when it isn't a number. */
+function apiNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.round(number) : null;
 }
 
 @Component({
@@ -65,17 +73,17 @@ export class FleetsPage implements OnInit, OnDestroy {
   protected readonly fleets = signal<FleetSummary[]>([]);
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
   protected readonly selectedFleet = signal<FleetInventoryRecord | null>(null);
-  protected readonly total = signal(0);
-  protected readonly apiTotalVehicles = signal(0);
-  protected readonly apiTotalDrivers = signal(0);
+  /** `total_fleet_count`, `total_vehicle_count` and `total_driver_count`; null shows as '—'. */
+  protected readonly total = signal<number | null>(null);
+  protected readonly totalVehicles = signal<number | null>(null);
+  protected readonly totalDrivers = signal<number | null>(null);
   protected readonly offset = signal(0);
   protected readonly limit = 10;
-  protected readonly totalVehicles = computed(() => this.apiTotalVehicles());
-  protected readonly totalDrivers = computed(() => this.apiTotalDrivers());
+  /** Vehicles in alert (`live_status` "Alert") across the fleets loaded so far. */
   protected readonly totalAlerts = computed(
     () => this.fleets().reduce((total, fleet) => total + fleet.alertVehicles, 0),
   );
-  protected readonly hasMore = computed(() => this.fleets().length < this.total());
+  protected readonly hasMore = computed(() => this.fleets().length < (this.total() ?? 0));
 
   constructor(
       private readonly api: FleetInventoryApiService,
@@ -124,15 +132,9 @@ export class FleetsPage implements OnInit, OnDestroy {
             ...records.map((fleet, index) => this.toFleet(fleet, previousFleets.length + index)),
           ]);
           this.offset.set(requestOffset);
-          this.total.set(response.data?.total_fleet_count ?? response.data?.count ?? records.length);
-          this.apiTotalVehicles.set(
-            response.data?.total_vehicle_count ??
-              records.reduce((sum, fleet) => sum + (fleet.total_vehicles || 0), 0),
-          );
-          this.apiTotalDrivers.set(
-            response.data?.total_driver_count ??
-              records.reduce((sum, fleet) => sum + (fleet.total_drivers || 0), 0),
-          );
+          this.total.set(apiNumber(response.data?.total_fleet_count));
+          this.totalVehicles.set(apiNumber(response.data?.total_vehicle_count));
+          this.totalDrivers.set(apiNumber(response.data?.total_driver_count));
         },
         error: (response) => {
           const message = response.error?.message || 'Fleet data could not be loaded.';
@@ -178,6 +180,12 @@ export class FleetsPage implements OnInit, OnDestroy {
     this.formOpen.set(true);
   }
 
+  /** Bar colour for a score; no colour (an empty track) without one. */
+  protected scoreClass(score: number | null): string {
+    if (score === null) return '';
+    return score >= 85 ? 'score-high' : score >= 70 ? 'score-medium' : 'score-low';
+  }
+
   private toFleet(fleet: FleetInventoryRecord, index: number): FleetSummary {
     const colors = [
       'var(--color-brand-500)',
@@ -187,28 +195,25 @@ export class FleetsPage implements OnInit, OnDestroy {
       'var(--color-danger)',
     ];
     const assignedVehicles = fleet.assigned_vehicles ?? [];
-    const driverIds = new Set(
-      assignedVehicles.flatMap((vehicle) =>
-        (vehicle.associated_drivers_name ?? [])
-          .map((driver) => driver.driver_id)
-          .filter((id): id is number => id != null),
-      ),
-    );
+    const avgFuel = apiNumber(fleet.avg_fuel);
     return {
       id: fleet.id,
       name: fleet.name,
       color: colors[index % colors.length],
-      vehicles: fleet.total_vehicles || 0,
-      drivers: fleet.total_drivers ?? driverIds.size,
-      activeVehicles: assignedVehicles.filter((vehicle) => vehicle.online_status).length,
+      vehicles: apiNumber(fleet.total_vehicles),
+      drivers: apiNumber(fleet.total_drivers),
+      // Counted from the fleet's own vehicle list; '—' when the API sends no list.
+      activeVehicles: fleet.assigned_vehicles
+        ? assignedVehicles.filter((vehicle) => vehicle.online_status).length
+        : null,
       alertVehicles: assignedVehicles.filter(
         (vehicle) => vehicle.live_status?.toLowerCase() === 'alert',
       ).length,
-      avgFuel: fleet.avg_fuel == null ? '—' : `${fleet.avg_fuel}%`,
+      avgFuel: avgFuel === null ? '—' : `${avgFuel}%`,
       description: fleet.category || fleet.customer_name || '—',
-      safetyScore: fleet.safety_score ?? 0,
-      fuelEfficiency: fleet.fuel_efficiency ?? 0,
-      utilisation: fleet.utilisation ?? 0,
+      safetyScore: apiNumber(fleet.safety_score),
+      fuelEfficiency: apiNumber(fleet.fuel_efficiency),
+      utilisation: apiNumber(fleet.utilisation),
       location:
         assignedVehicles.find((vehicle) => vehicle.location)?.location || '—',
       vehicleIds: assignedVehicles.map((vehicle) => ({

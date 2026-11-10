@@ -58,6 +58,33 @@ export interface VehicleInventoryRecord {
   updated_time?: string | null;
   next_maintenance?: string | number | null;
   total_distance_traveled?: number | null;
+  /** Fuel left, 0–100, or null when the vehicle has no fuel reading. */
+  fuel_level?: number | string | null;
+}
+
+/** Vehicles per live status across the whole filtered set, not only the page returned. */
+export interface VehicleStatusCounts {
+  total: number;
+  moving: number;
+  idling: number;
+  stopped: number;
+  alert: number;
+  offline: number;
+}
+
+export interface VehicleReference {
+  id: number;
+  registration: string;
+}
+
+export interface VehicleInventoryPage {
+  count: number;
+  data: VehicleInventoryRecord[];
+  status_counts?: VehicleStatusCounts | null;
+  /** Every vehicle with an active alert in the filtered set. */
+  alert_vehicles?: VehicleReference[] | null;
+  /** Every offline vehicle in the filtered set. */
+  offline_vehicles?: VehicleReference[] | null;
 }
 
 export interface InventoryOption {
@@ -84,9 +111,7 @@ export interface VehicleInventoryFilters {
 export class VehicleInventoryApiService {
   constructor(private readonly http: HttpClient) {}
 
-  getVehicles(
-    filters: VehicleInventoryFilters,
-  ): Observable<ApiResponse<{ count: number; data: VehicleInventoryRecord[] }>> {
+  getVehicles(filters: VehicleInventoryFilters): Observable<ApiResponse<VehicleInventoryPage>> {
     const user = this.currentUser();
     const groupName = user?.customer?.groups?.[0]?.name;
     const customerType = user?.customer?.customer_type ?? user?.customer?.device_support ?? '';
@@ -105,10 +130,7 @@ export class VehicleInventoryApiService {
       .set('dashcam_switch', '1')
       .set('customer_type', String(customerType))
       .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone);
-    return this.http.get<ApiResponse<{ count: number; data: VehicleInventoryRecord[] }>>(
-      `${FLEET_API}/vehicle`,
-      { params },
-    );
+    return this.http.get<ApiResponse<VehicleInventoryPage>>(`${FLEET_API}/vehicle`, { params });
   }
 
   getVehicleOptions(): Observable<ApiResponse<{ count: number; data: InventoryOption[] }>> {
