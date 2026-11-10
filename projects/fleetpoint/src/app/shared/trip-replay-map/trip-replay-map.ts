@@ -230,6 +230,13 @@ interface VehicleShadow {
 }
 const getShadowPolygon = (shadow: VehicleShadow) => shadow.polygon;
 const getShadowColor = (shadow: VehicleShadow) => shadow.color;
+/**
+ * For everything painted flat on the ground (trail, shadow). The vehicle's wheels sit at ground
+ * height too, so with depth testing the two fought over the same depth every frame and the
+ * underside flickered. Ground layers neither test nor write depth; drawn first, they always end
+ * up beneath the vehicle.
+ */
+const GROUND_LAYER_PARAMETERS = { depthWriteEnabled: false, depthCompare: 'always' } as const;
 interface VehicleModelState {
   position: [longitude: number, latitude: number, altitude: number];
   heading: number;
@@ -1346,6 +1353,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           getPolygon: getShadowPolygon,
           getFillColor: getShadowColor,
           pickable: false,
+          parameters: GROUND_LAYER_PARAMETERS,
           updateTriggers: { getPolygon: [lng, lat, heading, zoom] },
         }),
         new ScenegraphLayer<VehicleModelState>({
@@ -1445,6 +1453,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       jointRounded: true,
       widthUnits: 'pixels' as const,
       pickable: false,
+      parameters: GROUND_LAYER_PARAMETERS,
     };
     return [
       new TripsLayer<TrailPath>({
