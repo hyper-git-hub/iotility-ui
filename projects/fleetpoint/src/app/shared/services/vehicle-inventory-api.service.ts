@@ -22,6 +22,8 @@ export interface VehicleInventoryRecord {
   owner?: string | null;
   expiry_date?: string | null;
   image: string | null;
+  /** Image of the vehicle's type (car, van, truck…), set on the vehicle type. */
+  vehicle_type_image?: string | null;
   engine_number: string;
   chassis_number: string;
   color: string;

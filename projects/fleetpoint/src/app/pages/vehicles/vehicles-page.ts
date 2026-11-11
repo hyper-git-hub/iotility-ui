@@ -127,7 +127,8 @@ export class VehiclesPage implements OnInit {
   protected readonly columnLabels = this.columns.map((column) => column.label);
   protected readonly vehicles = computed<TableRow[]>(() => this.records().map((vehicle) => ({
     id: vehicle.id,
-    image: this.vehicleImage(vehicle.image),
+    // The vehicle type's icon (car, van, truck…) rather than a photo, so the list reads by type.
+    image: this.vehicleImage(vehicle.vehicle_type_image),
     registration: vehicle.registration || vehicle.name,
     makeModel: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim() || '—',
     fleet: vehicle.fleet_name || '—',
@@ -323,7 +324,7 @@ export class VehiclesPage implements OnInit {
 
   private loadCategories(fleetId = ''): void { this.api.getCategoryOptions(fleetId).subscribe({ next: (response) => this.categoryOptions.set(response.data?.data ?? []) }); }
 
-  private vehicleImage(image: string | null): string {
+  private vehicleImage(image: string | null | undefined): string {
     const value = image?.trim();
     return value && !['none', 'null', 'no image', 'n/a'].includes(value.toLowerCase())
       ? value

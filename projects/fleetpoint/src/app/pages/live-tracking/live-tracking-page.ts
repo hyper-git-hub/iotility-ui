@@ -670,7 +670,9 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       updated: vehicle.updated_time || 'No recent update',
       lat: this.coordinate(vehicle.latitude),
       lng: this.coordinate(vehicle.longitude),
-      image: vehicle.image || vehicle.vehicle_type_image,
+      // The vehicle type's icon (car, van, truck…) first, as on the vehicles page: it is what the
+      // map markers and the list show. A photo of the vehicle is only the fallback.
+      image: vehicle.vehicle_type_image || vehicle.image || null,
       seatBelt: Boolean(vehicle.seat_belt),
       ignition,
       battery: this.optionalPercent(vehicle.battery_level),

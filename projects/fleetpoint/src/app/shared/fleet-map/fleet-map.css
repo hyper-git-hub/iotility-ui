@@ -176,9 +176,9 @@
 }
 
 /*
- * Live vehicle marker (`vehicle` variant). The status is the fill and the glyph is what the vehicle
- * is doing: an arrow pointing the way it drives, a pause mark while idling, "!" on an alert, nothing
- * when offline. The box is a fixed 30px hit target; the disc scales inside it, so size changes run on
+ * Live vehicle marker (`vehicle` variant), without an image. The status is the fill and the glyph is
+ * what the vehicle is doing: a dot while moving, a pause mark while idling, "!" on an alert, nothing
+ * when offline. No direction is shown. The box is a fixed 30px hit target; the disc scales inside it, so size changes run on
  * the compositor and the marker's anchor never shifts. Only alerts animate continuously.
  */
 :host ::ng-deep .vm {
@@ -240,12 +240,56 @@
   border-radius: 50%;
   background: #fff;
 }
-:host ::ng-deep .vm--moving.has-heading .vm-arrow,
-:host ::ng-deep .vm--moving:not(.has-heading) .vm-dot,
+:host ::ng-deep .vm--moving .vm-dot,
 :host ::ng-deep .vm--idling .vm-pause,
 :host ::ng-deep .vm--stopped .vm-stop,
 :host ::ng-deep .vm--alert .vm-alert {
   opacity: 1;
+}
+
+/*
+ * With an image (the vehicle type's icon), as in the design: a 34px white disc with a 3px ring in
+ * the status colour and the icon inside, growing to 44px when selected. A missing image falls back
+ * to the glyphs above.
+ */
+:host ::ng-deep .vm-img {
+  display: none;
+}
+:host ::ng-deep .vm.has-image {
+  width: 34px;
+  height: 34px;
+}
+:host ::ng-deep .vm.has-image .vm-disc {
+  border: 3px solid var(--vm-color, #64748b);
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  transform: none;
+}
+:host ::ng-deep .vm.has-image:hover .vm-disc {
+  transform: scale(1.08);
+}
+:host ::ng-deep .vm.has-image:active .vm-disc {
+  transform: scale(0.96);
+}
+:host ::ng-deep .vm.has-image .vm-glyph {
+  display: none;
+}
+:host ::ng-deep .vm.has-image .vm-img {
+  display: block;
+  grid-area: 1 / 1;
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+/* Offline keeps its size here, as in the design; the grey ring says it. */
+:host ::ng-deep .vm.has-image.vm--offline .vm-disc {
+  opacity: 1;
+}
+:host ::ng-deep .vm.has-image.is-selected .vm-disc {
+  transform: scale(1.3);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25), 0 0 0 4px color-mix(in srgb, var(--vm-color) 27%, transparent);
 }
 
 /* Alert badge: unread violations, on top of whatever the vehicle is doing. */
