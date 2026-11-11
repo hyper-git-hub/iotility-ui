@@ -30,6 +30,8 @@
 }
 
 .hud-map-overlay { @apply relative z-20 max-w-2xl select-none; }
+/* Zoom and recenter, top right of the map; the panel itself lets the map take the pointer. */
+.hud-map-controls { @apply pointer-events-auto absolute right-4 top-4 z-30 lg:right-6 lg:top-6; }
 .hud-map-badge { @apply mb-3.5; }
 .hud-map-badge .status-badge { @apply text-[11px] font-bold uppercase tracking-widest backdrop-blur-sm; }
 .hud-map-place { @apply text-base font-semibold leading-snug tracking-tight text-ink drop-shadow-sm lg:text-[1.08rem] dark:text-neutral-100; }
@@ -63,6 +65,8 @@
 .hud-maplibre::after {
   content: '';
   @apply absolute inset-0;
+  /* It lies over the whole map, so it must let the map's drag, wheel and pinch through. */
+  pointer-events: none;
   background:
     linear-gradient(to right, transparent 30%, rgb(255 255 255 / 0.55) 55%, rgb(255 255 255 / 0.95) 82%),
     linear-gradient(to bottom, rgb(255 255 255 / 0.4), transparent 35%, rgb(255 255 255 / 0.35));
@@ -131,7 +135,9 @@
 .hud-position-title > span:last-child { @apply text-muted dark:text-brand-300; }
 .hud-position-dot { @apply size-2 rounded-full bg-danger; }
 .hud-position-dot.online { @apply bg-success; }
-.hud-map-place { @apply mt-2 text-xs font-medium leading-relaxed; }
+/* One line: a long reverse-geocoded address would wrap and push the card down over the
+   road ahead. The full address shows on hover. */
+.hud-map-place { @apply mt-2 truncate text-xs font-medium leading-relaxed; }
 .hud-map-sub { @apply mt-1; }
 .hud-coordinate-row { @apply mt-2 flex flex-wrap gap-x-2 gap-y-1 font-mono text-[10px] text-muted dark:text-brand-300; }
 .hud-coordinate-row span + span::before { content:'·'; @apply mr-2 text-muted; }

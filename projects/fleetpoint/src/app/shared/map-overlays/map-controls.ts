@@ -26,6 +26,8 @@ export class MapControls {
   readonly map = input<MapLibreMap | undefined>();
   /** Adds a button that frames every vehicle on the map. */
   readonly showFitAll = input(false);
+  /** Unfolds a button under the zoom buttons that puts the camera back on what the map follows. */
+  readonly showRecenter = input(false);
   readonly zoomIn = output<void>();
   readonly zoomOut = output<void>();
   readonly toggle3D = output<void>();
@@ -33,6 +35,7 @@ export class MapControls {
   readonly geolocate = output<void>();
   readonly fullscreenToggle = output<void>();
   readonly fitAll = output<void>();
+  readonly recenter = output<void>();
   protected readonly is3D = signal(false);
   protected readonly isLocating = signal(false);
   protected readonly bearing = signal(0);
@@ -71,6 +74,10 @@ export class MapControls {
 
   protected onFitAll(): void {
     this.fitAll.emit();
+  }
+
+  protected onRecenter(): void {
+    this.recenter.emit();
   }
 
   protected onGeolocate(): void {

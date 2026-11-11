@@ -20,6 +20,7 @@ import {
 } from '../../../../shared/maps/maplibre';
 import { SmoothTrack, TrackPoint, metresBetween } from '../../../../shared/maps/smooth-track';
 import { VehicleRenderer, vehicleLighting } from '../../../../shared/maps/vehicle-model';
+import { MapControls } from '../../../../shared/map-overlays/map-controls';
 import { Skeleton } from '@iotility/shared-ui';
 import { environment } from '../../../../../environments/environment';
 import { VehicleDetailRecord, VehicleMetric } from '../../../../shared/services/vehicle-detail-api.service';
@@ -110,15 +111,21 @@ const HUD_ZOOM = 18.5;
 /* 3D camera, tilted toward the horizon so the car and the 3D buildings read with depth,
    following the vehicle from behind and a little to its right: the camera turns with the
    heading but stays HUD_VIEW_ANGLE off it, so the car shows its back and side and drives
-   up-right, towards the open middle of the map rather than the left edge. HUD_BEARING is
-   only the start, before a heading is known. */
+   up-right, towards the open middle of the map rather than the left edge. The tilt widens
+   the angle on screen: 20° off the heading draws the car about 30° from straight up. 30°
+   (about 42° on screen) read almost side-on, with little road ahead. HUD_BEARING is only
+   the start, before a heading is known. */
 const HUD_PITCH = 50;
-const HUD_VIEW_ANGLE = 30;
+const HUD_VIEW_ANGLE = 20;
 const HUD_BEARING = 0;
-/* Horizontal placement of the vehicle on the HUD band: 18% from the left
-   border (well clear of the speedometer). Implemented as a screen-space
-   camera offset so it stays exact under pitch/bearing. */
-const HUD_MARKER_X = 0.32;
+/* Where the vehicle sits on the map, as fractions of its width and height:
+   in the lower third, like a navigation app, so most of the map shows the
+   road ahead rather than the trail behind; and left of centre, so the road
+   ahead (drawn up and a little right) passes beside the info card in the top
+   left instead of under it. Implemented as camera padding, so it stays exact
+   under pitch and bearing. */
+const HUD_MARKER_X = 0.38;
+const HUD_MARKER_Y = 0.65;
 /* Fallback camera until live coordinates arrive (marker hidden meanwhile). */
 const HUD_FALLBACK = { lat: timezoneCenter()[0], lng: timezoneCenter()[1] } as const;
 
@@ -176,6 +183,11 @@ const ZOOM_SPEED_SMOOTHING = 0.35;
 const ZOOM_HYSTERESIS = 0.25;
 /* Fastest the camera zooms, in zoom levels per second. */
 const ZOOM_RATE_PER_S = 0.6;
+/* A zoom button press eases a whole level in about a quarter of a second. */
+const ZOOM_BUTTON_RATE_PER_S = 6;
+/* Recenter glides back onto the vehicle in this long; after a wheel or pinch zoom, quicker. */
+const RECENTER_MS = 800;
+const RECENTER_AFTER_ZOOM_MS = 300;
 
 function zoomForSpeed(kmh: number): number {
   const [first] = ZOOM_BY_SPEED;
@@ -317,7 +329,7 @@ async function fetchRoadBearing(lat: number, lng: number): Promise<RoadBearingRe
 
 @Component({
   selector: 'app-vehicle-hud',
-  imports: [Skeleton],
+  imports: [Skeleton, MapControls],
   templateUrl: './vehicle-hud.html',
   styleUrl: './vehicle-hud.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -445,17 +457,26 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   private smoothedSpeed: number | null = null;
   private zoomRaf = 0;
   private zoomLastFrame = 0;
+  /* The user picked a zoom (wheel, pinch or the buttons): speed no longer changes it until Recenter. */
+  private zoomLocked = false;
+  /* A button press eases quickly, not at the gentle speed-driven pace. */
+  private zoomFast = false;
 
   private updateZoomTarget(speed: number): void {
     // Smoothed so a single noisy packet can't pump the camera in and out.
     this.smoothedSpeed = this.smoothedSpeed === null
       ? speed
       : this.smoothedSpeed + (speed - this.smoothedSpeed) * ZOOM_SPEED_SMOOTHING;
+    if (this.zoomLocked) return;
     const target = zoomForSpeed(this.smoothedSpeed);
     if (Math.abs(target - this.zoomTarget) < ZOOM_HYSTERESIS) return;
     this.zoomTarget = target;
+    this.startZoomEase();
+  }
+
+  private startZoomEase(): void {
     if (prefersReducedMotion()) {
-      this.hudZoom = target;
+      this.hudZoom = this.zoomTarget;
       this.recenterCamera();
       return;
     }
@@ -474,11 +495,124 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     const seconds = Math.min(0.1, Math.max(0, now - this.zoomLastFrame) / 1000);
     this.zoomLastFrame = now;
     const delta = this.zoomTarget - this.hudZoom;
-    const step = Math.min(ZOOM_RATE_PER_S * seconds, Math.abs(delta) * Math.min(1, 3 * seconds));
+    const [rate, response] = this.zoomFast ? [ZOOM_BUTTON_RATE_PER_S, 12] : [ZOOM_RATE_PER_S, 3];
+    const step = Math.min(rate * seconds, Math.abs(delta) * Math.min(1, response * seconds));
     this.hudZoom = Math.abs(delta) < 0.005 ? this.zoomTarget : this.hudZoom + Math.sign(delta) * step;
     this.recenterCamera();
     if (this.hudZoom !== this.zoomTarget) this.zoomRaf = requestAnimationFrame(this.easeZoom);
+    else this.zoomFast = false;
   };
+
+  /* ── Follow camera and free camera ──
+     The camera follows the vehicle until the user drags, rotates or tilts the
+     map; then it stays where they put it and Recenter appears. Zooming (wheel,
+     pinch, buttons) keeps following, anchored on the vehicle, at the zoom they
+     chose; Recenter shows then too, to give the zoom back to the speed. */
+  private following = true;
+  /* A drag, wheel or pinch is in progress: the camera is the user's until it ends. */
+  private userGesture = false;
+  /* Glide from wherever the camera is back onto the vehicle (Recenter, end of a zoom). */
+  private recenterBlend?: {
+    start: number;
+    duration: number;
+    from: { lng: number; lat: number; zoom: number; bearing: number; pitch: number };
+  };
+  private recenterRaf = 0;
+  protected readonly recenterVisible = signal(false);
+
+  private updateRecenterButton(): void {
+    this.recenterVisible.set(!this.following || this.zoomLocked);
+  }
+
+  /* The user took the camera (drag, rotate, tilt): stop following. */
+  private releaseCamera(): void {
+    if (!this.following) return;
+    this.following = false;
+    this.stopRecenterBlend();
+    this.setZoomAround(false);
+    this.updateRecenterButton();
+  }
+
+  /* A drag, wheel or pinch finished. A zoom while following keeps following at the new zoom. */
+  private endUserGesture(): void {
+    this.userGesture = false;
+    if (!this.following || !this.map) return;
+    this.zoomLocked = true;
+    cancelAnimationFrame(this.zoomRaf);
+    this.zoomRaf = 0;
+    this.hudZoom = this.zoomTarget = this.map.getZoom();
+    // The vehicle kept moving during the gesture; glide back onto it.
+    this.startRecenterBlend(RECENTER_AFTER_ZOOM_MS);
+    this.updateRecenterButton();
+  }
+
+  protected recenter(): void {
+    this.following = true;
+    this.zoomLocked = false;
+    this.zoomFast = false;
+    cancelAnimationFrame(this.zoomRaf);
+    this.zoomRaf = 0;
+    this.hudZoom = this.zoomTarget = this.smoothedSpeed === null ? HUD_ZOOM : zoomForSpeed(this.smoothedSpeed);
+    this.setZoomAround(true);
+    this.startRecenterBlend(RECENTER_MS);
+    this.updateRecenterButton();
+  }
+
+  protected zoomBy(delta: number): void {
+    const map = this.map;
+    if (!map) return;
+    if (!this.following) {
+      if (delta > 0) map.zoomIn();
+      else map.zoomOut();
+      return;
+    }
+    this.zoomLocked = true;
+    this.zoomFast = true;
+    this.zoomTarget = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), this.zoomTarget + delta));
+    this.startZoomEase();
+    this.updateRecenterButton();
+  }
+
+  /* While following, the wheel and pinch zoom about the vehicle (the padded centre) rather than
+     the pointer, so zooming never moves it; once free, about the pointer as usual. */
+  private setZoomAround(vehicle: boolean): void {
+    const map = this.map;
+    if (!map) return;
+    const around = vehicle ? { around: 'center' as const } : undefined;
+    map.scrollZoom.disable();
+    map.scrollZoom.enable(around);
+    map.touchZoomRotate.disable();
+    map.touchZoomRotate.enable(around);
+  }
+
+  private startRecenterBlend(duration: number): void {
+    const map = this.map;
+    this.stopRecenterBlend();
+    if (!map || prefersReducedMotion()) {
+      this.recenterCamera();
+      return;
+    }
+    const centre = map.getCenter();
+    this.recenterBlend = {
+      start: performance.now(),
+      duration,
+      from: { lng: centre.lng, lat: centre.lat, zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() },
+    };
+    // Drives the glide frame by frame, also while the vehicle stands still.
+    const step = () => {
+      this.recenterRaf = 0;
+      const pos = this.vehicleAt ?? HUD_FALLBACK;
+      this.syncCamera(pos.lat, pos.lng);
+      if (this.recenterBlend) this.recenterRaf = requestAnimationFrame(step);
+    };
+    this.zone.runOutsideAngular(() => (this.recenterRaf = requestAnimationFrame(step)));
+  }
+
+  private stopRecenterBlend(): void {
+    this.recenterBlend = undefined;
+    cancelAnimationFrame(this.recenterRaf);
+    this.recenterRaf = 0;
+  }
 
   /* Per-frame from the tracker: commit a point every TRAIL_SPACING_M and keep
      the head under the marker so the line ends exactly at the arrow. */
@@ -565,26 +699,39 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     this.vehicle3d.preload();
   }
 
-  /* Camera locked to the vehicle, with a screen-space offset that parks the
-     marker HUD_MARKER_X of the way from the left border — same trick FleetMap uses
-     with panel padding, expressed as a pixel offset so pitch/bearing keep it
-     exact regardless of latitude. */
+  /* Camera locked to the vehicle, with a screen-space offset that parks it
+     HUD_MARKER_X across and HUD_MARKER_Y down the map — the same trick FleetMap
+     uses with panel padding, so pitch and bearing keep it exact at any latitude. */
   private syncCamera(lat: number, lng: number): void {
     const map = this.map;
-    if (!map) return;
-    const width = this.mapHost().nativeElement.clientWidth || 0;
-    /* jumpTo has no `offset` in this maplibre version — express the same
-       screen-space shift as right padding so the center lands at
-       HUD_MARKER_X * width from the left border. */
-    const rightPadding = Math.max(0, width * (1 - 2 * HUD_MARKER_X));
-    map.jumpTo({
-      center: [lng, lat],
-      zoom: this.hudZoom,
-      pitch: HUD_PITCH,
-      // The map turns with the vehicle (its heading already eases round smoothly), a little to its side.
-      bearing: this.vehicleAt ? normalizeDegrees(this.displayedBearing - HUD_VIEW_ANGLE) : HUD_BEARING,
-      padding: { right: rightPadding },
-    });
+    // Free camera, or a drag / wheel / pinch under way: the camera is the user's.
+    if (!map || !this.following || this.userGesture) return;
+    const host = this.mapHost().nativeElement;
+    /* jumpTo has no `offset` in this maplibre version — express the same shift as
+       padding: the camera centres in the padded area, so right padding moves the
+       vehicle left and top padding moves it down. */
+    const padding = {
+      right: Math.max(0, (host.clientWidth || 0) * (1 - 2 * HUD_MARKER_X)),
+      top: Math.max(0, (host.clientHeight || 0) * (2 * HUD_MARKER_Y - 1)),
+    };
+    let center: [number, number] = [lng, lat];
+    let zoom = this.hudZoom;
+    let pitch = HUD_PITCH;
+    // The map turns with the vehicle (its heading already eases round smoothly), a little to its side.
+    let bearing = this.vehicleAt ? normalizeDegrees(this.displayedBearing - HUD_VIEW_ANGLE) : HUD_BEARING;
+    const blend = this.recenterBlend;
+    if (blend) {
+      // Part way from where the user left the camera to the follow camera, easing out.
+      const t = Math.min(1, (performance.now() - blend.start) / blend.duration);
+      const k = 1 - (1 - t) ** 3;
+      const mix = (from: number, to: number) => from + (to - from) * k;
+      center = [mix(blend.from.lng, lng), mix(blend.from.lat, lat)];
+      zoom = mix(blend.from.zoom, zoom);
+      pitch = mix(blend.from.pitch, pitch);
+      bearing = normalizeDegrees(blend.from.bearing + shortestAngle(blend.from.bearing, bearing) * k);
+      if (t >= 1) this.recenterBlend = undefined;
+    }
+    map.jumpTo({ center, zoom, pitch, bearing, padding });
   }
 
   ngAfterViewInit(): void {
@@ -607,6 +754,26 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     this.map.addControl(this.overlay as unknown as maplibregl.IControl);
     // The shadow is sized to the vehicle's on-screen size, so a zoom redraws it.
     this.zone.runOutsideAngular(() => this.map?.on('zoom', () => this.drawVehicle()));
+    /* The user may move the camera. Only their own input carries an `originalEvent`; the
+       follow camera's jumpTo does not, so it never counts as theirs. */
+    this.setZoomAround(true);
+    this.zone.runOutsideAngular(() => {
+      const map = this.map;
+      if (!map) return;
+      map.on('movestart', (event) => {
+        if (event.originalEvent) this.userGesture = true;
+      });
+      map.on('dragstart', () => this.releaseCamera());
+      map.on('rotatestart', (event) => {
+        if (event.originalEvent) this.releaseCamera();
+      });
+      map.on('pitchstart', (event) => {
+        if (event.originalEvent) this.releaseCamera();
+      });
+      map.on('moveend', () => {
+        if (this.userGesture) this.endUserGesture();
+      });
+    });
     /* Off-center framing needs the pixel offset, which is applied via
        syncCamera once the container has a real width. */
     this.syncCamera(anchor.lat, anchor.lng);
@@ -849,6 +1016,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
     clearInterval(this.trendTimer);
     cancelAnimationFrame(this.speedRaf);
     cancelAnimationFrame(this.zoomRaf);
+    this.stopRecenterBlend();
     this.stopMarkerGlide();
     cancelAnimationFrame(this.settleRaf);
     this.alertBadge?.remove();

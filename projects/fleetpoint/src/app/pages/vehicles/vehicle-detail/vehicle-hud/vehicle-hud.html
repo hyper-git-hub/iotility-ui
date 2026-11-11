@@ -68,9 +68,17 @@
 
   <!-- Left: Map / route view (~58%) -->
   <section class="hud-map-panel" aria-label="Route overview">
+    <app-map-controls
+      class="hud-map-controls"
+      [zoomOnly]="true"
+      [showRecenter]="recenterVisible()"
+      (zoomIn)="zoomBy(1)"
+      (zoomOut)="zoomBy(-1)"
+      (recenter)="recenter()"
+    />
     <div class="hud-map-overlay">
       <div class="hud-position-title"><span class="hud-position-dot" [class.online]="online()"></span><strong>{{ online() ? 'Live GPS Tracking · En Route' : 'Last known position · Offline' }}</strong><span class="hud-map-speed">{{ shownSpeed() }} km/h</span></div>
-      <h3 class="hud-map-place">{{ routeName() }}</h3>
+      <h3 class="hud-map-place" [attr.title]="routeName()">{{ routeName() }}</h3>
       <p class="hud-coordinate-row"><span>Lat: {{ latitudeText() }}</span><span>Lon: {{ longitudeText() }}</span><span class="gps-state">GPS {{ online() ? 'connected' : 'last reported' }}</span><span>{{ updatedText() }}</span></p>
       <p class="hud-map-sub">{{ text(vehicle()?.registration, '—') }} · {{ text(vehicle()?.fleet_name, 'Unassigned fleet') }}</p>
     </div>

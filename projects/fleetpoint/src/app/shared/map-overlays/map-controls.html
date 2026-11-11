@@ -9,6 +9,31 @@
       <path d="M5 12h14"></path>
     </svg>
   </button>
+  <!-- Unfolds once the user moves the camera off what the map follows. -->
+  <div class="fold-slot" [class.visible]="showRecenter()">
+    <div>
+      <button
+        type="button"
+        class="map-btn recenter"
+        (click)="onRecenter()"
+        aria-label="Recenter on the vehicle"
+        tooltip="Recenter"
+        position="left"
+        [attr.tabindex]="showRecenter() ? null : -1"
+        [attr.aria-hidden]="showRecenter() ? null : true"
+      >
+        <!-- Lucide "locate-fixed" (ISC licence). -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <line x1="2" x2="5" y1="12" y2="12"></line>
+          <line x1="19" x2="22" y1="12" y2="12"></line>
+          <line x1="12" x2="12" y1="2" y2="5"></line>
+          <line x1="12" x2="12" y1="19" y2="22"></line>
+          <circle cx="12" cy="12" r="7"></circle>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </div>
+  </div>
   @if (!zoomOnly()) {
     <div class="map-btn-divider" aria-hidden="true"></div>
     @if (showFitAll()) {
@@ -41,7 +66,7 @@
       </svg>
     </button>
     <!-- Appears only once the map is rotated, like Google and Apple maps, and turns with it. -->
-    <div class="compass-slot" [class.visible]="rotated()">
+    <div class="fold-slot" [class.visible]="rotated()">
       <div>
         <button
           type="button"

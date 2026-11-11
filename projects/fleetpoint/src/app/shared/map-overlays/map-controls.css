@@ -30,9 +30,9 @@
   stroke-linejoin: round;
 }
 
-/* The compass slot folds away while the map points north. The negative margin
-   cancels the stack's gap so nothing is left behind when it is hidden. */
-.compass-slot {
+/* Fold slots (the compass, the recenter button) fold away while not needed. The
+   negative margin cancels the stack's gap so nothing is left behind when hidden. */
+.fold-slot {
   display: grid;
   grid-template-rows: 0fr;
   margin-top: -0.25rem;
@@ -42,11 +42,11 @@
     margin-top 200ms var(--ease-out),
     opacity 150ms ease;
 }
-.compass-slot > div {
+.fold-slot > div {
   min-height: 0;
   overflow: hidden;
 }
-.compass-slot.visible {
+.fold-slot.visible {
   grid-template-rows: 1fr;
   margin-top: 0;
   opacity: 1;
@@ -61,8 +61,11 @@
   fill: currentColor;
   opacity: 0.45;
 }
+.map-btn.recenter {
+  @apply text-brand-600 dark:text-brand-300;
+}
 @media (prefers-reduced-motion: reduce) {
-  .compass-slot {
+  .fold-slot {
     transition: none;
   }
 }
