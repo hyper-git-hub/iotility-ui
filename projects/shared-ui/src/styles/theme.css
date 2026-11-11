@@ -241,14 +241,18 @@
     cursor: not-allowed;
   }
 
-  /* Press feedback. The standalone `scale` property composes with any transform a component already uses. */
-  :where(button, [role='button']):not(:disabled, [aria-disabled='true'], [data-no-press], .has-tab-indicator *, .ui-control, [dropdown-trigger]) {
+  /* Press feedback. The standalone `scale` property composes with any transform a component already uses.
+     Map markers are left out: MapLibre gives each one role="button" and places it with a transform
+     measured from the map's top-left corner, so the scale pulled the pressed marker 3% of the way to
+     that corner. It slid out from under the pointer, the release landed on the map, and the click
+     never reached the marker. */
+  :where(button, [role='button']):not(:disabled, [aria-disabled='true'], [data-no-press], .has-tab-indicator *, .ui-control, [dropdown-trigger], .maplibregl-marker) {
     transition-property: scale;
     transition-duration: var(--duration-press);
     transition-timing-function: var(--ease-out);
   }
 
-  :where(button, [role='button']):not(:disabled, [aria-disabled='true'], [data-no-press], .has-tab-indicator *, .ui-control, [dropdown-trigger]):active {
+  :where(button, [role='button']):not(:disabled, [aria-disabled='true'], [data-no-press], .has-tab-indicator *, .ui-control, [dropdown-trigger], .maplibregl-marker):active {
     scale: 0.97;
   }
 }
