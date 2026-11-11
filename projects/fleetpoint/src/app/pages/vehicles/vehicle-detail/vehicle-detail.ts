@@ -8,7 +8,7 @@ import { DateTimePicker, Skeleton, StatusBadge } from '@iotility/shared-ui';
 import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
 import { VehicleDetailApiService, VehicleDetailRecord, VehicleMetric } from '../../../shared/services/vehicle-detail-api.service';
 import { VehicleRealtimeService, VehicleRealtimeUpdate } from '../../../shared/services/vehicle-realtime.service';
-import { VehicleTelemetryStreamService } from '../../../shared/services/vehicle-telemetry-stream.service';
+import { LIVE_PACKET_MAX_AGE_S, VehicleTelemetryStreamService } from '../../../shared/services/vehicle-telemetry-stream.service';
 import { environment } from '../../../../environments/environment';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
 import { VehicleForm, VehicleFormValue } from '../vehicle-form/vehicle-form';
@@ -429,11 +429,14 @@ export class VehicleDetail implements OnInit, OnDestroy {
     this.load();
     this.pollTimer = setInterval(() => {
       if (this.pollRefreshing || this.loading()) return;
-      // A connected stream is the live source: no polling, even while a parked
-      // vehicle sends nothing. Poll only while the stream is down (e.g. the
-      // gateway rejects this origin) or SignalR is in use.
-      if (environment.sseTelemetryEnabled && this.telemetryStream.connected()) return;
-      if (Date.now() - this.lastRealtimeAt < VehicleDetail.REALTIME_STALE_MS) return;
+      // A connected stream is the live source, and a live packet marks the vehicle
+      // online. Nothing in the stream marks it offline again, so once it has been
+      // quiet for as long as a packet stays live, the API decides: still online
+      // (parked, reporting rarely) or offline. Poll often only while the stream is
+      // down (e.g. the gateway rejects this origin) or SignalR is in use.
+      const streaming = environment.sseTelemetryEnabled && this.telemetryStream.connected();
+      const quietLimit = streaming ? LIVE_PACKET_MAX_AGE_S * 1000 : VehicleDetail.REALTIME_STALE_MS;
+      if (Date.now() - this.lastRealtimeAt < quietLimit) return;
       this.lastRealtimeAt = Date.now();
       this.refreshTelemetry();
     }, VehicleDetail.POLL_INTERVAL_MS);
@@ -471,6 +474,8 @@ export class VehicleDetail implements OnInit, OnDestroy {
         const vehicle = result.vehicle.data?.data?.[0];
         if (!vehicle) { this.showLoadError('Vehicle details were not found.'); return; }
         this.record.set(vehicle); this.metrics.set(result.metrics.data ?? []); this.violations.set(result.violations?.data ?? null); this.maintenance.set(result.maintenance?.data ?? null); this.lastJob.set(result.lastJob?.data ?? null);
+        // Fresh from the API, so the quiet-stream re-check counts from here.
+        this.lastRealtimeAt = Date.now();
         const liveSource = environment.sseTelemetryEnabled ? this.telemetryStream : this.realtime;
         void liveSource.connect(vehicle.device_id);
       },

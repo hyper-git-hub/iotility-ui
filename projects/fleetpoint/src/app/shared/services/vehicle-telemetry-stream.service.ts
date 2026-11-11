@@ -5,6 +5,15 @@ import { environment } from '../../../environments/environment';
 import { VehicleRealtimeUpdate } from './vehicle-realtime.service';
 
 /**
+ * Oldest a packet may be, in seconds, and still count as live. On connect the stream replays
+ * each device's last stored packet as a `snapshot` event, however old (its `age_s` says how
+ * old); a moving vehicle's is seconds old, an offline one's can be a day. Pages treat every
+ * packet they receive as a live signal, so older ones are dropped here: the REST API already
+ * carries the last known position and status. Keep it in line with the backend's offline rule.
+ */
+export const LIVE_PACKET_MAX_AGE_S = 300;
+
+/**
  * Live telemetry from hn-iot-realtime-stream over authenticated SSE.
  *
  * `connect(deviceId)` streams one device (vehicle detail); `connect()` with no
@@ -119,11 +128,28 @@ export class VehicleTelemetryStreamService {
     if (event === 'heartbeat' || event === 'error' || !dataLines.length) return;
     try {
       const envelope = JSON.parse(dataLines.join('\n')) as unknown;
+      if (this.isStale(envelope, event)) return;
       const update = this.normalize(envelope);
       if (update) this.zone.run(() => this.updatesSubject.next(update));
     } catch {
       // Ignore malformed frames without interrupting the stream.
     }
+  }
+
+  /**
+   * Older than LIVE_PACKET_MAX_AGE_S, by the stream's own `age_s` (measured on the server, so
+   * the browser's clock does not matter). A snapshot without one falls back to when the
+   * stream received it; a live frame without one is live.
+   */
+  private isStale(payload: unknown, event: string): boolean {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
+    const envelope = payload as Record<string, unknown>;
+    const rawAge = envelope['age_s'];
+    const age = rawAge === null || rawAge === undefined || rawAge === '' ? NaN : Number(rawAge);
+    if (Number.isFinite(age)) return age > LIVE_PACKET_MAX_AGE_S;
+    if (event !== 'snapshot') return false;
+    const received = Date.parse(String(envelope['received_utc'] ?? envelope['enqueued_utc'] ?? ''));
+    return !Number.isFinite(received) || (Date.now() - received) / 1000 > LIVE_PACKET_MAX_AGE_S;
   }
 
   private normalize(payload: unknown): VehicleRealtimeUpdate | null {
