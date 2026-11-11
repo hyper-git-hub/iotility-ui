@@ -28,31 +28,40 @@ const palettes = {
   light: {
     land: '#eeeff3',
     residential: '#e9eaf0',
-    water: '#aed6f1',
-    waterFar: '#cfe5f5',
-    waterLine: '#aed6f1',
+    // Nature in real colour, a step richer than a plain grey basemap so the country reads
+    // like a map, still well short of the saturated status colours the data uses.
+    water: '#9fd0f0',
+    waterFar: '#b3daf3',
+    waterLine: '#9fd0f0',
     waterLabel: '#3f7cac',
-    park: '#cdeacf',
-    parkEdge: '#b9dfbd',
-    grass: '#d9efd9',
-    wood: '#c8e6ca',
-    wetland: '#c6e7df',
+    park: '#c1e5c3',
+    parkEdge: '#a9d8ae',
+    grass: '#d2ecca',
+    wood: '#b6dcb5',
+    farmland: '#e5eed6',
+    wetland: '#bde2d7',
     sand: '#efebe0',
     ice: '#eef3f8',
-    pitch: '#d3ecd3',
-    cemetery: '#d9e7d6',
+    pitch: '#c8e8c6',
+    cemetery: '#cfe3cb',
+    // Natural Earth's shaded relief under the land when zoomed out: green lowlands, tan
+    // mountains and deserts, faded out before city zoom.
+    reliefOpacity: [0, 0.5, 5, 0.42, 7.5, 0],
     hospital: '#f7e4e6',
     school: '#ecebf3',
     commercial: '#f7f0dd',
     aeroway: '#e3e4ea',
     runway: '#d2d3dc',
-    building: '#dcdde6',
-    buildingEdge: '#cdced9',
-    building3d: '#dcdde6',
+    // Buildings a clear step darker than the residential ground around them, edged, so
+    // blocks read at neighbourhood zoom.
+    building: '#d4d5e0',
+    buildingEdge: '#bebfce',
+    building3d: '#d4d5e0',
     boundary: '#a5a5b5',
     boundaryLocal: '#c9cad5',
     label: '#23223a',
     mutedLabel: '#5e5e74',
+    parkLabel: '#3b7a4e',
     halo: 'rgba(255,255,255,0.95)',
     motorway: '#fbdc96',
     motorwayCase: '#e3b95f',
@@ -63,9 +72,10 @@ const palettes = {
     primary: '#ffffff',
     primaryCase: '#adaebd',
     secondary: '#ffffff',
-    secondaryCase: '#b9bac7',
+    secondaryCase: '#b0b1c1',
     local: '#ffffff',
-    localCase: '#c3c4d0',
+    // Small streets keep white fills; their outline carries them against the pale land.
+    localCase: '#aeafc0',
     path: '#b9bac8',
     rail: '#bcbdca',
     shieldOpacity: 0.9,
@@ -89,6 +99,7 @@ const palettes = {
     parkEdge: '#1c3a2c',
     grass: '#12231b',
     wood: '#12241b',
+    farmland: '#14181a',
     wetland: '#12282a',
     sand: '#1c1912',
     ice: '#1a1c24',
@@ -99,13 +110,14 @@ const palettes = {
     commercial: '#262019',
     aeroway: '#1c1b23',
     runway: '#2a2933',
-    building: '#26252e',
-    buildingEdge: '#34333e',
-    building3d: '#26252e',
+    building: '#292831',
+    buildingEdge: '#393845',
+    building3d: '#292831',
     boundary: '#5b5a6b',
     boundaryLocal: '#3b3a46',
     label: '#e4e3ec',
     mutedLabel: '#a3a2b3',
+    parkLabel: '#7fbf95',
     halo: 'rgba(19,18,24,0.92)',
     motorway: '#6b5b3f',
     motorwayCase: '#2c2619',
@@ -133,8 +145,20 @@ const palettes = {
   },
 };
 
-/** Parked here rather than per layer: only POIs a driver or dispatcher acts on. */
-const FLEET_POI_CLASSES = ['fuel', 'parking', 'car', 'hospital', 'police'];
+/**
+ * POIs a driver or dispatcher acts on. Every one is labelled from zoom 14, in darker,
+ * larger text, and wins over a landmark it collides with.
+ */
+const FLEET_POI_CLASSES = ['fuel', 'parking', 'car', 'hospital', 'police', 'fire_station'];
+/**
+ * Landmarks people give directions by, from street zoom (15), the tiles' ranking deciding
+ * which appear first. Kept short on purpose: restaurants, cafés and corner shops would
+ * crowd out what matters to a fleet.
+ */
+const LANDMARK_POI_CLASSES = [
+  'school', 'college', 'place_of_worship', 'shop', 'lodging', 'bank',
+  'stadium', 'attraction', 'town_hall', 'bus', 'railway',
+];
 
 // [kind, fill, edge, width by zoom up to 18, edge width beyond the fill at 18, first zoom, fades in]
 const ROADS = [
@@ -186,11 +210,20 @@ function buildStyle(name, palette) {
   // the app's Inter on the map (see the 'Inter SemiBold' face in theme.css).
   delete style.glyphs;
 
-  // Natural Earth shading is replaced by the terrain below, and the pattern on
-  // pedestrian areas is noise at fleet zooms. Fill patterns would also hide the
-  // palette: a pattern always wins over a fill colour.
-  remove('natural_earth');
-  delete style.sources.ne2_shaded;
+  // Natural Earth's coloured relief stays on the light map when zoomed out (see
+  // `reliefOpacity`); the dark map has the terrain below instead, as its bright
+  // colours would glare there. The pattern on pedestrian areas is noise at fleet
+  // zooms. Fill patterns would also hide the palette: a pattern always wins over a
+  // fill colour.
+  if (palette.reliefOpacity) {
+    edit('natural_earth', (layer) => {
+      layer.maxzoom = 7.5;
+      layer.paint['raster-opacity'] = byZoom(palette.reliefOpacity);
+    });
+  } else {
+    remove('natural_earth');
+    delete style.sources.ne2_shaded;
+  }
   remove('road_area_pattern');
   for (const layer of style.layers) if (layer.paint) delete layer.paint['fill-pattern'];
 
@@ -215,6 +248,23 @@ function buildStyle(name, palette) {
   paint('park', 'fill-outline-color', palette.parkEdge);
   paint('landcover_grass', 'fill-color', palette.grass);
   paint('landcover_wood', 'fill-color', palette.wood);
+  // Farmland, which the base leaves undrawn, is most of the countryside: a soft green-yellow
+  // under the woods and grass, quieter again at street zoom where roads and buildings lead.
+  style.layers.splice(
+    style.layers.findIndex((layer) => layer.id === 'landcover_wood'),
+    0,
+    {
+      id: 'landcover_farmland',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'landcover',
+      filter: ['==', ['get', 'class'], 'farmland'],
+      paint: {
+        'fill-color': palette.farmland,
+        'fill-opacity': byZoom([5, 0, 7, 0.85, 13, 0.85, 16, 0.5]),
+      },
+    },
+  );
   paint('landcover_wetland', 'fill-color', palette.wetland);
   paint('landcover_sand', 'fill-color', palette.sand);
   paint('landcover_sand', 'fill-opacity', byZoom([5, 0.4, 9, 0.6, 12, 0.85]));
@@ -335,6 +385,43 @@ function buildStyle(name, palette) {
     };
   });
 
+  // Districts get their own layer, earlier than the rest of `label_other`: in a city like
+  // Islamabad the sector (F-7, G-9, Blue Area) is how a vehicle's whereabouts are told.
+  // Neighbourhoods, hamlets and localities stay in `label_other`, half a zoom later.
+  const districtKinds = ['suburb', 'quarter'];
+  edit('label_other', (layer) => {
+    const suburb = structuredClone(layer);
+    suburb.id = 'label_district';
+    suburb.filter = ['match', ['get', 'class'], districtKinds, true, false];
+    style.layers.splice(style.layers.indexOf(layer), 0, suburb);
+    layerById.set(suburb.id, suburb);
+    layer.filter = [
+      'match', ['get', 'class'],
+      ['city', 'continent', 'country', 'state', 'town', 'village', ...districtKinds], false, true,
+    ];
+  });
+  // Park and reserve names, in green, under the place names so a district name wins a clash.
+  const labelsAt = style.layers.findIndex((layer) => layer.id === 'label_district');
+  const englishName = ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name_en'], ''];
+  const parkLabel = (id, sourceLayer, minzoom, filter, size) => ({
+    id,
+    type: 'symbol',
+    source: 'openmaptiles',
+    'source-layer': sourceLayer,
+    minzoom,
+    filter,
+    layout: { 'text-field': englishName, 'text-font': ['Inter'], 'text-size': size, 'text-max-width': 8, 'text-padding': 4 },
+    paint: { 'text-color': palette.parkLabel },
+  });
+  style.layers.splice(
+    labelsAt,
+    0,
+    // Large parks and reserves (Margalla Hills, Shakarparian) carry a label point in `park`.
+    parkLabel('park_label', 'park', 9, ['match', ['geometry-type'], ['MultiPoint', 'Point'], true, false], byZoom([9, 10.5, 14, 12.5])),
+    // City parks (Fatima Jinnah, Lake View) come as POIs once zoomed in.
+    parkLabel('poi_park_label', 'poi', 14, ['==', ['get', 'class'], 'park'], byZoom([14, 10.5, 16, 12])),
+  );
+
   for (const layer of style.layers) {
     if (layer.type !== 'symbol') continue;
     const layout = (layer.layout ??= {});
@@ -367,9 +454,10 @@ function buildStyle(name, palette) {
     ['label_city', 4],
     ['label_town', 6],
     ['label_village', 8],
+    ['label_district', 11.5],
     ['label_other', 12.5],
     ['highway-name-major', 11],
-    ['highway-name-minor', 13],
+    ['highway-name-minor', 12.5],
   ])
     edit(id, (layer) => (layer.minzoom = minZoom));
   // A place name belongs to the zoom where the place fits on screen. Without an end, the
@@ -387,11 +475,24 @@ function buildStyle(name, palette) {
   edit('label_other', (layer) => {
     layer.layout['text-transform'] = 'none';
     layer.layout['text-letter-spacing'] = 0;
-    layer.layout['text-size'] = byZoom([12.5, 10.5, 15, 12]);
-    layer.layout['text-padding'] = 12;
+    layer.layout['text-size'] = byZoom([12.5, 10, 16, 12]);
+    layer.layout['text-padding'] = 4;
   });
+  // Districts a touch bolder than the rest, packed close enough that a city's grid of
+  // sectors all get their name.
+  edit('label_district', (layer) => {
+    layer.layout['text-transform'] = 'none';
+    layer.layout['text-letter-spacing'] = 0.01;
+    layer.layout['text-font'] = ['Inter SemiBold'];
+    layer.layout['text-size'] = byZoom([11.5, 10.5, 15, 13]);
+    layer.layout['text-padding'] = 3;
+  });
+  // Road names a little smaller at city zoom, so more of them fit beside the place names.
+  for (const id of ['highway-name-major', 'highway-name-minor'])
+    edit(id, (layer) => (layer.layout['text-size'] = byZoom([11, 10, 13, 11, 15, 12.5, 17, 13.5])));
+  const quietLabels = ['label_other', 'label_district', 'label_state'];
   for (const layer of style.layers.filter(({ id }) => id.startsWith('label_')))
-    layer.paint['text-color'] = layer.id === 'label_other' || layer.id === 'label_state' ? palette.mutedLabel : palette.label;
+    layer.paint['text-color'] = quietLabels.includes(layer.id) ? palette.mutedLabel : palette.label;
   for (const id of ['highway-name-major', 'highway-name-minor', 'highway-name-path', 'airport'])
     paint(id, 'text-color', palette.mutedLabel);
   for (const id of ['waterway_line_label', 'water_name_point_label', 'water_name_line_label'])
@@ -407,14 +508,32 @@ function buildStyle(name, palette) {
   for (const id of ['road_one_way_arrow', 'road_one_way_arrow_opposite'])
     paint(id, 'icon-opacity', 0.5);
 
-  // Only the POIs a fleet cares about, and only once zoomed in. Keeps the basemap
-  // from competing with vehicles and event dots.
+  // Fleet places first, then landmarks, and only once zoomed in, so the basemap never
+  // competes with vehicles and event dots at the zooms a fleet is watched at.
+  edit('poi_r1', (layer) => {
+    const fleet = structuredClone(layer);
+    fleet.id = 'poi_fleet';
+    fleet.minzoom = 14;
+    fleet.filter = [
+      'all',
+      ['match', ['geometry-type'], ['MultiPoint', 'Point'], true, false],
+      ['match', ['get', 'class'], FLEET_POI_CLASSES, true, false],
+    ];
+    fleet.layout['text-font'] = ['Inter SemiBold'];
+    fleet.layout['text-size'] = byZoom([14, 11.5, 17, 13]);
+    fleet.layout['icon-size'] = byZoom([14, 1, 17, 1.15]);
+    fleet.paint['text-color'] = palette.label;
+    fleet.paint['icon-opacity'] = 1;
+    // Later in the list is placed first, so these win any clash with a landmark.
+    style.layers.splice(style.layers.indexOf(layer) + 1, 0, fleet);
+    layerById.set(fleet.id, fleet);
+  });
   for (const id of ['poi_r1', 'poi_r7', 'poi_r20']) {
     edit(id, (layer) => {
-      layer.filter = ['all', layer.filter, ['match', ['get', 'class'], FLEET_POI_CLASSES, true, false]];
+      layer.filter = ['all', layer.filter, ['match', ['get', 'class'], LANDMARK_POI_CLASSES, true, false]];
       layer.paint['text-color'] = palette.mutedLabel;
       layer.paint['icon-opacity'] = 0.85;
-      layer.layout['text-size'] = byZoom([15, 10, 17, 12]);
+      layer.layout['text-size'] = byZoom([15, 11, 17, 12.5]);
     });
   }
   edit('poi_transit', (layer) => {
