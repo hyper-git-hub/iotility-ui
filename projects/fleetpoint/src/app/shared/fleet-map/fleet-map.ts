@@ -153,6 +153,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
    * be hundreds of calls — the rest move in straight lines.
    */
   readonly smoothTracking = input(false);
+  /** The red "!" badge (and pulse) on vehicles with unread alerts; off, alerts don't mark the marker at all. */
+  readonly showAlertBadges = input(true);
   /**
    * Optional popup body builder. The default card is vehicle-shaped (thumbnail,
    * driver, speed/fuel), so a page with a different record shape — POIs, for
@@ -443,7 +445,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     // every marker depends on (selection, fullscreen footer, theme colours, popup builder) changed too.
     const popupTemplate = this.popupTemplate();
     const dark = document.documentElement.classList.contains('dark');
-    const context = `${selectedId}|${this.isFullscreen()}|${dark}`;
+    const context = `${selectedId}|${this.isFullscreen()}|${dark}|${this.showAlertBadges()}`;
     const contextChanged = context !== this.renderedContext || popupTemplate !== this.renderedPopupTemplate;
     this.renderedContext = context;
     this.renderedPopupTemplate = popupTemplate;
@@ -766,19 +768,20 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     // A heading from the feed counts only while no glide is steering the marker.
     if (Number.isFinite(heading) && !this.trackers.has(vehicle.id))
       this.steerHeading(vehicle.id, heading, performance.now(), !this.headings.has(vehicle.id));
+    const alert = vehicle.alert && this.showAlertBadges();
     const className = `vm vm--${vehicle.status.toLowerCase()}${selected ? ' is-selected' : ''}`
-      + `${this.headings.has(vehicle.id) ? ' has-heading' : ''}${vehicle.alert ? ' has-alert' : ''}`;
+      + `${this.headings.has(vehicle.id) ? ' has-heading' : ''}${alert ? ' has-alert' : ''}`;
     if (parts.root.className !== className) parts.root.className = className;
     const color = this.statusColor(vehicle.status);
     if (parts.root.style.getPropertyValue('--vm-color') !== color) parts.root.style.setProperty('--vm-color', color);
     if (parts.plate.textContent !== vehicle.id) parts.plate.textContent = vehicle.id;
     const speed = selected && vehicle.status === 'Moving' && vehicle.speed > 0 ? ` · ${Math.round(vehicle.speed)} km/h` : '';
     if (parts.speed.textContent !== speed) parts.speed.textContent = speed;
-    const label = `${vehicle.id}, ${vehicle.status.toLowerCase()}${vehicle.alert ? ', has alerts' : ''}`
+    const label = `${vehicle.id}, ${vehicle.status.toLowerCase()}${alert ? ', has alerts' : ''}`
       + `${vehicle.speed > 0 ? `, ${Math.round(vehicle.speed)} km/h` : ''}`;
     if (parts.root.getAttribute('aria-label') !== label) parts.root.setAttribute('aria-label', label);
     // The selected vehicle and alerts sit above their neighbours.
-    const layer = selected ? '3' : vehicle.alert || vehicle.status === 'Alert' ? '2' : '';
+    const layer = selected ? '3' : alert || vehicle.status === 'Alert' ? '2' : '';
     const wrapper = marker.getElement();
     if (wrapper.style.zIndex !== layer) wrapper.style.zIndex = layer;
   }
@@ -1036,8 +1039,10 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       membersByRoot.set(root, members);
     });
     // An alert badge outranks every status, so a group holding one shows the alert colour.
+    // Unread alerts count as the Alert status (a red ring) only while alert badges are shown.
+    const alertsShown = this.showAlertBadges();
     const statusById = new Map(
-      visibleVehicles.map(({ id, status, alert }) => [id, alert ? 'Alert' as const : status]),
+      visibleVehicles.map(({ id, status, alert }) => [id, alert && alertsShown ? 'Alert' as const : status]),
     );
     const groups: ClusterGroup[] = [...membersByRoot.values()].map((members) => {
       const ids = members.map(({ id }) => id).sort();

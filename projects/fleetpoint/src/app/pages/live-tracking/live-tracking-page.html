@@ -110,7 +110,7 @@
               ><small>{{ row.details }}</small
               ><small>{{ row.vehicle.location }}</small></span
             ><span class="vehicle-state" [class]="row.stateClass"
-              >@if (row.alert) {<i
+              >@if (showAlertBadges && row.alert) {<i
                   class="vehicle-alert-badge"
                   [attr.aria-label]="row.vehicle.alertCount === null ? 'Has alerts' : row.vehicle.alertCount + ' unread ' + (row.vehicle.alertCount === 1 ? 'alert' : 'alerts')"
                   >!</i
@@ -181,6 +181,7 @@
       [class.details-panel-open]="!isFullscreen() && selectedVehicle() !== null"
       [vehicles]="mapVehicles()"
       [smoothTracking]="true"
+      [showAlertBadges]="showAlertBadges"
       [fitKey]="mapFilterKey()"
       [selectedVehicleId]="selectedVehicle()?.id ?? null"
       [isFullscreen]="isFullscreen()"

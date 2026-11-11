@@ -129,6 +129,11 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
   protected readonly trackingView = signal<'vehicles' | 'drivers'>('vehicles');
   protected readonly fleetRecords = signal<FleetInventoryRecord[]>([]);
   protected readonly selectedVehicle = signal<LiveVehicle | null>(null);
+  /**
+   * The red "!" unread-alert badges on the map markers and in the vehicle list. Hidden for now;
+   * set to true to show them again (the alert data, filter and details panel are unchanged).
+   */
+  protected readonly showAlertBadges = false;
   protected readonly allocationOpen = signal(false);
   protected readonly now = signal(Date.now());
   protected readonly vehicles = signal<LiveVehicle[]>([]);
