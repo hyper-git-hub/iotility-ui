@@ -223,6 +223,10 @@
 }
 .map-legend {
   @apply absolute z-(--z-map-controls) bottom-4 left-1/2 -translate-x-1/2;
+  /* Its own width (status and type boxes side by side), not the half of the map that a box
+     starting at left: 50% would otherwise be limited to; it wraps only on a narrow map. */
+  width: max-content;
+  max-width: calc(100% - 2rem);
   transition: left 260ms var(--ease-out);
 }
 @media (min-width: 901px) {

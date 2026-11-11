@@ -1,8 +1,20 @@
-<div class="vehicle-legend" role="list" aria-label="Vehicle status legend">
-  @for (status of statuses; track status.key) {
-    <span class="legend-item" role="listitem">
-      <i class="legend-dot" [style.background]="status.color" aria-hidden="true"></i>
-      <span class="legend-label">{{ status.label }}</span>
-    </span>
+<div class="legends">
+  <div class="vehicle-legend" role="list" aria-label="Vehicle status legend">
+    @for (status of statuses; track status.key) {
+      <span class="legend-item" role="listitem">
+        <i class="legend-dot" [style.background]="status.color" aria-hidden="true"></i>
+        <span class="legend-label">{{ status.label }}</span>
+      </span>
+    }
+  </div>
+  @if (types().length) {
+    <div class="vehicle-legend" role="list" aria-label="Vehicle type legend">
+      @for (type of types(); track type.label) {
+        <span class="legend-item" role="listitem">
+          <img class="legend-icon" [src]="type.image" alt="" aria-hidden="true" (error)="hideIcon($event)" />
+          <span class="legend-label">{{ type.label }}</span>
+        </span>
+      }
+    </div>
   }
 </div>

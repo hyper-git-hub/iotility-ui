@@ -198,7 +198,7 @@
         [loading]="loading()"
       />
     </div>
-    <app-vehicle-legend class="map-legend" />
+    <app-vehicle-legend class="map-legend" [types]="vehicleTypeLegend()" />
     @if (isFullscreen()) {
       <app-search-overlay
         class="search-overlay-overlay"

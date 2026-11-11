@@ -3,6 +3,10 @@
 :host {
   @apply block;
 }
+/* Status and vehicle types side by side, the same height; stacked when the map is too narrow. */
+.legends {
+  @apply flex flex-wrap items-stretch justify-center gap-2;
+}
 .vehicle-legend {
   @apply flex items-center gap-3 rounded-xl px-3 py-2 text-xs shadow-lg
          bg-white/95 text-muted border border-line
@@ -13,6 +17,9 @@
 }
 .legend-dot {
   @apply size-2.5 rounded-full;
+}
+.legend-icon {
+  @apply size-[18px] shrink-0 object-contain;
 }
 .legend-label {
   @apply whitespace-nowrap;

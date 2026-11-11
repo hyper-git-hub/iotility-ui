@@ -20,7 +20,7 @@ import {
   VehicleStatus,
 } from '../../shared/fleet-map/fleet-map';
 import { SearchOverlay } from '../../shared/map-overlays/search-overlay';
-import { VehicleLegend } from '../../shared/map-overlays/vehicle-legend';
+import { VehicleLegend, VehicleTypeLegendItem } from '../../shared/map-overlays/vehicle-legend';
 import { FullscreenUiService } from '../../shared/services/fullscreen-ui.service';
 import {
   GeoZoneRecord,
@@ -46,6 +46,9 @@ interface LiveVehicle extends TrackedVehicle {
   numericId: number;
   deviceId: string;
   image: string | null;
+  /** The vehicle type's name and icon, for the type legend. */
+  typeName: string;
+  typeImage: string | null;
   seatBelt: boolean;
   ignition: boolean;
   battery: number | null;
@@ -282,6 +285,22 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       }
       return row;
     });
+  });
+  /**
+   * One legend entry per vehicle type with an icon, across the vehicles loaded (so filtering
+   * the map doesn't make the legend jump). Types without an icon draw the status disc, which
+   * the status legend already explains.
+   */
+  protected readonly vehicleTypeLegend = computed<VehicleTypeLegendItem[]>(() => {
+    const byType = new Map<string, VehicleTypeLegendItem>();
+    for (const vehicle of this.vehicles()) {
+      if (!vehicle.typeImage) continue;
+      const key = vehicle.typeName.toLowerCase() || vehicle.typeImage;
+      if (byType.has(key)) continue;
+      const name = vehicle.typeName || 'Vehicle';
+      byType.set(key, { label: name.charAt(0).toUpperCase() + name.slice(1), image: vehicle.typeImage });
+    }
+    return [...byType.values()].sort((a, b) => a.label.localeCompare(b.label));
   });
   protected readonly mapVehicles = computed(() =>
     this.filteredVehicles().filter(
@@ -673,6 +692,8 @@ export class LiveTrackingPage implements OnInit, OnDestroy {
       // The vehicle type's icon (car, van, truck…) first, as on the vehicles page: it is what the
       // map markers and the list show. A photo of the vehicle is only the fallback.
       image: vehicle.vehicle_type_image || vehicle.image || null,
+      typeName: String(vehicle.vehicle_type ?? '').trim(),
+      typeImage: vehicle.vehicle_type_image?.trim() || null,
       seatBelt: Boolean(vehicle.seat_belt),
       ignition,
       battery: this.optionalPercent(vehicle.battery_level),
