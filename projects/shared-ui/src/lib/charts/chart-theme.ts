@@ -206,14 +206,18 @@ export function baseOption(palette: ChartPalette, reducedMotion: boolean) {
   };
 }
 
-/** Category/value axis styling shared by line and bar charts. */
+/**
+ * Category/value axis styling shared by line and bar charts. Both axes draw the same faint
+ * dashed grid, so a chart reads as a grid: on a line chart a line at each labelled point,
+ * on a bar chart one between neighbouring bars.
+ */
 export function axisStyle(palette: ChartPalette, kind: 'category' | 'value') {
   return kind === 'category'
     ? {
         axisLine: { show: true, lineStyle: { color: palette.grid } },
         axisTick: { show: false },
         axisLabel: { color: palette.text, fontSize: 11, margin: 10, hideOverlap: true },
-        splitLine: { show: false },
+        splitLine: { show: true, lineStyle: { color: palette.grid, type: [4, 4] as number[] } },
       }
     : {
         axisLine: { show: false },
