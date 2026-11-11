@@ -24,7 +24,7 @@ import {
   popup,
   removeGeoJson,
   routeCasingColor,
-  timezoneCenter,
+  timezoneCountryCenter,
   upsertGeoJson,
 } from '../maps/maplibre';
 import { prefersReducedMotion } from '../maps/smooth-track';
@@ -70,8 +70,12 @@ function speedColor(kph: number, alpha: number): [number, number, number, number
   }
   return [...stops[stops.length - 1][1], alpha];
 }
-const DEFAULT_MAP_CENTER: LatLng = timezoneCenter();
-const DEFAULT_MAP_ZOOM = 5;
+/**
+ * Before a trip loads (and when one has no positions) the map shows the user's whole country,
+ * as live tracking does: the middle of Pakistan for Asia/Karachi, at a zoom that fits it.
+ */
+const DEFAULT_MAP_CENTER: LatLng = timezoneCountryCenter();
+const DEFAULT_MAP_ZOOM = 4.7;
 const NAVIGATION_PITCH = 52;
 const NAVIGATION_ZOOM = 16.5;
 const CAMERA_BEARING_DAMPING = 4.2;
@@ -1408,13 +1412,15 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     pitch: number;
     lookAhead: number;
   } {
-    // Nav apps zoom out slightly and look further down the road at higher
-    // speed, and sit closer/steeper when crawling or stopped.
+    // One zoom and tilt per playback speed: the vehicle's own speed shows in how fast it
+    // crosses the map, and zooming out as it sped up shrank that motion and kept the map
+    // breathing. Only the look-ahead grows with speed, showing more of the road coming up
+    // without changing the scale.
     const t = Math.max(0, Math.min(speedKph / 100, 1));
     const pullBack = this.playbackPullBack();
     return {
-      zoom: NAVIGATION_ZOOM - t * 1.2 - pullBack,
-      pitch: NAVIGATION_PITCH - t * 6 - pullBack * 5,
+      zoom: NAVIGATION_ZOOM - pullBack,
+      pitch: NAVIGATION_PITCH - pullBack * 5,
       lookAhead: (28 + t * 90) * 2 ** pullBack,
     };
   }

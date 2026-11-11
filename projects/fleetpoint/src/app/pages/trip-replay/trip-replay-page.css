@@ -72,11 +72,12 @@
 .trip-row.selected {
   @apply bg-brand-600 text-white hover:bg-brand-600 dark:bg-brand-600;
 }
+/* Same size as the live tracking list's vehicle icon. */
 .vehicle-thumb {
-  @apply mt-1 grid size-9 shrink-0 place-items-center;
+  @apply mt-1 grid size-6 shrink-0 place-items-center;
 }
 .vehicle-thumb img {
-  @apply size-9 object-contain;
+  @apply size-6 object-contain;
 }
 .vehicle-avatar {
   @apply grid size-10 shrink-0 place-items-center;
@@ -275,13 +276,20 @@
 :host-context(.dark) .hud-time strong {
   color: white;
 }
-.map-legend {
+/* Two boxes side by side, the same height: the speed ramp (while speed colours are on) and the markers. */
+.map-legends {
   position: absolute;
   bottom: 16px;
   left: 16px;
   z-index: var(--z-map-controls);
   display: flex;
   max-width: calc(100% - 320px);
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+.map-legend {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   column-gap: 12px;
@@ -306,15 +314,22 @@
   border-radius: 999px;
 }
 /* Speed colours: the same ramp the route is painted with, labelled at its stops. */
-.legend-speed {
+.speed-legend {
   display: grid;
   grid-template-columns: auto auto;
   grid-template-rows: auto auto;
   column-gap: 6px;
   row-gap: 1px;
-  align-items: center;
+  align-content: center;
+  color: var(--color-muted);
+  font-size: 10px;
+  font-weight: 500;
 }
-.legend-item .speed-scale {
+.speed-unit {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.speed-legend .speed-scale {
   grid-row: 1;
   width: 104px;
   height: 6px;
@@ -338,7 +353,8 @@
   border-color: var(--color-dark-line);
   background: color-mix(in srgb, var(--color-dark-surface) 95%, transparent);
 }
-:host-context(.dark) .legend-item {
+:host-context(.dark) .legend-item,
+:host-context(.dark) .speed-legend {
   color: var(--color-brand-300);
 }
 .playback-panel {

@@ -45,9 +45,9 @@
             <div class="trip-row-skeleton" aria-hidden="true">
               <ui-skeleton
                 class="trip-thumb-skeleton"
-                width="2.25rem"
-                height="2.25rem"
-                radius="0.5rem"
+                width="1.6rem"
+                height="1.6rem"
+                radius="0.4rem"
               />
               <div class="trip-copy-skeleton">
                 <span class="trip-title-line"
@@ -73,7 +73,7 @@
             >
               <span class="vehicle-thumb"
                 ><img
-                  [src]="vehicleImage(vehicleImages()[vehicle.id] || vehicle.vehicle_type_image)"
+                  [src]="vehicleImage(vehicle.vehicle_type_image || vehicleImages()[vehicle.id])"
                   (error)="useDefaultVehicleImage($event)"
                   alt=""
                   aria-hidden="true"
@@ -144,21 +144,25 @@
               ><small>{{ selectedTrip().date }}</small></span
             >
           </div>
-          <div class="map-legend" aria-hidden="true">
-            @for (item of legendItems; track item.label) {
-              @if (item.label === 'Travelled' && speedTrail()) {
-                <span class="legend-item legend-speed">
-                  <i class="speed-scale"></i>
-                  <span class="speed-ticks"><b>0</b><b>60</b><b>80</b><b>100</b><b>120+</b></span>
-                  km/h
-                </span>
-              } @else {
-                <span class="legend-item">
-                  <i [style.background]="item.color"></i
-                  >{{ item.label }}
-                </span>
-              }
+          <div class="map-legends" aria-hidden="true">
+            <!-- The speed ramp has its own box: it reads the trail's colour, the other legend the markers. -->
+            @if (speedTrail()) {
+              <div class="map-legend speed-legend">
+                <i class="speed-scale"></i>
+                <span class="speed-ticks"><b>0</b><b>60</b><b>80</b><b>100</b><b>120+</b></span>
+                <span class="speed-unit">km/h</span>
+              </div>
             }
+            <div class="map-legend">
+              @for (item of legendItems; track item.label) {
+                @if (item.label !== 'Travelled' || !speedTrail()) {
+                  <span class="legend-item">
+                    <i [style.background]="item.color"></i
+                    >{{ item.label }}
+                  </span>
+                }
+              }
+            </div>
           </div>
         }
       </div>

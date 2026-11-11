@@ -36,9 +36,14 @@ const STOP_MIN_SAMPLES = 4;
 /** A "stop" that wanders further than this was moving: its speed field is unreliable. */
 const STOP_RADIUS_M = 40;
 
-/** Real gaps are replayed at most this long, so a data hole slows playback but never freezes it. */
-const MAX_GAP_MS = 5_000;
-/** Replay time for a sample pair without usable timestamps. */
+/**
+ * A gap between moving samples longer than this many times the drive at their recorded speed
+ * is a data hole (no signal, a buffered upload), not slow driving: it replays as that drive.
+ */
+const DATA_HOLE_FACTOR = 2;
+/** A gap with no believable speed (parked, creeping, speed not reported) replays at most this long. */
+const MAX_STILL_GAP_MS = 20_000;
+/** Replay time for a sample pair without usable timestamps or speed. */
 const FALLBACK_GAP_MS = 600;
 /** Replay time a whole stop is squeezed into when stops are skipped. */
 const STOP_SPAN_MS = 4_000;
@@ -128,7 +133,16 @@ export function formatStopDuration(durationMs: number): string {
   return rest ? `Stopped ${hours} h ${rest} min` : `Stopped ${hours} h`;
 }
 
-/** Replay time of every sample, in ms from the first one. */
+/**
+ * Replay time of every sample, in ms from the first one. Each gap is the real time between the
+ * two samples, so the vehicle covers every stretch at the pace it really drove it: fast on the
+ * highway, slow in traffic. Devices often log by distance, so a fast vehicle's samples come
+ * seconds apart and a slow one's half a minute apart; that difference is the speed.
+ *
+ * Only gaps that are not driving are shortened: a data hole replays as the drive at the
+ * recorded speed, and a gap with no believable speed is held to MAX_STILL_GAP_MS. Stops are
+ * squeezed separately when `skipStops` is on.
+ */
 export function buildReplayOffsets(
   samples: readonly ReplaySample[],
   runs: readonly StopRun[],
@@ -137,8 +151,21 @@ export function buildReplayOffsets(
   if (!samples.length) return [];
   const gaps = new Array<number>(samples.length).fill(0);
   for (let index = 1; index < samples.length; index++) {
-    const gap = timeOf(samples[index]) - timeOf(samples[index - 1]);
-    gaps[index] = Number.isFinite(gap) && gap > 0 ? Math.min(gap, MAX_GAP_MS) : FALLBACK_GAP_MS;
+    const from = samples[index - 1];
+    const to = samples[index];
+    const realGap = timeOf(to) - timeOf(from);
+    const metres = metresBetween([Number(from.lat), Number(from.lng)], [Number(to.lat), Number(to.lng)]);
+    const kph = ((Number(from.speed) || 0) + (Number(to.speed) || 0)) / 2;
+    // How long the stretch takes at the recorded speed, when the vehicle was really moving.
+    const driveMs = kph > STOP_SPEED_KPH && metres > 1 ? (metres / (kph / 3.6)) * 1000 : Number.NaN;
+    let gap: number;
+    if (Number.isFinite(realGap) && realGap > 0) {
+      if (Number.isFinite(driveMs)) gap = realGap > driveMs * DATA_HOLE_FACTOR ? driveMs : realGap;
+      else gap = Math.min(realGap, MAX_STILL_GAP_MS);
+    } else {
+      gap = Number.isFinite(driveMs) ? driveMs : FALLBACK_GAP_MS;
+    }
+    gaps[index] = gap;
   }
   if (skipStops) {
     for (const run of runs) {

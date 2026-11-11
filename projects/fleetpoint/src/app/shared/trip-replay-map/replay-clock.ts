@@ -1,9 +1,15 @@
 import { NgZone, signal } from '@angular/core';
 import { prefersReducedMotion } from '../maps/smooth-track';
 
-/** Choices on the speed control, as multiples of real time. */
-export const REPLAY_SPEEDS = [2, 5, 10, 15, 25] as const;
+/**
+ * Choices on the speed control, as multiples of real time. The replay follows the trip's real
+ * timing (see buildReplayOffsets), so these run from a close look (5×, an hour in 12 minutes)
+ * to a quick overview (100×, an hour in 36 seconds).
+ */
+export const REPLAY_SPEEDS = [5, 10, 25, 50, 100] as const;
 type ReplaySpeed = (typeof REPLAY_SPEEDS)[number];
+/** Where playback starts: an hour's trip in six minutes. */
+const DEFAULT_SPEED: ReplaySpeed = 10;
 
 /** How quickly playback spins up, slows down or changes speed. */
 const RATE_EASE_MS = 110;
@@ -38,7 +44,7 @@ export class ReplayClock {
   private playhead = 0;
   private rate = 0;
   private targetRate = 0;
-  private speed: ReplaySpeed = REPLAY_SPEEDS[0];
+  private speed: ReplaySpeed = DEFAULT_SPEED;
   private cursor = 0;
   private lastFrameTime?: number;
   private frame?: number;
