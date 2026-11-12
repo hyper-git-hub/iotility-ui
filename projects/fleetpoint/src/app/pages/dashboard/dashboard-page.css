@@ -11,7 +11,9 @@
 .status-segment.idling { @apply bg-warning; }
 .status-segment.stopped { @apply bg-slate-400; }
 .status-segment.alert { @apply bg-danger; }
-.status-segment.offline { @apply bg-slate-700; }
+/* Offline is the quietest share: lighter than stopped, so a fleet that is mostly offline reads as
+   a pale bar rather than a heavy dark stripe. */
+.status-segment.offline { @apply bg-slate-300 dark:bg-slate-600; }
 .fleet-status-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6; }
 /* Status tiles are app-stat-card; only the alert tile is a link (to today's violations). */
 .fleet-status-grid app-stat-card.clickable { cursor: pointer; border-radius: 14px; transition: scale var(--duration-press) var(--ease-out); }
