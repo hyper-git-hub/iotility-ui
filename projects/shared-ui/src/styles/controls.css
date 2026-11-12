@@ -6,10 +6,58 @@
  *   .ui-control-group   a .ui-control box holding an icon/prefix + a borderless <input> (search boxes)
  *   .ui-select          a .ui-control styled as a select trigger (shared-dropdown applies it itself)
  *   .ui-control-sm/-lg  compact (inline/card filters) and large (auth screens) sizes
+ *   .ui-checkbox        the round checkbox: brand fill and a white tick when checked
  *
  * In @layer components so Tailwind utilities on the element (w-64, text-xs…) can still adjust it.
  */
 @layer components {
+  /* One checkbox for both apps (login, forms, the shared input). `.fleet-checkbox` is its
+     older FleetPoint name, kept so existing forms need no change. */
+  .ui-checkbox,
+  .fleet-checkbox {
+    position: relative;
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    background-color: #fff;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  .dark .ui-checkbox,
+  .dark .fleet-checkbox {
+    border-color: var(--color-dark-line);
+    background-color: var(--color-dark-canvas);
+  }
+  /* After the dark rule, so a checked box is brand in both themes. */
+  .ui-checkbox:checked,
+  .fleet-checkbox:checked {
+    border-color: var(--color-brand-600);
+    background-color: var(--color-brand-600);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m5.5 10.2 2.8 2.8 6.2-6.2' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--color-brand-600) 30%, transparent);
+  }
+  .ui-checkbox:focus-visible,
+  .fleet-checkbox:focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+  .ui-checkbox:disabled,
+  .fleet-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
   .ui-control {
     box-sizing: border-box;
     display: block;

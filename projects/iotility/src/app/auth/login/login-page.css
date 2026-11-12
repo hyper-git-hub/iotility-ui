@@ -23,7 +23,6 @@
 .field-error { @apply mt-1 block text-xs text-danger; }
 .login-options { @apply mb-6 mt-3 flex items-center justify-between gap-3 text-xs; }
 .login-options label { @apply flex cursor-pointer items-center gap-2 text-muted dark:text-brand-300; }
-.login-options input { @apply accent-brand-600; }
 .login-options a { @apply font-medium text-brand-600 hover:underline dark:text-brand-400; }
 .login-error { @apply mb-4 rounded-lg bg-danger/10 px-3 py-2 text-center text-sm text-danger; }
 .submit-button { @apply flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60; }
