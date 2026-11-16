@@ -21,7 +21,9 @@ export interface FleetInventoryRecord {
   utilisation?: number | null;
   fuel_efficiency?: number | null;
   safety_score?: number | null;
-  category?: string | null;
+  /** The category's id; category_name is its label (null when the fleet has none). */
+  category?: number | string | null;
+  category_name?: string | null;
   assigned_vehicles?: Array<{
     id?: number;
     name?: string;
@@ -30,7 +32,10 @@ export interface FleetInventoryRecord {
     model?: string | null;
     year?: string | number | null;
     online_status?: boolean;
+    /** moving | idling | stopped | offline. Alert is not a state: see active_alert_count. */
     live_status?: string | null;
+    /** Unread violations today for this vehicle. */
+    active_alert_count?: number | null;
     location?: string | null;
     mileage?: string | null;
     total_violations?: number | null;
@@ -40,11 +45,14 @@ export interface FleetInventoryRecord {
   }>;
 }
 
+/** The totals cover every fleet matching the search, not only the current page. */
 export interface FleetInventoryResponse {
   count?: number;
   total_fleet_count?: number;
   total_vehicle_count?: number;
   total_driver_count?: number;
+  /** Vehicles with an unread alert today (the Live Fleet Status card's rule). */
+  total_alert_count?: number;
   data: FleetInventoryRecord[];
 }
 

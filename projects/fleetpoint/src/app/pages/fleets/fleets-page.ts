@@ -37,6 +37,13 @@ function apiNumber(value: unknown): number | null {
   return Number.isFinite(number) ? Math.round(number) : null;
 }
 
+type AssignedVehicle = NonNullable<FleetInventoryRecord['assigned_vehicles']>[number];
+
+/** Alert is a flag now (unread violations today), not a live_status; the old value still counts. */
+function hasActiveAlert(vehicle: AssignedVehicle): boolean {
+  return (apiNumber(vehicle.active_alert_count) ?? 0) > 0 || vehicle.live_status?.toLowerCase() === 'alert';
+}
+
 @Component({
   selector: 'app-fleets-page',
   imports: [PluralPipe, Dropdown, FleetForm, ProgressBar, Skeleton, StatCard],
@@ -79,9 +86,13 @@ export class FleetsPage implements OnInit, OnDestroy {
   protected readonly totalDrivers = signal<number | null>(null);
   protected readonly offset = signal(0);
   protected readonly limit = 10;
-  /** Vehicles in alert (`live_status` "Alert") across the fleets loaded so far. */
+  /** `total_alert_count`: vehicles with an unread alert today, across every fleet. */
+  protected readonly totalAlertCount = signal<number | null>(null);
+  /** Falls back to the fleets loaded so far when the API sends no total. */
   protected readonly totalAlerts = computed(
-    () => this.fleets().reduce((total, fleet) => total + fleet.alertVehicles, 0),
+    () =>
+      this.totalAlertCount() ??
+      this.fleets().reduce((total, fleet) => total + fleet.alertVehicles, 0),
   );
   protected readonly hasMore = computed(() => this.fleets().length < (this.total() ?? 0));
 
@@ -135,6 +146,7 @@ export class FleetsPage implements OnInit, OnDestroy {
           this.total.set(apiNumber(response.data?.total_fleet_count));
           this.totalVehicles.set(apiNumber(response.data?.total_vehicle_count));
           this.totalDrivers.set(apiNumber(response.data?.total_driver_count));
+          this.totalAlertCount.set(apiNumber(response.data?.total_alert_count));
         },
         error: (response) => {
           const message = response.error?.message || 'Fleet data could not be loaded.';
@@ -206,11 +218,10 @@ export class FleetsPage implements OnInit, OnDestroy {
       activeVehicles: fleet.assigned_vehicles
         ? assignedVehicles.filter((vehicle) => vehicle.online_status).length
         : null,
-      alertVehicles: assignedVehicles.filter(
-        (vehicle) => vehicle.live_status?.toLowerCase() === 'alert',
-      ).length,
+      alertVehicles: assignedVehicles.filter(hasActiveAlert).length,
       avgFuel: avgFuel === null ? '—' : `${avgFuel}%`,
-      description: fleet.category || fleet.customer_name || '—',
+      // category is an id now; category_name is the label.
+      description: fleet.category_name || fleet.customer_name || '—',
       safetyScore: apiNumber(fleet.safety_score),
       fuelEfficiency: apiNumber(fleet.fuel_efficiency),
       utilisation: apiNumber(fleet.utilisation),
@@ -219,10 +230,9 @@ export class FleetsPage implements OnInit, OnDestroy {
       vehicleIds: assignedVehicles.map((vehicle) => ({
         id: vehicle.id,
         label: vehicle.registration || vehicle.name || String(vehicle.id),
-        state:
-          vehicle.live_status?.toLowerCase() === 'alert'
-            ? 'alert'
-            : vehicle.online_status
+        state: hasActiveAlert(vehicle)
+          ? 'alert'
+          : vehicle.online_status
               ? 'online'
               : 'offline',
       })),

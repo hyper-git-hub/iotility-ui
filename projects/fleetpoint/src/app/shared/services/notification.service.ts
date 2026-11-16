@@ -25,7 +25,26 @@ export interface FleetNotification {
 }
 
 interface NotificationResponse {
-  data?: { data?: FleetNotification[] } | FleetNotification[];
+  /** unread_count covers every unread notification matching the filters, not just this page. */
+  data?: { count?: number; unread_count?: number; data?: FleetNotification[] } | FleetNotification[];
+}
+
+/**
+ * What the backend writes to `Notification/<user guid>`. Numbers keep their type here (only
+ * the mobile push stringifies them); a missing text value is '' and a missing number is absent.
+ */
+interface RealtimeAlert {
+  id?: number | string;
+  title?: string;
+  body?: string;
+  notification_type?: number | string;
+  vehicle?: number | string;
+  vehicle_name?: string;
+  driver_name?: string;
+  location?: string;
+  threshold_value?: number | string;
+  /** "YYYY-MM-DD HH:MM:SS" in UTC. */
+  notf_created_at?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -64,8 +83,14 @@ export class NotificationService {
       next: (response) => {
         const payload = response?.data;
         const items = Array.isArray(payload) ? payload : (payload?.data ?? []);
+        const unread = Array.isArray(payload) ? undefined : payload?.unread_count;
         this.notifications.set(items);
-        this.unreadCount.set(items.filter((item) => item.is_viewed === false).length);
+        // The page only holds the latest 100; unread_count is the true total.
+        this.unreadCount.set(
+          typeof unread === 'number' && Number.isFinite(unread)
+            ? unread
+            : items.filter((item) => item.is_viewed === false).length,
+        );
         this.loading.set(false);
         if (markViewed && this.unreadCount() > 0) this.markAllViewed();
       },
@@ -119,19 +144,52 @@ export class NotificationService {
   private pushRealtimeAlert(value: unknown): void {
     this.unreadCount.update((count) => count + 1);
     if (!value || typeof value !== 'object') return;
-    const alert = value as { title?: string; body?: string; notification_type?: number | string };
-    const now = new Date().toISOString();
+    const alert = value as RealtimeAlert;
+    const createdAt = this.utcToLocal(alert.notf_created_at) ?? this.localTimestamp(new Date());
+    const vehicle = this.numberOrText(alert.vehicle);
+    const notification: FleetNotification = {
+      id: this.numberOrText(alert.id) ?? undefined,
+      notf_title: alert.title || undefined,
+      notf_body: alert.body || undefined,
+      notf_type: alert.notification_type ?? null,
+      vehicle,
+      vehicle_name: alert.vehicle_name || null,
+      driver_name: alert.driver_name || null,
+      location: alert.location || null,
+      threshold_value: this.numberOrText(alert.threshold_value),
+      is_viewed: false,
+      notf_created_at: createdAt,
+      event_generation_time: createdAt,
+    };
     this.notifications.update((items) => [
-      {
-        notf_title: alert.title,
-        notf_body: alert.body,
-        notf_type: alert.notification_type ?? null,
-        is_viewed: false,
-        notf_created_at: now,
-        event_generation_time: now,
-      },
-      ...items,
+      notification,
+      // The same alert may already be listed if the panel was reloaded meanwhile.
+      ...items.filter((item) => notification.id == null || item.id !== notification.id),
     ]);
+  }
+
+  /** A number when the value is numeric, the text otherwise, null when absent or empty. */
+  private numberOrText(value: unknown): number | string | null {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : String(value);
+  }
+
+  /** "YYYY-MM-DD HH:MM:SS" in UTC → the same format in the viewer's time zone. */
+  private utcToLocal(value: string | undefined): string | null {
+    const match = value?.trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (!match) return null;
+    const [, year, month, day, hour, minute, second = '0'] = match;
+    const date = new Date(Date.UTC(+year, +month - 1, +day, +hour, +minute, +second));
+    return Number.isNaN(date.getTime()) ? null : this.localTimestamp(date);
+  }
+
+  private localTimestamp(date: Date): string {
+    const pad = (part: number) => String(part).padStart(2, '0');
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+      `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    );
   }
 
   private userGuid(): string {

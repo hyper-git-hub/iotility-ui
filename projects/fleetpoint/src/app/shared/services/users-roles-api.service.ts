@@ -57,6 +57,11 @@ export interface RoleGroup {
   updated_at?: string;
 }
 
+/** The roles listing also reports how many distinct active users hold any matching role. */
+export interface RoleListing extends PagedResult<RoleGroup> {
+  total_assigned_users?: number;
+}
+
 export interface PackageFeature {
   id: string;
   name: string;
@@ -139,8 +144,8 @@ export class UsersRolesApiService {
     });
   }
 
-  getRoles(query: ListingQuery): Observable<ManagementApiResponse<PagedResult<RoleGroup>>> {
-    return this.http.get<ManagementApiResponse<PagedResult<RoleGroup>>>(`${this.roleUrl}/`, {
+  getRoles(query: ListingQuery): Observable<ManagementApiResponse<RoleListing>> {
+    return this.http.get<ManagementApiResponse<RoleListing>>(`${this.roleUrl}/`, {
       params: new HttpParams()
         .set('limit', query.limit)
         .set('offset', query.offset)

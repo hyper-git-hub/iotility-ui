@@ -167,11 +167,17 @@ export class UsersRolesPage implements OnInit {
       actions: '',
     })),
   );
-  protected readonly assignedUserTotal = computed(() =>
-    this.roles().reduce(
-      (total, role) => total + (role.user_count ?? role.group_user?.length ?? 0),
-      0,
-    ),
+  /** Distinct users across every matching role, from the API; null until it reports one. */
+  private readonly totalAssignedUsers = signal<number | null>(null);
+  // Summing the page's roles counts a user in two roles twice and misses other pages,
+  // so it is only the fallback for a response without total_assigned_users.
+  protected readonly assignedUserTotal = computed(
+    () =>
+      this.totalAssignedUsers() ??
+      this.roles().reduce(
+        (total, role) => total + (role.user_count ?? role.group_user?.length ?? 0),
+        0,
+      ),
   );
   protected readonly userForm;
   protected readonly roleForm;
@@ -437,6 +443,7 @@ export class UsersRolesPage implements OnInit {
           );
           this.roles.set(roles.data?.data ?? []);
           this.roleTotal.set(roles.data?.count ?? 0);
+          this.totalAssignedUsers.set(this.finiteOrNull(roles.data?.total_assigned_users));
         },
         error: (response) =>
           this.apiError(response, 'Users and access groups could not be loaded.'),
@@ -514,6 +521,7 @@ export class UsersRolesPage implements OnInit {
         next: (response) => {
           this.roles.set(response.data?.data ?? []);
           this.roleTotal.set(response.data?.count ?? 0);
+          this.totalAssignedUsers.set(this.finiteOrNull(response.data?.total_assigned_users));
         },
         error: (response) => {
           if (showLoading) {
@@ -608,6 +616,11 @@ export class UsersRolesPage implements OnInit {
         },
         error: (response) => this.apiError(response, 'The access group could not be deleted.'),
       });
+  }
+
+  private finiteOrNull(value: unknown): number | null {
+    const count = Number(value);
+    return value !== null && value !== undefined && Number.isFinite(count) ? count : null;
   }
 
   private query(offset: number, search: string, status = ''): ListingQuery {
