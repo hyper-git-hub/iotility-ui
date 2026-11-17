@@ -2,7 +2,7 @@ import {
   AfterViewInit, Component, ElementRef, Injector, NgZone, OnDestroy, afterNextRender, effect, inject,
   input, output, signal, untracked, viewChild,
 } from '@angular/core';
-import maplibregl, { LngLatBounds, Map as MapLibreMap } from 'maplibre-gl';
+import maplibregl, { LngLat, LngLatBounds, Map as MapLibreMap, Point } from 'maplibre-gl';
 import {
   LatLng, LayerWithoutSource, circlePolygon, createIotMap, escapeHtml, fitLatLngs, flightEase,
   glideEase, lineFeature, markerElement, overlaySafePadding, polygonFeature, popupHtml, removeGeoJson,
@@ -121,6 +121,12 @@ export class FleetMap implements AfterViewInit, OnDestroy {
    */
   readonly fitKey = input('');
   readonly selectedVehicleId = input<string | null>(null);
+  /**
+   * A zone from `zones` to frame: the camera tilts to ZONE_PITCH and zooms until the zone fills
+   * the map. It waits for the map to stop resizing (a details panel sliding in beside it), so it
+   * frames the size the map ends up at.
+   */
+  readonly selectedZoneId = input<string | null>(null);
   readonly showOverlays = input(true);
   readonly isFullscreen = input(false);
   readonly detailsPanelOpen = input(false);
@@ -216,6 +222,15 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   private static readonly PLATE_MIN_ZOOM = 15;
   /** Selecting a vehicle keeps a closer zoom the user chose, up to this street-level one. */
   private static readonly FOCUS_MAX_ZOOM = 17;
+  /** A selected zone is seen at this tilt, so the buildings inside it stand up. */
+  private static readonly ZONE_PITCH = 60;
+  /** Room kept between a framed zone and the edges of the map. */
+  private static readonly ZONE_PADDING = { top: 32, right: 24, bottom: 32, left: 24 };
+  /** How long the map must hold its size before a selected zone is framed. */
+  private static readonly ZONE_SETTLE_MS = 60;
+  /** The zone the camera last framed, and the wait for the map to stop resizing first. */
+  private framedZoneId: string | null = null;
+  private zoneFrameTimer?: ReturnType<typeof setTimeout>;
   /** Selection/fullscreen/popup-builder state the markers were last rendered with. */
   private renderedContext: string | null = null;
   private renderedPopupTemplate: ((vehicle: TrackedVehicle) => string) | null = null;
@@ -313,6 +328,14 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.updateMarkerSelection(selectedId);
     });
     effect(() => {
+      const zoneId = this.selectedZoneId();
+      if (zoneId === this.framedZoneId) return;
+      this.framedZoneId = zoneId;
+      clearTimeout(this.zoneFrameTimer);
+      this.zoneFrameTimer = undefined;
+      if (zoneId) this.scheduleZoneFrame();
+    });
+    effect(() => {
       const trail = this.liveTrail();
       if (!this.map) return;
       this.renderLiveTrail(trail);
@@ -341,6 +364,8 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     this.bindPlateLabels(this.map);
     this.resizeObserver = new ResizeObserver(() => {
       this.map?.resize();
+      // Still resizing: frame the selected zone once the map has its final size.
+      if (this.zoneFrameTimer !== undefined) this.scheduleZoneFrame();
       if (this.initialFitPending && this.vehicles().length)
         this.renderMarkers(this.vehicles(), true, this.showMarkers(), this.clusterMarkers());
     });
@@ -356,6 +381,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
       this.renderZones(this.zones());
       const selected = this.vehicles().find(({ id }) => id === this.selectedVehicleId());
       if (selected) this.focusVehicle(selected);
+      if (this.selectedZoneId()) this.scheduleZoneFrame();
       this.map?.once('idle', () => this.emitReady());
       this.readyFallback = setTimeout(() => this.emitReady(), 1200);
     });
@@ -1336,13 +1362,9 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     }
     const features = zones.flatMap((zone) => {
       const properties = { id: zone.id, label: zone.label, color: zone.color, geometry: zone.geometry };
-      if (zone.geometry === 'circle' && zone.center)
-        return [polygonFeature(circlePolygon(zone.center, zone.radius ?? 300), properties)];
-      if (zone.geometry === 'polygon' && zone.points?.length)
-        return [polygonFeature(zone.points, properties)];
-      if (zone.geometry === 'corridor' && zone.points?.length)
-        return [lineFeature(zone.points, properties)];
-      return [];
+      const outline = this.zoneOutline(zone);
+      if (!outline.length) return [];
+      return [zone.geometry === 'corridor' ? lineFeature(outline, properties) : polygonFeature(outline, properties)];
     });
     upsertGeoJson(this.map, 'fleet-zones', { type: 'FeatureCollection', features }, [
       {
@@ -1414,24 +1436,30 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * One camera move to a vehicle, sized to the trip:
+   * Flies to a vehicle. A closer zoom the user chose is kept (up to street level); otherwise the
+   * camera comes in to `followZoom`.
+   */
+  private moveCameraTo(vehicle: TrackedVehicle): void {
+    const currentZoom = this.map!.getZoom();
+    const zoom = currentZoom > this.followZoom()
+      ? Math.min(currentZoom, FleetMap.FOCUS_MAX_ZOOM)
+      : this.followZoom();
+    this.flyCamera(new LngLat(vehicle.lng, vehicle.lat), zoom, this.followPadding());
+  }
+
+  /**
+   * One camera move, sized to the trip:
    * - Already on screen and about the right zoom: a glide of 0.8–1.15 s, longer the further it
    *   travels, with no zooming out and back in.
    * - Anywhere else: an arc out and back in over 1.4–2.2 s, longer for longer trips but never
    *   dragging.
-   * A closer zoom the user chose is kept (up to street level); otherwise the camera comes in to
-   * `followZoom`. Not marked essential, so with the OS set to reduce motion it jumps instead.
-   * Any drag or scroll stops it at once.
+   * Not marked essential, so with the OS set to reduce motion it jumps instead. Any drag or
+   * scroll stops it at once.
    */
-  private moveCameraTo(vehicle: TrackedVehicle): void {
+  private flyCamera(center: LngLat, zoom: number, padding: maplibregl.PaddingOptions, pitch?: number): void {
     const map = this.map!;
-    const center: [number, number] = [vehicle.lng, vehicle.lat];
-    const padding = this.followPadding();
-    const currentZoom = map.getZoom();
-    const zoom = currentZoom > this.followZoom()
-      ? Math.min(currentZoom, FleetMap.FOCUS_MAX_ZOOM)
-      : this.followZoom();
-    const zoomChange = Math.abs(zoom - currentZoom);
+    const zoomChange = Math.abs(zoom - map.getZoom());
+    const camera = { center, zoom, padding, ...(pitch === undefined ? {} : { pitch }) };
     const container = map.getContainer();
     const width = Math.max(1, container.clientWidth);
     const height = Math.max(1, container.clientHeight);
@@ -1440,12 +1468,73 @@ export class FleetMap implements AfterViewInit, OnDestroy {
     const travel = Math.hypot(point.x - landingX, point.y - height / 2);
     const onScreen = point.x >= 0 && point.x <= width && point.y >= 0 && point.y <= height;
     if (onScreen && zoomChange < 1.5) {
-      map.easeTo({ center, zoom, padding, duration: Math.round(Math.min(1150, 800 + travel * 0.45)), easing: glideEase });
+      map.easeTo({ ...camera, duration: Math.round(Math.min(1150, 800 + travel * 0.45)), easing: glideEase });
       return;
     }
     const screens = travel / width;
     const duration = Math.round(Math.min(2200, 1400 + 280 * Math.log2(1 + screens) + 90 * zoomChange));
-    map.flyTo({ center, zoom, padding, duration, curve: 1.5, easing: flightEase });
+    map.flyTo({ ...camera, duration, curve: 1.5, easing: flightEase });
+  }
+
+  /** Frames the selected zone once the map has held its size for ZONE_SETTLE_MS. */
+  private scheduleZoneFrame(): void {
+    clearTimeout(this.zoneFrameTimer);
+    this.zoneFrameTimer = setTimeout(() => {
+      this.zoneFrameTimer = undefined;
+      const zone = this.zones().find(({ id }) => id === this.selectedZoneId());
+      const outline = zone ? this.zoneOutline(zone) : [];
+      const camera = this.map && outline.length ? this.zoneCamera(outline) : null;
+      if (camera) this.flyCamera(camera.center, camera.zoom, { top: 0, right: 0, bottom: 0, left: 0 }, FleetMap.ZONE_PITCH);
+    }, FleetMap.ZONE_SETTLE_MS);
+  }
+
+  /** A zone's outline: a circle as a ring of points, a polygon or corridor as its own points. */
+  private zoneOutline(zone: MapZoneOverlay): LatLng[] {
+    if (zone.geometry === 'circle') return zone.center ? circlePolygon(zone.center, zone.radius ?? 300) : [];
+    return zone.points ?? [];
+  }
+
+  /**
+   * The centre and zoom that fit `outline` inside the padded map at ZONE_PITCH. MapLibre's own
+   * fit measures the bounds flat, so a tilted zone would land at about half the size. This
+   * measures the outline as the tilted camera sees it: the closest zoom that keeps it inside,
+   * then a shift that centres it on screen. The shift changes the perspective, so it runs a few
+   * passes.
+   */
+  private zoneCamera(outline: LatLng[]): { center: LngLat; zoom: number } | null {
+    const camera = this.map!.transform.clone();
+    const { width, height } = camera;
+    const pad = FleetMap.ZONE_PADDING;
+    const roomWidth = width - pad.left - pad.right;
+    const roomHeight = height - pad.top - pad.bottom;
+    if (roomWidth <= 0 || roomHeight <= 0) return null;
+    const points = outline.map(([lat, lng]) => new LngLat(lng, lat));
+    const box = () => {
+      const screen = points.map((point) => camera.locationToScreenPoint(point));
+      const xs = screen.map(({ x }) => x);
+      const ys = screen.map(({ y }) => y);
+      const [left, right, top, bottom] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+      return { left, right, top, bottom, fits: [left, right, top, bottom].every(Number.isFinite)
+        && right - left <= roomWidth && bottom - top <= roomHeight };
+    };
+    camera.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
+    camera.setPitch(FleetMap.ZONE_PITCH);
+    camera.setCenter(points.reduce((bounds, point) => bounds.extend(point), new LngLatBounds()).getCenter());
+    for (let pass = 0; pass < 3; pass++) {
+      let low = camera.minZoom;
+      let high = FleetMap.FOCUS_MAX_ZOOM;
+      for (let step = 0; step < 16; step++) {
+        camera.setZoom((low + high) / 2);
+        if (box().fits) low = camera.zoom;
+        else high = camera.zoom;
+      }
+      camera.setZoom(low);
+      const { left, right, top, bottom } = box();
+      const shiftX = (left + right) / 2 - (pad.left + roomWidth / 2);
+      const shiftY = (top + bottom) / 2 - (pad.top + roomHeight / 2);
+      camera.setCenter(camera.screenPointToLocation(new Point(width / 2 + shiftX, height / 2 + shiftY)));
+    }
+    return { center: camera.center, zoom: camera.zoom };
   }
 
   private openVehicleCard(vehicle: TrackedVehicle): void {
@@ -1494,6 +1583,7 @@ export class FleetMap implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.zoneFrameTimer);
     this.trackers.forEach((track) => track.destroy());
     this.trackers.clear();
     if (this.clusterSyncFrame !== undefined) cancelAnimationFrame(this.clusterSyncFrame);
