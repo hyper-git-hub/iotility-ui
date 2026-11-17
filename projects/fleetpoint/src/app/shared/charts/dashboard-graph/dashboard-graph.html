@@ -98,8 +98,9 @@
     [title]="graphTitle()"
     subtitle="Live dashboard analytics"
     [legend]="headerLegend()"
-    [loading]="filtering()"
-    [skeleton]="isLine() ? 'line' : 'bar'"
+    [loading]="loading()"
+    [skeleton]="skeleton().type"
+    [skeletonLegend]="chartLegend() ? skeleton().legend : 0"
     [empty]="!hasChartData()"
     [emptyMessage]="emptyMessage()"
   >

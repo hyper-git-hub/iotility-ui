@@ -23,7 +23,7 @@
   </header>
   <div class="body">
     @if (loading()) {
-      <ui-chart-skeleton [type]="skeleton()" />
+      <ui-chart-skeleton [type]="skeleton()" [legend]="skeletonLegend()" />
     } @else if (error()) {
       <div class="state error" role="alert">
         <span class="state-icon" aria-hidden="true">

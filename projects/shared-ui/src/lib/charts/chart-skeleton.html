@@ -1,34 +1,20 @@
 @switch (type()) {
-  @case ('line') {
-    <div class="axes">
-      <div class="y-axis">
-        @for (width of yTicks; track $index) { <span [style.width.%]="width"></span> }
-      </div>
-      <div class="plot">
-        <div class="grid">
-          @for (_ of yTicks; track $index) { <i></i> }
-        </div>
-        <svg viewBox="0 0 500 200" preserveAspectRatio="none">
-          <defs>
-            <linearGradient [attr.id]="gradientId" x1="0" y1="0" x2="0" y2="1">
-              <stop class="area-top" offset="0%" />
-              <stop class="area-bottom" offset="100%" />
-            </linearGradient>
-          </defs>
-          <path class="area" d="M0 118 C60 104 110 80 170 86 S280 118 340 98 S440 56 500 62 L500 200 L0 200 Z" [attr.fill]="'url(#' + gradientId + ')'" />
-          <path class="stroke secondary" vector-effect="non-scaling-stroke" d="M0 156 C70 150 120 134 180 138 S290 156 350 144 S450 120 500 124" />
-          <path class="stroke" vector-effect="non-scaling-stroke" d="M0 118 C60 104 110 80 170 86 S280 118 340 98 S440 56 500 62" />
-        </svg>
-        <div class="x-axis">
-          @for (_ of xTicks; track $index) { <span></span> }
-        </div>
-      </div>
-    </div>
-  }
   @case ('bar-horizontal') {
     <div class="rows">
       @for (width of rows; track $index) {
         <div><span class="label"></span><span class="track"><b [style.width.%]="width"></b></span></div>
+      }
+    </div>
+  }
+  @case ('bar-horizontal-stacked') {
+    <div class="rows stacked">
+      @for (row of stackedRows; track $index) {
+        <div>
+          <span class="label"></span>
+          <span class="segments" [style.width.%]="total(row)">
+            @for (segment of row; track $index) { <i [style.flex-grow]="segment"></i> }
+          </span>
+        </div>
       }
     </div>
   }
@@ -49,18 +35,58 @@
         <div class="grid">
           @for (_ of yTicks; track $index) { <i></i> }
         </div>
-        <div class="bars">
-          @for (height of bars; track $index) { <span [style.height.%]="height"></span> }
-        </div>
+        @switch (type()) {
+          @case ('line') {
+            <svg viewBox="0 0 500 200" preserveAspectRatio="none">
+              <defs>
+                <linearGradient [attr.id]="gradientId" x1="0" y1="0" x2="0" y2="1">
+                  <stop class="area-top" offset="0%" />
+                  <stop class="area-bottom" offset="100%" />
+                </linearGradient>
+              </defs>
+              <path class="area" d="M0 118 C60 104 110 80 170 86 S280 118 340 98 S440 56 500 62 L500 200 L0 200 Z" [attr.fill]="'url(#' + gradientId + ')'" />
+              <path class="stroke secondary" vector-effect="non-scaling-stroke" d="M0 156 C70 150 120 134 180 138 S290 156 350 144 S450 120 500 124" />
+              <path class="stroke" vector-effect="non-scaling-stroke" d="M0 118 C60 104 110 80 170 86 S280 118 340 98 S440 56 500 62" />
+            </svg>
+          }
+          @case ('lines') {
+            <svg viewBox="0 0 500 200" preserveAspectRatio="none">
+              <path class="stroke" vector-effect="non-scaling-stroke" d="M0 72 C70 60 130 98 190 86 S300 40 360 56 S450 94 500 82" />
+              <path class="stroke tint-2" vector-effect="non-scaling-stroke" d="M0 122 C60 130 120 104 180 112 S290 142 350 126 S450 100 500 110" />
+              <path class="stroke tint-3" vector-effect="non-scaling-stroke" d="M0 162 C80 154 140 168 200 160 S300 146 360 154 S460 170 500 162" />
+            </svg>
+          }
+          @case ('bar-grouped') {
+            <div class="groups">
+              @for (group of groups(); track $index) {
+                <div>@for (height of group; track $index) { <span [style.height.%]="height"></span> }</div>
+              }
+            </div>
+          }
+          @case ('bar-stacked') {
+            <div class="bars">
+              @for (stack of stacks; track $index) {
+                <span class="stack" [style.height.%]="total(stack)">
+                  @for (segment of stack; track $index) { <i [style.flex-grow]="segment"></i> }
+                </span>
+              }
+            </div>
+          }
+          @default {
+            <div class="bars">
+              @for (height of bars; track $index) { <span [style.height.%]="height"></span> }
+            </div>
+          }
+        }
         <div class="x-axis">
-          @for (_ of bars; track $index) { <span></span> }
+          @for (_ of xLabels(); track $index) { <span></span> }
         </div>
       </div>
     </div>
   }
 }
-@if (legend()) {
+@if (legendItems().length) {
   <div class="legend">
-    @for (_ of legendItems; track $index) { <span><i></i><b></b></span> }
+    @for (_ of legendItems(); track $index) { <span><i></i><b></b></span> }
   </div>
 }

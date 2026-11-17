@@ -27,12 +27,13 @@
   @apply mt-2;
 }
 
+/* Rows laid out like the real Actions Needed Today rows (no box behind them), so five fit the card. */
 .graph-skeleton-list{
-  @apply grid flex-1 content-start gap-3;
+  @apply flex min-h-0 flex-1 flex-col gap-3 overflow-hidden;
 }
 
 .graph-skeleton-list > div{
-  @apply grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-xl bg-canvas/60 p-2 dark:bg-dark-canvas/50;
+  @apply grid shrink-0 grid-cols-[2rem_minmax(0,1fr)_auto_auto] items-center gap-3 px-2;
 }
 
 .graph-skeleton-list span{

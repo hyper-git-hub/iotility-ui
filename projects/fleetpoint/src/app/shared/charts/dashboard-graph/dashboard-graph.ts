@@ -4,6 +4,7 @@ import {
   ChartCard,
   ChartLegendItem,
   ChartSeries,
+  ChartSkeletonType,
   ChartSlice,
   ChartTheme,
   DonutChart,
@@ -114,6 +115,10 @@ interface GraphChart {
   type: 'line' | 'area' | 'donut' | 'bar';
   horizontal?: boolean;
   stacked?: boolean;
+  /** Bars side by side, a group per category (only shapes the loading placeholder). */
+  grouped?: boolean;
+  /** How many legend items the chart usually has, for its loading placeholder. */
+  legend?: number;
 }
 
 /**
@@ -122,20 +127,42 @@ interface GraphChart {
  * can't sit side by side (see barModel).
  */
 const GRAPH_CHARTS: Record<string, GraphChart> = {
-  ADF: { type: 'area' },
-  FCUT: { type: 'area' },
-  FCT: { type: 'line' },
-  DSS: { type: 'bar', horizontal: true, stacked: true },
-  DVG: { type: 'bar' },
-  FUT: { type: 'bar' },
-  JJ: { type: 'bar' },
-  JSS: { type: 'bar' },
-  MS: { type: 'bar', stacked: true },
+  ADF: { type: 'area', legend: 3 },
+  FCUT: { type: 'area', legend: 2 },
+  FCT: { type: 'line', legend: 4 },
+  DSS: { type: 'bar', horizontal: true, stacked: true, legend: 5 },
+  DVG: { type: 'bar', legend: 3 },
+  FUT: { type: 'bar', legend: 3 },
+  JJ: { type: 'bar', grouped: true, legend: 2 },
+  JSS: { type: 'bar', grouped: true, legend: 4 },
+  MS: { type: 'bar', stacked: true, legend: 3 },
   POVM: { type: 'bar', horizontal: true },
-  JSJ: { type: 'donut' },
-  DTS: { type: 'donut' },
-  DCE: { type: 'donut' },
+  JSJ: { type: 'donut', legend: 4 },
+  DTS: { type: 'donut', legend: 4 },
+  DCE: { type: 'donut', legend: 5 },
 };
+
+export interface DashboardSkeleton {
+  type: ChartSkeletonType;
+  /** Legend placeholders to show (0 for none). */
+  legend: number;
+}
+
+/**
+ * The loading placeholder for a graph, in its chart's shape: lines, single, side-by-side or
+ * stacked columns, single or stacked rows, or a donut. Null for graphs not in
+ * GRAPH_CHARTS, which follow the API's chart_type.
+ */
+export function dashboardSkeleton(code: string): DashboardSkeleton | null {
+  const chart = GRAPH_CHARTS[code];
+  if (!chart) return null;
+  const legend = chart.legend ?? 0;
+  // Area and plain line charts read as one type, so they share the calmer plain-lines placeholder.
+  if (chart.type === 'area' || chart.type === 'line') return { type: 'lines', legend };
+  if (chart.type === 'donut') return { type: 'donut', legend };
+  if (chart.horizontal) return { type: chart.stacked ? 'bar-horizontal-stacked' : 'bar-horizontal', legend };
+  return { type: chart.stacked ? 'bar-stacked' : chart.grouped ? 'bar-grouped' : 'bar', legend };
+}
 
 /** Graphs that rank drivers: highest total first. */
 const RANKED_GRAPHS = ['DSS'];
@@ -189,6 +216,20 @@ export class DashboardGraphComponent {
   protected readonly filterAriaLabel = computed(() => this.graphFilter()?.ariaLabel ?? 'Filter');
   /** True while this graph's filtered data is loading. */
   protected readonly filtering = computed(() => !!this.api.filteringGraphs()[this.graph().code]);
+  /**
+   * The placeholder shows while this graph's filter loads, and while the dashboard's graphs load
+   * for the first time (a tab opened directly, with nothing cached yet to show).
+   */
+  protected readonly loading = computed(
+    () => this.filtering() || (this.api.loadingGraphs() && !this.api.cachedGraphs().length),
+  );
+  protected readonly skeleton = computed<DashboardSkeleton>(
+    () =>
+      dashboardSkeleton(this.graph().code) ?? {
+        type: this.isDoughnut() ? 'donut' : this.isLine() ? 'lines' : this.horizontal() ? 'bar-horizontal' : 'bar',
+        legend: 0,
+      },
+  );
 
   protected onFilterSelected(option: DropdownOption): void {
     const code = this.graph().code;

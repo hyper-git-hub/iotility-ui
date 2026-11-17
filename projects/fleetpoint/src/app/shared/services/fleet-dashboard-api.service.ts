@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
-import { Observable, OperatorFunction, map } from 'rxjs';
+import { Observable, OperatorFunction, defer, finalize, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 const FLEET_API = `${environment.fleetBaseUrl}/api`;
@@ -176,6 +176,10 @@ export class FleetDashboardApiService {
     });
   }
   readonly filteringGraphs = this.graphFilterLoading.asReadonly();
+  /** Requests for the dashboard's graphs still in flight. */
+  private readonly graphRequests = signal(0);
+  /** True while the dashboard's graphs are loading, so cards can show their placeholders. */
+  readonly loadingGraphs = computed(() => this.graphRequests() > 0);
 
   constructor(private readonly http: HttpClient) {}
 
@@ -221,11 +225,17 @@ export class FleetDashboardApiService {
   }
 
   getGraphs(): Observable<ApiResponse<DashboardAnalytics>> {
-    return this.http
-      .get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
-        params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
-      })
-      .pipe(withoutEmptyAnalytics());
+    return defer(() => {
+      this.graphRequests.update((count) => count + 1);
+      return this.http
+        .get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
+          params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
+        })
+        .pipe(
+          withoutEmptyAnalytics(),
+          finalize(() => this.graphRequests.update((count) => count - 1)),
+        );
+    });
   }
 
   /**

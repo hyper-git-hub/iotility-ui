@@ -62,44 +62,32 @@
       @for (skeleton of loadingSkeletons(); track skeleton.code) {
         <article class="graph-skeleton">
           @if (skeleton.code === 'ANT') {
+            <!-- The "N urgent" pill only shows when there are urgent items, so the placeholder has none. -->
             <header class="graph-skeleton-header graph-skeleton-actions-header">
               <ui-skeleton variant="text" width="8.75rem" height="0.85rem" radius="0.3rem" />
-              <ui-skeleton width="3.5rem" height="1.35rem" radius="9999px" />
             </header>
           } @else if (skeleton.code === 'DOW') {
             <header class="graph-skeleton-header graph-skeleton-driver-header">
               <ui-skeleton variant="circle" width="1rem" height="1rem" />
               <ui-skeleton variant="text" width="8.5rem" height="0.85rem" radius="0.3rem" />
             </header>
-          } @else if (skeleton.code === 'FUT') {
-            <header class="graph-skeleton-header graph-skeleton-legend-header">
-              <div>
-                <ui-skeleton variant="text" width="7rem" height="0.85rem" radius="0.3rem" />
-                <ui-skeleton variant="text" width="9rem" height="0.58rem" radius="0.25rem" />
-              </div>
-              <div class="graph-skeleton-status-legend">
-                <span><i></i><b></b></span>
-                <span><i></i><b></b></span>
-                <span><i></i><b></b></span>
-              </div>
-            </header>
           } @else {
+            <!-- Title, subtitle and the chart's legend, as the loaded card shows them. -->
             <header class="graph-skeleton-header graph-skeleton-legend-header">
               <div>
-                <ui-skeleton variant="text" width="55%" height="0.85rem" radius="0.3rem" />
-                <ui-skeleton variant="text" width="28%" height="0.58rem" radius="0.25rem" />
+                <ui-skeleton variant="text" width="8rem" height="0.85rem" radius="0.3rem" />
+                <ui-skeleton variant="text" width="6.5rem" height="0.58rem" radius="0.25rem" />
               </div>
               <div class="graph-skeleton-status-legend">
-                <span><i></i><b></b></span>
-                <span><i></i><b></b></span>
+                @for (_ of skeleton.legend; track $index) { <span><i></i><b></b></span> }
               </div>
             </header>
           }
-          @switch (skeleton.type) {
+          @switch (skeleton.kind) {
             @case ('list') {
               <div class="graph-skeleton-list">
                 @for (_ of [1, 2, 3, 4, 5]; track $index) {
-                  <div><ui-skeleton width="2rem" height="2rem" radius="0.5rem" /><span><ui-skeleton variant="text" width="72%" height="0.65rem" /><ui-skeleton variant="text" width="52%" height="0.5rem" /></span><ui-skeleton width="2.75rem" height="1.15rem" radius="9999px" /><ui-skeleton variant="text" width="0.4rem" height="0.75rem" /></div>
+                  <div><ui-skeleton width="2rem" height="2rem" radius="0.5rem" /><span><ui-skeleton variant="text" width="72%" height="0.6rem" /><ui-skeleton variant="text" width="48%" height="0.5rem" /></span><ui-skeleton width="2.5rem" height="1.15rem" radius="9999px" /><ui-skeleton variant="text" width="0.35rem" height="0.7rem" /></div>
                 }
               </div>
             }
@@ -112,11 +100,8 @@
                 <div>@for (_ of [1, 2, 3]; track $index) { <ui-skeleton height="3rem" radius="0.65rem" /> }</div>
               </div>
             }
-            @case ('line') {
-              <ui-chart-skeleton class="graph-skeleton-chart" type="line" />
-            }
             @default {
-              <ui-chart-skeleton class="graph-skeleton-chart" type="bar" />
+              <ui-chart-skeleton class="graph-skeleton-chart" [type]="skeleton.chart" />
             }
           }
         </article>

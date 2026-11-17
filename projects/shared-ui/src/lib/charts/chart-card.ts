@@ -27,6 +27,8 @@ export class ChartCard {
   readonly loading = input(false);
   /** Which placeholder shape to show while loading. */
   readonly skeleton = input<ChartSkeletonType>('bar');
+  /** Legend placeholders under the loading chart: how many items its legend has (0 for none). */
+  readonly skeletonLegend = input<boolean | number>(false);
   readonly empty = input(false);
   readonly emptyMessage = input('No data available');
   readonly error = input('');

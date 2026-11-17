@@ -1,9 +1,9 @@
 import { Component, computed, effect, inject, OnInit, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
-import { ChartSkeleton, Skeleton } from '@iotility/shared-ui';
+import { ChartSkeleton, ChartSkeletonType, Skeleton } from '@iotility/shared-ui';
 import { finalize } from 'rxjs';
-import { DashboardGraphComponent } from '../../../shared/charts/dashboard-graph/dashboard-graph';
+import { DashboardGraphComponent, dashboardSkeleton } from '../../../shared/charts/dashboard-graph/dashboard-graph';
 import { StatCard, StatCardTone } from '../../../shared/stat-card/stat-card';
 import {
   DashboardCard,
@@ -19,7 +19,12 @@ import { DashboardWidgetsService } from '../../../shared/services/dashboard-widg
 
 interface OverviewSkeleton {
   code: string;
-  type: 'list' | 'bar' | 'line' | 'profile';
+  /** The actions list, the driver profile, or a chart. */
+  kind: 'list' | 'profile' | 'chart';
+  /** The chart's shape (for kind 'chart'). */
+  chart: ChartSkeletonType;
+  /** Legend placeholders in the card's header. */
+  legend: unknown[];
 }
 
 @Component({
@@ -91,14 +96,21 @@ export class Overview implements OnInit {
   protected readonly graphsLoading = signal(true);
   protected readonly cardsError = signal('');
   protected readonly metricSkeletons = Array.from({ length: 8 });
+  /** One placeholder per card, in card order, each in its graph's own chart shape. */
   protected readonly loadingSkeletons = computed<OverviewSkeleton[]>(() =>
-    [
-      { code: 'ANT', type: 'list' as const },
-      { code: 'FCUT', type: 'line' as const },
-      { code: 'DOW', type: 'profile' as const },
-      { code: 'FUT', type: 'bar' as const },
-      { code: 'FCT', type: 'line' as const },
-    ].filter((item) => this.widgetService.isVisible('overview', item.code)),
+    this.overviewGraphOrder
+      .filter((code) => this.widgetService.isVisible('overview', code))
+      .map((code): OverviewSkeleton => {
+        if (code === 'ANT') return { code, kind: 'list', chart: 'bar', legend: [] };
+        if (code === 'DOW') return { code, kind: 'profile', chart: 'bar', legend: [] };
+        const skeleton = dashboardSkeleton(code);
+        return {
+          code,
+          kind: 'chart',
+          chart: skeleton?.type ?? 'bar',
+          legend: Array.from({ length: skeleton?.legend ?? 0 }),
+        };
+      }),
   );
   protected readonly cards = signal<DashboardCard<number | string | DashboardGraphData | null>[]>([]);
   protected readonly displayedCards = computed(() => {

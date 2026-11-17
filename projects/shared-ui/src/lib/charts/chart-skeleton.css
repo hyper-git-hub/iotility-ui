@@ -97,6 +97,40 @@ svg {
   @apply w-full max-w-7 rounded-b-none rounded-t-md bg-line/60 dark:bg-dark-line/55;
 }
 
+/* Plain lines: the second and third fade so they read as separate series. */
+.stroke.tint-2 { opacity: 0.7; }
+.stroke.tint-3 { opacity: 0.45; }
+
+/* Side-by-side columns: a group per category, a tone per series. */
+.groups {
+  @apply absolute inset-0 flex items-end justify-around px-[4%];
+}
+.groups > div {
+  @apply flex h-full w-[18%] items-end justify-center gap-[8%];
+}
+.groups span {
+  @apply block w-full max-w-5 rounded-t-md bg-line/60 dark:bg-dark-line/55;
+}
+.groups span:nth-child(2) { @apply bg-line/90 dark:bg-dark-line/80; }
+.groups span:nth-child(3) { @apply bg-line/40 dark:bg-dark-line/35; }
+.groups span:nth-child(4) { @apply bg-line/75 dark:bg-dark-line/65; }
+
+/* Stacked columns and rows: segments in alternating tones, with a hairline between them. */
+.bars .stack {
+  @apply flex flex-col-reverse gap-px overflow-hidden bg-transparent dark:bg-transparent;
+}
+.stack i,
+.segments i {
+  @apply block min-h-0 min-w-0 basis-0;
+}
+.stack i:nth-child(1),
+.segments i:nth-child(1) { @apply bg-line/90 dark:bg-dark-line/80; }
+.stack i:nth-child(2),
+.segments i:nth-child(2) { @apply bg-line/60 dark:bg-dark-line/55; }
+.stack i:nth-child(3),
+.segments i:nth-child(3) { @apply bg-line/40 dark:bg-dark-line/35; }
+.segments i:nth-child(4) { @apply bg-line/75 dark:bg-dark-line/65; }
+
 /* Horizontal bars: a label stub and a track per row. */
 .rows {
   @apply flex min-h-0 flex-1 flex-col justify-around gap-2 py-1;
@@ -112,6 +146,12 @@ svg {
 }
 .rows b {
   @apply h-full rounded-full bg-line/70 dark:bg-dark-line/65;
+}
+.rows.stacked {
+  @apply gap-1.5;
+}
+.segments {
+  @apply flex h-3 gap-px overflow-hidden rounded-r-[3px];
 }
 
 /* Donut: segmented ring with the total placeholder in the middle. */
