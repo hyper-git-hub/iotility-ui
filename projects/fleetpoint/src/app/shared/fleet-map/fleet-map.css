@@ -201,6 +201,8 @@
   position: absolute;
   inset: 0;
   display: grid;
+  /* One cell exactly the disc's size, so the image's % size is measured against the disc, not its own height. */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   box-sizing: border-box;
   border: 2.5px solid var(--vm-ring);
@@ -260,6 +262,7 @@
   height: 34px;
 }
 :host ::ng-deep .vm.has-image .vm-disc {
+  overflow: hidden;
   border: 3px solid var(--vm-color, #64748b);
   background: #fff;
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
