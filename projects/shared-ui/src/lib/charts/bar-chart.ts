@@ -88,7 +88,8 @@ export class BarChart {
     const base = baseOption(palette, this.theme.reducedMotion);
     const scroll = this.scroll();
     const visible = scroll ? this.windowSize() : this.total();
-    const radius = 6;
+    // Small enough that thin bars (stacked rows of ~14px) stay bars rather than pills.
+    const radius = 3;
     // Rounded at the bar's end; in a stack only the outermost segment is rounded.
     const endRadius = horizontal ? [0, radius, radius, 0] : [radius, radius, 0, 0];
     const fill = (color: string) =>
@@ -112,6 +113,14 @@ export class BarChart {
     };
     // Re-rendering for new data keeps the current window rather than jumping back to the start.
     const startValue = untracked(this.start);
+    // In a stack, the series whose segment is outermost at each point (the last one with a value
+    // there), so that segment gets the rounded end even when later series are empty at that point.
+    const outermost = this.categories().map((_, point) => {
+      for (let index = series.length - 1; index >= 0; index -= 1) {
+        if (Number(series[index].data[point] ?? 0) !== 0) return index;
+      }
+      return -1;
+    });
 
     return mergeOption(
       {
@@ -143,24 +152,30 @@ export class BarChart {
         yAxis: horizontal ? categoryAxis : valueAxis,
         series: series.map((item, index) => {
           const color = this.theme.seriesColor(index, item.color);
-          const rounded = !stacked || index === series.length - 1;
           return {
             id: item.name,
             name: item.name,
             type: 'bar',
             stack: stacked ? 'total' : undefined,
             barMaxWidth: this.barMaxWidth() ?? autoBarWidth(visible, stacked ? 1 : series.length),
-            barGap: '18%',
-            barCategoryGap: '36%',
+            // Groups of three or more sit closer together so they use more of their slot.
+            barGap: !stacked && series.length >= 3 ? '8%' : '18%',
+            barCategoryGap: !stacked && series.length >= 3 ? '26%' : '36%',
             showBackground: this.track() && !stacked && series.length === 1,
             backgroundStyle: { color: withAlpha(palette.grid, palette.dark ? 0.35 : 0.5), borderRadius: endRadius },
-            itemStyle: { color: fill(color), borderRadius: rounded ? endRadius : 0 },
-            data: item.colors
-              ? item.data.map((value, point) => ({
-                  value,
-                  itemStyle: { color: fill(toRgb(item.colors![point] ?? color)) },
-                }))
-              : item.data,
+            itemStyle: { color: fill(color), borderRadius: stacked ? 0 : endRadius },
+            data: item.data.map((value, point) => {
+              const pointColor = item.colors?.[point];
+              const roundedEnd = stacked && outermost[point] === index;
+              if (!pointColor && !roundedEnd) return value;
+              return {
+                value,
+                itemStyle: {
+                  ...(pointColor ? { color: fill(toRgb(pointColor)) } : {}),
+                  ...(roundedEnd ? { borderRadius: endRadius } : {}),
+                },
+              };
+            }),
             emphasis: {
               focus: series.length > 1 ? 'series' : 'none',
               itemStyle: { shadowBlur: 14, shadowColor: withAlpha(color, 0.35) },

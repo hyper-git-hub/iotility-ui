@@ -91,6 +91,25 @@ export interface DashboardAnalytics {
 }
 
 /**
+ * `graphs-cards` can send `null` in place of a graph or card it could not build. Drops those, so
+ * pages can read `.code` and `.analytics_type` safely (a null there throws and empties every tab).
+ */
+function withoutEmptyAnalytics(): OperatorFunction<ApiResponse<DashboardAnalytics>, ApiResponse<DashboardAnalytics>> {
+  return map((response) => {
+    const data = response?.data;
+    if (!data) return response;
+    return {
+      ...response,
+      data: {
+        ...data,
+        graphs: Array.isArray(data.graphs) ? data.graphs.filter((graph) => graph != null) : data.graphs,
+        cards: Array.isArray(data.cards) ? data.cards.filter((card) => card != null) : data.cards,
+      },
+    };
+  });
+}
+
+/**
  * Live Fleet Status (LFS). `categories` is ["Total Vehicles", "Moving", "Idling", "Stopped",
  * "Alert", "Offline"] with `values` in the same order. Moving + Idling + Stopped + Offline make
  * up `total`; Alert overlaps them (a moving vehicle with an unread violation is in both).
@@ -168,7 +187,7 @@ export class FleetDashboardApiService {
   private readGraphCache(): DashboardGraph[] {
     try {
       const graphs = JSON.parse(sessionStorage.getItem('fleetpointDashboardGraphs') ?? '[]');
-      return Array.isArray(graphs) ? graphs : [];
+      return Array.isArray(graphs) ? graphs.filter((graph) => graph?.code) : [];
     } catch {
       return [];
     }
@@ -181,9 +200,11 @@ export class FleetDashboardApiService {
   // }
 
   getFilteredCards(date: string): Observable<ApiResponse<DashboardAnalytics>> {
-    return this.http.get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
-      params: new HttpParams().set('dashboard_id', DASHBOARD_ID).set('date', date),
-    });
+    return this.http
+      .get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
+        params: new HttpParams().set('dashboard_id', DASHBOARD_ID).set('date', date),
+      })
+      .pipe(withoutEmptyAnalytics());
   }
 
   /** Today's Live Fleet Status card, in the user's time zone. */
@@ -200,9 +221,11 @@ export class FleetDashboardApiService {
   }
 
   getGraphs(): Observable<ApiResponse<DashboardAnalytics>> {
-    return this.http.get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
-      params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
-    });
+    return this.http
+      .get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
+        params: new HttpParams().set('dashboard_id', DASHBOARD_ID),
+      })
+      .pipe(withoutEmptyAnalytics());
   }
 
   /**
@@ -211,12 +234,14 @@ export class FleetDashboardApiService {
    * carries the chosen filter value (e.g. DSS + `Week`).
    */
   getGraphByFilter(code: string, filterBy: string): Observable<ApiResponse<DashboardAnalytics>> {
-    return this.http.get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
-      params: new HttpParams()
-        .set('dashboard_id', DASHBOARD_ID)
-        .set('analytics_id', code)
-        .set('filter_by', filterBy),
-    });
+    return this.http
+      .get<ApiResponse<DashboardAnalytics>>(`${FLEET_API}/dashboard/graphs-cards`, {
+        params: new HttpParams()
+          .set('dashboard_id', DASHBOARD_ID)
+          .set('analytics_id', code)
+          .set('filter_by', filterBy),
+      })
+      .pipe(withoutEmptyAnalytics());
   }
 
   /**

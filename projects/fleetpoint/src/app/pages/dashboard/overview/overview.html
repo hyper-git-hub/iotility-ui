@@ -57,15 +57,6 @@
 }
 
 <section class="analytics-section" [attr.aria-busy]="graphsLoading()">
-  <div class="section-heading">
-    <div><h2>Dashboard analytics</h2><p>Performance, safety, jobs and maintenance insights</p></div>
-    @if (graphsLoading()) {
-      <ui-skeleton class="skeleton-report-count" width="4.5rem" height="1.45rem" radius="9999px" />
-    } @else {
-      <span>{{ visibleGraphs().length | plural: 'report' }}</span>
-    }
-  </div>
-
   @if (graphsLoading()) {
     <div class="analytics-grid" aria-hidden="true">
       @for (skeleton of loadingSkeletons(); track skeleton.code) {

@@ -2,7 +2,7 @@
 
 .metric-grid { @apply mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4; }
 .analytics-section { @apply mb-4; }
-.fleet-status-card { @apply mb-5 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
+.fleet-status-card { @apply mb-4 rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }
 .fleet-status-heading { @apply mb-3 flex items-center justify-between gap-3; }
 .fleet-status-heading h2 { @apply text-sm font-semibold; }
 .fleet-status-bar { @apply mb-4 flex h-2 w-full overflow-hidden rounded-full bg-line/60 dark:bg-dark-canvas; }
@@ -20,10 +20,6 @@
 .fleet-status-grid app-stat-card.clickable:active { scale: 0.97; }
 .fleet-status-skeleton header { @apply mb-3 flex items-center justify-between gap-3; }
 .fleet-status-skeleton-grid { @apply mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6; }
-.section-heading { @apply mb-3 flex items-end justify-between gap-3; }
-.section-heading h2 { @apply text-sm font-semibold; }
-.section-heading p { @apply mt-1 text-[10px] text-muted dark:text-brand-300; }
-.section-heading > span { @apply rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-medium text-brand-600 dark:bg-dark-canvas dark:text-brand-300; }
 .analytics-grid { @apply grid gap-4 lg:grid-cols-3; }
 .overview-grid { @apply mb-4 grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,1fr)]; }
 .fleet-list-card, .dashcam-card { @apply flex h-[28rem] min-w-0 flex-col rounded-2xl border border-line bg-white p-4 dark:border-dark-line dark:bg-dark-surface; }

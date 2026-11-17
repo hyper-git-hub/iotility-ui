@@ -33,7 +33,8 @@ export function mergeDashboardGraphs(received: DashboardGraph[]): DashboardGraph
       .filter((graph) => Boolean(graph?.code))
       .map((graph) => [graph.code, graph]),
   );
-  const expected = EXPECTED_DASHBOARD_GRAPHS.map((fallback) => byCode.get(fallback.code) ?? fallback);
+  // A graph the API leaves out shows its empty state, never the sample numbers above.
+  const expected = emptyDashboardGraphs().map((fallback) => byCode.get(fallback.code) ?? fallback);
   const knownCodes = new Set(EXPECTED_DASHBOARD_GRAPHS.map((graph) => graph.code));
   return [...expected, ...received.filter((graph) => !knownCodes.has(graph.code))];
 }

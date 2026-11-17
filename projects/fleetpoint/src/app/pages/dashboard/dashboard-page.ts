@@ -1,5 +1,5 @@
 import { TabIndicator } from '@iotility/shared-ui';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, interval } from 'rxjs';
@@ -7,6 +7,13 @@ import { DashboardWidgetsService } from '../../shared/services/dashboard-widgets
 import { FleetDashboardApiService } from '../../shared/services/fleet-dashboard-api.service';
 import { mergeDashboardGraphs } from '../../shared/services/dashboard-graphs';
 import { CustomiseModal } from './customise-modal/customise-modal';
+
+/** Graph card height range in px: today's 380 at most, and never so short a donut gets cramped. */
+const CARD_HEIGHT = { min: 280, max: 380 };
+/** The gap between card rows (gap-4 in the tab grids). */
+const ROW_GAP = 16;
+/** Room left under the second row, so rounding never tips the page into a scrollbar. */
+const BOTTOM_SLACK = 8;
 
 @Component({
   selector: 'app-dashboard-page',
@@ -16,6 +23,8 @@ import { CustomiseModal } from './customise-modal/customise-modal';
 })
 export class DashboardPage {
   private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dashboardApi = inject(FleetDashboardApiService);
   protected readonly widgets = inject(DashboardWidgetsService);
   protected readonly customiseOpen = signal(false);
@@ -45,6 +54,7 @@ export class DashboardPage {
   constructor() {
     this.activeTab.set(this.tabFromUrl());
     this.loadGraphsForDirectTab();
+    afterNextRender(() => this.fitCardsToScreen());
     interval(30_000)
       .pipe(takeUntilDestroyed())
       .subscribe(() =>
@@ -70,6 +80,34 @@ export class DashboardPage {
         this.dashboardApi.cacheGraphs(mergeDashboardGraphs(graphs));
       },
     });
+  }
+
+  /**
+   * Sizes the graph cards (--dashboard-card-height) so two rows fit in the scroll area under the
+   * tabs without scrolling, within CARD_HEIGHT. Measured from the real scroll area, so it follows
+   * the screen and window size. Uses layout heights, not on-screen positions, which the tabs'
+   * reveal animation shifts while it plays.
+   */
+  private fitCardsToScreen(): void {
+    const page = this.host.nativeElement.querySelector<HTMLElement>('.dashboard-page');
+    const heading = page?.querySelector<HTMLElement>('.dashboard-heading');
+    const tabs = page?.querySelector<HTMLElement>('.dashboard-tabs');
+    const scrollArea = page?.closest('main');
+    if (!page || !heading || !tabs || !scrollArea || typeof ResizeObserver === 'undefined') return;
+    const outerHeight = (element: HTMLElement) =>
+      element.offsetHeight + parseFloat(getComputedStyle(element).marginBottom || '0');
+    const update = () => {
+      const pageStyles = getComputedStyle(page);
+      const aboveCards = parseFloat(pageStyles.paddingTop) + outerHeight(heading) + outerHeight(tabs);
+      const available =
+        scrollArea.clientHeight - aboveCards - parseFloat(pageStyles.paddingBottom) - ROW_GAP - BOTTOM_SLACK;
+      const height = Math.floor(Math.min(CARD_HEIGHT.max, Math.max(CARD_HEIGHT.min, available / 2)));
+      page.style.setProperty('--dashboard-card-height', `${height}px`);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(scrollArea);
+    this.destroyRef.onDestroy(() => observer.disconnect());
+    update();
   }
 
   protected openCustomise(): void {

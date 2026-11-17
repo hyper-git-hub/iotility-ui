@@ -26,7 +26,9 @@ export class Safety {
     const graphs = cached.length
       ? cached
       : this.api.withFilters(emptyDashboardGraphs().filter((graph) => order.includes(graph.code)));
-    return [...graphs, this.dashcamEventsGraph]
+    // The empty DashCam Events card stands in only until the API sends a DCE graph.
+    const dashcam = graphs.some((graph) => graph.code === 'DCE') ? [] : [this.dashcamEventsGraph];
+    return [...graphs, ...dashcam]
       .filter((graph) => this.widgets.isVisible('safety', graph.code))
       .sort((first, second) => order.indexOf(first.code) - order.indexOf(second.code));
   });

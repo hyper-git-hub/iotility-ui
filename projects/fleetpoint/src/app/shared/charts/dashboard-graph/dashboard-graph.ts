@@ -82,7 +82,87 @@ export const DASHBOARD_GRAPH_FILTERS: Record<string, DashboardGraphFilter> = {
 interface AxisChartModel {
   categories: string[];
   series: ChartSeries[];
+  /** Draw the series as one stacked bar per category rather than side by side. */
+  stacked?: boolean;
 }
+
+/** Series that are the total of the others (lower case); stacking them would double each bar. */
+const TOTAL_SERIES: Record<string, string> = {
+  DSS: 'total points',
+};
+
+/**
+ * Most bars side by side a dashboard card fits before each gets thinner than about 10px
+ * (categories past 12 scroll, so at most 12 count). Denser breakdowns stack instead: every
+ * dashboard bar graph is a count, so the stack's height is the category's total.
+ */
+const MAX_GROUPED_BARS = 16;
+const VISIBLE_CATEGORIES = 12;
+
+/** Category names the API sends as keys, not labels. */
+const CATEGORY_LABELS: Record<string, string> = {
+  total_result: 'Staff',
+};
+
+/** Categories plus series that may have gaps (null), before they become chart series. */
+interface AxisData {
+  categories: string[];
+  series: Array<{ name: string; data: Array<number | null> }>;
+}
+
+interface GraphChart {
+  type: 'line' | 'area' | 'donut' | 'bar';
+  horizontal?: boolean;
+  stacked?: boolean;
+}
+
+/**
+ * The chart each graph uses, as on the main-branch dashboard (src/components/charts). Graphs not
+ * listed follow the API's chart_type. A bar graph not marked stacked still stacks when its series
+ * can't sit side by side (see barModel).
+ */
+const GRAPH_CHARTS: Record<string, GraphChart> = {
+  ADF: { type: 'area' },
+  FCUT: { type: 'area' },
+  FCT: { type: 'line' },
+  DSS: { type: 'bar', horizontal: true, stacked: true },
+  DVG: { type: 'bar' },
+  FUT: { type: 'bar' },
+  JJ: { type: 'bar' },
+  JSS: { type: 'bar' },
+  MS: { type: 'bar', stacked: true },
+  POVM: { type: 'bar', horizontal: true },
+  JSJ: { type: 'donut' },
+  DTS: { type: 'donut' },
+  DCE: { type: 'donut' },
+};
+
+/** Graphs that rank drivers: highest total first. */
+const RANKED_GRAPHS = ['DSS'];
+
+/** Task, job and maintenance statuses: a colour by meaning. */
+const STATUS_COLORS: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
+  completed: 'success',
+  'in progress': 'info',
+  scheduled: 'warning',
+  pending: 'warning',
+  overdue: 'danger',
+  aborted: 'danger',
+  cancelled: 'danger',
+};
+
+/** Violation types keep one palette colour in every chart (Scorecard, Driver Violations, ...). */
+const VIOLATION_COLORS: Record<string, number> = {
+  'geozone violation': 0,
+  'harsh acceleration': 1,
+  'harsh braking': 2,
+  'sharp turning': 3,
+  'sharp turn': 3,
+  speed: 4,
+};
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LABEL = /^(Sun|Mon|Tue|Wed|Thu|Fri|Sat) (\d{1,2})$/;
 
 @Component({
   selector: 'app-dashboard-graph',
@@ -140,15 +220,23 @@ export class DashboardGraphComponent {
     return values.some((value) => Number.isFinite(value) && value !== 0);
   }
 
+  /** The main-branch chart for this graph, or null to follow the API's chart_type. */
+  private readonly chart = computed<GraphChart | null>(() => GRAPH_CHARTS[this.graph().code] ?? null);
+
   protected isDoughnut(): boolean {
-    const graph = this.graph();
-    if (graph.code === 'JJ') return false;
-    if (graph.chart_type) return graph.chart_type === 'piechart';
-    return ['JSJ', 'MS'].includes(graph.code);
+    const chart = this.chart();
+    if (chart) return chart.type === 'donut';
+    return this.graph().chart_type === 'piechart';
   }
 
+  /** Main draws every round chart as a donut; only graphs it doesn't have follow a 'piechart' type. */
   protected isPie(): boolean {
-    return this.graph().chart_type === 'piechart';
+    return !this.chart() && this.graph().chart_type === 'piechart';
+  }
+
+  /** Area under the line, except Fuel Consumption, which main draws as plain lines. */
+  protected lineArea(): boolean {
+    return this.chart()?.type !== 'line';
   }
 
   protected actionItems() {
@@ -189,23 +277,38 @@ export class DashboardGraphComponent {
   }
 
   protected isLine(): boolean {
-    const graph = this.graph();
-    return (
-      ['ADF', 'FCT', 'FCUT'].includes(graph.code) ||
-      ['line graph', 'line_area_chart'].includes(graph.chart_type ?? '')
-    );
+    const chart = this.chart();
+    if (chart) return chart.type === 'line' || chart.type === 'area';
+    return ['line graph', 'line_area_chart'].includes(this.graph().chart_type ?? '');
   }
 
   protected readonly horizontal = computed(() => {
-    const graph = this.graph();
-    return ['DSS', 'JSS'].includes(graph.code) ||
-      graph.chart_type === 'horizontal_stackbar_chart' || graph.chart_type === 'horizontal_bar_chart';
+    const chart = this.chart();
+    if (chart) return !!chart.horizontal;
+    const type = this.graph().chart_type;
+    return type === 'horizontal_stackbar_chart' || type === 'horizontal_bar_chart';
   });
 
   protected readonly stacked = computed(() => {
-    const graph = this.graph();
-    return ['DSS', 'JSS'].includes(graph.code) ||
-      graph.chart_type === 'horizontal_stackbar_chart' || graph.chart_type === 'stackbar_chart';
+    const chart = this.chart();
+    const type = this.graph().chart_type;
+    const declared = chart ? !!chart.stacked : type === 'horizontal_stackbar_chart' || type === 'stackbar_chart';
+    return declared || !!this.barModel().stacked;
+  });
+
+  /** Every fleet the dashboard knows, sorted, so a fleet keeps one colour on every chart. */
+  private readonly fleetNames = computed(() => {
+    const names = new Set<string>();
+    for (const graph of this.api.graphs()) {
+      const data = graph.data;
+      if (graph.code === 'DA' && data && !Array.isArray(data)) {
+        data.fleets?.forEach((fleet) => names.add(fleet.name.trim()));
+      }
+      if (graph.code === 'VS' && Array.isArray(data)) {
+        data.forEach((row) => typeof row['fleet_name'] === 'string' && names.add(row['fleet_name'].trim()));
+      }
+    }
+    return [...names].sort((first, second) => first.localeCompare(second, undefined, { numeric: true }));
   });
 
   /** In-chart legend only when the card header isn't showing one. */
@@ -225,7 +328,7 @@ export class DashboardGraphComponent {
        fleet in Driver Violations) must render as separate series, otherwise the
        chart collapses to a single series labelled with the graph name. */
     const series = this.chartSeries(data.series);
-    const categories = data.categories ?? [];
+    const categories = this.categoryLabels(data.categories);
     if (series.length) {
       // One single-value series per category: one bar per category, each in its own colour.
       if (series.length === categories.length && series.every((item) => item.data.length === 1)) {
@@ -234,18 +337,31 @@ export class DashboardGraphComponent {
           series: [{
             name: this.graph().name,
             data: series.map((item) => item.data[0] ?? 0),
-            colors: series.map((_, index) => this.theme.seriesColor(index)),
+            colors: series.map((item, index) => this.colorFor(item.name) ?? this.theme.seriesColor(index)),
           }],
         };
       }
+      const code = this.graph().code;
+      let axis = this.withMissingDays({ categories, series: this.alignToCategories(series, categories) });
+      if (RANKED_GRAPHS.includes(code)) axis = this.rankedByTotal(axis);
       return {
-        categories,
-        series: series.map((item) => ({ name: this.readableLabel(item.name), data: item.data })),
+        categories: axis.categories,
+        // One series per category (by fleet): grouped, most slots would be empty and the bars thin.
+        // Many series per category (by type): grouped, each bar would be a sliver.
+        stacked:
+          this.coversOwnCategories(series, categories) ||
+          series.length * Math.min(categories.length, VISIBLE_CATEGORIES) > MAX_GROUPED_BARS,
+        series: this.toChartSeries(axis),
       };
     }
     if (data.values) {
       const values = data.values.map((value) => this.numericValue(value));
-      return { categories, series: [{ name: this.graph().name, data: values, colors: this.levelColors(values) }] };
+      // Maintenance status bars are service types or statuses, not scores: a colour each, not Good/OK/Low.
+      const colors =
+        this.graph().code === 'MS'
+          ? categories.map((category, index) => this.colorFor(category) ?? this.theme.seriesColor(index))
+          : this.levelColors(values);
+      return { categories, series: [{ name: this.graph().name, data: values, colors }] };
     }
     return { categories, series: [] };
   });
@@ -253,16 +369,19 @@ export class DashboardGraphComponent {
   protected readonly lineModel = computed<AxisChartModel>(() => {
     const data = this.graph().data;
     if (!data || Array.isArray(data)) return { categories: [], series: [] };
-    return {
-      categories: data.categories ?? [],
-      series: this.chartSeries(data.series).map((series) => ({ name: this.readableLabel(series.name), data: series.data })),
-    };
+    const categories = this.categoryLabels(data.categories);
+    const axis = this.withMissingDays({
+      categories,
+      series: this.alignToCategories(this.chartSeries(data.series), categories),
+    });
+    return { categories: axis.categories, series: this.toChartSeries(axis) };
   });
 
   protected readonly slices = computed<ChartSlice[]>(() => {
     const graph = this.graph();
     if (!graph.data) return [];
-    const zip = (labels: string[], values: number[]) => labels.map((label, index) => ({ label, value: values[index] ?? 0 }));
+    const zip = (labels: string[], values: number[]) =>
+      labels.map((label, index) => ({ label, value: values[index] ?? 0, color: this.colorFor(label) }));
     if (Array.isArray(graph.data)) {
       return graph.data.map((row) => ({ label: this.rowLabel(row), value: this.rowValue(row) }));
     }
@@ -273,7 +392,7 @@ export class DashboardGraphComponent {
     if (this.numericSeries(graph.data.series).length) {
       return zip(categories, this.numericSeries(graph.data.series));
     }
-    const series = this.namedSeries(graph.data.series);
+    const series = this.chartSeries(graph.data.series);
     if (graph.code === 'DTS') {
       return zip(
         categories,
@@ -283,6 +402,7 @@ export class DashboardGraphComponent {
     return series.map((item) => ({
       label: this.readableLabel(item.name),
       value: item.data.reduce((total, value) => total + value, 0),
+      color: this.colorFor(item.name),
     }));
   });
 
@@ -307,6 +427,8 @@ export class DashboardGraphComponent {
   });
 
   private readableLabel(value: string): string {
+    // Names already written for people ('CO2 (kg)', 'Fleet 02') stay as sent.
+    if (!value.includes('_') && /[A-Z]/.test(value)) return value.replace(' Probability Count', '');
     return value
       .replaceAll('_', ' ')
       .replace(/\b\w/g, (letter) => letter.toUpperCase())
@@ -327,9 +449,116 @@ export class DashboardGraphComponent {
 
   private chartSeries(series: GraphSeries[] | number[] | undefined): GraphSeries[] {
     const named = this.namedSeries(series);
-    return this.graph().code === 'DSS'
-      ? named.filter((item) => item.name.toLowerCase() !== 'total points')
-      : named;
+    const total = TOTAL_SERIES[this.graph().code];
+    return total ? named.filter((item) => item.name.toLowerCase() !== total) : named;
+  }
+
+  private categoryLabels(categories: string[] | undefined): string[] {
+    return (categories ?? []).map((category) => CATEGORY_LABELS[category] ?? category);
+  }
+
+  /**
+   * Driver Violations (by fleet) sends each fleet's counts only for its own drivers, in category
+   * order: TST Fleet's 5 values are the first 5 drivers, Fleet 02's 3 the next 3, and so on.
+   * Spreads each series over every category, empty (null) elsewhere, so each bar lands on its own
+   * driver and its tooltip lists only that driver's fleet. Series that already cover every
+   * category are left as they are.
+   */
+  private alignToCategories(
+    series: GraphSeries[],
+    categories: string[],
+  ): Array<{ name: string; data: Array<number | null> }> {
+    if (!this.coversOwnCategories(series, categories)) return series;
+    let offset = 0;
+    return series.map((item) => {
+      const data: Array<number | null> = categories.map(() => null);
+      item.data.forEach((value, index) => (data[offset + index] = value));
+      offset += item.data.length;
+      return { ...item, data };
+    });
+  }
+
+  private toChartSeries(axis: AxisData): ChartSeries[] {
+    return axis.series.map((item) => ({
+      name: this.readableLabel(item.name),
+      data: item.data,
+      color: this.colorFor(item.name),
+    }));
+  }
+
+  /**
+   * The colour a series or slice keeps on every chart: a status by its meaning, a violation type
+   * or a fleet by a fixed palette position. Anything else (undefined) takes its position's colour.
+   */
+  private colorFor(name: string): string | undefined {
+    const key = name.trim().toLowerCase();
+    const palette = this.theme.palette();
+    const status = STATUS_COLORS[key];
+    if (status) return palette[status];
+    const violation = VIOLATION_COLORS[key];
+    if (violation !== undefined) return palette.series[violation];
+    const fleet = this.fleetNames().indexOf(name.trim());
+    return fleet >= 0 ? palette.series[fleet % palette.series.length] : undefined;
+  }
+
+  /** Categories reordered by their total across every series, highest first. */
+  private rankedByTotal(axis: AxisData): AxisData {
+    const totals = axis.categories.map((_, index) =>
+      axis.series.reduce((total, item) => total + (item.data[index] ?? 0), 0),
+    );
+    const order = axis.categories.map((_, index) => index).sort((first, second) => totals[second] - totals[first]);
+    return {
+      categories: order.map((index) => axis.categories[index]),
+      series: axis.series.map((item) => ({ ...item, data: order.map((index) => item.data[index] ?? null) })),
+    };
+  }
+
+  /**
+   * Daily graphs label days 'Tue 10'. CO2 and Fuel leaves out days with no usage (Wed 11, then
+   * Mon 16), which a line draws as a slope across days that had none; this puts them back at 0.
+   * Gaps are shorter than a week, so the weekdays give each gap's length, even across a month end.
+   */
+  private withMissingDays(axis: AxisData): AxisData {
+    const days = axis.categories.map((label) => DAY_LABEL.exec(label.trim()));
+    if (days.length < 2 || days.some((day) => !day)) return axis;
+    const width = axis.categories.some((label) => / 0\d$/.test(label.trim())) ? 2 : 1;
+    const categories: string[] = [];
+    // Where each day's values come from in the original lists; -1 for a day put back.
+    const sources: number[] = [];
+    days.forEach((day, index) => {
+      if (index > 0) {
+        const previous = days[index - 1]!;
+        const weekday = WEEKDAYS.indexOf(previous[1]);
+        const gap = (WEEKDAYS.indexOf(day![1]) - weekday + 7) % 7 || 7;
+        const from = Number(previous[2]);
+        const to = Number(day![2]);
+        for (let step = 1; step < gap; step += 1) {
+          // Within a month count on from the earlier day; across a month end count back from the later one.
+          const back = to - (gap - step);
+          const date = to > from || back < 1 ? from + step : back;
+          categories.push(`${WEEKDAYS[(weekday + step) % 7]} ${String(date).padStart(width, '0')}`);
+          sources.push(-1);
+        }
+      }
+      categories.push(axis.categories[index]);
+      sources.push(index);
+    });
+    return {
+      categories,
+      series: axis.series.map((item) => ({
+        ...item,
+        data: sources.map((source) => (source < 0 ? 0 : (item.data[source] ?? null))),
+      })),
+    };
+  }
+
+  /** Each series holds values for its own run of categories only (see alignToCategories). */
+  private coversOwnCategories(series: GraphSeries[], categories: string[]): boolean {
+    const lengths = series.map((item) => item.data.length);
+    return (
+      !lengths.every((length) => length === categories.length) &&
+      lengths.reduce((total, length) => total + length, 0) === categories.length
+    );
   }
 
   private rowLabel(row: Record<string, string | number | null>): string {

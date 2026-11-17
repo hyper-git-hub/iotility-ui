@@ -1,4 +1,3 @@
-import { PluralPipe } from '@iotility/shared-ui';
 import { Component, computed, effect, inject, OnInit, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
@@ -25,7 +24,7 @@ interface OverviewSkeleton {
 
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [PluralPipe, ChartSkeleton, Skeleton, DashboardGraphComponent, NgTemplateOutlet, StatCard],
+  imports: [ChartSkeleton, Skeleton, DashboardGraphComponent, NgTemplateOutlet, StatCard],
   templateUrl: './overview.html',
   styleUrls: ['../dashboard-page.css', './overview.css'],
 })
