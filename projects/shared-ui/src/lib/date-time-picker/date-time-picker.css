@@ -7,6 +7,8 @@
 .picker-trigger {
   justify-content: flex-start;
   color: var(--color-muted);
+  /* A full date and time is long; a step under the 13px control text keeps it calm. */
+  font-size: 0.75rem;
 }
 .picker-trigger.has-value {
   color: var(--color-ink);
