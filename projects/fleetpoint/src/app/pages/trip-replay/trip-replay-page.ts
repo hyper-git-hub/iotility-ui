@@ -17,10 +17,7 @@ import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { ProgressBar } from '../../shared/progress-bar/progress-bar';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
-import {
-  DetailReportRecord,
-  RealtimeVehicleRecord,
-} from '../../shared/services/live-tracking-api.service';
+import { RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
 import {
   PlaybackRecord,
   PlaybackTrailRecord,
@@ -343,7 +340,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
     this.loadedRange.set(range);
     forkJoin({
       detail: this.api.getDetailReport(range).pipe(catchError(() => of(null))),
-      vehicleDetail: this.api.getVehicleDetail().pipe(catchError(() => of(null))),
       trail: this.api.getMapTrail(range).pipe(
         catchError((err) => {
           // OSRM service is down/crashed - use raw GPS data fallback
@@ -370,7 +366,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
             result.stops?.data?.data ?? [],
             result.violations?.data?.data ?? [],
             result.statistics?.data,
-            result.vehicleDetail?.data?.data ?? [],
           ),
         error: (response) => {
           this.trip.set(EMPTY_TRIP);
@@ -535,11 +530,9 @@ export class TripReplayPage implements OnInit, OnDestroy {
     stops: PlaybackRecord[],
     violations: ViolationRecord[],
     statisticsPayload: { data?: PlaybackRecord[] } | PlaybackRecord[] | null | undefined,
-    vehicleDetail: DetailReportRecord[] = [],
   ): void {
-    const imageRecord = vehicleDetail.find(
-      (record) => record.vehicle_id === this.selectedVehicleId(),
-    );
+    // From the fleet's detail report the page loaded once on open; no need to fetch it per trip.
+    const fleetImage: string | undefined = this.vehicleImages()[this.selectedVehicleId()];
     // If OSRM fallback is active, use raw trail data directly without filtering/matching
     if (this.mapFallbackToRaw()) {
       const rawPositions = trail
@@ -630,7 +623,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
         vehicleId: this.selectedVehicleId(),
         vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
         vehicleImage: this.vehicleImage(
-          imageRecord?.vehicle_image ??
+          fleetImage ??
             (detailRow['vehicle_image'] as string | undefined) ??
             this.vehicle()?.vehicle_type_image,
         ),
@@ -769,7 +762,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       vehicleId: this.selectedVehicleId(),
       vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
       vehicleImage: this.vehicleImage(
-        imageRecord?.vehicle_image ??
+        fleetImage ??
           (detailRow['vehicle_image'] as string | undefined) ??
           this.vehicle()?.vehicle_type_image,
       ),
