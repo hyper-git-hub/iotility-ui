@@ -14,7 +14,7 @@ import {
 import { LayersList } from '@deck.gl/core';
 import { TripsLayer } from '@deck.gl/geo-layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
+import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import {
   LatLng,
   createIotMap,
@@ -92,6 +92,12 @@ const CAMERA_CENTER_EPSILON_DEGREES = 0.00001;
 const CAMERA_ZOOM_EPSILON = 0.008;
 const CAMERA_PITCH_EPSILON = 0.08;
 const OSRM_REQUEST_TIMEOUT_MS = 10000;
+/** OSRM requests in flight at once; the rest wait their turn, in route order. */
+const OSRM_PARALLEL_REQUESTS = 6;
+/** With every piece of road already back, the pen draws the whole trip in about this long. */
+const ROUTE_REVEAL_SECONDS = 1.6;
+/** How hard the pen catches up when it is far behind the road that has arrived, per second. */
+const ROUTE_REVEAL_CATCH_UP = 2.5;
 const OVERVIEW_CAMERA = { pitch: 42, bearing: -20 };
 // The camera stays closest at the slowest speed.
 const SLOWEST_PLAYBACK_SPEED = REPLAY_SPEEDS[0];
@@ -154,6 +160,50 @@ interface OsrmTrailPoint {
   /** The point right after a preserved moderate jump — always starts a new leg. */
   _afterDrop?: boolean;
 }
+/** A stretch of matched road (or a dashed gap estimate) waiting for the loading pen to draw it. */
+interface RoutePiece {
+  feature: GeoJSON.Feature;
+  kind: 'route' | 'estimated';
+  points: LatLng[];
+  /** Metres along this piece at each point. */
+  distances: number[];
+  /** Metres along the whole trip where this piece starts. */
+  start: number;
+}
+/** The matched road drawing itself in while the trip loads. */
+interface RouteReveal {
+  pieces: RoutePiece[];
+  /** Metres of road that have arrived, from the start, with no gaps. */
+  length: number;
+  /** Metres the pen has drawn. */
+  shown: number;
+  /** The pen's steady speed, metres per second. */
+  speed: number;
+  /** Every piece has arrived. */
+  complete: boolean;
+  lastFrame?: number;
+}
+
+/**
+ * Runs at most `limit` tasks at a time, starting waiting ones in the order they were queued. A
+ * finishing task hands its slot straight to the next one, so the limit can never be overshot.
+ */
+function taskQueue(limit: number) {
+  let active = 0;
+  const waiting: Array<() => void> = [];
+  return async <T>(task: () => Promise<T>): Promise<T> => {
+    if (active < limit) active++;
+    else await new Promise<void>((resolve) => waiting.push(resolve));
+    try {
+      return await task();
+    } finally {
+      const next = waiting.shift();
+      if (next) next();
+      else active--;
+    }
+  };
+}
+
 interface TrailPath {
   path: Array<[longitude: number, latitude: number]>;
   /** Metres along the road at each point: the trail's clock. */
@@ -250,6 +300,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private motion?: MonotoneCurve;
   private trailPaths: TrailPath[] = [];
   private routeRequest?: AbortController;
+  private readonly osrmQueue = taskQueue(OSRM_PARALLEL_REQUESTS);
+  private reveal?: RouteReveal;
+  private revealFrame?: number;
   private readyFallback?: ReturnType<typeof setTimeout>;
   private readyEmitted = false;
   private routeVersion = 0;
@@ -386,9 +439,18 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       return;
     }
     this.routeLoadingChange.emit(true);
-    this.showRawPreview(positions);
     let coordinates: LatLng[];
+    // Everything after the loading flag goes up runs inside the try, so a failure anywhere
+    // still takes it down again instead of leaving "Matching trip to roads" up for good.
     try {
+      const rawPoints = this.showRawPreview(positions);
+      this.reveal = {
+        pieces: [],
+        length: 0,
+        shown: 0,
+        speed: Math.max(1, this.pathDistance(rawPoints)) / ROUTE_REVEAL_SECONDS,
+        complete: false,
+      };
       coordinates = await this.getRoadCoordinates(positions);
     } finally {
       if (version === this.routeVersion) this.routeLoadingChange.emit(false);
@@ -425,8 +487,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     });
     const offsets = this.clock()?.timeline();
     if (offsets) this.rebuildMotion(offsets);
-    this.renderRouteLayers();
-    this.fadeOutRawPreview();
+    this.completeReveal();
     const colors = getComputedStyle(document.documentElement);
     this.endpointMarkers = [
       this.circleMarker(
@@ -474,6 +535,9 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.stopRuns = [];
     this.trailPaths = [];
     this.motion = undefined;
+    this.reveal = undefined;
+    if (this.revealFrame !== undefined) cancelAnimationFrame(this.revealFrame);
+    this.revealFrame = undefined;
     if (!this.map || !this.styleReady()) return;
     removeGeoJson(this.map, 'trip-route', ROUTE_LAYER_IDS);
     removeGeoJson(this.map, 'trip-route-raw', ['trip-route-raw-line']);
@@ -491,12 +555,11 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
 
   // The recorded points draw straight away, so the trip is on screen while OSRM
   // matches it to the road; the matched route then fades in over them.
-  private showRawPreview(positions: TripPosition[]): void {
-    if (!this.map || !this.styleReady()) return;
+  private showRawPreview(positions: TripPosition[]): LatLng[] {
     const points = positions
       .map(({ lat, lng }) => [Number(lat), Number(lng)] as LatLng)
       .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0));
-    if (points.length < 2) return;
+    if (!this.map || !this.styleReady() || points.length < 2) return points;
     upsertGeoJson(this.map, 'trip-route-raw', lineFeature(points), [
       {
         id: 'trip-route-raw-line',
@@ -506,6 +569,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
       },
     ]);
     fitLatLngs(this.map, points, 40, 14, OVERVIEW_CAMERA);
+    return points;
   }
 
   private fadeOutRawPreview(): void {
@@ -580,7 +644,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   // The road the vehicle has yet to drive, plus the dashed gap estimates. The
   // travelled part is drawn on top by the deck overlay (see trailLayers).
   private renderRouteLayers(): void {
-    if (!this.map || !this.styleReady() || this.roadCoordinates.length < 2) return;
+    if (!this.map || !this.styleReady()) return;
+    // Still drawing in: the pen redraws what it has (after a theme change wiped the layers).
+    if (this.reveal) {
+      this.queueRevealFrame();
+      return;
+    }
+    if (this.roadCoordinates.length < 2) return;
     const features: GeoJSON.Feature[] = [];
     for (const [segmentStart, segmentEnd] of this.roadSegmentRanges) {
       const points = this.roadCoordinates.slice(segmentStart, segmentEnd + 1);
@@ -591,9 +661,22 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     for (const segment of this.estimatedGapSegments) {
       if (segment.length >= 2) features.push(lineFeature(segment, { kind: 'estimated' }));
     }
+    this.drawRouteLayers({ type: 'FeatureCollection', features });
+  }
+
+  /**
+   * Puts `data` on the route layers. Layers already on the map just take the new data, so the
+   * pen's last frame hands over to the finished route without a flicker; otherwise they are added
+   * invisible and MapLibre's paint transition fades them in.
+   */
+  private drawRouteLayers(data: GeoJSON.FeatureCollection): void {
+    if (!this.map) return;
+    const source = this.map.getSource('trip-route') as GeoJSONSource | undefined;
+    if (source && ROUTE_LAYER_IDS.every((id) => this.map!.getLayer(id))) {
+      source.setData(data);
+      return;
+    }
     const routeColor = this.routeColor();
-    const data: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features };
-    // Layers start invisible; MapLibre's paint transition fades them to full.
     upsertGeoJson(this.map, 'trip-route', data, [
       {
         id: 'trip-route-bg',
@@ -630,6 +713,86 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
           if (this.map?.getLayer(id)) this.map.setPaintProperty(id, 'line-opacity', opacity);
       }),
     );
+  }
+
+  // ── Loading pen ──────────────────────────────────────────────
+  // While OSRM answers come back, the matched road draws itself in from the trip's start over
+  // the faint recorded points: each stretch is drawn once everything before it has arrived, and
+  // the pen glides along it rather than jumping a whole stretch at a time.
+
+  /** Hands the pen a stretch of road, in trip order, for the run that is still current. */
+  private revealPiece(run: AbortController, kind: RoutePiece['kind'], points: LatLng[]): void {
+    const reveal = this.reveal;
+    if (!reveal || run !== this.routeRequest || run.signal.aborted || points.length < 2) return;
+    const distances = this.buildRoadDistances(points);
+    reveal.pieces.push({ feature: lineFeature(points, { kind }), kind, points, distances, start: reveal.length });
+    reveal.length += distances.at(-1) ?? 0;
+    this.queueRevealFrame();
+  }
+
+  /** The finished route is ready: the pen finishes drawing, then hands over to it. */
+  private completeReveal(): void {
+    if (this.reveal) {
+      this.reveal.complete = true;
+      this.queueRevealFrame();
+      return;
+    }
+    this.renderRouteLayers();
+    this.fadeOutRawPreview();
+  }
+
+  private queueRevealFrame(): void {
+    if (this.revealFrame !== undefined) return;
+    this.zone.runOutsideAngular(() => {
+      this.revealFrame = requestAnimationFrame(this.stepReveal);
+    });
+  }
+
+  private readonly stepReveal = (now: number): void => {
+    this.revealFrame = undefined;
+    const reveal = this.reveal;
+    if (!reveal || !this.map) return;
+    const dt = reveal.lastFrame === undefined ? 0 : Math.min(0.05, (now - reveal.lastFrame) / 1000);
+    reveal.lastFrame = now;
+    // A steady pace, faster while far behind the road that has arrived, so it eases into the end.
+    const pace = Math.max(reveal.speed, (reveal.length - reveal.shown) * ROUTE_REVEAL_CATCH_UP);
+    reveal.shown = this.reducedMotion
+      ? reveal.length
+      : Math.min(reveal.length, reveal.shown + pace * dt);
+    if (this.styleReady()) this.drawRouteLayers(this.revealedRoute(reveal));
+    if (reveal.shown < reveal.length) {
+      this.queueRevealFrame();
+      return;
+    }
+    // Caught up: wait for the next stretch, or hand over once the route is complete.
+    reveal.lastFrame = undefined;
+    if (!reveal.complete) return;
+    this.reveal = undefined;
+    this.renderRouteLayers();
+    this.fadeOutRawPreview();
+  };
+
+  /** Every stretch the pen has passed, and the one it is drawing cut where the pen is. */
+  private revealedRoute(reveal: RouteReveal): GeoJSON.FeatureCollection {
+    const features: GeoJSON.Feature[] = [];
+    for (const piece of reveal.pieces) {
+      const along = reveal.shown - piece.start;
+      if (along <= 0) break;
+      if (along >= piece.distances.at(-1)!) {
+        features.push(piece.feature);
+        continue;
+      }
+      let last = 0;
+      while (last + 1 < piece.distances.length && piece.distances[last + 1] <= along) last++;
+      const from = piece.points[last];
+      const to = piece.points[last + 1];
+      const span = piece.distances[last + 1] - piece.distances[last];
+      const t = span > 0 ? (along - piece.distances[last]) / span : 0;
+      const tip: LatLng = [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+      features.push(lineFeature([...piece.points.slice(0, last + 1), tip], { kind: piece.kind }));
+      break;
+    }
+    return { type: 'FeatureCollection', features };
   }
 
   private circleMarker(point: LatLng, color: string, label: string): maplibregl.Marker {
@@ -752,39 +915,57 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     this.routeRequest = run;
     try {
       const legs = this.buildMatchLegs(positions);
+      // Every leg's match and every gap between legs goes to OSRM up front, queued in trip
+      // order (the gap into a leg before the leg), so the start of the trip comes back first.
+      const requests = legs.map((leg, index) => ({
+        gap: index ? this.estimateGap(legs[index - 1].at(-1)!, leg[0], run.signal) : undefined,
+        match: this.matchLegToRoad(leg, run.signal),
+      }));
+      // Then they are put together in order, each stretch handed to the loading pen as it lands.
       const segments: LatLng[][] = [];
-      this.estimatedGapSegments = [];
-      this.legEnds = [];
-      this.legTimeRanges = [];
+      const gapSegments: LatLng[][] = [];
+      const legEnds: Array<[OsrmTrailPoint, OsrmTrailPoint]> = [];
+      const legTimeRanges: Array<[number, number, number, number]> = [];
       const merged: LatLng[] = [];
-      for (const leg of legs) {
-        const segment = roundCorners(await this.matchLegToRoad(leg, run.signal));
+      let previous = -1;
+      for (const [index, leg] of legs.entries()) {
+        const segment = roundCorners(await requests[index].match);
         if (!segment.length) continue;
-        if (this.legEnds.length) {
+        if (previous >= 0) {
           // Gap estimation between legs: EVERY gap is bridged with the OSRM
           // /route road path, rendered as a DASHED estimate. The bridge is
           // also spliced into the marker coordinate stream between the two
           // legs so playback drives over the gap instead of teleporting.
-          const estimated = roundCorners(
-            await this.estimateGap(this.legEnds.at(-1)![1], leg[0], run.signal),
-          );
+          // A leg that matched nothing is skipped, so the gap then runs from the last one kept.
+          const gap = previous === index - 1
+            ? requests[index].gap!
+            : this.estimateGap(legs[previous].at(-1)!, leg[0], run.signal);
+          const estimated = roundCorners(await gap);
           if (estimated.length >= 2) {
-            this.estimatedGapSegments.push(estimated);
+            gapSegments.push(estimated);
             this.appendGeometry(merged, estimated);
+            this.revealPiece(run, 'estimated', estimated);
           }
         }
         const segmentStart = merged.length;
         segments.push(this.trimSeam(segments.at(-1), segment));
         const appended = segments.at(-1)!;
         for (const point of appended) this.appendGeometry(merged, [point]);
-        this.legTimeRanges.push([
+        legTimeRanges.push([
           leg[0]._ts,
           leg.at(-1)!._ts,
           segmentStart,
           merged.length - 1,
         ]);
-        this.legEnds.push([leg[0], leg.at(-1)!]);
+        legEnds.push([leg[0], leg.at(-1)!]);
+        this.revealPiece(run, 'route', merged.slice(segmentStart));
+        previous = index;
       }
+      // A newer trip took over: leave its state alone.
+      if (run.signal.aborted) return fallback;
+      this.estimatedGapSegments = gapSegments;
+      this.legEnds = legEnds;
+      this.legTimeRanges = legTimeRanges;
       if (!merged.length) {
         this.roadSegments = [fallback];
         return fallback;
@@ -1018,10 +1199,13 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     runSignal: AbortSignal | undefined,
   ): Promise<LatLng[] | null> {
     const batches = this.buildBatches(leg, MATCH_BATCH_SIZE, MATCH_BATCH_OVERLAP);
+    // All batches at once; they join back up in order.
+    const results = await Promise.all(
+      batches.map((batch) => this.sendSnapToRoadRequestMatch(batch, radiusM, runSignal)),
+    );
     const geometry: LatLng[] = [];
     let matchedAnything = false;
-    for (const batch of batches) {
-      const result = await this.sendSnapToRoadRequestMatch(batch, radiusM, runSignal);
+    for (const result of results) {
       if (!result) continue;
       matchedAnything = true;
       this.appendGeometry(geometry, result);
@@ -1135,26 +1319,38 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   }
 
   // Shared OSRM plumbing: fetch with timeout + run-signal propagation, JSON
-  // parse, and delegate validation/extraction to the caller's extractor.
-  private async osrmGeometryRequest<T>(
+  // parse, and delegate validation/extraction to the caller's extractor. At most
+  // OSRM_PARALLEL_REQUESTS are in flight; the rest wait in the order they were asked for.
+  private osrmGeometryRequest<T>(
     url: string,
     runSignal: AbortSignal | undefined,
     extract: (result: T) => LatLng[] | null,
   ): Promise<LatLng[] | null> {
+    return this.osrmQueue(() => this.fetchOsrmGeometry(url, runSignal, extract));
+  }
+
+  private async fetchOsrmGeometry<T>(
+    url: string,
+    runSignal: AbortSignal | undefined,
+    extract: (result: T) => LatLng[] | null,
+  ): Promise<LatLng[] | null> {
+    // A superseded trip's queued requests drop out without going to the network.
+    if (runSignal?.aborted) return null;
+    const controller = new AbortController();
+    // The timeout covers the body as well as the headers: a reply that stalls half-way would
+    // otherwise hold one of the OSRM_PARALLEL_REQUESTS slots for good.
+    const timeout = setTimeout(() => controller.abort(), OSRM_REQUEST_TIMEOUT_MS);
+    const abort = () => controller.abort();
+    runSignal?.addEventListener('abort', abort, { once: true });
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), OSRM_REQUEST_TIMEOUT_MS);
-      runSignal?.addEventListener('abort', () => controller.abort(), { once: true });
-      let response: Response;
-      try {
-        response = await fetch(url, { signal: controller.signal });
-      } finally {
-        clearTimeout(timeout);
-      }
+      const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) return null;
       return extract((await response.json()) as T);
     } catch {
       return null;
+    } finally {
+      clearTimeout(timeout);
+      runSignal?.removeEventListener('abort', abort);
     }
   }
 
@@ -1663,6 +1859,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     clearTimeout(this.eventCardHideTimer);
     this.stopCameraLoop();
     this.routeRequest?.abort();
+    if (this.revealFrame !== undefined) cancelAnimationFrame(this.revealFrame);
     this.vehicleOverlay?.finalize();
     this.themeObserver?.disconnect();
     this.map?.remove();
