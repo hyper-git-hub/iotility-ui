@@ -30,17 +30,33 @@ async function waitForRemote(remoteName: string, remoteEntryUrl: string): Promis
   });
 }
 
+async function filterReadyRemotes(remotes: Record<string, string>): Promise<Record<string, string>> {
+  const entries = Object.entries(remotes);
+  const results = await Promise.allSettled(
+    entries.map(([remoteName, remoteEntryUrl]) => waitForRemote(remoteName, remoteEntryUrl)),
+  );
+
+  const readyRemotes: Record<string, string> = {};
+  results.forEach((result, index) => {
+    const [remoteName, remoteEntryUrl] = entries[index];
+    if (result.status === 'fulfilled') {
+      readyRemotes[remoteName] = remoteEntryUrl;
+    } else {
+      console.error(`Skipping unavailable remote '${remoteName}'.`, result.reason);
+    }
+  });
+  return readyRemotes;
+}
+
 async function startApplication(): Promise<void> {
   try {
     const response = await fetch(manifestUrl, { cache: 'no-store' });
     if (!response.ok) throw new Error(`Could not load ${manifestUrl}: HTTP ${response.status}`);
     const remotes = (await response.json()) as Record<string, string>;
-    await Promise.all(
-      Object.entries(remotes).map(([remoteName, remoteEntryUrl]) =>
-        waitForRemote(remoteName, remoteEntryUrl),
-      ),
-    );
-    await initFederation(manifestUrl);
+    const readyRemotes = await filterReadyRemotes(remotes);
+    // Shared deps are only mapped by initFederation, so it must run even when a
+    // remote is down; otherwise the host's own chunks cannot resolve '@angular/core'.
+    await initFederation(readyRemotes);
   } catch (error) {
     console.error('Federation initialization failed. Remote applications are unavailable.', error);
   }
