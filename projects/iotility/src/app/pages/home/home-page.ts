@@ -2,7 +2,11 @@ import { Component } from '@angular/core';
 import { SpotlightBorder, Tooltip } from '@iotility/shared-ui';
 import { LoadingService } from '../../shared/services/loading.service';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
-import { FLEETPOINT_APP, RecentAppsService } from '../../shared/services/recent-apps.service';
+import {
+  FLEETPOINT_APP,
+  RecentAppsService,
+  TWINSCAPE_APP,
+} from '../../shared/services/recent-apps.service';
 
 interface IotilityModule {
   id: string;
@@ -47,6 +51,17 @@ export class HomePage {
       action: () => this.openFleetPoint(),
     },
     {
+      id: 'twinscape',
+      name: 'Twinscape',
+      tagline: 'Smarter solution for smarter buildings',
+      initials: 'TS',
+      rating: 4.8,
+      available: true,
+      accentClass: 'bg-warning',
+      icon: 'assets/twinscape.svg',
+      action: () => this.openTwinscape(),
+    },
+    {
       id: 'assetrack',
       name: 'Assetrack',
       tagline: 'Manage your assets smoothly',
@@ -67,17 +82,6 @@ export class HomePage {
       accentClass: 'bg-success',
       icon: 'assets/sustainex.svg',
       action: () => this.buyModule('Sustainex'),
-    },
-    {
-      id: 'twinscape',
-      name: 'Twinscape',
-      tagline: 'Smarter solution for smarter buildings',
-      initials: 'TS',
-      rating: 4.8,
-      available: false,
-      accentClass: 'bg-warning',
-      icon: 'assets/twinscape.svg',
-      action: () => this.buyModule('Twinscape'),
     },
     {
       id: 'wasterack',
@@ -164,6 +168,22 @@ export class HomePage {
         initials: 'FP',
         logoSrc: 'assets/fleetpoint.svg',
         labelLogoSrc: 'assets/iotility-loader-light.svg',
+      },
+      2000,
+    );
+  }
+
+  protected openTwinscape(): void {
+    this.recentApps.register(TWINSCAPE_APP);
+    this.loading.navigate(
+      TWINSCAPE_APP.url,
+      {
+        label: 'IoTility',
+        title: 'Loading Twinscape',
+        message: 'Preparing your smart buildings workspace...',
+        initials: TWINSCAPE_APP.initials,
+        logoSrc: TWINSCAPE_APP.logoSrc,
+        labelLogoSrc: TWINSCAPE_APP.labelLogoSrc,
       },
       2000,
     );

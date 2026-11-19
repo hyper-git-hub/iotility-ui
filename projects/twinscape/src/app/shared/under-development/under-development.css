@@ -1,0 +1,27 @@
+@reference "../../../styles.css";
+
+.card {
+  @apply flex w-full max-w-md flex-col items-center px-8 py-10 text-center;
+  box-shadow: var(--shadow-card);
+}
+.card-logo {
+  @apply mb-5;
+}
+.card-eyebrow {
+  @apply rounded-full bg-brand-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-brand-700 dark:bg-dark-canvas dark:text-brand-300;
+}
+.card h1 {
+  @apply mt-4 text-2xl font-bold text-ink dark:text-white;
+}
+.card p {
+  @apply mt-2 text-sm leading-6 text-muted dark:text-brand-300;
+}
+.card-note {
+  @apply mt-6 border-t border-line pt-5 text-xs text-muted dark:border-dark-line dark:text-brand-300;
+}
+.card-back {
+  @apply mt-5 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-line px-4 text-sm font-medium text-muted transition hover:border-brand-400 hover:text-brand-600 dark:border-dark-line dark:text-brand-300 dark:hover:border-brand-500 dark:hover:text-white;
+}
+.card-back svg {
+  @apply size-4 fill-none stroke-current stroke-2;
+}

@@ -1,0 +1,13 @@
+<section class="card twinscape-surface" role="status">
+  @if (logo()) {
+    <ui-logo class="card-logo" [src]="logo()" [alt]="appName()" [size]="'3.5rem'" />
+  }
+  <span class="card-eyebrow">{{ appName() }}</span>
+  <h1>Under Development</h1>
+  <p>{{ description() }}</p>
+  <span class="card-note">We're putting the finishing touches in place. Check back soon.</span>
+  <button type="button" class="card-back" (click)="back.emit()">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+    Back to IoTility
+  </button>
+</section>

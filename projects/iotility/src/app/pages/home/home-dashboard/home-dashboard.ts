@@ -8,7 +8,11 @@ import {
 } from '@iotility/shared-ui';
 import { FeedbackDialogService } from '../../../shared/services/feedback-dialog.service';
 import { LoadingService } from '../../../shared/services/loading.service';
-import { FLEETPOINT_APP, RecentAppsService } from '../../../shared/services/recent-apps.service';
+import {
+  FLEETPOINT_APP,
+  RecentAppsService,
+  TWINSCAPE_APP,
+} from '../../../shared/services/recent-apps.service';
 
 /** An addon shown in the "Browse IoTility Addon Use Cases" panel. */
 interface AddonUseCase {
@@ -248,6 +252,14 @@ export class HomeDashboardPage {
       action: () => this.openFleetPoint(),
     },
     {
+      id: 'twinscape',
+      name: 'Twinscape',
+      tagline: 'Smarter solution for smarter buildings',
+      available: true,
+      icon: 'assets/twinscape.svg',
+      action: () => this.openTwinscape(),
+    },
+    {
       id: 'assetrack',
       name: 'Assetrack',
       tagline: 'Manage your assets smoothly',
@@ -262,14 +274,6 @@ export class HomeDashboardPage {
       available: false,
       icon: 'assets/sustainex.svg',
       action: () => this.buyModule('Sustainex'),
-    },
-    {
-      id: 'twinscape',
-      name: 'Twinscape',
-      tagline: 'Smarter solution for smarter buildings',
-      available: false,
-      icon: 'assets/twinscape.svg',
-      action: () => this.buyModule('Twinscape'),
     },
     {
       id: 'wasterack',
@@ -327,6 +331,22 @@ export class HomeDashboardPage {
         initials: 'FP',
         logoSrc: 'assets/fleetpoint.svg',
         labelLogoSrc: 'assets/iotility-loader-light.svg',
+      },
+      2000,
+    );
+  }
+
+  protected openTwinscape(): void {
+    this.recentApps.register(TWINSCAPE_APP);
+    this.loading.navigate(
+      TWINSCAPE_APP.url,
+      {
+        label: 'IoTility',
+        title: 'Loading Twinscape',
+        message: 'Preparing your smart buildings workspace...',
+        initials: TWINSCAPE_APP.initials,
+        logoSrc: TWINSCAPE_APP.logoSrc,
+        labelLogoSrc: TWINSCAPE_APP.labelLogoSrc,
       },
       2000,
     );

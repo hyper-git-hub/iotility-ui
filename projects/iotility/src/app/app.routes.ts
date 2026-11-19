@@ -71,6 +71,11 @@ export const routes: Routes = [
     canMatch: [authGuard],
     loadChildren: () => loadRemoteModule('fleetpoint', './Routes').then((module) => module.routes),
   },
+  {
+    path: 'twinscape',
+    canMatch: [authGuard],
+    loadChildren: () => loadRemoteModule('twinscape', './Routes').then((module) => module.routes),
+  },
   { path: 'fleet', redirectTo: fleetpointDashboard },
 
   {

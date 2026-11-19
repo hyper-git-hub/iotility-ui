@@ -10,11 +10,13 @@ micro-frontend workspace:
 - **FleetPoint (remote app)** — fleet management, loaded into the portal at runtime. It covers the
   fleet dashboard, live tracking, trip replay with 3D vehicles, vehicles, drivers, fleets, devices,
   jobs, routes, places and geofences, violations, maintenance, DashCam, documents, reports and settings.
-- **Shared UI (library)** — the common design system used by both apps: light and dark themes, form
+- **Twinscape (remote app)** — smart-building workspace, loaded into the portal like FleetPoint. Its
+  home page currently shows an "Under Development" placeholder.
+- **Shared UI (library)** — the common design system used by every app: light and dark themes, form
   controls, tables, charts, loaders and other shared components.
 
-FleetPoint is built and deployed on its own and plugged into the host through Native Federation, so
-more applications can join the platform the same way.
+FleetPoint and Twinscape are built and deployed on their own and plugged into the host through Native
+Federation, so more applications can join the platform the same way.
 
 ## Tech stack
 
@@ -52,6 +54,12 @@ iotility/
 │   │       ├── pages/         → Dashboard, live tracking, trip replay, vehicles, drivers, ...
 │   │       └── shared/        → Maps, charts, modals and API services
 │   │
+│   ├── twinscape/             → Remote app: Twinscape (port 4202)
+│   │   └── src/app/
+│   │       ├── layout/        → Twinscape shell and header
+│   │       ├── pages/home/    → "Under Development" home page
+│   │       └── shared/        → Presentational components
+│   │
 │   └── shared-ui/             → Shared library: @iotility/shared-ui
 │       └── src/
 │           ├── lib/           → Tables, charts, inputs, dropdowns, loaders, ...
@@ -69,12 +77,13 @@ npm install
 npm start
 ```
 
-Runs the host on http://localhost:4200 and FleetPoint on http://localhost:4201 together. Open the host
-and sign in.
+Runs the host on http://localhost:4200, FleetPoint on http://localhost:4201 and Twinscape on
+http://localhost:4202 together. Open the host and sign in.
 
 ### Running the apps separately
 
-Start each app in its own terminal. Start FleetPoint first, because the host loads it from port 4201.
+Start each app in its own terminal. Start the remotes first, because the host loads them from ports
+4201 and 4202.
 
 ```bash
 # Terminal 1: FleetPoint (remote)
@@ -82,11 +91,16 @@ ng serve fleetpoint
 ```
 
 ```bash
-# Terminal 2: IoTility (host)
+# Terminal 2: Twinscape (remote)
+ng serve twinscape
+```
+
+```bash
+# Terminal 3: IoTility (host)
 ng serve iotility
 ```
 
-`npm run start:remote` and `npm run start:host` do the same.
+`npm run start:remote`, `npm run start:twinscape` and `npm run start:host` do the same.
 
 ### Building for production
 
@@ -94,5 +108,5 @@ ng serve iotility
 npm run build
 ```
 
-This builds FleetPoint and then the host. To build one app only, use `ng build fleetpoint` or
-`ng build iotility`.
+This builds FleetPoint, then Twinscape, then the host. To build one app only, use
+`ng build fleetpoint`, `ng build twinscape` or `ng build iotility`.

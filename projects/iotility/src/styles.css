@@ -3,6 +3,8 @@
 @import '../../shared-ui/src/styles/animations.css';
 @import '../../shared-ui/src/styles/controls.css';
 @import '../../shared-ui/src/styles/globals.css';
-/* FleetPoint runs inside this shell, so its global styles have to ship here too. */
+/* FleetPoint and Twinscape run inside this shell, so their global styles ship here too. */
 @import '../../fleetpoint/src/fleetpoint-globals.css';
+@import '../../twinscape/src/twinscape-globals.css';
 @source "../../fleetpoint/src";
+@source "../../twinscape/src";
