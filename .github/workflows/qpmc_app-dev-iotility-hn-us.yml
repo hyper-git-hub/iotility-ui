@@ -46,28 +46,38 @@ jobs:
 
           HOST_OUTPUT="dist/iotility/browser"
           REMOTE_OUTPUT="dist/fleetpoint/browser"
+          TWINSCAPE_OUTPUT="dist/twinscape/browser"
 
           test -f "${HOST_OUTPUT}/index.html"
           test -f "${HOST_OUTPUT}/federation.manifest.json"
           test -f "${REMOTE_OUTPUT}/remoteEntry.json"
+          test -f "${TWINSCAPE_OUTPUT}/remoteEntry.json"
 
           rm -rf "${DEPLOYMENT_PATH}"
-          mkdir -p "${DEPLOYMENT_PATH}/fleetpoint"
+          mkdir -p "${DEPLOYMENT_PATH}/fleetpoint" "${DEPLOYMENT_PATH}/twinscape"
 
           cp -a "${HOST_OUTPUT}/." "${DEPLOYMENT_PATH}/"
           cp -a "${REMOTE_OUTPUT}/." "${DEPLOYMENT_PATH}/fleetpoint/"
+          cp -a "${TWINSCAPE_OUTPUT}/." "${DEPLOYMENT_PATH}/twinscape/"
 
-          # Serve the Fleetpoint remote from the same Azure Web App.
+          # Serve the Fleetpoint and Twinscape remotes from the same Azure Web App.
           sed -i \
-            's#http://localhost:4201/remoteEntry.json#/fleetpoint/remoteEntry.json#g' \
+            -e 's#http://localhost:4201/remoteEntry.json#/fleetpoint/remoteEntry.json#g' \
+            -e 's#http://localhost:4202/remoteEntry.json#/twinscape/remoteEntry.json#g' \
             "${DEPLOYMENT_PATH}/federation.manifest.json"
 
           grep -q \
             '"fleetpoint": "/fleetpoint/remoteEntry.json"' \
             "${DEPLOYMENT_PATH}/federation.manifest.json"
+          grep -q \
+            '"twinscape": "/twinscape/remoteEntry.json"' \
+            "${DEPLOYMENT_PATH}/federation.manifest.json"
+          # Fail the build if any remote still points at a local dev server.
+          ! grep -q 'localhost' "${DEPLOYMENT_PATH}/federation.manifest.json"
 
           test -f "${DEPLOYMENT_PATH}/index.html"
           test -f "${DEPLOYMENT_PATH}/fleetpoint/remoteEntry.json"
+          test -f "${DEPLOYMENT_PATH}/twinscape/remoteEntry.json"
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
@@ -100,6 +110,7 @@ jobs:
           test -f "${DEPLOYMENT_PATH}/index.html"
           test -f "${DEPLOYMENT_PATH}/federation.manifest.json"
           test -f "${DEPLOYMENT_PATH}/fleetpoint/remoteEntry.json"
+          test -f "${DEPLOYMENT_PATH}/twinscape/remoteEntry.json"
 
       - name: Log in to Azure
         uses: azure/login@v2
