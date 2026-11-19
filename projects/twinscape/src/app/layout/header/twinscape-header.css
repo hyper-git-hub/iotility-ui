@@ -1,0 +1,11 @@
+@reference "../../../styles.css";
+
+.twinscape-brand {
+  @apply flex min-w-0 items-center gap-2.5;
+}
+.twinscape-brand img {
+  @apply h-7 w-auto shrink-0;
+}
+.twinscape-brand span {
+  @apply truncate text-sm font-semibold text-ink dark:text-white;
+}

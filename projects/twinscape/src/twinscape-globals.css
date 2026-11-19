@@ -1,0 +1,7 @@
+/*
+ * Twinscape's global styles. Imported by Twinscape's own styles.css and by the IoTility host's,
+ * because inside the host only the host's global stylesheet is loaded.
+ */
+.twinscape-surface {
+  @apply rounded-2xl border border-line bg-white dark:border-dark-line dark:bg-dark-surface;
+}

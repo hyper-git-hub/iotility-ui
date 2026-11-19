@@ -8,6 +8,8 @@ export interface RecentApp {
   url: string;
   logoSrc: string;
   labelLogoSrc?: string;
+  /** When the app was last opened. Saved entries without it fall back to their stored position. */
+  lastUsed?: number;
 }
 
 export const FLEETPOINT_APP: RecentApp = {
@@ -16,6 +18,15 @@ export const FLEETPOINT_APP: RecentApp = {
   initials: 'FP',
   url: '/fleetpoint/dashboard',
   logoSrc: 'assets/fleetpoint.svg',
+  labelLogoSrc: 'assets/iotility-loader-light.svg',
+};
+
+export const TWINSCAPE_APP: RecentApp = {
+  id: 'twinscape',
+  label: 'Twinscape',
+  initials: 'TS',
+  url: '/twinscape/home',
+  logoSrc: 'assets/twinscape.svg',
   labelLogoSrc: 'assets/iotility-loader-light.svg',
 };
 
@@ -29,7 +40,11 @@ export class RecentAppsService {
   }
 
   register(app: RecentApp): void {
-    const next = [...this.apps().filter((item) => item.id !== app.id), app];
+    // Newest first: the icon the user just opened takes the top slot in the sidebar.
+    const next = [
+      { ...app, lastUsed: Date.now() },
+      ...this.apps().filter((item) => item.id !== app.id),
+    ];
     this.apps.set(next);
     this.persist(next);
   }
@@ -53,7 +68,13 @@ export class RecentAppsService {
   private load(): void {
     try {
       const raw = localStorage.getItem(this.storageKey);
-      this.apps.set(raw ? (JSON.parse(raw) as RecentApp[]) : []);
+      const stored = raw ? (JSON.parse(raw) as RecentApp[]) : [];
+      // Older saved lists run oldest → newest; their array position is the recency fallback.
+      this.apps.set(
+        stored
+          .map((app, index) => ({ ...app, lastUsed: app.lastUsed ?? index }))
+          .sort((a, b) => b.lastUsed - a.lastUsed),
+      );
     } catch {
       this.apps.set([]);
     }

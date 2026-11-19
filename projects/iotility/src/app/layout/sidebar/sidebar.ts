@@ -3,7 +3,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TabIndicator } from '@iotility/shared-ui';
 import { FeedbackDialogService } from '../../shared/services/feedback-dialog.service';
 import { LoadingService } from '../../shared/services/loading.service';
-import { FLEETPOINT_APP, RecentApp, RecentAppsService } from '../../shared/services/recent-apps.service';
+import {
+  FLEETPOINT_APP,
+  RecentApp,
+  RecentAppsService,
+  TWINSCAPE_APP,
+} from '../../shared/services/recent-apps.service';
 
 interface UseCaseModule {
   id: string;
@@ -31,6 +36,13 @@ export class Sidebar {
       action: () => this.openFleetPoint(),
     },
     {
+      id: 'twinscape',
+      name: 'Twinscape',
+      available: true,
+      icon: 'assets/twinscape.svg',
+      action: () => this.openTwinscape(),
+    },
+    {
       id: 'assetrack',
       name: 'Assetrack',
       available: false,
@@ -43,13 +55,6 @@ export class Sidebar {
       available: false,
       icon: 'assets/sustainex.svg',
       action: () => this.buyModule('Sustainex'),
-    },
-    {
-      id: 'twinscape',
-      name: 'Twinscape',
-      available: false,
-      icon: 'assets/twinscape.svg',
-      action: () => this.buyModule('Twinscape'),
     },
     {
       id: 'wasterack',
@@ -112,6 +117,22 @@ export class Sidebar {
         initials: 'FP',
         logoSrc: 'assets/fleetpoint.svg',
         labelLogoSrc: 'assets/iotility-loader-light.svg',
+      },
+      2000,
+    );
+  }
+
+  protected openTwinscape(): void {
+    this.recentApps.register(TWINSCAPE_APP);
+    this.loading.navigate(
+      TWINSCAPE_APP.url,
+      {
+        label: 'IoTility',
+        title: 'Loading Twinscape',
+        message: 'Preparing your smart buildings workspace...',
+        initials: TWINSCAPE_APP.initials,
+        logoSrc: TWINSCAPE_APP.logoSrc,
+        labelLogoSrc: TWINSCAPE_APP.labelLogoSrc,
       },
       2000,
     );

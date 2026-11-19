@@ -1,6 +1,6 @@
 /**
  * Light/dark theme: a `.dark` class on <html>, the user's choice saved under THEME_KEY.
- * With no saved choice the OS setting decides. Each app's index.html applies the same rule
+ * With no saved choice the OS setting decides. Every app's index.html applies the same rule
  * in a small inline script before first paint (it can't import this file), so keep them in step.
  */
 export const THEME_KEY = 'iotility-theme';

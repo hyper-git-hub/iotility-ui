@@ -1,325 +1,471 @@
 {
-  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
-  "version": 1,
-  "cli": {
-    "packageManager": "npm",
-    "analytics": false
-  },
-  "newProjectRoot": "projects",
-  "projects": {
-    "iotility": {
-      "projectType": "application",
-      "schematics": {
-        "@schematics/angular:class": {
-          "skipTests": true
-        },
-        "@schematics/angular:component": {
-          "skipTests": true
-        },
-        "@schematics/angular:directive": {
-          "skipTests": true
-        },
-        "@schematics/angular:guard": {
-          "skipTests": true
-        },
-        "@schematics/angular:interceptor": {
-          "skipTests": true
-        },
-        "@schematics/angular:pipe": {
-          "skipTests": true
-        },
-        "@schematics/angular:resolver": {
-          "skipTests": true
-        },
-        "@schematics/angular:service": {
-          "skipTests": true
-        }
-      },
-      "root": "projects/iotility",
-      "sourceRoot": "projects/iotility/src",
-      "prefix": "app",
-      "architect": {
-        "build": {
-          "builder": "@angular-architects/native-federation-v4:build",
-          "options": {
-            "cacheExternalArtifacts": true
-          },
-          "configurations": {
-            "production": {
-              "target": "iotility:esbuild:production"
-            },
-            "development": {
-              "target": "iotility:esbuild:development",
-              "dev": true
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve": {
-          "builder": "@angular-architects/native-federation-v4:build",
-          "options": {
-            "target": "iotility:serve-original:development",
-            "rebuildDelay": 500,
-            "cacheExternalArtifacts": true,
-            "dev": true,
-            "devServer": true,
-            "port": 0
-          }
-        },
-        "extract-i18n": {
-          "builder": "@angular/build:extract-i18n"
-        },
-        "test": {
-          "builder": "@angular/build:karma",
-          "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
-            "tsConfig": "projects/iotility/tsconfig.spec.json",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "projects/iotility/public"
-              },
-              {
-                "glob": "**/*",
-                "input": "projects/fleetpoint/public/assets",
-                "output": "assets/fleetpoint"
-              },
-              {
-                "glob": "mapbox-gl-rtl-text.js",
-                "input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
-                "output": "assets/fleetpoint/vendor"
-              }
-            ],
-            "styles": ["projects/iotility/src/styles.css"]
-          }
-        },
-        "esbuild": {
-          "builder": "@angular/build:application",
-          "options": {
-            "browser": "projects/iotility/src/main.ts",
-            "polyfills": ["zone.js", "es-module-shims"],
-            "tsConfig": "projects/iotility/tsconfig.app.json",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "projects/iotility/public"
-              },
-              {
-                "glob": "**/*",
-                "input": "projects/fleetpoint/public/assets",
-                "output": "assets/fleetpoint"
-              },
-              {
-                "glob": "mapbox-gl-rtl-text.js",
-                "input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
-                "output": "assets/fleetpoint/vendor"
-              }
-            ],
-            "styles": ["projects/iotility/src/styles.css"]
-          },
-          "configurations": {
-            "production": {
-              "fileReplacements": [
-                {
-                  "replace": "projects/iotility/src/environments/environment.ts",
-                  "with": "projects/iotility/src/environments/environment.production.ts"
-                }
-              ],
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "60kB",
-                  "maximumError": "68kB"
-                }
-              ],
-              "outputHashing": "all"
-            },
-            "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve-original": {
-          "builder": "@angular/build:dev-server",
-          "configurations": {
-            "production": {
-              "buildTarget": "iotility:esbuild:production"
-            },
-            "development": {
-              "buildTarget": "iotility:esbuild:development"
-            }
-          },
-          "defaultConfiguration": "development",
-          "options": {
-            "port": 4200
-          }
-        }
-      }
-    },
-    "fleetpoint": {
-      "projectType": "application",
-      "schematics": {
-        "@schematics/angular:class": {
-          "skipTests": true
-        },
-        "@schematics/angular:component": {
-          "skipTests": true
-        },
-        "@schematics/angular:directive": {
-          "skipTests": true
-        },
-        "@schematics/angular:guard": {
-          "skipTests": true
-        },
-        "@schematics/angular:interceptor": {
-          "skipTests": true
-        },
-        "@schematics/angular:pipe": {
-          "skipTests": true
-        },
-        "@schematics/angular:resolver": {
-          "skipTests": true
-        },
-        "@schematics/angular:service": {
-          "skipTests": true
-        }
-      },
-      "root": "projects/fleetpoint",
-      "sourceRoot": "projects/fleetpoint/src",
-      "prefix": "app",
-      "architect": {
-        "build": {
-          "builder": "@angular-architects/native-federation-v4:build",
-          "options": {
-            "cacheExternalArtifacts": true
-          },
-          "configurations": {
-            "production": {
-              "target": "fleetpoint:esbuild:production"
-            },
-            "development": {
-              "target": "fleetpoint:esbuild:development",
-              "dev": true
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve": {
-          "builder": "@angular-architects/native-federation-v4:build",
-          "options": {
-            "target": "fleetpoint:serve-original:development",
-            "rebuildDelay": 500,
-            "cacheExternalArtifacts": true,
-            "dev": true,
-            "devServer": true,
-            "port": 0
-          }
-        },
-        "extract-i18n": {
-          "builder": "@angular/build:extract-i18n"
-        },
-        "test": {
-          "builder": "@angular/build:karma",
-          "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
-            "tsConfig": "projects/fleetpoint/tsconfig.spec.json",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "projects/fleetpoint/public"
-              },
-              {
-                "glob": "**/*",
-                "input": "projects/fleetpoint/public/assets",
-                "output": "assets/fleetpoint"
-              },
-              {
-                "glob": "mapbox-gl-rtl-text.js",
-                "input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
-                "output": "assets/fleetpoint/vendor"
-              }
-            ],
-            "styles": ["projects/fleetpoint/src/styles.css"]
-          }
-        },
-        "esbuild": {
-          "builder": "@angular/build:application",
-          "options": {
-            "browser": "projects/fleetpoint/src/main.ts",
-            "polyfills": ["zone.js", "es-module-shims"],
-            "tsConfig": "projects/fleetpoint/tsconfig.app.json",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "projects/fleetpoint/public"
-              },
-              {
-                "glob": "**/*",
-                "input": "projects/fleetpoint/public/assets",
-                "output": "assets/fleetpoint"
-              },
-              {
-                "glob": "mapbox-gl-rtl-text.js",
-                "input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
-                "output": "assets/fleetpoint/vendor"
-              }
-            ],
-            "styles": ["projects/fleetpoint/src/styles.css"]
-          },
-          "configurations": {
-            "production": {
-              "fileReplacements": [
-                {
-                  "replace": "projects/fleetpoint/src/environments/environment.ts",
-                  "with": "projects/fleetpoint/src/environments/environment.production.ts"
-                }
-              ],
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "60kB",
-                  "maximumError": "68kB"
-                }
-              ],
-              "outputHashing": "all"
-            },
-            "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve-original": {
-          "builder": "@angular/build:dev-server",
-          "configurations": {
-            "production": {
-              "buildTarget": "fleetpoint:esbuild:production"
-            },
-            "development": {
-              "buildTarget": "fleetpoint:esbuild:development"
-            }
-          },
-          "defaultConfiguration": "development",
-          "options": {
-            "port": 4201
-          }
-        }
-      }
-    }
-  }
+	"$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+	"version": 1,
+	"cli": {
+		"packageManager": "npm",
+		"analytics": false
+	},
+	"newProjectRoot": "projects",
+	"projects": {
+		"iotility": {
+			"projectType": "application",
+			"schematics": {
+				"@schematics/angular:class": {
+					"skipTests": true
+				},
+				"@schematics/angular:component": {
+					"skipTests": true
+				},
+				"@schematics/angular:directive": {
+					"skipTests": true
+				},
+				"@schematics/angular:guard": {
+					"skipTests": true
+				},
+				"@schematics/angular:interceptor": {
+					"skipTests": true
+				},
+				"@schematics/angular:pipe": {
+					"skipTests": true
+				},
+				"@schematics/angular:resolver": {
+					"skipTests": true
+				},
+				"@schematics/angular:service": {
+					"skipTests": true
+				}
+			},
+			"root": "projects/iotility",
+			"sourceRoot": "projects/iotility/src",
+			"prefix": "app",
+			"architect": {
+				"build": {
+					"builder": "@angular-architects/native-federation-v4:build",
+					"options": {
+						"cacheExternalArtifacts": true
+					},
+					"configurations": {
+						"production": {
+							"target": "iotility:esbuild:production"
+						},
+						"development": {
+							"target": "iotility:esbuild:development",
+							"dev": true
+						}
+					},
+					"defaultConfiguration": "production"
+				},
+				"serve": {
+					"builder": "@angular-architects/native-federation-v4:build",
+					"options": {
+						"target": "iotility:serve-original:development",
+						"rebuildDelay": 500,
+						"cacheExternalArtifacts": true,
+						"dev": true,
+						"devServer": true,
+						"port": 0
+					}
+				},
+				"extract-i18n": {
+					"builder": "@angular/build:extract-i18n"
+				},
+				"test": {
+					"builder": "@angular/build:karma",
+					"options": {
+						"polyfills": [
+							"zone.js",
+							"zone.js/testing"
+						],
+						"tsConfig": "projects/iotility/tsconfig.spec.json",
+						"assets": [
+							{
+								"glob": "**/*",
+								"input": "projects/iotility/public"
+							},
+							{
+								"glob": "**/*",
+								"input": "projects/fleetpoint/public/assets",
+								"output": "assets/fleetpoint"
+							},
+							{
+								"glob": "mapbox-gl-rtl-text.js",
+								"input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
+								"output": "assets/fleetpoint/vendor"
+							}
+						],
+						"styles": [
+							"projects/iotility/src/styles.css"
+						]
+					}
+				},
+				"esbuild": {
+					"builder": "@angular/build:application",
+					"options": {
+						"browser": "projects/iotility/src/main.ts",
+						"polyfills": [
+							"zone.js",
+							"es-module-shims"
+						],
+						"tsConfig": "projects/iotility/tsconfig.app.json",
+						"assets": [
+							{
+								"glob": "**/*",
+								"input": "projects/iotility/public"
+							},
+							{
+								"glob": "**/*",
+								"input": "projects/fleetpoint/public/assets",
+								"output": "assets/fleetpoint"
+							},
+							{
+								"glob": "mapbox-gl-rtl-text.js",
+								"input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
+								"output": "assets/fleetpoint/vendor"
+							}
+						],
+						"styles": [
+							"projects/iotility/src/styles.css"
+						]
+					},
+					"configurations": {
+						"production": {
+							"fileReplacements": [
+								{
+									"replace": "projects/iotility/src/environments/environment.ts",
+									"with": "projects/iotility/src/environments/environment.production.ts"
+								}
+							],
+							"budgets": [
+								{
+									"type": "initial",
+									"maximumWarning": "500kB",
+									"maximumError": "1MB"
+								},
+								{
+									"type": "anyComponentStyle",
+									"maximumWarning": "60kB",
+									"maximumError": "68kB"
+								}
+							],
+							"outputHashing": "all"
+						},
+						"development": {
+							"optimization": false,
+							"extractLicenses": false,
+							"sourceMap": true
+						}
+					},
+					"defaultConfiguration": "production"
+				},
+				"serve-original": {
+					"builder": "@angular/build:dev-server",
+					"configurations": {
+						"production": {
+							"buildTarget": "iotility:esbuild:production"
+						},
+						"development": {
+							"buildTarget": "iotility:esbuild:development"
+						}
+					},
+					"defaultConfiguration": "development",
+					"options": {
+						"port": 4200
+					}
+				}
+			}
+		},
+		"fleetpoint": {
+			"projectType": "application",
+			"schematics": {
+				"@schematics/angular:class": {
+					"skipTests": true
+				},
+				"@schematics/angular:component": {
+					"skipTests": true
+				},
+				"@schematics/angular:directive": {
+					"skipTests": true
+				},
+				"@schematics/angular:guard": {
+					"skipTests": true
+				},
+				"@schematics/angular:interceptor": {
+					"skipTests": true
+				},
+				"@schematics/angular:pipe": {
+					"skipTests": true
+				},
+				"@schematics/angular:resolver": {
+					"skipTests": true
+				},
+				"@schematics/angular:service": {
+					"skipTests": true
+				}
+			},
+			"root": "projects/fleetpoint",
+			"sourceRoot": "projects/fleetpoint/src",
+			"prefix": "app",
+			"architect": {
+				"build": {
+					"builder": "@angular-architects/native-federation-v4:build",
+					"options": {
+						"cacheExternalArtifacts": true
+					},
+					"configurations": {
+						"production": {
+							"target": "fleetpoint:esbuild:production"
+						},
+						"development": {
+							"target": "fleetpoint:esbuild:development",
+							"dev": true
+						}
+					},
+					"defaultConfiguration": "production"
+				},
+				"serve": {
+					"builder": "@angular-architects/native-federation-v4:build",
+					"options": {
+						"target": "fleetpoint:serve-original:development",
+						"rebuildDelay": 500,
+						"cacheExternalArtifacts": true,
+						"dev": true,
+						"devServer": true,
+						"port": 0
+					}
+				},
+				"extract-i18n": {
+					"builder": "@angular/build:extract-i18n"
+				},
+				"test": {
+					"builder": "@angular/build:karma",
+					"options": {
+						"polyfills": [
+							"zone.js",
+							"zone.js/testing"
+						],
+						"tsConfig": "projects/fleetpoint/tsconfig.spec.json",
+						"assets": [
+							{
+								"glob": "**/*",
+								"input": "projects/fleetpoint/public"
+							},
+							{
+								"glob": "**/*",
+								"input": "projects/fleetpoint/public/assets",
+								"output": "assets/fleetpoint"
+							},
+							{
+								"glob": "mapbox-gl-rtl-text.js",
+								"input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
+								"output": "assets/fleetpoint/vendor"
+							}
+						],
+						"styles": [
+							"projects/fleetpoint/src/styles.css"
+						]
+					}
+				},
+				"esbuild": {
+					"builder": "@angular/build:application",
+					"options": {
+						"browser": "projects/fleetpoint/src/main.ts",
+						"polyfills": [
+							"zone.js",
+							"es-module-shims"
+						],
+						"tsConfig": "projects/fleetpoint/tsconfig.app.json",
+						"assets": [
+							{
+								"glob": "**/*",
+								"input": "projects/fleetpoint/public"
+							},
+							{
+								"glob": "**/*",
+								"input": "projects/fleetpoint/public/assets",
+								"output": "assets/fleetpoint"
+							},
+							{
+								"glob": "mapbox-gl-rtl-text.js",
+								"input": "node_modules/@mapbox/mapbox-gl-rtl-text/dist",
+								"output": "assets/fleetpoint/vendor"
+							}
+						],
+						"styles": [
+							"projects/fleetpoint/src/styles.css"
+						]
+					},
+					"configurations": {
+						"production": {
+							"fileReplacements": [
+								{
+									"replace": "projects/fleetpoint/src/environments/environment.ts",
+									"with": "projects/fleetpoint/src/environments/environment.production.ts"
+								}
+							],
+							"budgets": [
+								{
+									"type": "initial",
+									"maximumWarning": "500kB",
+									"maximumError": "1MB"
+								},
+								{
+									"type": "anyComponentStyle",
+									"maximumWarning": "60kB",
+									"maximumError": "68kB"
+								}
+							],
+							"outputHashing": "all"
+						},
+						"development": {
+							"optimization": false,
+							"extractLicenses": false,
+							"sourceMap": true
+						}
+					},
+					"defaultConfiguration": "production"
+				},
+				"serve-original": {
+					"builder": "@angular/build:dev-server",
+					"configurations": {
+						"production": {
+							"buildTarget": "fleetpoint:esbuild:production"
+						},
+						"development": {
+							"buildTarget": "fleetpoint:esbuild:development"
+						}
+					},
+					"defaultConfiguration": "development",
+					"options": {
+						"port": 4201
+					}
+				}
+			}
+		},
+		"twinscape": {
+			"projectType": "application",
+			"schematics": {},
+			"root": "projects/twinscape",
+			"sourceRoot": "projects/twinscape/src",
+			"prefix": "app",
+			"architect": {
+				"build": {
+					"builder": "@angular-architects/native-federation-v4:build",
+					"options": {
+						"cacheExternalArtifacts": true
+					},
+					"configurations": {
+						"production": {
+							"target": "twinscape:esbuild:production"
+						},
+						"development": {
+							"target": "twinscape:esbuild:development",
+							"dev": true
+						}
+					},
+					"defaultConfiguration": "production"
+				},
+				"serve": {
+					"builder": "@angular-architects/native-federation-v4:build",
+					"options": {
+						"target": "twinscape:serve-original:development",
+						"rebuildDelay": 500,
+						"cacheExternalArtifacts": true,
+						"dev": true,
+						"devServer": true,
+						"port": 0
+					}
+				},
+				"extract-i18n": {
+					"builder": "@angular/build:extract-i18n"
+				},
+				"test": {
+					"builder": "@angular/build:karma",
+					"options": {
+						"polyfills": [
+							"zone.js",
+							"zone.js/testing"
+						],
+						"tsConfig": "projects/twinscape/tsconfig.spec.json",
+						"assets": [
+							{
+								"glob": "**/*",
+								"input": "projects/twinscape/public"
+							}
+						],
+						"styles": [
+							"projects/twinscape/src/styles.css"
+						]
+					}
+				},
+				"esbuild": {
+					"builder": "@angular/build:application",
+					"options": {
+						"browser": "projects/twinscape/src/main.ts",
+						"polyfills": [
+							"zone.js",
+							"es-module-shims"
+						],
+						"tsConfig": "projects/twinscape/tsconfig.app.json",
+						"assets": [
+							{
+								"glob": "**/*",
+								"input": "projects/twinscape/public"
+							},
+							{
+								"glob": "**/*",
+								"input": "projects/iotility/public/assets/fonts",
+								"output": "assets/fonts"
+							},
+							{
+								"glob": "twinscape.svg",
+								"input": "projects/iotility/public/assets",
+								"output": "assets"
+							}
+						],
+						"styles": [
+							"projects/twinscape/src/styles.css"
+						]
+					},
+					"configurations": {
+						"production": {
+							"budgets": [
+								{
+									"type": "initial",
+									"maximumWarning": "500kB",
+									"maximumError": "1MB"
+								},
+								{
+									"type": "anyComponentStyle",
+									"maximumWarning": "4kB",
+									"maximumError": "8kB"
+								}
+							],
+							"outputHashing": "all"
+						},
+						"development": {
+							"optimization": false,
+							"extractLicenses": false,
+							"sourceMap": true
+						}
+					},
+					"defaultConfiguration": "production"
+				},
+				"serve-original": {
+					"builder": "@angular/build:dev-server",
+					"configurations": {
+						"production": {
+							"buildTarget": "twinscape:esbuild:production"
+						},
+						"development": {
+							"buildTarget": "twinscape:esbuild:development"
+						}
+					},
+					"defaultConfiguration": "development",
+					"options": {
+						"port": 4202
+					}
+				}
+			}
+		}
+	}
 }
