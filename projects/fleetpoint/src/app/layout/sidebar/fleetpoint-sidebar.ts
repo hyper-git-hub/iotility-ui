@@ -1,11 +1,10 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, computed, effect, Inject, Input, isDevMode, signal } from '@angular/core';
+import { Component, computed, Inject, isDevMode, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Logo, StatusBadge, TabIndicator, Tooltip } from '@iotility/shared-ui';
 import { FeatureAccessService } from '../../shared/services/feature-access.service';
 import { FleetStatusService } from '../../shared/services/fleet-status.service';
 import { MenuGroup, SIDEBAR_MENU } from './menu.config';
-import { SidebarBadgeService } from '../../shared/services/sidebar-badge.service';
 
 interface HostDialogRequest {
   handled: boolean;
@@ -26,7 +25,6 @@ interface HostDialogRequest {
   styleUrl: './fleetpoint-sidebar.css',
 })
 export class FleetpointSidebar {
-  @Input() badgeCounts: Record<string, number> = {};
   private readonly showAllDevelopmentItems = isDevMode();
   private static readonly COLLAPSED_KEY = 'fleetpoint:sidebar-collapsed';
 
@@ -37,11 +35,7 @@ export class FleetpointSidebar {
     private readonly router: Router,
     private readonly features: FeatureAccessService,
     protected readonly fleetStatus: FleetStatusService,
-    private readonly sidebarBadgeService: SidebarBadgeService,
-  ) {
-    // Sync badge counts from service whenever they change
-    effect(() => { this.badgeCounts = this.sidebarBadgeService.badgeCounts(); });
-  }
+  ) {}
 
   protected readonly visibleMenu = computed<MenuGroup[]>(() =>
     SIDEBAR_MENU.map((group) => ({
@@ -56,10 +50,6 @@ export class FleetpointSidebar {
     return this.router.url.startsWith('/fleetpoint') ? `/fleetpoint${route}` : route;
   }
 
-  // Badge pills cap at 99+ once the count reaches 100; the tooltip keeps the exact number.
-  protected badgeLabel(count: number): string | number {
-    return count >= 100 ? '99+' : count;
-  }
 
   /** Sliding hover highlight: one pill glides to whichever item the pointer is over. */
   protected highlightNav(event: PointerEvent): void {

@@ -35,7 +35,7 @@
           <a
             [routerLink]="routeFor(item.route)"
             routerLinkActive="active"
-            [tooltip]="collapsed() && item.badgeKey && badgeCounts[item.badgeKey] > 0 ? item.label + ' · ' + badgeCounts[item.badgeKey] : item.label"
+            [tooltip]="item.label"
             [position]="'right'"
             [disabled]="!collapsed()"
           >
@@ -54,9 +54,6 @@
                 [onlineTitle]="'Realtime tracking active'"
                 [offlineTitle]="'All vehicles offline'"
               />
-            }
-            @if (item.badgeKey && badgeCounts[item.badgeKey] && badgeCounts[item.badgeKey] > 0) {
-              <em>{{ badgeLabel(badgeCounts[item.badgeKey]) }}</em>
             }
           </a>
         }
