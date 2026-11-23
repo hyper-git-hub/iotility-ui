@@ -16,12 +16,16 @@ import {
 import { Router } from '@angular/router';
 import { DateTimePicker, Skeleton, Tooltip } from '@iotility/shared-ui';
 import { ProgressBar } from '../../shared/progress-bar/progress-bar';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { catchError, finalize, forkJoin, of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { RealtimeVehicleRecord } from '../../shared/services/live-tracking-api.service';
 import {
+  PLAYBACK_ERROR,
   PlaybackRecord,
+  PlaybackTrail,
   PlaybackTrailRecord,
   TripReplayApiService,
+  TripSummary,
 } from '../../shared/services/trip-replay-api.service';
 import { ViolationRecord } from '../../shared/services/violations-api.service';
 import { ExportRunnerService } from '../../shared/services/export-runner.service';
@@ -37,8 +41,11 @@ import { ReplayScrub } from '../../shared/trip-replay-map/replay-scrub';
 import { VIOLATION_ICON } from '../violations/all-violations/all-violations';
 
 interface ReplayStop {
+  id: string;
   location: string;
   duration: string;
+  /** What the vehicle was doing while stopped (playback/stops `vehicle_status`). */
+  status: string;
   start: string;
   end: string;
   positionIndex: number;
@@ -50,7 +57,8 @@ interface ReplayTrip {
   vehicleImage: string;
   driver: string;
   date: string;
-  score: number;
+  /** Server-side totals for the range; null when trip-summary isn't available. */
+  summary: TripSummary | null;
   start: string;
   end: string;
   distance: number;
@@ -68,7 +76,7 @@ const EMPTY_TRIP: ReplayTrip = {
   vehicleImage: 'assets/fleetpoint/def-car.svg',
   driver: 'Unassigned',
   date: '',
-  score: 0,
+  summary: null,
   start: 'No trail loaded',
   end: 'No trail loaded',
   distance: 0,
@@ -130,7 +138,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
   protected readonly timelineHover = signal<TimelineHover | null>(null);
   protected readonly search = signal('');
   protected readonly vehicles = signal<RealtimeVehicleRecord[]>([]);
-  protected readonly vehicleImages = signal<Record<number, string>>({});
   protected readonly selectedVehicleId = signal(0);
   protected readonly trip = signal<ReplayTrip>(EMPTY_TRIP);
   protected readonly selectedEventId = signal<string | null>(null);
@@ -196,25 +203,34 @@ export class TripReplayPage implements OnInit, OnDestroy {
     const idx = this.positionIndex();
     const events = this.trip().events;
     if (!events.length) return null;
-    const threshold = Math.max(3, Math.floor(events.length * 0.02));
-    return events.find((e) => Math.abs(e.positionIndex - idx) <= threshold) ?? null;
+    // A fixed window: scaled by the event count, a trip with hundreds of events kept one
+    // "current" nearly all the time, re-selecting on almost every sample.
+    return events.find((e) => Math.abs(e.positionIndex - idx) <= 3) ?? null;
   });
   protected readonly tripStats = computed(() => {
     const trip = this.trip();
     const positions = trip.positions;
     if (!positions.length) return null;
+    // The server's totals (playback/trip-summary) win; the trail only fills in what it lacks.
+    const summary = trip.summary;
     const speeds = positions.map((p) => p.speed);
     const maxSpeed = Math.max(...speeds);
     const avgSpeed = Math.round(speeds.reduce((sum, s) => sum + s, 0) / speeds.length);
     const idlePositions = positions.filter((p) => p.speed === 0).length;
     const idleMinutes = Math.round((idlePositions * ASSUMED_SAMPLE_MS) / 60_000);
+    const known = (value: number | null | undefined): value is number =>
+      value !== null && value !== undefined && Number.isFinite(Number(value));
     return {
-      distance: trip.distance,
-      duration: trip.duration,
-      maxSpeed,
-      avgSpeed,
-      idleTime: idleMinutes,
-      fuel: trip.fuel,
+      distance: known(summary?.distance_km) ? Math.round(Number(summary.distance_km) * 10) / 10 : trip.distance,
+      duration: known(summary?.duration_seconds)
+        ? this.formatDuration(Number(summary.duration_seconds))
+        : this.formatDuration(
+            (new Date(positions.at(-1)?.timestamp ?? 0).getTime() - new Date(positions[0].timestamp ?? 0).getTime()) / 1000 || 0,
+          ),
+      maxSpeed: known(summary?.max_speed) ? Math.round(Number(summary.max_speed)) : maxSpeed,
+      avgSpeed: known(summary?.avg_speed) ? Math.round(Number(summary.avg_speed)) : avgSpeed,
+      idleTime: known(summary?.idle_seconds) ? Math.round(Number(summary.idle_seconds) / 60) : idleMinutes,
+      fuel: known(summary?.fuel_consumed) ? Math.round(Number(summary.fuel_consumed) * 10) / 10 : trip.fuel || null,
     };
   });
 
@@ -259,22 +275,14 @@ export class TripReplayPage implements OnInit, OnDestroy {
     });
   }
   ngOnInit(): void {
-    forkJoin({
-      vehicles: this.api.getVehicles(),
-      detail: this.api.getVehicleDetail().pipe(catchError(() => of(null))),
-    })
+    // The vehicle list carries each vehicle's image; no fleet-wide detail report is needed.
+    this.api
+      .getVehicles()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: ({ vehicles: vehicleResponse, detail }) => {
+        next: (vehicleResponse) => {
           const vehicles = vehicleResponse.data?.data ?? [];
           this.vehicles.set(vehicles);
-          this.vehicleImages.set(
-            Object.fromEntries(
-              (detail?.data?.data ?? [])
-                .filter((record) => record.vehicle_image)
-                .map((record) => [record.vehicle_id, record.vehicle_image as string]),
-            ),
-          );
           const selected =
             vehicles.find(
               (vehicle) =>
@@ -315,9 +323,7 @@ export class TripReplayPage implements OnInit, OnDestroy {
       ...EMPTY_TRIP,
       vehicleId: vehicle.id,
       vehicle: vehicle.registration,
-      vehicleImage: this.vehicleImage(
-        this.vehicleImages()[vehicle.id] || vehicle.vehicle_type_image,
-      ),
+      vehicleImage: this.vehiclePicture(vehicle),
       driver: vehicle.vehicle_driver_name || 'Unassigned',
     });
     this.error.set('');
@@ -338,10 +344,13 @@ export class TripReplayPage implements OnInit, OnDestroy {
       end: this.apiDate(this.endDate()),
     };
     this.loadedRange.set(range);
+    // trip-summary covers what detail-report and statistics were fetched for, so they're gone.
     forkJoin({
-      detail: this.api.getDetailReport(range).pipe(catchError(() => of(null))),
+      summary: this.api.getTripSummary(range).pipe(catchError(() => of(null))),
       trail: this.api.getMapTrail(range).pipe(
-        catchError((err) => {
+        catchError((err: HttpErrorResponse) => {
+          // Not this user's vehicle: say so instead of showing an empty trip.
+          if (err.error?.status === PLAYBACK_ERROR.vehicleNotYours) return throwError(() => err);
           // OSRM service is down/crashed - use raw GPS data fallback
           this.routeLoading.set(false);
           this.mapFallbackToRaw.set(true);
@@ -352,7 +361,6 @@ export class TripReplayPage implements OnInit, OnDestroy {
         .getViolations(range, this.vehicle()?.registration ?? '')
         .pipe(catchError(() => of(null))),
       stops: this.api.getStops(range).pipe(catchError(() => of(null))),
-      statistics: this.api.getStatistics(range).pipe(catchError(() => of(null))),
     })
       .pipe(finalize(() => {
         this.trailLoading.set(false);
@@ -361,17 +369,20 @@ export class TripReplayPage implements OnInit, OnDestroy {
       .subscribe({
         next: (result) =>
           this.buildTrip(
-            result.trail.data?.map_trail ?? [],
-            result.detail?.data?.data ?? [],
+            result.trail.data ?? { map_trail: [] },
             result.stops?.data?.data ?? [],
             result.violations?.data?.data ?? [],
-            result.statistics?.data,
+            result.summary?.data ?? null,
           ),
-        error: (response) => {
+        error: (response: HttpErrorResponse) => {
           this.trip.set(EMPTY_TRIP);
           this.routeLoading.set(false);
           this.mapFallbackToRaw.set(true);
-          const message = response.error?.message || 'Trip replay data could not be loaded.';
+          // Rely on the status code, not the message text (the backend's texts aren't reliable).
+          const message =
+            response.error?.status === PLAYBACK_ERROR.vehicleNotYours
+              ? "This vehicle isn't in your fleet, so its trips can't be shown."
+              : 'Trip replay data could not be loaded.';
           void this.feedback.open({
             type: 'error',
             title: 'Unable to load trip replay',
@@ -525,14 +536,17 @@ export class TripReplayPage implements OnInit, OnDestroy {
       : 'assets/fleetpoint/def-car.svg';
   }
   private buildTrip(
-    trail: PlaybackTrailRecord[],
-    detail: PlaybackRecord[],
+    trailData: PlaybackTrail,
     stops: PlaybackRecord[],
     violations: ViolationRecord[],
-    statisticsPayload: { data?: PlaybackRecord[] } | PlaybackRecord[] | null | undefined,
+    summary: TripSummary | null,
   ): void {
-    // From the fleet's detail report the page loaded once on open; no need to fetch it per trip.
-    const fleetImage: string | undefined = this.vehicleImages()[this.selectedVehicleId()];
+    const trail = trailData.map_trail ?? [];
+    const vehicleName = this.vehicle()?.registration ?? 'Vehicle';
+    const vehicleImage = this.vehiclePicture(this.vehicle());
+    // Fallbacks for when trip-summary isn't available: map-trail carries the range's distance and fuel.
+    const trailDistance = Number(trailData.distance ?? 0);
+    const trailFuel = Number(trailData.fuel_consumed ?? 0);
     // If OSRM fallback is active, use raw trail data directly without filtering/matching
     if (this.mapFallbackToRaw()) {
       const rawPositions = trail
@@ -542,10 +556,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
         this.trip.set({
           ...EMPTY_TRIP,
           vehicleId: this.selectedVehicleId(),
-          vehicle: this.vehicle()?.registration ?? 'Vehicle',
-          vehicleImage: this.vehicleImage(
-            this.vehicleImages()[this.selectedVehicleId()] || this.vehicle()?.vehicle_type_image,
-          ),
+          vehicle: vehicleName,
+          vehicleImage,
         });
         this.error.set('');
         void this.feedback.open({
@@ -580,63 +592,24 @@ export class TripReplayPage implements OnInit, OnDestroy {
       });
       const events: TripReplayEvent[] = [];
       events.push(...this.violationEvents(violations, positions));
-      const replayStops = stops.map((stop, index) => {
-        const lat = Number(stop['lat'] ?? stop['latitude']);
-        const lng = Number(stop['lng'] ?? stop['long'] ?? stop['longitude']);
-        return {
-          location: String(stop['location'] ?? 'Unknown location'),
-          duration: String(stop['duration'] ?? '—'),
-          start: this.formatTime(String(stop['start_time'] ?? '')),
-          end: this.formatTime(String(stop['end_time'] ?? '')),
-          positionIndex: this.nearestPosition(positions, lat, lng),
-          id: index,
-        };
-      });
-      replayStops.forEach((stop, index) =>
-        events.push({
-          id: `stop-${index}`,
-          label: 'Vehicle stop',
-          type: 'stop',
-          positionIndex: stop.positionIndex,
-          detail: `${stop.duration} · ${stop.location}`,
-        }),
-      );
-      const detailRow = detail[0] ?? {};
-      const rawStats = Array.isArray(statisticsPayload)
-        ? statisticsPayload
-        : (statisticsPayload?.data ?? []);
-      const statRow = rawStats[0] ?? detailRow;
-      const statistics = Object.entries(statRow)
-        .filter(([, value]) => value !== null && typeof value !== 'object')
-        .slice(0, 12)
-        .map(([key, value]) => {
-          const raw = String(value ?? '—');
-          const isImage = key.toLowerCase().includes('image');
-          return {
-            label: this.label(key),
-            value: isImage ? this.vehicleImage(raw) : raw,
-            isImage,
-          };
-        });
+      const { stops: replayStops, events: stopEvents } = this.stopsOnTrail(stops, positions);
+      events.push(...stopEvents);
+      const statistics = this.tripStatistics(summary, trailData, events, positions);
       this.trip.set({
         id: String(this.selectedVehicleId()),
         vehicleId: this.selectedVehicleId(),
-        vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
-        vehicleImage: this.vehicleImage(
-          fleetImage ??
-            (detailRow['vehicle_image'] as string | undefined) ??
-            this.vehicle()?.vehicle_type_image,
-        ),
+        vehicle: vehicleName,
+        vehicleImage,
         driver: String(driver),
         date: new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
           new Date(rawPositions[0].timestamp),
         ),
-        score: Number(detailRow['score'] ?? detailRow['driver_score'] ?? 0),
+        summary,
         start: rawPositions[0].location || 'Starting point',
         end: rawPositions.at(-1)?.location || 'Ending point',
-        distance: Number(detailRow['distance'] ?? detailRow['distance_travelled'] ?? 0),
-        duration: String(detailRow['duration'] ?? detailRow['total_duration'] ?? '—'),
-        fuel: Number(detailRow['fuel'] ?? detailRow['fuel_used'] ?? 0),
+        distance: trailDistance,
+        duration: '—',
+        fuel: trailFuel,
         positions,
         events,
         stops: replayStops,
@@ -668,10 +641,8 @@ export class TripReplayPage implements OnInit, OnDestroy {
       this.trip.set({
         ...EMPTY_TRIP,
         vehicleId: this.selectedVehicleId(),
-        vehicle: this.vehicle()?.registration ?? 'Vehicle',
-        vehicleImage: this.vehicleImage(
-          this.vehicleImages()[this.selectedVehicleId()] || this.vehicle()?.vehicle_type_image,
-        ),
+        vehicle: vehicleName,
+        vehicleImage,
       });
       this.error.set('');
       void this.feedback.open({
@@ -719,63 +690,24 @@ export class TripReplayPage implements OnInit, OnDestroy {
         : [],
     );
     events.push(...this.violationEvents(violations, positions));
-    const replayStops = stops.map((stop, index) => {
-      const lat = Number(stop['lat'] ?? stop['latitude']);
-      const lng = Number(stop['lng'] ?? stop['long'] ?? stop['longitude']);
-      return {
-        location: String(stop['location'] ?? 'Unknown location'),
-        duration: String(stop['duration'] ?? '—'),
-        start: this.formatTime(String(stop['start_time'] ?? '')),
-        end: this.formatTime(String(stop['end_time'] ?? '')),
-        positionIndex: this.nearestPosition(positions, lat, lng),
-        id: index,
-      };
-    });
-    replayStops.forEach((stop, index) =>
-      events.push({
-        id: `stop-${index}`,
-        label: 'Vehicle stop',
-        type: 'stop',
-        positionIndex: stop.positionIndex,
-        detail: `${stop.duration} · ${stop.location}`,
-      }),
-    );
-    const detailRow = detail[0] ?? {};
-    const rawStats = Array.isArray(statisticsPayload)
-      ? statisticsPayload
-      : (statisticsPayload?.data ?? []);
-    const statRow = rawStats[0] ?? detailRow;
-    const statistics = Object.entries(statRow)
-      .filter(([, value]) => value !== null && typeof value !== 'object')
-      .slice(0, 12)
-      .map(([key, value]) => {
-        const raw = String(value ?? '—');
-        const isImage = key.toLowerCase().includes('image');
-        return {
-          label: this.label(key),
-          value: isImage ? this.vehicleImage(raw) : raw,
-          isImage,
-        };
-      });
+    const { stops: replayStops, events: stopEvents } = this.stopsOnTrail(stops, positions);
+    events.push(...stopEvents);
+    const statistics = this.tripStatistics(summary, trailData, events, positions);
     this.trip.set({
       id: String(this.selectedVehicleId()),
       vehicleId: this.selectedVehicleId(),
-      vehicle: String(detailRow['vehicle'] ?? this.vehicle()?.registration ?? 'Vehicle'),
-      vehicleImage: this.vehicleImage(
-        fleetImage ??
-          (detailRow['vehicle_image'] as string | undefined) ??
-          this.vehicle()?.vehicle_type_image,
-      ),
+      vehicle: vehicleName,
+      vehicleImage,
       driver: String(driver),
       date: new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
         new Date(unique[0].timestamp),
       ),
-      score: Number(detailRow['score'] ?? detailRow['driver_score'] ?? 0),
+      summary,
       start: unique[0].location || 'Starting point',
       end: unique.at(-1)?.location || 'Ending point',
-      distance: Number(detailRow['distance'] ?? detailRow['distance_travelled'] ?? 0),
-      duration: String(detailRow['duration'] ?? detailRow['total_duration'] ?? '—'),
-      fuel: Number(detailRow['fuel'] ?? detailRow['fuel_used'] ?? 0),
+      distance: trailDistance,
+      duration: '—',
+      fuel: trailFuel,
       positions,
       events,
       stops: replayStops,
@@ -939,6 +871,81 @@ export class TripReplayPage implements OnInit, OnDestroy {
         Math.cos((bLat * Math.PI) / 180) *
         Math.cos(((bLng - aLng) * Math.PI) / 180);
     return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+  }
+  /**
+   * playback/stops rows (oldest first) placed on the nearest trail sample, plus a stop event for
+   * each. The backend's stop id keeps each one's identity; vehicle_status says what it was doing.
+   */
+  private stopsOnTrail(
+    stops: PlaybackRecord[],
+    positions: TripPosition[],
+  ): { stops: ReplayStop[]; events: TripReplayEvent[] } {
+    const replayStops = stops.map((stop, index): ReplayStop => {
+      const lat = Number(stop['lat'] ?? stop['latitude']);
+      const lng = Number(stop['lng'] ?? stop['long'] ?? stop['longitude']);
+      const status = String(stop['vehicle_status'] ?? '').trim();
+      return {
+        id: String(stop['id'] ?? index),
+        location: String(stop['location'] ?? 'Unknown location'),
+        duration: String(stop['duration'] ?? '—'),
+        status: status && status.toLowerCase() !== 'null' ? this.label(status) : '',
+        start: this.formatTime(String(stop['start_time'] ?? '')),
+        end: this.formatTime(String(stop['end_time'] ?? '')),
+        positionIndex: this.nearestPosition(positions, lat, lng),
+      };
+    });
+    const events = replayStops.map(
+      (stop): TripReplayEvent => ({
+        id: `stop-${stop.id}`,
+        label: 'Vehicle stop',
+        type: 'stop',
+        positionIndex: stop.positionIndex,
+        detail: [stop.duration, stop.status, stop.location].filter(Boolean).join(' · '),
+      }),
+    );
+    return { stops: replayStops, events };
+  }
+  /** The vehicle's own picture when it has one, else its type's icon, else the default car. */
+  protected vehiclePicture(vehicle: RealtimeVehicleRecord | undefined): string {
+    return this.vehicleImage(vehicle?.image || vehicle?.vehicle_type_image);
+  }
+  /**
+   * The Stats tab: the trip's figures that the side panel doesn't already show, from trip-summary
+   * and map-trail (fuel filled and jobs completed come with the trail).
+   */
+  private tripStatistics(
+    summary: TripSummary | null,
+    trail: PlaybackTrail,
+    events: TripReplayEvent[],
+    positions: TripPosition[],
+  ): ReplayTrip['statistics'] {
+    const value = (raw: number | null | undefined, unit = '') =>
+      raw === null || raw === undefined || !Number.isFinite(Number(raw)) ? '—' : `${Number(raw)}${unit}`;
+    return [
+      { label: 'Started', value: positions[0]?.time ?? '—' },
+      { label: 'Ended', value: positions.at(-1)?.time ?? '—' },
+      { label: 'Stops (1 min or longer)', value: value(summary?.stop_count) },
+      {
+        label: 'Idle time',
+        value: summary?.idle_seconds === null || summary?.idle_seconds === undefined
+          ? '—'
+          : this.formatDuration(Number(summary.idle_seconds)),
+      },
+      { label: 'Violations', value: String(events.filter((event) => event.type === 'violation').length) },
+      { label: 'Fuel filled', value: value(trail.fuel_filled, ' L') },
+      { label: 'Jobs completed', value: value(trail.jobs_completed) },
+      { label: 'GPS points', value: String(positions.length) },
+    ];
+  }
+  /** Seconds as "1h 05m", "12m 30s" or "45s". */
+  private formatDuration(totalSeconds: number): string {
+    const seconds = Math.max(0, Math.round(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const rest = seconds % 60;
+    if (hours) return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+    if (minutes) return `${minutes}m ${String(rest).padStart(2, '0')}s`;
+    return `${rest}s`;
   }
   private formatTime(value: string): string {
     const date = new Date(value);

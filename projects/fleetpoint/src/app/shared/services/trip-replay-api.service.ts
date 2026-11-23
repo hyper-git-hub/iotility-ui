@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ExportFormat } from '@iotility/shared-ui';
 import { ApiResponse } from './fleet-dashboard-api.service';
-import { DetailReportRecord, RealtimeVehicleRecord } from './live-tracking-api.service';
+import { RealtimeVehicleRecord } from './live-tracking-api.service';
 import { ViolationRecord } from './violations-api.service';
 import { environment } from '../../../environments/environment';
 
@@ -17,6 +17,27 @@ export interface PlaybackTrailRecord {
   location?: string | null;
   driver_name?: string | null;
   seat_belt_notf?: boolean;
+}
+/** playback/trip-summary: distance in km, speeds in km/h, times in seconds; stops of 60 s or more. */
+export interface TripSummary {
+  vehicle_id: number;
+  distance_km: number | null;
+  duration_seconds: number | null;
+  idle_seconds: number | null;
+  stop_count: number | null;
+  max_speed: number | null;
+  avg_speed: number | null;
+  fuel_consumed: number | null;
+}
+/** Backend error codes (HTTP 400 with one of these as `status`); the message text isn't reliable. */
+export const PLAYBACK_ERROR = { vehicleNotYours: 954 } as const;
+/** playback/map-trail: the GPS points, plus a few totals for the range. */
+export interface PlaybackTrail {
+  map_trail: PlaybackTrailRecord[];
+  distance?: number | null;
+  fuel_consumed?: number | null;
+  fuel_filled?: number | null;
+  jobs_completed?: number | null;
 }
 export interface PlaybackRange {
   vehicleId: number;
@@ -33,28 +54,14 @@ export class TripReplayApiService {
       // { params: { status: '1', page_category: 'vehicle_real_time_tracking' } },
     );
   }
-  getVehicleDetail(): Observable<
-    ApiResponse<{ count: number; data: DetailReportRecord[] }>
-  > {
-    return this.http.get<ApiResponse<{ count: number; data: DetailReportRecord[] }>>(
-      `${FLEET_API}/playback/detail-report`,
-      { params: new HttpParams() },
-    );
+  /** Distance, duration, idle time, stops, speeds and fuel for the range, worked out on the server. */
+  getTripSummary(range: PlaybackRange): Observable<ApiResponse<TripSummary>> {
+    return this.http.get<ApiResponse<TripSummary>>(`${FLEET_API}/playback/trip-summary`, {
+      params: this.params(range),
+    });
   }
-  getDetailReport(
-    range: PlaybackRange,
-  ): Observable<ApiResponse<{ count: number; data: PlaybackRecord[] }>> {
-    return this.http.get<ApiResponse<{ count: number; data: PlaybackRecord[] }>>(
-      `${FLEET_API}/playback/detail-report`,
-      {
-        params: this.params(range)
-          .set('stop_time', '4')
-          .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone),
-      },
-    );
-  }
-  getMapTrail(range: PlaybackRange): Observable<ApiResponse<{ map_trail: PlaybackTrailRecord[] }>> {
-    return this.http.get<ApiResponse<{ map_trail: PlaybackTrailRecord[] }>>(
+  getMapTrail(range: PlaybackRange): Observable<ApiResponse<PlaybackTrail>> {
+    return this.http.get<ApiResponse<PlaybackTrail>>(
       `${FLEET_API}/playback/map-trail`,
       { params: this.params(range) },
     );
@@ -65,12 +72,12 @@ export class TripReplayApiService {
     return this.http.get<ApiResponse<{ count: number; data: PlaybackRecord[] }>>(
       `${FLEET_API}/playback/stops`,
       {
+        // Every stop in the range (all=1, capped at 5000 server side), oldest first.
         params: this.params(range)
           .set('duration', '4')
-          .set('order', '')
+          .set('order', 'asc')
           .set('order_by', '')
-          .set('limit', '10')
-          .set('offset', '0')
+          .set('all', '1')
           .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone),
       },
     );
@@ -82,9 +89,9 @@ export class TripReplayApiService {
     return this.http.get<ApiResponse<{ count: number; data: ViolationRecord[] }>>(
       `${FLEET_API}/common/violation`,
       {
+        // Every violation in the range, not just the first 20 (all=1, capped at 5000).
         params: new HttpParams()
-          .set('offset', '0')
-          .set('limit', '20')
+          .set('all', '1')
           .set('order_by', '')
           .set('order', '')
           .set('search_text', searchText)
@@ -96,20 +103,6 @@ export class TripReplayApiService {
           .set('group', '0'),
       },
     );
-  }
-  getStatistics(
-    range: PlaybackRange,
-  ): Observable<ApiResponse<{ count?: number; data?: PlaybackRecord[] } | PlaybackRecord[]>> {
-    return this.http.get<
-      ApiResponse<{ count?: number; data?: PlaybackRecord[] } | PlaybackRecord[]>
-    >(`${FLEET_API}/playback/statistics`, {
-      params: this.params(range)
-        .set('limit', '10')
-        .set('offset', '0')
-        .set('order', '')
-        .set('order_by', '')
-        .set('time_zone', Intl.DateTimeFormat().resolvedOptions().timeZone),
-    });
   }
   /**
    * The trip's travel history as a file, as the FMS web app's playback export does: the reports service,

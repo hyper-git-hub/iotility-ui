@@ -73,7 +73,7 @@
             >
               <span class="vehicle-thumb"
                 ><img
-                  [src]="vehicleImage(vehicle.vehicle_type_image || vehicleImages()[vehicle.id])"
+                  [src]="vehiclePicture(vehicle)"
                   (error)="useDefaultVehicleImage($event)"
                   alt=""
                   aria-hidden="true"
@@ -311,17 +311,6 @@
                 <small>— click markers or press ← → to jump</small>
               </button>
             }
-            @if (selectedTrip().score) {
-              <span
-                class="score-badge"
-                [class.score-excellent]="selectedTrip().score >= 90"
-                [class.score-warning]="selectedTrip().score >= 75 && selectedTrip().score < 90"
-                [class.score-danger]="selectedTrip().score < 75"
-                ><svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M3 12h4l2-6 4 12 2-6h6" /></svg
-                >Trip Score: <strong>{{ selectedTrip().score }}/100</strong></span
-              >
-            }
           </div>
         </div>
       </section>
@@ -345,9 +334,6 @@
             <strong>{{ selectedTrip().vehicle }}</strong
             ><small>{{ selectedTrip().driver }}</small>
           </div>
-          @if (selectedTrip().score) {
-            <b>{{ selectedTrip().score }}/100</b>
-          }
         }
       </header>
       <section class="trip-stats">
@@ -360,7 +346,7 @@
           }
         } @else if (tripStats(); as stats) {
           <div class="trip-stat">
-            <strong>{{ stats.distance }} mi</strong>
+            <strong>{{ stats.distance }} km</strong>
             <small>Distance</small>
           </div>
           <div class="trip-stat">
@@ -380,7 +366,7 @@
             <small>Idle Time</small>
           </div>
           <div class="trip-stat">
-            <strong>{{ stats.fuel }}L</strong>
+            <strong>{{ stats.fuel === null ? '—' : stats.fuel + 'L' }}</strong>
             <small>Fuel Used</small>
           </div>
         } @else {

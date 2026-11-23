@@ -724,37 +724,6 @@
 .events-summary small {
   font-weight: 400;
 }
-.score-badge {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 5px 8px;
-  white-space: nowrap;
-  border-radius: 9px;
-  color: var(--color-muted);
-  background: var(--color-canvas);
-  font-size: 10px;
-  font-weight: 700;
-}
-:host-context(.dark) .score-badge {
-  background: var(--color-dark-canvas);
-}
-.score-badge.score-excellent {
-  color: var(--color-success);
-}
-.score-badge.score-warning {
-  color: var(--color-warning);
-}
-.score-badge.score-danger {
-  color: var(--color-danger);
-}
-.score-badge svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: var(--color-brand-500);
-  stroke-width: 1.8;
-}
 :host-context(.dark) .playback-panel {
   border-color: var(--color-dark-line);
   background: var(--color-dark-surface);
