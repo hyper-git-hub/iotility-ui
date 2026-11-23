@@ -48,6 +48,44 @@ export interface JobApiRecord {
   modified_by: string | null;
   created_at: string | null;
   tasks: JobTaskRecord[] | null;
+  /** 1 high, 2 normal, 3 low. */
+  priority?: JobPriorityCode | number | null;
+  notes?: string | null;
+  vehicle_name?: string | null;
+  /** Minutes between start_date and end_date. */
+  estimated_duration?: number | null;
+  /** Always null for now (no data source yet). */
+  estimated_distance?: number | null;
+  created_by_name?: string | null;
+}
+
+/** Job priority: 1 high, 2 normal, 3 low. */
+export type JobPriorityCode = 1 | 2 | 3;
+
+/** Server-side filters and paging for GET fms-driver/jobs/ (they all combine). */
+export interface JobListQuery {
+  limit: number;
+  offset: number;
+  /** Job name or driver name. */
+  search?: string;
+  status?: JobStatusCode[];
+  type?: JobTypeCode[];
+  priority?: JobPriorityCode[];
+  driverId?: string;
+  /** "YYYY-MM-DD": jobs whose window overlaps this range. */
+  startDate?: string;
+  endDate?: string;
+}
+
+/** GET fms-driver/jobs/summary: jobs whose window overlaps today (route jobs excluded). */
+export interface JobsSummary {
+  total: number;
+  pending: number;
+  in_progress: number;
+  completed: number;
+  aborted: number;
+  delayed: number;
+  high_priority: number;
 }
 
 /** A saved pickup/dropoff point (GET fms-driver/jobs/location). */
@@ -65,6 +103,11 @@ export interface CreateJobPayload {
   end_date: string;
   job_type: number;
   tasks: { priority: number; pick_up: number; drop_off: number }[];
+  /** 1 high, 2 normal, 3 low. */
+  priority: JobPriorityCode;
+  notes?: string;
+  /** Fleet vehicle id; without it the driver's allocated vehicle is saved on the job. */
+  vehicle?: number;
 }
 
 /** fms-driver jobs endpoints, same flow as hypernym-fms-fe's Manage Jobs (templateform). */
@@ -81,19 +124,45 @@ export class JobsApiService {
     this.version.update((value) => value + 1);
   }
 
-  /** Every job in one call; the page filters, searches, counts and pages them client-side. */
-  list(limit = 1000): Observable<JobApiRecord[]> {
+  /**
+   * One page of jobs, filtered and paged on the server. `count` is every matching job.
+   * (fms-driver's envelope: status 2 is success.)
+   */
+  list(query: JobListQuery): Observable<{ count: number; records: JobApiRecord[] }> {
     return this.http
-      .get<ListResponse<JobApiRecord>>(`${JOBS_API}/`, {
-        params: new HttpParams().set('time_zone', this.timeZone).set('limit', limit).set('offset', 0),
-      })
-      .pipe(map((response) => response.data?.data ?? []));
+      .get<ListResponse<JobApiRecord>>(`${JOBS_API}/`, { params: this.listParams(query) })
+      .pipe(map((response) => ({ count: response.data?.count ?? 0, records: response.data?.data ?? [] })));
   }
 
-  /** The same job list as a file: `export=xls|pdf` on the list endpoint, as the FMS web app does. */
-  export(format: ExportFormat, limit = 1000): Observable<Blob> {
-    const params = new HttpParams().set('export', format).set('time_zone', this.timeZone).set('limit', limit).set('offset', 0);
+  /** Today's counts by status, plus delayed and high priority, in the viewer's time zone. */
+  summary(): Observable<JobsSummary | null> {
+    return this.http
+      .get<ApiResponse<JobsSummary>>(`${JOBS_API}/summary`, { params: new HttpParams().set('time_zone', this.timeZone) })
+      .pipe(map((response) => response.data ?? null));
+  }
+
+  /** The filtered job list as a file: `export=xls|pdf` on the list endpoint, as the FMS web app does. */
+  export(format: ExportFormat, query: Omit<JobListQuery, 'limit' | 'offset'>, limit = 1000): Observable<Blob> {
+    const params = this.listParams({ ...query, limit, offset: 0 }).set('export', format);
     return this.http.get(`${JOBS_API}/`, { params, responseType: 'blob' });
+  }
+
+  private listParams(query: JobListQuery): HttpParams {
+    let params = new HttpParams()
+      .set('time_zone', this.timeZone)
+      .set('limit', query.limit)
+      .set('offset', query.offset);
+    const set = (key: string, value: string | undefined) => {
+      if (value) params = params.set(key, value);
+    };
+    set('search_text', query.search?.trim());
+    set('job_status', query.status?.join(','));
+    set('job_type', query.type?.join(','));
+    set('priority', query.priority?.join(','));
+    set('driver_id', query.driverId);
+    set('start_date', query.startDate);
+    set('end_date', query.endDate);
+    return params;
   }
 
   create(payload: CreateJobPayload): Observable<ApiResponse<unknown>> {

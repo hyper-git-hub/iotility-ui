@@ -24,7 +24,7 @@ export class RouteDispatch {
   protected readonly driverOptions=toSignal(inject(DriverApiService).getActiveDrivers().pipe(map(r=>(r.data?.data??[]).map(d=>({id:String(d.id),label:d.name}))),catchError(()=>of([]))),{initialValue:[] as DropdownOption[]});
   protected readonly vehicleOptions=computed<DropdownOption[]>(()=>(this.fleets()??[]).flatMap(f=>f.vehicles).map(v=>({id:String(v.id),label:v.name})));
   /** Not sent: the allocation API has no job link. */
-  protected readonly jobOptions=toSignal(inject(JobsApiService).list().pipe(map(jobs=>[{id:'',label:'No job linked'},...jobs.map(j=>({id:String(j.id),label:`JOB${String(j.id).padStart(3,'0')} · ${j.job_name??NOT_AVAILABLE}`}))]),catchError(()=>of([{id:'',label:'No job linked'}]))),{initialValue:[{id:'',label:'No job linked'}] as DropdownOption[]});
+  protected readonly jobOptions=toSignal(inject(JobsApiService).list({limit:1000,offset:0}).pipe(map(({records:jobs})=>[{id:'',label:'No job linked'},...jobs.map(j=>({id:String(j.id),label:`JOB${String(j.id).padStart(3,'0')} · ${j.job_name??NOT_AVAILABLE}`}))]),catchError(()=>of([{id:'',label:'No job linked'}]))),{initialValue:[{id:'',label:'No job linked'}] as DropdownOption[]});
   /** Vehicles, busy when one of their runs is scheduled or en route; the API has no driver score. */
   protected readonly availability=computed(()=>{
     const fleets=this.fleets();if(!fleets)return null;

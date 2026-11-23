@@ -1,4 +1,4 @@
-import { PluralPipe } from '@iotility/shared-ui';
+
 import { ExportFormat, ExportMenu, Skeleton, lingerWhileClosing } from '@iotility/shared-ui';
 import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,9 +16,16 @@ import {
 } from '@iotility/shared-ui';
 import { Subscription, catchError, of } from 'rxjs';
 import { DriverApiService } from '../../shared/services/driver-api.service';
-import { JobApiRecord, JobsApiService } from '../../shared/services/jobs-api.service';
+import {
+  JobApiRecord,
+  JobListQuery,
+  JobPriorityCode,
+  JobStatusCode,
+  JobTypeCode,
+  JobsApiService,
+  JobsSummary,
+} from '../../shared/services/jobs-api.service';
 import { ExportRunnerService } from '../../shared/services/export-runner.service';
-import { MaintenanceApiService } from '../../shared/services/maintenance-api.service';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { JobForm } from './job-form/job-form';
 import { JobRecord, JobStatus, NOT_AVAILABLE, toJobRecord } from './jobs.data';
@@ -33,10 +40,24 @@ const DISPATCH_TONE: Record<JobStatus, string> = {
   Completed: 'completed',
   Failed: 'failed',
 };
+/** Status filter → job_status code ("high-priority" filters on priority instead). */
+const STATUS_FILTER: Record<string, JobStatusCode> = { pending: '1', 'in-progress': '2', completed: '3', failed: '4' };
+const TYPE_FILTER: Record<string, JobTypeCode> = { 'ad-hoc': '1', scheduled: '2' };
+const HIGH_PRIORITY: JobPriorityCode = 1;
+/** Typing settles this long before the server is asked again. */
+const SEARCH_DEBOUNCE_MS = 300;
+/** The dispatch calendar asks for at most this many of today's jobs. */
+const DISPATCH_LIMIT = 200;
+
+/** "YYYY-MM-DD" for the viewer's today. */
+function localDay(date = new Date()): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
 
 @Component({
   selector: 'app-jobs-page',
-  imports: [PluralPipe, DataTable, ExportMenu, DataTableSkeleton, FilterBar, JobForm, Skeleton, StatCard],
+  imports: [DataTable, ExportMenu, DataTableSkeleton, FilterBar, JobForm, Skeleton, StatCard],
   templateUrl: './jobs-page.html',
   styleUrl: './jobs-page.css',
 })
@@ -45,11 +66,16 @@ export class JobsPage {
   private readonly api = inject(JobsApiService);
   private readonly exporter = inject(ExportRunnerService);
   protected readonly exporting = signal<ExportFormat | null>(null);
-  protected readonly hasJobs = computed(() => this.records().length > 0);
+  protected readonly hasJobs = computed(() => this.count() > 0);
   private readonly destroyRef = inject(DestroyRef);
   private request?: Subscription;
+  private summaryRequest?: Subscription;
+  private dispatchRequest?: Subscription;
+  private searchTimer?: ReturnType<typeof setTimeout>;
 
   protected readonly search = signal('');
+  /** The search the server was last asked for (the box, once typing settles). */
+  private readonly appliedSearch = signal('');
   protected readonly filter = signal('all');
   protected readonly jobTypeFilter = signal('all');
   protected readonly driverFilter = signal('all');
@@ -73,9 +99,16 @@ export class JobsPage {
     (_, index) => `${String(index + DISPATCH_START_HOUR).padStart(2, '0')}:00`,
   );
 
+  /** The current page of jobs; `count` is every job matching the filters. */
   private readonly records = signal<JobApiRecord[]>([]);
-  private readonly vehicleNames = signal<ReadonlyMap<string, string>>(new Map());
-  private readonly jobs = computed(() => this.records().map((record) => toJobRecord(record, this.vehicleNames())));
+  private readonly count = signal(0);
+  /** Today's counts from jobs/summary; null until it answers (or if it fails). */
+  private readonly summary = signal<JobsSummary | null>(null);
+  /** Today's jobs, for the dispatch calendar. */
+  private readonly dispatchRecords = signal<JobApiRecord[]>([]);
+  // Each job carries its vehicle_name, so no fleet lookup is needed to name vehicles.
+  private readonly jobs = computed(() => this.records().map(toJobRecord));
+  private readonly dispatchJobs = computed(() => this.dispatchRecords().map(toJobRecord));
   private readonly drivers = signal<DropdownOption[]>([]);
 
   protected readonly filterOptions: DropdownOption[] = [
@@ -109,27 +142,42 @@ export class JobsPage {
   protected readonly columnLabels = this.columns.map((column) => column.label);
   protected readonly tableActions: TableAction[] = ['view'];
 
-  protected readonly total = computed(() => this.jobs().length);
-  protected readonly pending = computed(() => this.countStatus('Pending'));
-  protected readonly inProgress = computed(() => this.countStatus('In Progress'));
-  protected readonly completed = computed(() => this.countStatus('Completed'));
-  protected readonly failed = computed(() => this.countStatus('Failed'));
-  /** The API has no job priority. */
-  protected readonly highPriority = NOT_AVAILABLE;
+  // Today's figures from jobs/summary (jobs whose window overlaps today, in the viewer's time zone).
+  private readonly todayCount = (key: keyof JobsSummary) =>
+    computed<number | string>(() => this.summary()?.[key] ?? NOT_AVAILABLE);
+  protected readonly total = this.todayCount('total');
+  protected readonly pending = this.todayCount('pending');
+  protected readonly inProgress = this.todayCount('in_progress');
+  protected readonly completed = this.todayCount('completed');
+  /** "Failed" is the UI's name for aborted jobs (including those an admin aborted). */
+  protected readonly failed = this.todayCount('aborted');
+  protected readonly highPriority = this.todayCount('high_priority');
+  /** "12 jobs today · 3 in progress · 2 high priority", or dashes until the summary answers. */
+  protected readonly headline = computed(() => {
+    const summary = this.summary();
+    if (!summary) return `${NOT_AVAILABLE} jobs today`;
+    const jobs = `${summary.total} ${summary.total === 1 ? 'job' : 'jobs'} today`;
+    return `${jobs} · ${summary.in_progress} in progress · ${summary.high_priority} high priority`;
+  });
 
-  protected readonly filteredRows = computed<TableRow[]>(() => {
-    const query = this.search().trim().toLowerCase();
-    return this.jobs()
-      .filter((job) => this.matchesFilter(job))
-      .filter(
-        (job) =>
-          !query ||
-          [job.id, job.name, job.driver, job.vehicle, job.type, job.pickup, job.dropoff, job.status]
-            .join(' ')
-            .toLowerCase()
-            .includes(query),
-      )
-      .map((job) => ({
+  /** The filters the server applies; changing any reloads the list. */
+  private readonly query = computed<JobListQuery>(() => {
+    const status = this.appliedStatusFilter();
+    const type = this.appliedJobTypeFilter();
+    const driver = this.appliedDriverFilter();
+    return {
+      limit: this.limit,
+      offset: this.offset(),
+      search: this.appliedSearch(),
+      status: STATUS_FILTER[status] ? [STATUS_FILTER[status]] : undefined,
+      priority: status === 'high-priority' ? [HIGH_PRIORITY] : undefined,
+      type: TYPE_FILTER[type] ? [TYPE_FILTER[type]] : undefined,
+      driverId: driver === 'all' ? undefined : driver,
+    };
+  });
+
+  protected readonly filteredRows = computed<TableRow[]>(() =>
+    this.jobs().map((job) => ({
         id: job.id,
         job: job.name,
         jobId: job.id,
@@ -144,18 +192,19 @@ export class JobsPage {
         status: job.status,
         tasks: job.tasks,
         actions: '',
-      }));
-  });
+      })),
+  );
   protected readonly rows = computed(() => this.filteredRows());
-  protected readonly filteredTotal = computed(() => this.filteredRows().length);
+  /** Every job matching the filters (the server pages them). */
+  protected readonly filteredTotal = computed(() => this.count());
 
-  /** Jobs running at some point today, clipped to the calendar's window. */
+  /** Today's jobs (asked for by date), clipped to the calendar's window. */
   protected readonly dispatchRows = computed(() => {
     const dayStart = new Date();
     dayStart.setHours(DISPATCH_START_HOUR, 0, 0, 0);
     const windowEnd = dayStart.getTime() + DISPATCH_SLOTS * 30 * 60_000;
     const slot = (time: number) => Math.round((time - dayStart.getTime()) / (30 * 60_000));
-    return this.jobs()
+    return this.dispatchJobs()
       .filter((job) => job.start && job.end && job.start.getTime() < windowEnd && job.end.getTime() > dayStart.getTime())
       .map((job) => {
         const from = Math.max(0, slot(job.start!.getTime()));
@@ -206,14 +255,23 @@ export class JobsPage {
   ]);
 
   constructor() {
+    // The list reloads whenever its filters, search, page or the data (after a create) change.
+    effect(() => {
+      const query = this.query();
+      this.api.version();
+      untracked(() => this.load(query));
+    });
+    // Today's counts and the calendar don't depend on the list's filters.
     effect(() => {
       this.api.version();
-      untracked(() => this.load());
+      untracked(() => this.loadSummary());
     });
-    inject(MaintenanceApiService)
-      .vehicles()
-      .pipe(catchError(() => of([])), takeUntilDestroyed())
-      .subscribe((vehicles) => this.vehicleNames.set(new Map(vehicles.map((vehicle) => [String(vehicle.id), vehicle.name]))));
+    effect(() => {
+      if (this.activeView() !== 'dispatch') return;
+      this.api.version();
+      untracked(() => this.loadDispatch());
+    });
+    this.destroyRef.onDestroy(() => clearTimeout(this.searchTimer));
     inject(DriverApiService)
       .getActiveDrivers()
       .pipe(catchError(() => of(null)), takeUntilDestroyed())
@@ -228,6 +286,9 @@ export class JobsPage {
     else if (event.id === 'driver') this.driverFilter.set(event.option.id);
   }
   protected resetFilters(): void {
+    clearTimeout(this.searchTimer);
+    this.search.set('');
+    this.appliedSearch.set('');
     this.filter.set('all');
     this.jobTypeFilter.set('all');
     this.driverFilter.set('all');
@@ -244,7 +305,15 @@ export class JobsPage {
     this.offset.set(0);
     this.closeJobDetails();
   }
-  protected tableSearchChanged(value: string): void { this.search.set(value); this.offset.set(0); }
+  protected tableSearchChanged(value: string): void {
+    this.search.set(value);
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => {
+      if (value.trim() === this.appliedSearch()) return;
+      this.offset.set(0);
+      this.appliedSearch.set(value.trim());
+    }, SEARCH_DEBOUNCE_MS);
+  }
   protected goToPage(page: number): void {
     this.offset.set((page - 1) * this.limit);
     this.closeJobDetails();
@@ -256,7 +325,9 @@ export class JobsPage {
   protected openJobForm(): void { this.jobFormOpen.set(true); }
 
   protected export(format: ExportFormat): void {
-    this.exporter.run(this.api.export(format, Math.max(1000, this.records().length)), 'Jobs', format, this.exporting);
+    // Exports what the list shows: the same filters, every page.
+    const { limit: _limit, offset: _offset, ...filters } = this.query();
+    this.exporter.run(this.api.export(format, filters, Math.max(1000, this.count())), 'Jobs', format, this.exporting);
   }
   protected closeJobForm(): void { this.jobFormOpen.set(false); }
   protected createJob(): void {
@@ -267,7 +338,7 @@ export class JobsPage {
     this.selectedJob.set(this.jobs().find((job) => job.id === String(row['id'])) ?? null);
   }
   protected selectDispatchJob(jobId: string): void {
-    this.selectedJob.set(this.jobs().find((job) => job.id === jobId) ?? null);
+    this.selectedJob.set(this.dispatchJobs().find((job) => job.id === jobId) ?? null);
   }
   protected closeJobDetails(): void { this.selectedJob.set(null); }
   protected openVehicle(row: TableRow): void {
@@ -275,35 +346,42 @@ export class JobsPage {
     if (job?.vehicleId) void this.router.navigate(['/fleetpoint/vehicles', job.vehicleId]);
   }
 
-  private load(): void {
+  private load(query: JobListQuery): void {
     this.request?.unsubscribe();
     this.request = this.api
-      .list()
+      .list(query)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (records) => {
+        next: ({ count, records }) => {
           this.records.set(records);
-          // Keep the drawer on the refreshed copy, or close it if the job is gone.
+          this.count.set(count);
+          // Keep the drawer on the refreshed copy when the job is still on this page.
           const selected = this.selectedJob();
-          if (selected) this.selectedJob.set(this.jobs().find((job) => job.id === selected.id) ?? null);
+          if (selected) this.selectedJob.set(this.jobs().find((job) => job.id === selected.id) ?? selected);
           this.loaded.set(true);
         },
         error: () => {
           this.records.set([]);
+          this.count.set(0);
           this.loaded.set(true);
         },
       });
   }
-  private countStatus(status: JobStatus): number { return this.jobs().filter((job) => job.status === status).length; }
-  private matchesFilter(job: JobRecord): boolean {
-    const status = this.appliedStatusFilter();
-    const type = this.appliedJobTypeFilter();
-    const driver = this.appliedDriverFilter();
-    const statusMatches = status === 'all'
-      || (status === 'high-priority' ? job.priority === 'High' : job.status.toLowerCase().replaceAll(' ', '-') === status);
-    const typeMatches = type === 'all' || job.type.toLowerCase() === type;
-    const driverMatches = driver === 'all' || job.driverId === driver;
-    return statusMatches && typeMatches && driverMatches;
+  private loadSummary(): void {
+    this.summaryRequest?.unsubscribe();
+    this.summaryRequest = this.api
+      .summary()
+      .pipe(catchError(() => of(null)), takeUntilDestroyed(this.destroyRef))
+      .subscribe((summary) => this.summary.set(summary));
+  }
+  /** Jobs whose window overlaps today, for the calendar. */
+  private loadDispatch(): void {
+    const today = localDay();
+    this.dispatchRequest?.unsubscribe();
+    this.dispatchRequest = this.api
+      .list({ limit: DISPATCH_LIMIT, offset: 0, startDate: today, endDate: today })
+      .pipe(catchError(() => of({ count: 0, records: [] })), takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ records }) => this.dispatchRecords.set(records));
   }
 }
 

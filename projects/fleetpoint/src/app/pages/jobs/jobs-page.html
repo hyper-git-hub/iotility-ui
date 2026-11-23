@@ -2,7 +2,7 @@
   <header class="jobs-heading smooth-reveal">
     <div>
       <h1>Jobs</h1>
-      <p>{{ total() | plural: 'job' }} today · {{ inProgress() }} in progress · {{ highPriority }} high priority</p>
+      <p>{{ headline() }}</p>
     </div>
     <div class="heading-actions">
       <div class="view-switch" aria-label="Job view">
@@ -20,14 +20,14 @@
     <app-stat-card label="In Progress" [value]="inProgress()" tone="info" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8.5 12h6.5m-2.5-2.5L15 12l-2.5 2.5"/></svg></app-stat-card>
     <app-stat-card label="Completed" [value]="completed()" tone="success" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg></app-stat-card>
     <app-stat-card label="Failed" [value]="failed()" tone="danger" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg></app-stat-card>
-    <app-stat-card label="High Priority" [value]="highPriority" tone="priority" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.2 4.7 3.5 17a2 2 0 0 0 1.8 3h13.4a2 2 0 0 0 1.8-3L13.8 4.7a2 2 0 0 0-3.6 0Z"/><path d="M12 9v4.5M12 17h.01"/></svg></app-stat-card>
+    <app-stat-card label="High Priority" [value]="highPriority()" tone="priority" [compact]="true" [loading]="!loaded()"><svg stat-card-icon viewBox="0 0 24 24"><path d="M10.2 4.7 3.5 17a2 2 0 0 0 1.8 3h13.4a2 2 0 0 0 1.8-3L13.8 4.7a2 2 0 0 0-3.6 0Z"/><path d="M12 9v4.5M12 17h.01"/></svg></app-stat-card>
   </section>
 
   @if (activeView() === 'list') {
   <shared-filter-bar
     class="job-filters view-enter smooth-reveal"
     ariaLabel="Job filters"
-    searchPlaceholder="Search job name, driver, vehicle, location..."
+    searchPlaceholder="Search job name or driver..."
     searchAriaLabel="Search jobs"
     [search]="search()"
     [dropdowns]="filterDropdowns()"
@@ -61,7 +61,7 @@
       [columns]="columns"
       [rows]="rows()"
       [clientSideSearch]="false"
-      [clientSidePagination]="true"
+      [clientSidePagination]="false"
       [pagination]="{ totalItems: filteredTotal(), pageSize: limit, page: offset() / limit + 1 }"
       [showExport]="false"
       [showSearch]="false"
@@ -70,7 +70,7 @@
       [rowsClickable]="true"
       [actions]="tableActions"
       [selectedRowId]="selectedJob()?.id ?? null"
-      searchPlaceholder="Search job name, driver, vehicle, location..."
+      searchPlaceholder="Search job name or driver..."
       (pageChange)="goToPage($event)"
       (searchChange)="tableSearchChanged($event)"
       (cellSelected)="openVehicle($event.row)"
@@ -93,7 +93,7 @@
             <div><dt>Vehicle</dt><dd>{{ job.vehicle }}</dd></div>
             <div><dt>Type</dt><dd>{{ job.type }}</dd></div>
             <div><dt>Distance</dt><dd>{{ job.distance }}</dd></div>
-            <div><dt>Est. Time</dt><dd>{{ notAvailable }}</dd></div>
+            <div><dt>Est. Time</dt><dd>{{ job.estimatedTime }}</dd></div>
             <div><dt>Scheduled</dt><dd>{{ job.scheduled }}</dd></div>
             <div><dt>Started</dt><dd>{{ job.started }}</dd></div>
             <div><dt>Completed</dt><dd>{{ job.completed }}</dd></div>
@@ -150,7 +150,7 @@
           <section class="job-summary"><h3>{{ job.name }}</h3><div><span class="status" [class]="'status status-' + job.status.toLowerCase().replaceAll(' ', '-')">{{ job.status }}</span><span class="priority" [class.high]="job.priority === 'High'">{{ job.priority }} priority</span></div></section>
           <dl class="job-facts">
             <div><dt>Driver</dt><dd>{{ job.driver }}</dd></div><div><dt>Vehicle</dt><dd>{{ job.vehicle }}</dd></div><div><dt>Type</dt><dd>{{ job.type }}</dd></div>
-            <div><dt>Distance</dt><dd>{{ job.distance }}</dd></div><div><dt>Est. Time</dt><dd>{{ notAvailable }}</dd></div>
+            <div><dt>Distance</dt><dd>{{ job.distance }}</dd></div><div><dt>Est. Time</dt><dd>{{ job.estimatedTime }}</dd></div>
             <div><dt>Scheduled</dt><dd>{{ job.scheduled }}</dd></div><div><dt>Started</dt><dd>{{ job.started }}</dd></div><div><dt>Completed</dt><dd>{{ job.completed }}</dd></div>
           </dl>
           <section class="job-locations"><div><i class="pickup-dot"></i><span><strong>Pickup</strong><small>{{ job.pickup }}</small></span></div><div><i class="dropoff-dot"></i><span><strong>Dropoff</strong><small>{{ job.dropoff }}</small></span></div></section>

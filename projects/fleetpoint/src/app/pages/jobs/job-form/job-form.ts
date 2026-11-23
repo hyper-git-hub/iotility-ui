@@ -7,7 +7,7 @@ import { Modal } from '../../../shared/modal/modal';
 import { FormFlowService } from '../../../shared/services/form-flow.service';
 import { DriverApiService } from '../../../shared/services/driver-api.service';
 import { FeedbackDialogBridgeService } from '../../../shared/services/feedback-dialog-bridge.service';
-import { JobsApiService } from '../../../shared/services/jobs-api.service';
+import { JobPriorityCode, JobsApiService } from '../../../shared/services/jobs-api.service';
 import { MaintenanceApiService } from '../../../shared/services/maintenance-api.service';
 import { toUtcDateTime } from '../jobs.data';
 
@@ -36,20 +36,20 @@ export class JobForm {
     { id: '1', label: 'Ad-Hoc' },
     { id: '2', label: 'Scheduled' },
   ];
-  /** Kept for the layout; the API has no job priority, so it isn't sent. */
+  /** fms-driver priority ids: 1 high, 2 normal, 3 low. */
   protected readonly priorityOptions: DropdownOption[] = [
-    { id: 'Normal', label: 'Normal' },
-    { id: 'High', label: 'High' },
-    { id: 'Low', label: 'Low' },
+    { id: '2', label: 'Normal' },
+    { id: '1', label: 'High' },
+    { id: '3', label: 'Low' },
   ];
   protected readonly driverOptions = signal<DropdownOption[]>([]);
-  /** A job's vehicle comes from the driver's allocation, so this isn't sent either. */
+  /** Optional: left empty, the backend saves the driver's allocated vehicle on the job. */
   protected readonly vehicleOptions = signal<DropdownOption[]>([]);
   protected readonly locationOptions = signal<DropdownOption[]>([]);
   protected readonly form = inject(FormBuilder).nonNullable.group({
     name: ['', Validators.required],
     type: ['2', Validators.required],
-    priority: ['Normal', Validators.required],
+    priority: ['2', Validators.required],
     driver: ['', Validators.required],
     vehicle: [''],
     pickup: ['', Validators.required],
@@ -100,6 +100,9 @@ export class JobForm {
         end_date: toUtcDateTime(value.endTime),
         job_type: Number(value.type),
         tasks: [{ priority: 1, pick_up: Number(value.pickup), drop_off: Number(value.dropoff) }],
+        priority: Number(value.priority) as JobPriorityCode,
+        ...(value.notes.trim() ? { notes: value.notes.trim() } : {}),
+        ...(value.vehicle ? { vehicle: Number(value.vehicle) } : {}),
       });
     void this.flow
       .submit(this.modal(), request, {
@@ -128,7 +131,7 @@ export class JobForm {
       && this.form.controls.endTime.value <= this.form.controls.startTime.value;
   }
   private reset(): void {
-    this.form.reset({ name: '', type: '2', priority: 'Normal', driver: '', vehicle: '', pickup: '', dropoff: '', startTime: '', endTime: '', notes: '' });
+    this.form.reset({ name: '', type: '2', priority: '2', driver: '', vehicle: '', pickup: '', dropoff: '', startTime: '', endTime: '', notes: '' });
     this.submitted.set(false);
   }
 }
