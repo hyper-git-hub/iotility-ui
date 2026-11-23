@@ -11,8 +11,9 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { LayersList } from '@deck.gl/core';
+import { LayersList, PickingInfo } from '@deck.gl/core';
 import { TripsLayer } from '@deck.gl/geo-layers';
+import { ScatterplotLayer } from '@deck.gl/layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import {
@@ -235,11 +236,30 @@ export interface TripReplayEvent {
   /** Inner SVG markup for the violation icon (from the Violations page set). */
   icon?: string;
 }
-interface EventMarkerRecord {
+/** An event drawn as a dot on the deck canvas, where the vehicle passes it. */
+interface EventDot {
   event: TripReplayEvent;
-  marker: maplibregl.Marker;
-  element: HTMLElement;
-  content: HTMLElement;
+  position: [longitude: number, latitude: number];
+  color: Rgba;
+  /** Radius in pixels; stops are smaller and have no white ring. */
+  radius: number;
+}
+const EVENT_DOT_COLORS: Record<TripReplayEvent['type'], { variable: string; fallback: string }> = {
+  violation: { variable: '--color-danger', fallback: '#df405e' },
+  dashcam: { variable: '--color-warning', fallback: '#eca91f' },
+  stop: { variable: '--color-info', fallback: '#397bd5' },
+};
+const EVENT_RING: Rgba = [255, 255, 255, 255];
+const EVENT_SELECTED_RING: Rgba = [139, 25, 245, 255];
+const getEventPosition = (dot: EventDot) => dot.position;
+const getEventColor = (dot: EventDot) => dot.color;
+
+/** A #rgb / #rrggbb colour as RGBA, or null for anything else (oklch, named…). */
+function hexToRgba(value: string): Rgba | null {
+  const hex = value.trim().replace('#', '');
+  const full = hex.length === 3 ? [...hex].map((digit) => digit + digit).join('') : hex;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return null;
+  return [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16)).concat(255) as Rgba;
 }
 
 @Component({
@@ -270,7 +290,14 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private bodyDistance?: number;
   private vehicleVisible = false;
   private endpointMarkers: maplibregl.Marker[] = [];
-  private eventMarkers: EventMarkerRecord[] = [];
+  /**
+   * Event dots live on the deck canvas as one GPU layer: hundreds of them cost nothing per frame,
+   * where HTML markers each had to be moved on every camera frame.
+   */
+  private eventDots: EventDot[] = [];
+  /** Hover cards, built the first time each event is hovered. */
+  private readonly eventCards = new Map<string, HTMLElement>();
+  private hoveredEventId: string | null = null;
   // One shared, theme-aware detail card reused for every event dot: hovering a
   // dot previews it, clicking pins it until another event is selected.
   private readonly eventCard = new maplibregl.Popup({
@@ -580,65 +607,80 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   private renderEventMarkers(events: TripReplayEvent[]): void {
     if (!this.map) return;
     this.clearEventMarkers();
-    const colors = getComputedStyle(document.documentElement);
-    const css = (name: string, fallback: string) =>
-      colors.getPropertyValue(name).trim() || fallback;
-    for (const event of events) {
-      // Placed where the sample really was on the road, the same place the
-      // vehicle passes through at that moment of the replay.
-      const point = this.coordinateAtDistance(this.sampleDistances[event.positionIndex] ?? 0);
-      const color =
-        event.type === 'violation'
-          ? css('--color-danger', '#df405e')
-          : event.type === 'dashcam'
-            ? css('--color-warning', '#eca91f')
-            : css('--color-info', '#397bd5');
-      const glyph =
-        event.type === 'violation'
-          ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${event.icon ?? ''}</svg>`
-          : event.type === 'dashcam'
-            ? '●'
-            : '';
-      const border = event.type === 'stop' ? 'none' : '2px solid #fff';
-      const size = event.type === 'stop' ? '12px' : '18px';
-      const element = markerElement(
-        `<span aria-hidden="true" style="display:grid;place-items:center;width:${size};height:${size};border:${border};border-radius:50%;background:${color};color:#fff;font:700 10px/1 sans-serif;box-shadow:0 2px 7px #18223855">${glyph}</span>`,
-      );
-      element.classList.add('event-dot', `type-${event.type}`);
-      element.setAttribute('aria-label', `${event.label}: ${event.detail}`);
-      element.setAttribute('role', 'button');
-      element.tabIndex = 0;
-      const marker = new maplibregl.Marker({ element })
-        .setLngLat([point[1], point[0]])
-        .addTo(this.map);
-      const record: EventMarkerRecord = {
+    const styles = getComputedStyle(document.documentElement);
+    const colors = Object.fromEntries(
+      Object.entries(EVENT_DOT_COLORS).map(([type, { variable, fallback }]) => [
+        type,
+        hexToRgba(styles.getPropertyValue(variable)) ?? hexToRgba(fallback)!,
+      ]),
+    ) as Record<TripReplayEvent['type'], Rgba>;
+    // Placed where the sample really was on the road, the same place the vehicle
+    // passes through at that moment of the replay.
+    this.eventDots = events.map((event) => {
+      const [lat, lng] = this.coordinateAtDistance(this.sampleDistances[event.positionIndex] ?? 0);
+      return {
         event,
-        marker,
-        element,
-        content: this.eventCardContent(event),
+        position: [lng, lat],
+        color: colors[event.type],
+        radius: event.type === 'stop' ? 6 : 8,
       };
-      // Hovering previews the themed detail card; it stays reachable while the
-      // cursor is over the dot or the card itself, and pins when selected.
-      element.addEventListener('mouseenter', () => this.showEventCard(record));
-      element.addEventListener('mouseleave', () => this.queueHideEventCard());
-      record.content.addEventListener('mouseenter', () =>
-        clearTimeout(this.eventCardHideTimer),
-      );
-      record.content.addEventListener('mouseleave', () => this.queueHideEventCard());
-      element.addEventListener('click', () => this.eventSelected.emit(event));
-      element.addEventListener('keydown', (keyboardEvent) => {
-        if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ')
-          this.eventSelected.emit(event);
-      });
-      this.eventMarkers.push(record);
-    }
-    this.applyEventSelection();
+    });
+    this.renderOverlay();
   }
 
   private clearEventMarkers(): void {
-    this.eventMarkers.forEach((record) => record.marker.remove());
-    this.eventMarkers = [];
+    this.eventDots = [];
+    this.eventCards.clear();
+    this.hoveredEventId = null;
     this.hideEventCard();
+  }
+
+  /**
+   * The event dots, on top of the travelled trail and under the vehicle. The selected one grows
+   * and takes a brand ring; hovering one shows its card, clicking selects it.
+   */
+  private eventLayers(): LayersList {
+    if (!this.eventDots.length) return [];
+    const selectedId = this.selectedEventId();
+    return [
+      new ScatterplotLayer<EventDot>({
+        id: 'trip-events',
+        data: this.eventDots,
+        getPosition: getEventPosition,
+        getFillColor: getEventColor,
+        getRadius: (dot) => (dot.event.id === selectedId ? dot.radius * 1.45 : dot.radius),
+        getLineColor: (dot) => (dot.event.id === selectedId ? EVENT_SELECTED_RING : EVENT_RING),
+        getLineWidth: (dot) => (dot.event.type === 'stop' && dot.event.id !== selectedId ? 0 : 2),
+        radiusUnits: 'pixels',
+        lineWidthUnits: 'pixels',
+        stroked: true,
+        billboard: true,
+        pickable: true,
+        parameters: GROUND_LAYER_PARAMETERS,
+        updateTriggers: {
+          getRadius: [selectedId],
+          getLineColor: [selectedId],
+          getLineWidth: [selectedId],
+        },
+        onHover: (info) => this.hoverEventDot(info),
+        onClick: (info) => {
+          if (info.object) this.eventSelected.emit(info.object.event);
+        },
+      }),
+    ];
+  }
+
+  private hoverEventDot(info: PickingInfo<EventDot>): void {
+    const dot = info.object;
+    if (this.map) this.map.getCanvas().style.cursor = dot ? 'pointer' : '';
+    if (!dot) {
+      if (this.hoveredEventId) this.queueHideEventCard();
+      this.hoveredEventId = null;
+      return;
+    }
+    if (dot.event.id === this.hoveredEventId) return;
+    this.hoveredEventId = dot.event.id;
+    this.showEventCard(dot);
   }
 
   // The road the vehicle has yet to drive, plus the dashed gap estimates. The
@@ -831,19 +873,21 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
   // Keeps the map in sync with whichever event is selected anywhere in the UI:
   // enlarges its dot — the detail card only appears on hover.
   private applyEventSelection(): void {
-    const selectedId = this.selectedEventId();
-    for (const record of this.eventMarkers) {
-      record.element.classList.toggle('selected', record.event.id === selectedId);
-    }
+    this.renderOverlay();
   }
 
-  private showEventCard(record: EventMarkerRecord): void {
+  private showEventCard(dot: EventDot): void {
     clearTimeout(this.eventCardHideTimer);
     if (!this.map) return;
-    this.eventCard
-      .setLngLat(record.marker.getLngLat())
-      .setDOMContent(record.content)
-      .addTo(this.map);
+    let content = this.eventCards.get(dot.event.id);
+    if (!content) {
+      content = this.eventCardContent(dot.event);
+      // The card stays up while the cursor moves onto it to read it.
+      content.addEventListener('mouseenter', () => clearTimeout(this.eventCardHideTimer));
+      content.addEventListener('mouseleave', () => this.queueHideEventCard());
+      this.eventCards.set(dot.event.id, content);
+    }
+    this.eventCard.setLngLat(dot.position).setDOMContent(content).addTo(this.map);
   }
 
   // Small delay so moving the cursor between the dot and the card (or within
@@ -1433,6 +1477,7 @@ export class TripReplayMap implements AfterViewInit, OnDestroy {
     if (!this.vehicleVisible || !this.map) return;
     const layers: LayersList = [
       ...this.trailLayers(),
+      ...this.eventLayers(),
       ...this.vehicle.layers({ ...this.vehicleAt, zoom: this.map.getZoom() }),
     ];
     this.vehicleOverlay?.setProps({ layers });

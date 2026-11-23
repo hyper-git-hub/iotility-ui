@@ -18,21 +18,6 @@
   @apply pointer-events-auto absolute right-4 top-4;
 }
 
-:host ::ng-deep .iotility-map-marker.event-dot span {
-  transition:
-    transform 150ms ease,
-    box-shadow 150ms ease;
-}
-:host ::ng-deep .iotility-map-marker.event-dot:hover span,
-:host ::ng-deep .iotility-map-marker.event-dot:focus-visible span {
-  transform: scale(1.25);
-}
-:host ::ng-deep .iotility-map-marker.event-dot.selected span {
-  transform: scale(1.45);
-  box-shadow:
-    0 0 0 4px color-mix(in srgb, var(--color-brand-500) 40%, transparent),
-    0 2px 9px #18223866;
-}
 
 /* MapLibre gives popups and markers no z-index, while the deck overlay canvas
    lives inside .maplibregl-ctrl-top-right, which MapLibre paints at z-index 2.
