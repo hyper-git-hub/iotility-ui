@@ -42,11 +42,21 @@
     opacity 180ms ease 100ms,
     visibility 0s;
 }
-.job-details > header { @apply flex items-center justify-between border-b border-line px-4 py-3 dark:border-dark-line; }
+/*
+ * The panel is as tall as the job list beside it (or the calendar), never taller, so a long job
+ * scrolls inside the panel instead of stretching the page. `contain: size` stops its own content
+ * from setting its height; stretching then gives it the list's height, with a floor for short lists.
+ */
+.job-details {
+  @apply flex flex-col self-stretch;
+  contain: size;
+}
+.details-open .job-details { min-height: 26rem; }
+.job-details > header { @apply flex shrink-0 items-center justify-between border-b border-line px-4 py-3 dark:border-dark-line; }
 .job-details > header,.job-details-content { width: 21rem; }
 .job-details h2 { @apply text-sm font-bold text-ink dark:text-white; }
 .job-details > header button { @apply grid size-7 cursor-pointer place-items-center border-0 bg-transparent text-xl text-muted hover:text-ink dark:hover:text-white; }
-.job-details-content { @apply grid gap-4 p-4; }
+.job-details-content { @apply grid min-h-0 flex-1 content-start gap-4 overflow-y-auto p-4; overscroll-behavior: contain; }
 .job-summary h3 { @apply text-sm font-bold text-ink dark:text-white; }
 .job-summary > div { @apply mt-2 flex items-center gap-2; }
 .job-summary .status { @apply rounded-full px-2.5 py-1 text-[10px]; }
@@ -143,6 +153,9 @@
       visibility 0s;
   }
   .job-details > header,.job-details-content { width: 100%; }
+  /* Stacked under the list on small screens: the panel takes its own height again. */
+  .job-details { contain: none; min-height: 0; }
+  .job-details-content { overflow-y: visible; }
 }
 
 /* Push-drawer: reduced motion snaps open/closed (visibility still flips). */
