@@ -1,5 +1,5 @@
 export const environment = {
-  production: true,
+  production: false,
   apiBaseUrl: 'https://devgateway.hypernymbiz.com',
   userMsBaseUrl: 'https://devgateway.hypernymbiz.com/user-ms',
   cobPackagesBaseUrl: 'https://devgateway.hypernymbiz.com/cob-packages',
@@ -9,13 +9,12 @@ export const environment = {
   overpassApiUrl: 'https://overpass-api.de/api/interpreter',
   useCaseId: 6,
   firebase: {
-    apiKey: 'AIzaSyDybdUp0Ue3yuPS5XQfGMxXeBq0CzQ-cME',
-    authDomain: 'fmsnewpackage.firebaseapp.com',
-    databaseURL: 'https://fmsnewpackage-default-rtdb.firebaseio.com',
-    projectId: 'fmsnewpackage',
-    storageBucket: 'fmsnewpackage.appspot.com',
-    messagingSenderId: '1076830721170',
-    appId: '1:1076830721170:web:b72455693f5aa3cfd1024b',
-    measurementId: 'G-FV991JH40G',
+    apiKey: "AIzaSyABXKV8XL-yirnv7Wz-gznDuM54dFGpxcA",
+    authDomain: "gohyper-fleet.firebaseapp.com",
+    databaseURL: "https://gohyper-fleet-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "gohyper-fleet",
+    storageBucket: "gohyper-fleet.firebasestorage.app",
+    messagingSenderId: "752397433573",
+    appId: "1:752397433573:web:ac8682308db4a0da29720c"
   },
 } as const;
