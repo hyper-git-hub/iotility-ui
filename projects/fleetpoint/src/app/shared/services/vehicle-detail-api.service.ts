@@ -18,6 +18,9 @@ export interface VehicleDetailRecord {
 
 export interface VehicleMetric { code: string; data: string | number | null; name: string; }
 
+/** One point of GET fleet/vehicle/speed-trend: ISO 8601 UTC time and km/h, oldest first. */
+export interface SpeedTrendPoint { timestamp: string; speed: number; }
+
 @Injectable({ providedIn: 'root' })
 export class VehicleDetailApiService {
   private readonly fleetApi = `${environment.fleetBaseUrl}/api`;
@@ -28,6 +31,12 @@ export class VehicleDetailApiService {
   getVehicle(id: string): Observable<ApiResponse<{ count: number; data: VehicleDetailRecord[] }>> {
     const params = new HttpParams().set('limit', 10).set('offset', 0).set('id', id).set('page_category', 'vehicle_detail_page');
     return this.http.get<ApiResponse<{ count: number; data: VehicleDetailRecord[] }>>(`${this.fleetApi}/fleet/vehicle`, { params });
+  }
+
+  /** The vehicle's speed over the last `minutes` (default 15), oldest first; the HUD's trend starts from it. */
+  getSpeedTrend(id: string | number, minutes = 15): Observable<ApiResponse<{ count: number; data: SpeedTrendPoint[] }>> {
+    const params = new HttpParams().set('vehicle_id', id).set('minutes', minutes);
+    return this.http.get<ApiResponse<{ count: number; data: SpeedTrendPoint[] }>>(`${this.fleetApi}/fleet/vehicle/speed-trend`, { params });
   }
 
   getMetrics(id: string): Observable<ApiResponse<VehicleMetric[]>> {

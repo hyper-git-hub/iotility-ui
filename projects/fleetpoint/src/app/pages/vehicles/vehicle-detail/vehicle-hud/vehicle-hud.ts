@@ -10,8 +10,10 @@ import {
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import maplibregl, { GeoJSONSource } from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import {
@@ -23,7 +25,11 @@ import { VehicleRenderer, vehicleLighting } from '../../../../shared/maps/vehicl
 import { MapControls } from '../../../../shared/map-overlays/map-controls';
 import { Skeleton } from '@iotility/shared-ui';
 import { environment } from '../../../../../environments/environment';
-import { VehicleDetailRecord, VehicleMetric } from '../../../../shared/services/vehicle-detail-api.service';
+import {
+  VehicleDetailApiService,
+  VehicleDetailRecord,
+  VehicleMetric,
+} from '../../../../shared/services/vehicle-detail-api.service';
 
 /**
  * Live trip cockpit HUD shown above the vehicle overview row. Ultra-wide
@@ -206,6 +212,8 @@ function zoomForSpeed(kmh: number): number {
 const TREND_WINDOW_MS = 15 * 60_000;
 const TREND_MIN_SPAN_MS = 60_000;
 const TREND_TICK_MS = 100;
+/** Most points the trend keeps; the server's history is thinned evenly to half of it. */
+const TREND_MAX_SAMPLES = 300;
 
 function trendY(speed: number): number {
   return 46 - (Math.min(MAX_SPEED, Math.max(0, speed)) / MAX_SPEED) * 42;
@@ -401,6 +409,19 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   });
 
   private readonly speedSamples = signal<Array<{ time: number; speed: number }>>([]);
+  private readonly detailApi = inject(VehicleDetailApiService);
+  private trendRequest?: Subscription;
+  private trendVehicleId?: number;
+  /*
+   * The trend starts from the last 15 minutes the server recorded (fleet/vehicle/speed-trend),
+   * so it isn't empty when the page opens; live speeds then carry it on. Loaded once per vehicle.
+   */
+  private readonly speedHistoryEffect = effect(() => {
+    const id = this.vehicle()?.id;
+    if (!id || id === this.trendVehicleId) return;
+    this.trendVehicleId = id;
+    untracked(() => this.loadSpeedHistory(id));
+  });
   /* Clock for the trend's sliding window, ticked off-zone (see startTrendClock)
      so the line scrolls continuously instead of re-stretching per sample. */
   private readonly trendNow = signal(Date.now());
@@ -1013,6 +1034,7 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.trendRequest?.unsubscribe();
     clearInterval(this.trendTimer);
     cancelAnimationFrame(this.speedRaf);
     cancelAnimationFrame(this.zoomRaf);
@@ -1077,7 +1099,33 @@ export class VehicleHud implements AfterViewInit, OnDestroy {
       const recent = samples.filter((sample) => sample.time >= cutoff);
       const last = recent[recent.length - 1];
       if (last && last.speed === speed && now - last.time < 10_000) return recent;
-      return [...recent, { time: now, speed }].slice(-180);
+      return [...recent, { time: now, speed }].slice(-TREND_MAX_SAMPLES);
+    });
+  }
+
+  private loadSpeedHistory(id: number): void {
+    this.trendRequest?.unsubscribe();
+    // A different vehicle starts a fresh line.
+    this.speedSamples.set([]);
+    this.trendRequest = this.detailApi.getSpeedTrend(id, TREND_WINDOW_MS / 60_000).subscribe({
+      next: (response) => {
+        const cutoff = Date.now() - TREND_WINDOW_MS;
+        const history = (response.data?.data ?? [])
+          .map((point) => ({ time: Date.parse(point.timestamp), speed: Number(point.speed) }))
+          .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.speed) && point.time >= cutoff)
+          .map((point) => ({ ...point, speed: Math.max(0, point.speed) }));
+        if (!history.length) return;
+        const step = Math.max(1, Math.ceil(history.length / (TREND_MAX_SAMPLES / 2)));
+        const thinned = history.filter((_, index) => index % step === 0 || index === history.length - 1);
+        // Live samples that arrived while this was loading stay; history fills in before them.
+        this.speedSamples.update((live) => {
+          const firstLive = live[0]?.time ?? Number.POSITIVE_INFINITY;
+          return [...thinned.filter((point) => point.time < firstLive), ...live].slice(-TREND_MAX_SAMPLES);
+        });
+        this.trendNow.set(Date.now());
+      },
+      // No history (error 954, network): the trend just builds from live speeds as before.
+      error: () => undefined,
     });
   }
 
